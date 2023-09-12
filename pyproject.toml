@@ -6,7 +6,12 @@ authors = ["Waine Oliveira Jr <waine@aerosim.io>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.10, <3.13"
+numpy = "^1.25.2"
+notebook = "^7.0.3"
+trimesh = "^3.23.5"
+scipy = "^1.11.2"
+matplotlib = "^3.7.3"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
@@ -25,3 +30,28 @@ nbsphinx = "^0.9.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+include = '(\.pyi?$|\.ipynb)'
+line-length = 99
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 99
+src_paths = ["cfdmod", "tests", "notebooks"]
+skip_glob = ["**/__init__.py"] # avoid circular imports
