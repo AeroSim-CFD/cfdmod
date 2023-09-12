@@ -5,12 +5,6 @@ import numpy as np
 
 
 class SectionVertices:
-    # Array with coordinates for the intersection with a stl surface
-    x: np.ndarray
-    y: np.ndarray
-    z: np.ndarray
-    projected_position: np.ndarray
-
     def __init__(self, vertices: np.ndarray, plane_origin: np.ndarray, plane_normal: np.ndarray):
         """Object to store vertices and project them
 
@@ -19,9 +13,15 @@ class SectionVertices:
             plane_origin (np.ndarray): Origin of the plane used to generate the vertices
             plane_normal (np.ndarray): Normal of the plane used to generate the vertices
         """
-        self.x = vertices[:, 0]
-        self.y = vertices[:, 1]
-        self.z = vertices[:, 2]
+        if plane_normal[0] == 0:
+            # Normal to x
+            data = np.array(sorted(vertices, key=lambda pos: pos[0]))
+        else:
+            # Not normal to x, so it can be sorted with y
+            data = np.array(sorted(vertices, key=lambda pos: pos[1]))
+        self.x = data[:, 0]
+        self.y = data[:, 1]
+        self.z = data[:, 2]
         self.project_into_plane(plane_origin, plane_normal)
 
     def project_into_plane(
@@ -29,6 +29,12 @@ class SectionVertices:
         plane_origin: np.ndarray,
         plane_normal: np.ndarray,
     ):
+        """Projects the section point cloud onto the plane of the section
+
+        Args:
+            plane_origin (np.ndarray): Plane origin
+            plane_normal (np.ndarray): PLane normal
+        """
         projected_position = []
         for x, y, z in zip(self.x, self.y, self.z):
             # Centralize according to origin

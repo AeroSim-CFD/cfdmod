@@ -1,7 +1,7 @@
 import pathlib
 
 
-def create_folders_for_file(cls, filename: pathlib.Path):
+def create_folders_for_file(filename: pathlib.Path):
     """Creates folders to save given file
 
     Args:
@@ -11,7 +11,7 @@ def create_folders_for_file(cls, filename: pathlib.Path):
     filename.parent.mkdir(parents=True, exist_ok=True)
 
 
-def create_folder_path(cls, path: pathlib.Path):
+def create_folder_path(path: pathlib.Path):
     """Creates folders path
 
     Args:
