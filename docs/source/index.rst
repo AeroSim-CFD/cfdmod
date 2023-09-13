@@ -6,7 +6,7 @@
 CFD Mod docs
 ====================================
 
-**`CFD mod <https://github.com/AeroSim-CFD/cfdmod>`_ is a collection of Python modules to assist a serve tools for simulation post-processing.** 
+`CFD Mod <https://github.com/AeroSim-CFD/cfdmod>`_ **is a collection of Python modules to assist a serve tools for simulation post-processing.** 
 
 It features modules for **consulting use cases** in addition to providing **analysis tools** and an **API** 
 for consuming externally or internally.
