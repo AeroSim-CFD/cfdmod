@@ -9,10 +9,15 @@ readme = "README.md"
 python = "^3.10, <3.13"
 numpy = "^1.25.2"
 notebook = "^7.0.3"
-trimesh = "^3.23.5"
 scipy = "^1.11.2"
 matplotlib = "^3.7.3"
 pandas = "^2.1.0"
+
+[tool.poetry.group.altimetry]
+optional = true
+
+[tool.poetry.group.altimetry.dependencies]
+trimesh = "^3.23.5"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
