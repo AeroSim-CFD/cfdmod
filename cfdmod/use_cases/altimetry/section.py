@@ -3,15 +3,17 @@ from __future__ import annotations
 import numpy as np
 import trimesh
 
-from cfdmod.use_cases.altimetry import AltimetryShed, SectionVertices
+from cfdmod.use_cases.altimetry import SectionVertices, Shed, ShedProfile
 
 
 class AltimetrySection:
+    """Representation of a section of altimetric profile and the corresponding sheds cut by it"""
+
     def __init__(self, label: str, plane_origin: np.ndarray, plane_normal: np.ndarray):
         self.label = label
         self.plane_origin = plane_origin
         self.plane_normal = plane_normal
-        self.section_sheds: list[AltimetryShed] = []
+        self.section_sheds: list[ShedProfile] = []
 
     @classmethod
     def from_points(cls, label: str, p0: np.ndarray, p1: np.ndarray) -> AltimetrySection:
@@ -25,17 +27,13 @@ class AltimetrySection:
         Returns:
             AltimetrySection: Object representing the new AltimetrySection
         """
-        x_o = (p0[0] + p1[0]) / 2  # Index 0 for x variable
-        y_o = (p0[1] + p1[1]) / 2  # Index 1 for y variable
-        z_o = (p0[2] + p1[2]) / 2  # Index 2 for z variable
+        p_n = p0[:2] - p1[:2]
+        p_n /= np.linalg.norm(p_n)
 
-        x_n = p0[0] - p1[0]  # Get delta x
-        y_n = p0[1] - p1[1]  # Get delta z
-        x_u = x_n / (x_n**2 + y_n**2) ** 0.5 if x_n != 0 else 0.0  # Normalization
-        y_u = y_n / (x_n**2 + y_n**2) ** 0.5 if y_n != 0 else 0.0  # Normalization
+        plane_origin = (p0 + p1) / 2
 
-        plane_origin = np.array([x_o, y_o, z_o])
-        plane_normal = np.array([-y_u, x_u, 0])
+        # Rotation of p0_p1 direction in plane direction
+        plane_normal = np.array([-p_n[1], p_n[0], 0])
 
         return AltimetrySection(label, plane_origin, plane_normal)
 
@@ -51,13 +49,16 @@ class AltimetrySection:
         vertices = np.array(section_slice.to_dict()["vertices"])
         self.section_vertices = SectionVertices(vertices, self.plane_origin, self.plane_normal)
 
-    def include_shed(self, shed: AltimetryShed):
+    def include_shed(self, shed: Shed):
         """Includes a shed for plotting
 
         Args:
             shed (AltimetryShed): Shed object
         """
-        shed.project_shed_profile(
-            self.plane_origin, self.plane_normal, self.section_vertices.offset
+        shed_profile = ShedProfile(
+            shed=shed,
+            plane_origin=self.plane_origin,
+            plane_normal=self.plane_normal,
+            offset=self.section_vertices.offset,
         )
-        self.section_sheds.append(shed)
+        self.section_sheds.append(shed_profile)

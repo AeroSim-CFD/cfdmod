@@ -35,9 +35,9 @@ def plot_surface(
 
     for section in altimetry_sections:
         ax.plot(
-            section.section_vertices.x,
-            section.section_vertices.y,
-            section.section_vertices.z,
+            section.section_vertices.pos[:, 0],
+            section.section_vertices.pos[:, 1],
+            section.section_vertices.pos[:, 2],
             label=section.label,
             color=np.random.choice(range(256), size=3) / 255,
         )
@@ -63,7 +63,7 @@ def plot_profiles(altimetry_sections: list[AltimetrySection], output_path: pathl
     for section in altimetry_sections:
         plt.plot(
             section.section_vertices.projected_position,
-            section.section_vertices.z,
+            section.section_vertices.pos[:, 2],
             color=np.random.choice(range(256), size=3) / 255,
             label=section.label,
         )
@@ -103,7 +103,7 @@ def plot_altimetry_profiles(altimetry_section: AltimetrySection, output_path: pa
     # Terrain profile plotting
     ax.plot(
         altimetry_section.section_vertices.projected_position,
-        altimetry_section.section_vertices.z,
+        altimetry_section.section_vertices.pos[:, 2],
         color="b",
     )
 

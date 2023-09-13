@@ -1,54 +1,72 @@
+from dataclasses import dataclass
+
 import numpy as np
 
 
-class AltimetryShed:
-    def __init__(self, p0: np.ndarray, p1: np.ndarray, height: float = 15):
-        self.start_coordinate = p0
-        self.end_coordinate = p1
-        self.height = height
+@dataclass(kw_only=True)
+class Shed:
+    """Representation of a standard shed for consulting cases"""
 
-    def project_shed_profile(
-        self, plane_origin: np.ndarray, plane_normal: np.ndarray, offset: float
+    start_coordinate: np.ndarray
+    end_coordinate: np.ndarray
+    height: float = 15
+
+
+class ShedProfile:
+    """Object representing the shed profile to be plotted in altimetric profile"""
+
+    def __init__(
+        self, shed: Shed, plane_origin: np.ndarray, plane_normal: np.ndarray, offset: float
     ):
-        """Project the shed section into a plane
+        self.shed = shed
+        self.profile = project_shed_profile(
+            shed=shed, plane_origin=plane_origin, plane_normal=plane_normal, offset=offset
+        )
 
-        Args:
-            plane_origin (np.ndarray): Plane origin coordinate
-            plane_normal (np.ndarray): Plane normal vector
-            offset (float): Value for offseting the shed to origin
-        """
-        # Get shed profile limits
-        x_shed_start = self.start_coordinate[0] - plane_origin[0]
-        x_shed_end = self.end_coordinate[0] - plane_origin[0]
-        y_shed_start = self.start_coordinate[1] - plane_origin[1]
-        y_shed_end = self.end_coordinate[1] - plane_origin[1]
 
-        shed_length: float = (
-            (x_shed_start - x_shed_end) ** 2 + (y_shed_start - y_shed_end) ** 2
-        ) ** 0.5
-        origin_offset: float = (x_shed_start**2 + y_shed_start**2) ** 0.5
+def project_shed_profile(
+    shed: Shed, plane_origin: np.ndarray, plane_normal: np.ndarray, offset: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Project the shed into the section plane
 
-        # Projection of shed start and end positions into the slicing plane
-        direction = -plane_normal[1] * x_shed_start + plane_normal[0] * y_shed_start
-        direction /= abs(direction)
+    Args:
+        shed (Shed): Shed object to be plotted in altimetric profile
+        plane_origin (np.ndarray): Plane origin coordinate
+        plane_normal (np.ndarray): Plane normal vector
+        offset (float): Value for offsetting the shed to origin
 
-        origin_offset *= direction
-        z_start = self.start_coordinate[2]
-        z_end = self.end_coordinate[2]
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Tuple with the projected profile in x and y coordinates
+    """
+    # Get shed profile limits
+    projected_start = shed.start_coordinate[:2] - plane_origin[:2]
+    projected_end = shed.end_coordinate[:2] - plane_origin[:2]
 
-        # Generate block profile from shed projected coordinates
-        g_x = [
-            origin_offset,
-            origin_offset,
-            origin_offset + shed_length,
-            origin_offset + shed_length,
+    projected_length = np.linalg.norm(projected_end - projected_start)
+    projected_offset = np.linalg.norm(projected_start)
+
+    direction = -plane_normal[1] * projected_start[0] + plane_normal[0] * projected_start[1]
+    direction /= abs(direction)
+    projected_offset *= direction
+
+    max_shed_elevation = max(shed.start_coordinate[2], shed.end_coordinate[2])
+
+    # Generate square profile from shed projected coordinates
+    g_x = np.array(
+        [
+            projected_offset,
+            projected_offset,
+            projected_offset + projected_length,
+            projected_offset + projected_length,
         ]
-        g_x -= offset
-        g_y = [
-            z_start,
-            max(z_start, z_end) + self.height,
-            max(z_start, z_end) + self.height,
-            z_end,
+    )
+    g_y = np.array(
+        [
+            shed.start_coordinate[2],
+            max_shed_elevation + shed.height,
+            max_shed_elevation + shed.height,
+            shed.end_coordinate[2],
         ]
+    )
 
-        self.profile = tuple([np.array(g_x), np.array(g_y)])
+    return tuple([g_x - offset, g_y])

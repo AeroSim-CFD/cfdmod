@@ -3,7 +3,6 @@ import pathlib
 from dataclasses import dataclass
 from typing import List
 
-import numpy as np
 import trimesh
 
 from cfdmod.use_cases.altimetry import (
@@ -64,11 +63,11 @@ def main(*args):
     surface_mesh: trimesh.Trimesh = trimesh.load_mesh(args_use.surface)
 
     probes = AltimetryProbe.from_csv(csv_path)
-    sections = np.unique([p.section_label for p in probes])
+    sections = set([p.section_label for p in probes])
 
     for sec_label in sections:
         section_probes = [p for p in probes if p.section_label == sec_label]
-        sheds_in_section = np.unique([p.building_label for p in section_probes])
+        sheds_in_section = set([p.building_label for p in section_probes])
         shed_list: list[AltimetryShed] = []
 
         for shed_label in sheds_in_section:

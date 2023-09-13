@@ -6,11 +6,12 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from cfdmod.api.models import Point
 
+@dataclass(kw_only=True)
+class AltimetryProbe:
+    """Probe object containing specific data for altimetry use case. Used for defining building position and section plane"""
 
-@dataclass
-class AltimetryProbe(Point):
+    coordinate: np.ndarray
     building_label: str
     section_label: str
     probe_label: str
@@ -26,14 +27,18 @@ class AltimetryProbe(Point):
 
         for probe_data in probes_df.iterrows():
             data = probe_data[1]  # Unpack data from dataframe iterrow
-            building_label = data["building"] if data["building"] else "Bloco default"
-            section_label = data["section"] if data["section"] else "Seção default"
-            case_label = str(data["case"]) if str(data["case"]) else "Caso default"
+            building_label = data["building"] if data["building"] else "default"
+            section_label = data["section"] if data["section"] else "default"
+            case_label = str(data["case"]) if str(data["case"]) else "default"
             probe_label = data["probe_name"] if data["probe_name"] else f"Probe {len(probes_list)}"
             probe_coords = np.array([data["X"], data["Y"], data["Z"]])
             probes_list.append(
                 AltimetryProbe(
-                    probe_coords, building_label, section_label, probe_label, case_label
+                    coordinate=probe_coords,
+                    building_label=building_label,
+                    section_label=section_label,
+                    probe_label=probe_label,
+                    case_label=case_label,
                 )
             )
         return probes_list

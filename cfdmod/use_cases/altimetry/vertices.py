@@ -15,13 +15,11 @@ class SectionVertices:
         """
         if plane_normal[0] == 0:
             # Normal to x
-            data = np.array(sorted(vertices, key=lambda pos: pos[0]))
+            self.pos = np.array(sorted(vertices, key=lambda pos: pos[0]))
         else:
             # Not normal to x, so it can be sorted with y
-            data = np.array(sorted(vertices, key=lambda pos: pos[1]))
-        self.x = data[:, 0]
-        self.y = data[:, 1]
-        self.z = data[:, 2]
+            self.pos = np.array(sorted(vertices, key=lambda pos: pos[1]))
+
         self.project_into_plane(plane_origin, plane_normal)
 
     def project_into_plane(
@@ -35,27 +33,24 @@ class SectionVertices:
             plane_origin (np.ndarray): Plane origin
             plane_normal (np.ndarray): PLane normal
         """
-        projected_position = []
-        for x, y, z in zip(self.x, self.y, self.z):
-            # Centralize according to origin
-            x -= plane_origin[0]
-            y -= plane_origin[1]
+        position = self.pos.copy()
+        position[:, :2] -= plane_origin[:2]  # Centralize according to origin but ignore z
+        distance = np.apply_along_axis(lambda x: np.linalg.norm(x[:2]), 1, position)
 
-            # Coordinate decomposition
-            distance = (x**2 + y**2) ** 0.5
-            direction = (
-                -plane_normal[1] * x + plane_normal[0] * y + plane_normal[2] * z
-            )  # Scalar product for direction
-            direction /= abs(direction)  # Normalization
-            projected_position.append(distance * direction)
+        direction_func = (
+            lambda x: -plane_normal[1] * x[0] + plane_normal[0] * x[1] + plane_normal[2] * x[2]
+        )
+        direction = np.apply_along_axis(direction_func, 1, position)
+        direction /= abs(direction)
 
-        self.projected_position = np.array(projected_position)
+        self.projected_position = distance * direction
         self.offset = min(self.projected_position)
-        self.projected_position -= (
-            self.offset
-        )  # Offset section profile to 0, in the x axis, for the altimetry profile
 
-        self.minz = int(min(self.z) / 50) * 50
-        self.maxz = math.ceil(max(self.z) / 50) * 50
+        # Offset section profile to 0, in the x axis, for the altimetry profile
+        self.projected_position -= self.offset
+
+        # Define plot limits
+        self.minz = int(min(self.pos[:, 2]) / 50) * 50
+        self.maxz = math.ceil(max(self.pos[:, 2]) / 50) * 50
         self.minx = min(self.projected_position)
         self.maxx = max(self.projected_position)
