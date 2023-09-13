@@ -12,6 +12,7 @@ notebook = "^7.0.3"
 trimesh = "^3.23.5"
 scipy = "^1.11.2"
 matplotlib = "^3.7.3"
+pandas = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
