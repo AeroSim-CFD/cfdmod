@@ -17,5 +17,7 @@ class Line:
     def create_line_from_direction(
         cls, p0: Point, direction: np.ndarray, size: float, resolution: int
     ) -> Line:
-        p1 = Point(p0 + direction * size)
+        if direction.shape != p0.coordinate.shape:
+            raise ValueError("Direction dimensions does not match with coordinates dimensions")
+        p1 = Point(p0.coordinate + direction * size)
         return Line(p0, p1, resolution)
