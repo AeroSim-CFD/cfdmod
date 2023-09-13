@@ -2,7 +2,7 @@
 name = "cfdmod"
 version = "0.1.0"
 description = "Tools for analysis of CFD cases"
-authors = ["Waine Oliveira Jr <waine@aerosim.io>"]
+authors = ["Waine Oliveira Jr <waine@aerosim.io>", "Pablo Penas <pablo@aerosim.io>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
