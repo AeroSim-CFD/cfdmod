@@ -6,16 +6,16 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'CFD Mods'
-copyright = '2023, Waine Oliveira Jr, Pablo Penas'
-author = 'Waine Oliveira Jr, Pablo Penas'
+project = "CFD Modules"
+copyright = "2023, Waine Oliveira Jr, Pablo Penas"
+author = "Waine Oliveira Jr, Pablo Penas"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = []
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = [
     "sphinx.ext.autodoc",
     "sphinx.ext.extlinks",
@@ -40,4 +40,4 @@ html_theme = "sphinx_book_theme"
 
 html_title = "CFD Mods"
 
-html_static_path = ['_static']
+html_static_path = ["_static"]
