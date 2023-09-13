@@ -6,27 +6,22 @@
 CFD Mod docs
 ====================================
 
-**CFD mod is a collection of Python modules to assist a serve tools for simulation post-processing.** 
+**`CFD mod <https://github.com/AeroSim-CFD/cfdmod>`_ is a collection of Python modules to assist a serve tools for simulation post-processing.** 
 
 It features modules for **consulting use cases** in addition to providing **analysis tools** and an **API** 
 for consuming externally or internally.
 
-This module is available on GitHub:
-
-https://github.com/AeroSim-CFD/cfdmod
-
-
 
 .. toctree::
    :maxdepth: 1
-   :caption: Use Cases:
+   :caption: Use Cases
    :hidden:
 
    Altimetry <use_cases/altimetry/index.rst>
 
 .. toctree::
    :maxdepth: 1
-   :caption: API:
+   :caption: API
    :hidden:
 
    Models <api/models/index.rst>

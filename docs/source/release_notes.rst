@@ -1,14 +1,16 @@
-******
+*************
 Release Notes
-******
+*************
 
 
 ******
-v0.1
+v0.1.0
 ******
 
-Alpha version of the code. 
-The main features are yet to be implemented. The available modules so far, and its respecting features are grouped as follows:
+First version of CFDMod. It is being refactored from the
+original codebase `CFD-Scripting <https://github.com/AeroSim-CFD/cfd-scripting>`_
+
+The available use cases are
 
 * Use cases
 
@@ -16,17 +18,3 @@ The main features are yet to be implemented. The available modules so far, and i
 
     * Sections
     * Plots
-
-* API
-
-  * Models
-  
-    * Point
-    * Line
-    * Plane
-
-
-This is the first version of the code. It is being refactored from the
-original codebase CFD-Scripting:
-
-https://github.com/AeroSim-CFD/cfd-scripting
