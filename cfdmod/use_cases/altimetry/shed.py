@@ -1,30 +1,69 @@
 from dataclasses import dataclass
 
 import numpy as np
+from pydantic import BaseModel, Field
+
+__all__ = ["Shed", "ShedProfile"]
 
 
 @dataclass(kw_only=True)
 class Shed:
     """Representation of a standard shed for consulting cases"""
 
-    start_coordinate: np.ndarray
-    end_coordinate: np.ndarray
-    height: float = 15
+    start_coordinate: np.ndarray = Field(
+        ...,
+        title="Start coordinate",
+        description="Start coordinate of the shed/building cut by the section",
+    )
+    end_coordinate: np.ndarray = Field(
+        ...,
+        title="End coordinate",
+        description="End coordinate of the shed/building cut by the section",
+    )
+    # height: float = Field(
+    #     15.0,
+    #     title="Shed height",
+    #     description="Size of the shed/building in z axis."
+    #     + "Used to determine the limits when plotting, connecting the shed coordinates",
+    # )
+    height: float = 15.0
 
 
 class ShedProfile:
     """Object representing the shed profile to be plotted in altimetric profile"""
 
     def __init__(
-        self, shed: Shed, plane_origin: np.ndarray, plane_normal: np.ndarray, offset: float
+        self,
+        shed: Shed = Field(
+            ...,
+            title="Shed object",
+            description="Target shed to get the profile from",
+        ),
+        plane_origin: np.ndarray = Field(
+            ...,
+            title="Plane origin",
+            description="Origin of the section plane for cutting the shed/building",
+        ),
+        plane_normal: np.ndarray = Field(
+            ...,
+            title="Plane normal",
+            description="Normal direction of the section plane for cutting the shed/building",
+        ),
+        offset: float = Field(
+            ...,
+            title="Offset",
+            description="Offset value for translating the shed."
+            + "This value comes from the offset needed to centralize"
+            + "the surface according to the origin",
+        ),
     ):
         self.shed = shed
-        self.profile = project_shed_profile(
+        self.profile = _project_shed_profile(
             shed=shed, plane_origin=plane_origin, plane_normal=plane_normal, offset=offset
         )
 
 
-def project_shed_profile(
+def _project_shed_profile(
     shed: Shed, plane_origin: np.ndarray, plane_normal: np.ndarray, offset: float
 ) -> tuple[np.ndarray, np.ndarray]:
     """Project the shed into the section plane

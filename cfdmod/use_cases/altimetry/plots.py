@@ -6,6 +6,11 @@ from mpl_toolkits.mplot3d import Axes3D  # Needed for setting projection in figu
 
 from cfdmod.use_cases.altimetry import AltimetrySection
 
+__all__ = [
+    "plot_surface",
+    "plot_profiles",
+    "plot_altimetry_profiles",
+]
 
 def plot_surface(
     surface: trimesh.Trimesh, altimetry_sections: list[AltimetrySection]
@@ -133,8 +138,8 @@ def plot_altimetry_profiles(altimetry_section: AltimetrySection) -> tuple[Figure
     for shed in altimetry_section.section_sheds:
         ax.plot(shed.profile[0], shed.profile[1], color="r")
 
-    ax.set_ylim([altimetry_section.section_vertices.minz, altimetry_section.section_vertices.maxz])
-    ax.set_xlim([altimetry_section.section_vertices.minx, altimetry_section.section_vertices.maxx])
+    ax.set_ylim(altimetry_section.section_vertices.minz, altimetry_section.section_vertices.maxz)
+    ax.set_xlim(altimetry_section.section_vertices.minx, altimetry_section.section_vertices.maxx)
 
     ax.minorticks_on()
     ax.tick_params(axis="both", which="minor", labelsize=0)

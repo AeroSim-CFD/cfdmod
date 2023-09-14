@@ -5,7 +5,7 @@ from typing import List
 
 import trimesh
 
-from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed, ShedProfile
+from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed
 from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles
 from cfdmod.utils import savefig_to_file
 
@@ -65,7 +65,7 @@ def main(*args):
     for sec_label in sections:
         section_probes = [p for p in probes if p.section_label == sec_label]
         sheds_in_section = set([p.building_label for p in section_probes])
-        shed_list: list[ShedProfile] = []
+        shed_list: list[Shed] = []
 
         for shed_label in sheds_in_section:
             building_probes = sorted(

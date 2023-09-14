@@ -5,21 +5,45 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from pydantic import Field
+
+__all__ = ["AltimetryProbe"]
 
 
 @dataclass(kw_only=True)
 class AltimetryProbe:
     """Probe for altimetry
 
-    Object containing specific data for altimetry use case. 
+    Object containing specific data for altimetry use case.
     Used for defining building position and section plane
     """
 
-    coordinate: np.ndarray
-    building_label: str
-    section_label: str
-    probe_label: str
-    case_label: str
+    coordinate: np.ndarray = Field(
+        ...,
+        title="Coordinate of altimetry probe",
+        description="Spatial 3D coordinate that defines probe location",
+    )
+    building_label: str = Field(
+        ...,
+        title="Building label",
+        description="Label of the building being cut by the probe",
+    )
+    section_label: str = Field(
+        ...,
+        title="Section label",
+        description="Label of the section defined by the probe",
+    )
+    probe_label: str = Field(
+        ...,
+        title="Probe label",
+        description="Label of the probe",
+    )
+    case_label: str = Field(
+        ...,
+        title="Case label",
+        description="Label of the consulting case applied to the probe."
+        + "Normally this label is used to define the wind direction",
+    )
 
     @classmethod
     def from_csv(cls, csv_path: pathlib.Path) -> list[AltimetryProbe]:

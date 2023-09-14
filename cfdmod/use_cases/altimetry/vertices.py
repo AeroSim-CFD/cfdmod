@@ -1,17 +1,32 @@
 import math
 
 import numpy as np
+from pydantic import Field
+
+__all__ = ["SectionVertices"]
 
 
 class SectionVertices:
-    def __init__(self, vertices: np.ndarray, plane_origin: np.ndarray, plane_normal: np.ndarray):
-        """Object to store vertices and project them
+    """Object to store vertices and project them"""
 
-        Args:
-            vertices (np.ndarray): Point cloud of vertices
-            plane_origin (np.ndarray): Origin of the plane used to generate the vertices
-            plane_normal (np.ndarray): Normal of the plane used to generate the vertices
-        """
+    def __init__(
+        self,
+        vertices: np.ndarray = Field(
+            ...,
+            title="Section Vertices",
+            description="Vertices generated from sectioning a surface",
+        ),
+        plane_origin: np.ndarray = Field(
+            ...,
+            title="Plane Origin",
+            description="Origin of plane that defines the section",
+        ),
+        plane_normal: np.ndarray = Field(
+            ...,
+            title="Plane Normal",
+            description="Normal direction of plane that defines the section",
+        ),
+    ):
         if plane_normal[0] == 0:
             # Normal to x
             self.pos = np.array(sorted(vertices, key=lambda pos: pos[0]))
@@ -50,6 +65,6 @@ class SectionVertices:
 
         # Define plot limits
         self.minz = int(self.pos[:, 2].min() / 50) * 50
-        self.maxz = math.ceil(self.pos[:, 2].max() / 50) * 50
-        self.minx = self.projected_position.min()
-        self.maxx = self.projected_position.max()
+        self.maxz: int = math.ceil(self.pos[:, 2].max() / 50) * 50
+        self.minx: float = self.projected_position.min()
+        self.maxx: float = self.projected_position.max()
