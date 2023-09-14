@@ -10,13 +10,3 @@ poetry run python -m unittest discover -v -s tests/ -p 'test_*.py'
 ```
 
 Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" target="_blank">Visual Studio Code</a>
-
-## Fixtures
-
-In order to run tests or the examples of the use cases on the notebooks, you should download the needed files from
-AWS S3. To download via command line:
-
-```bash
-cd cfdmod/
-aws s3 cp s3://dev01-aerosim-eng-data/cfdmod-fixtures ./fixtures --recursive
-```
