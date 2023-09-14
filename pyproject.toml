@@ -7,6 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pydantic = "^2.3.0"
+ruamel-yaml = "^0.17.32"
+
+[tool.poetry.group.geometry.dependencies]
+pymeshlab = "^2022.2.post4"
+
+[tool.poetry.group.geometry]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
@@ -25,3 +33,10 @@ nbsphinx = "^0.9.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 99
+src_paths = ["cfdmod", "tests", "notebooks"]
+skip_glob = ["**/__init__.py"] # avoid circular imports
