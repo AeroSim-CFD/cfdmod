@@ -43,13 +43,13 @@ class SectionVertices:
         direction /= abs(direction)
 
         self.projected_position = distance * direction
-        self.offset = min(self.projected_position)
+        self.offset = self.projected_position.min()
 
         # Offset section profile to 0, in the x axis, for the altimetry profile
         self.projected_position -= self.offset
 
         # Define plot limits
-        self.minz = int(min(self.pos[:, 2]) / 50) * 50
-        self.maxz = math.ceil(max(self.pos[:, 2]) / 50) * 50
-        self.minx = min(self.projected_position)
-        self.maxx = max(self.projected_position)
+        self.minz = int(self.pos[:, 2].min() / 50) * 50
+        self.maxz = math.ceil(self.pos[:, 2].max() / 50) * 50
+        self.minx = self.projected_position.min()
+        self.maxx = self.projected_position.max()

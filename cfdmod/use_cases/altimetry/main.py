@@ -8,9 +8,11 @@ import trimesh
 from cfdmod.use_cases.altimetry import (
     AltimetryProbe,
     AltimetrySection,
-    AltimetryShed,
+    Shed,
+    ShedProfile,
     plot_altimetry_profiles,
 )
+from cfdmod.utils import savefig_to_file
 
 
 @dataclass
@@ -68,11 +70,17 @@ def main(*args):
     for sec_label in sections:
         section_probes = [p for p in probes if p.section_label == sec_label]
         sheds_in_section = set([p.building_label for p in section_probes])
-        shed_list: list[AltimetryShed] = []
+        shed_list: list[ShedProfile] = []
 
         for shed_label in sheds_in_section:
-            building_probes = [p for p in section_probes if p.building_label == shed_label]
-            shed = AltimetryShed(building_probes[0].coordinate, building_probes[1].coordinate)
+            building_probes = sorted(
+                [p for p in section_probes if p.building_label == shed_label],
+                key=lambda x: (x.coordinate[0], x.coordinate[1]),
+            )
+            shed = Shed(
+                start_coordinate=building_probes[0].coordinate,
+                end_coordinate=building_probes[1].coordinate,
+            )
             shed_list.append(shed)
 
         altimetry_section = AltimetrySection.from_points(
@@ -81,4 +89,6 @@ def main(*args):
         altimetry_section.slice_surface(surface_mesh)
         [altimetry_section.include_shed(s) for s in shed_list]
 
-        plot_altimetry_profiles(altimetry_section, output_path)
+        filename = output_path / f"section-{altimetry_section.label}.png"
+        fig, _ = plot_altimetry_profiles(altimetry_section)
+        savefig_to_file(fig, filename)
