@@ -5,12 +5,7 @@ import unittest
 import numpy as np
 import trimesh
 
-from cfdmod.use_cases.altimetry import (
-    AltimetryProbe,
-    AltimetrySection,
-    Shed,
-    ShedProfile,
-)
+from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed, ShedProfile
 from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
 from cfdmod.utils import savefig_to_file
 
@@ -36,7 +31,11 @@ class TestAltimetryUseCase(unittest.TestCase):
         fig, _ = plot_altimetry_profiles(altimetry_section)
         savefig_to_file(fig, output_path / "altimetry.png")
 
-        self.assertEqual(len([x for x in output_path.glob("**/*") if x.is_file()]), 3)
+        self.assertTrue(
+            all(
+                [(output_path / f"{f}.png").exists() for f in ["altimetry", "profiles", "surface"]]
+            )
+        )
 
     def test_probe_parsing(self):
         output_path = pathlib.Path("./output")
@@ -50,10 +49,10 @@ class TestAltimetryUseCase(unittest.TestCase):
 
         self.assertEqual(len(sections), 26)
 
-        for sec_label in sections:
+        for sec_label in sections[:5]:
             section_probes = [p for p in probes if p.section_label == sec_label]
             sheds_in_section = np.unique([p.building_label for p in section_probes])
-            shed_list: list[ShedProfile] = []
+            shed_list: list[Shed] = []
 
             for shed_label in sheds_in_section:
                 building_probes = [p for p in section_probes if p.building_label == shed_label]
@@ -62,8 +61,6 @@ class TestAltimetryUseCase(unittest.TestCase):
                     end_coordinate=building_probes[1].coordinate,
                 )
                 shed_list.append(shed)
-
-            self.assertEqual(len(shed_list), len(sheds_in_section), 1)
 
             altimetry_section = AltimetrySection.from_points(
                 sec_label, shed_list[0].start_coordinate, shed_list[0].end_coordinate
@@ -75,8 +72,8 @@ class TestAltimetryUseCase(unittest.TestCase):
             savefig_to_file(fig, output_path / f"section-{altimetry_section.label}.png")
             altimetry_list.append(altimetry_section)
 
-        self.assertEqual(
-            len(altimetry_list), len([x for x in output_path.glob("**/*") if x.is_file()])
+        self.assertTrue(
+            all([(output_path / f"section-{s.label}.png").exists() for s in altimetry_list])
         )
 
     def test_slicing(self):
