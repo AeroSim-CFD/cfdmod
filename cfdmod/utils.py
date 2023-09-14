@@ -12,7 +12,7 @@ def savefig_to_file(fig: Figure, filename: pathlib.Path):
         filename (pathlib.Path): Filename to setup folder
     """
     create_folders_for_file(filename)
-    fig.savefig(filename)
+    fig.savefig(filename.as_posix())
     plt.close(fig)
 
 

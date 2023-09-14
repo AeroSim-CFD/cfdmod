@@ -69,4 +69,4 @@ def project_shed_profile(
         ]
     )
 
-    return tuple([g_x - offset, g_y])
+    return (g_x - offset, g_y)

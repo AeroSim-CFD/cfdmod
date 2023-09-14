@@ -10,17 +10,14 @@ from cfdmod.use_cases.altimetry import (
     AltimetrySection,
     Shed,
     ShedProfile,
-    plot_altimetry_profiles,
-    plot_profiles,
-    plot_surface,
 )
+from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
 from cfdmod.utils import savefig_to_file
 
 
 class TestAltimetryUseCase(unittest.TestCase):
     def test_image_generation(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        output_path = pathlib.Path(temp_dir.name)
+        output_path = pathlib.Path("./output")
         surface_mesh: trimesh.Trimesh = trimesh.load_mesh("./fixtures/tests/altimetry/terrain.stl")
 
         shed_start = np.array([-50, -50, 820], dtype=np.float32)
@@ -40,11 +37,9 @@ class TestAltimetryUseCase(unittest.TestCase):
         savefig_to_file(fig, output_path / "altimetry.png")
 
         self.assertEqual(len([x for x in output_path.glob("**/*") if x.is_file()]), 3)
-        temp_dir.cleanup()
 
     def test_probe_parsing(self):
-        temp_dir = tempfile.TemporaryDirectory()
-        output_path = pathlib.Path(temp_dir.name)
+        output_path = pathlib.Path("./output")
 
         csv_path = pathlib.Path("./fixtures/tests/probes.csv")
         surface_mesh: trimesh.Trimesh = trimesh.load_mesh("./fixtures/tests/altimetry/terrain.stl")
@@ -83,7 +78,6 @@ class TestAltimetryUseCase(unittest.TestCase):
         self.assertEqual(
             len(altimetry_list), len([x for x in output_path.glob("**/*") if x.is_file()])
         )
-        temp_dir.cleanup()
 
     def test_slicing(self):
         surface_mesh: trimesh.Trimesh = trimesh.load_mesh("./fixtures/tests/altimetry/terrain.stl")

@@ -1,12 +1,7 @@
-from cfdmod.use_cases.altimetry.vertices import SectionVertices
-from cfdmod.use_cases.altimetry.shed import Shed, ShedProfile
-from cfdmod.use_cases.altimetry.section import AltimetrySection
-from cfdmod.use_cases.altimetry.probe import AltimetryProbe
-from cfdmod.use_cases.altimetry.plots import (
-    plot_profiles,
-    plot_surface,
-    plot_altimetry_profiles,
-)
+from .vertices import SectionVertices
+from .shed import Shed, ShedProfile
+from .section import AltimetrySection
+from .probe import AltimetryProbe
 
 __all__ = [
     "SectionVertices",
@@ -14,7 +9,4 @@ __all__ = [
     "ShedProfile",
     "AltimetrySection",
     "AltimetryProbe",
-    "plot_profiles",
-    "plot_surface",
-    "plot_altimetry_profiles",
 ]

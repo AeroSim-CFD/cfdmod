@@ -5,13 +5,8 @@ from typing import List
 
 import trimesh
 
-from cfdmod.use_cases.altimetry import (
-    AltimetryProbe,
-    AltimetrySection,
-    Shed,
-    ShedProfile,
-    plot_altimetry_profiles,
-)
+from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed, ShedProfile
+from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles
 from cfdmod.utils import savefig_to_file
 
 

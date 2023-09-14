@@ -9,7 +9,11 @@ import pandas as pd
 
 @dataclass(kw_only=True)
 class AltimetryProbe:
-    """Probe object containing specific data for altimetry use case. Used for defining building position and section plane"""
+    """Probe for altimetry
+
+    Object containing specific data for altimetry use case. 
+    Used for defining building position and section plane
+    """
 
     coordinate: np.ndarray
     building_label: str
