@@ -62,10 +62,10 @@ You can also use the example notebook, found in `notebooks/example/altimetry.ipy
 Using the altimetry module, the user can generate the altimetric profiles, as well as debug figures to overlook the probes position and the section profile.
 The altimetric profile should look like this:
 
-.. figure:: section-example.png
+.. figure:: /__static/altimetry/section-example.png
 
 The debug figures should look like this:
 
-.. figure:: profiles.png
+.. figure:: /__static/altimetry/profiles.png
 
-.. figure:: surface.png
+.. figure:: /__static/altimetry/surface.png
