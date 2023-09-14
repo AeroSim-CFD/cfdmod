@@ -25,15 +25,18 @@ class TestAltimetryUseCase(unittest.TestCase):
         altimetry_section.include_shed(shed)
 
         fig, _ = plot_surface(surface_mesh, [altimetry_section])
-        savefig_to_file(fig, output_path / "surface.png")
+        savefig_to_file(fig, output_path / "debug" / "surface.png")
         fig, _ = plot_profiles([altimetry_section])
-        savefig_to_file(fig, output_path / "profiles.png")
+        savefig_to_file(fig, output_path / "debug" / "profiles.png")
         fig, _ = plot_altimetry_profiles(altimetry_section)
-        savefig_to_file(fig, output_path / "altimetry.png")
+        savefig_to_file(fig, output_path / "debug" / "altimetry.png")
 
         self.assertTrue(
             all(
-                [(output_path / f"{f}.png").exists() for f in ["altimetry", "profiles", "surface"]]
+                [
+                    (output_path / "debug" / f"{f}.png").exists()
+                    for f in ["altimetry", "profiles", "surface"]
+                ]
             )
         )
 
