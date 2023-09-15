@@ -13,14 +13,13 @@ scipy = "^1.11.2"
 matplotlib = "^3.7.3"
 pandas = "^2.1.0"
 pydantic = "^2.3.0"
+ruamel-yaml = "^0.17.32"
 
 [tool.poetry.group.altimetry]
 optional = true
 
 [tool.poetry.group.altimetry.dependencies]
 trimesh = "^3.23.5"
-pydantic = "^2.3.0"
-ruamel-yaml = "^0.17.32"
 
 [tool.poetry.group.geometry.dependencies]
 pymeshlab = "^2022.2.post4"
