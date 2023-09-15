@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import trimesh
 
-from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed, ShedProfile
+from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed
 from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
 from cfdmod.utils import savefig_to_file
 
@@ -18,7 +18,7 @@ class TestAltimetryUseCase(unittest.TestCase):
         shed_start = np.array([-50, -50, 820], dtype=np.float32)
         shed_end = np.array([50, 50, 820], dtype=np.float32)
 
-        shed = Shed(start_coordinate=shed_start, end_coordinate=shed_end)
+        shed = Shed(start_coordinate=shed_start, end_coordinate=shed_end, shed_label="default")
 
         altimetry_section = AltimetrySection.from_points("example", shed_start, shed_end)
         altimetry_section.slice_surface(surface_mesh)
@@ -62,6 +62,7 @@ class TestAltimetryUseCase(unittest.TestCase):
                 shed = Shed(
                     start_coordinate=building_probes[0].coordinate,
                     end_coordinate=building_probes[1].coordinate,
+                    shed_label=shed_label,
                 )
                 shed_list.append(shed)
 

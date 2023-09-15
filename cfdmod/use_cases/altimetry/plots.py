@@ -48,9 +48,9 @@ def plot_surface(
         )
         for sec_shed in section.section_sheds:
             ax.scatter(
-                sec_shed.shed.start_coordinate[0],
-                sec_shed.shed.start_coordinate[1],
-                sec_shed.shed.start_coordinate[2],
+                sec_shed.start_coordinate[0],
+                sec_shed.start_coordinate[1],
+                sec_shed.start_coordinate[2],
                 color=color,
                 s=2,
                 marker="o",
@@ -58,9 +58,9 @@ def plot_surface(
                 linewidths=1,
             )
             ax.scatter(
-                sec_shed.shed.end_coordinate[0],
-                sec_shed.shed.end_coordinate[1],
-                sec_shed.shed.end_coordinate[2],
+                sec_shed.end_coordinate[0],
+                sec_shed.end_coordinate[1],
+                sec_shed.end_coordinate[2],
                 color=color,
                 s=2,
                 marker="o",
