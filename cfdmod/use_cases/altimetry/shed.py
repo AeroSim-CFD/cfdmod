@@ -1,13 +1,10 @@
-from dataclasses import dataclass
-
 import numpy as np
 from pydantic import BaseModel, Field
 
 __all__ = ["Shed", "ShedProfile"]
 
 
-@dataclass(kw_only=True)
-class Shed:
+class Shed(BaseModel):
     """Representation of a standard shed for consulting cases"""
 
     start_coordinate: np.ndarray = Field(
@@ -20,13 +17,15 @@ class Shed:
         title="End coordinate",
         description="End coordinate of the shed/building cut by the section",
     )
-    # height: float = Field(
-    #     15.0,
-    #     title="Shed height",
-    #     description="Size of the shed/building in z axis."
-    #     + "Used to determine the limits when plotting, connecting the shed coordinates",
-    # )
-    height: float = 15.0
+    height: float = Field(
+        15.0,
+        title="Shed height",
+        description="Size of the shed/building in z axis."
+        + "Used to determine the limits when plotting, connecting the shed coordinates",
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class ShedProfile:
@@ -34,29 +33,19 @@ class ShedProfile:
 
     def __init__(
         self,
-        shed: Shed = Field(
-            ...,
-            title="Shed object",
-            description="Target shed to get the profile from",
-        ),
-        plane_origin: np.ndarray = Field(
-            ...,
-            title="Plane origin",
-            description="Origin of the section plane for cutting the shed/building",
-        ),
-        plane_normal: np.ndarray = Field(
-            ...,
-            title="Plane normal",
-            description="Normal direction of the section plane for cutting the shed/building",
-        ),
-        offset: float = Field(
-            ...,
-            title="Offset",
-            description="Offset value for translating the shed."
-            + "This value comes from the offset needed to centralize"
-            + "the surface according to the origin",
-        ),
+        shed: Shed,
+        plane_origin: np.ndarray,
+        plane_normal: np.ndarray,
+        offset: float,
     ):
+        """Initializes shed profile to be plotted in altimetric profile
+
+        Args:
+            shed (Shed, optional): Target shed to get the profile from.
+            plane_origin (np.ndarray, optional): Origin of the section plane for cutting the shed/building.
+            plane_normal (np.ndarray, optional): Normal direction of the section plane for cutting the shed/building.
+            offset (float, optional): Offset value for translating the shed..
+        """
         self.shed = shed
         self.profile = _project_shed_profile(
             shed=shed, plane_origin=plane_origin, plane_normal=plane_normal, offset=offset

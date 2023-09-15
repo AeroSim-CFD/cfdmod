@@ -1,7 +1,6 @@
 import math
 
 import numpy as np
-from pydantic import Field
 
 __all__ = ["SectionVertices"]
 
@@ -11,22 +10,17 @@ class SectionVertices:
 
     def __init__(
         self,
-        vertices: np.ndarray = Field(
-            ...,
-            title="Section Vertices",
-            description="Vertices generated from sectioning a surface",
-        ),
-        plane_origin: np.ndarray = Field(
-            ...,
-            title="Plane Origin",
-            description="Origin of plane that defines the section",
-        ),
-        plane_normal: np.ndarray = Field(
-            ...,
-            title="Plane Normal",
-            description="Normal direction of plane that defines the section",
-        ),
+        vertices: np.ndarray,
+        plane_origin: np.ndarray,
+        plane_normal: np.ndarray,
     ):
+        """Initialize a section vertices object from the section vertices
+
+        Args:
+            vertices (np.ndarray, optional): Vertices generated from sectioning a surface.
+            plane_origin (np.ndarray, optional): Origin of plane that defines the section.
+            plane_normal (np.ndarray, optional): Normal direction of plane that defines the section.
+        """
         if plane_normal[0] == 0:
             # Normal to x
             self.pos = np.array(sorted(vertices, key=lambda pos: pos[0]))

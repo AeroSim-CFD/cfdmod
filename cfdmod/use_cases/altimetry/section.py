@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import trimesh
-from pydantic import Field
 
 from cfdmod.use_cases.altimetry import SectionVertices, Shed, ShedProfile
 
@@ -12,20 +11,14 @@ __all__ = ["AltimetrySection"]
 class AltimetrySection:
     """Representation of a section of altimetric profile and the corresponding sheds cut by it"""
 
-    def __init__(
-        self,
-        label: str = Field(..., title="Section label", description="Label for altimetry section"),
-        plane_origin: np.ndarray = Field(
-            ...,
-            title="Plane origin",
-            description="Origin of the plane used to generate the section",
-        ),
-        plane_normal: np.ndarray = Field(
-            ...,
-            title="Plane normal",
-            description="Normal direction of the plane used to generate the section",
-        ),
-    ):
+    def __init__(self, label: str, plane_origin: np.ndarray, plane_normal: np.ndarray):
+        """Initialize an AltimetrySection from section plane description
+
+        Args:
+            label (str, optional): Label for altimetry section.
+            plane_origin (np.ndarray, optional): Origin of the plane used to generate the section.
+            plane_normal (np.ndarray, optional): Normal direction of the plane used to generate the section.
+        """
         self.label = label
         self.plane_origin = plane_origin
         self.plane_normal = plane_normal

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import pathlib
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 __all__ = ["AltimetryProbe"]
 
 
-@dataclass(kw_only=True)
-class AltimetryProbe:
+class AltimetryProbe(BaseModel):
     """Probe for altimetry
 
     Object containing specific data for altimetry use case.
@@ -44,6 +42,9 @@ class AltimetryProbe:
         description="Label of the consulting case applied to the probe."
         + "Normally this label is used to define the wind direction",
     )
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @classmethod
     def from_csv(cls, csv_path: pathlib.Path) -> list[AltimetryProbe]:

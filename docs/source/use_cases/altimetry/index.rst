@@ -51,21 +51,27 @@ There are several ways to use **altimetry** module. The main one is to run as a 
 
 Where the arguments are the paths of the probe **table file**, terrain **surface STL** and the **simulation case path** for saving the images of the **altimetric profiles**.
 
-You can also use the example notebook, found in `notebooks/example/altimetry.ipynb <altimetry.ipynb>`_
+You can also use the example notebooks, found in `Altimetry from probes <altimetry_from_probes.ipynb>`_ and `Generic use of altimetry <altimetry_from_coordinates.ipynb>`_
 
 .. toctree::
    :maxdepth: -1
    :hidden:
 
-   Altimetry example<altimetry.ipynb>
+   Altimetry from probes<altimetry_from_probes.ipynb>
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Generic use of altimetry<altimetry_from_coordinates.ipynb>
 
 Using the altimetry module, the user can generate the altimetric profiles, as well as debug figures to overlook the probes position and the section profile.
 The altimetric profile should look like this:
 
-.. figure:: /__static/altimetry/section-example.png
+.. figure:: /_static/altimetry/section-example.png
 
 The debug figures should look like this:
 
-.. figure:: /__static/altimetry/profiles.png
+.. figure:: /_static/altimetry/profiles.png
 
-.. figure:: /__static/altimetry/surface.png
+.. figure:: /_static/altimetry/surface.png
