@@ -75,6 +75,7 @@ def main(*args):
             shed = Shed(
                 start_coordinate=building_probes[0].coordinate,
                 end_coordinate=building_probes[1].coordinate,
+                shed_label=shed_label,
             )
             shed_list.append(shed)
 

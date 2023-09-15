@@ -12,6 +12,7 @@ __all__ = [
     "plot_altimetry_profiles",
 ]
 
+
 def plot_surface(
     surface: trimesh.Trimesh, altimetry_sections: list[AltimetrySection]
 ) -> tuple[Figure, plt.Axes]:
@@ -136,7 +137,16 @@ def plot_altimetry_profiles(altimetry_section: AltimetrySection) -> tuple[Figure
 
     # Shed plotting
     for shed in altimetry_section.section_sheds:
-        ax.plot(shed.profile[0], shed.profile[1], color="r")
+        ax.plot(
+            altimetry_section.section_shed_profiles[shed.shed_label][0],
+            altimetry_section.section_shed_profiles[shed.shed_label][1],
+            color="r",
+            # color=(np.random.choice(range(156), size=3) + 100) / 255,
+            # label=shed.shed_label, This logic can be later implemented
+        )
+
+    # If coloring logic for sheds is available, legend is necessary
+    # fig.legend()
 
     ax.set_ylim(altimetry_section.section_vertices.minz, altimetry_section.section_vertices.maxz)
     ax.set_xlim(altimetry_section.section_vertices.minx, altimetry_section.section_vertices.maxx)
