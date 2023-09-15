@@ -12,7 +12,7 @@ from cfdmod.utils import savefig_to_file
 
 class TestAltimetryUseCase(unittest.TestCase):
     def test_image_generation(self):
-        output_path = pathlib.Path("./output")
+        output_path = pathlib.Path("./output/altimetry")
         surface_mesh: trimesh.Trimesh = trimesh.load_mesh("./fixtures/tests/altimetry/terrain.stl")
 
         shed_start = np.array([-50, -50, 820], dtype=np.float32)
@@ -41,7 +41,7 @@ class TestAltimetryUseCase(unittest.TestCase):
         )
 
     def test_probe_parsing(self):
-        output_path = pathlib.Path("./output")
+        output_path = pathlib.Path("./output/altimetry")
 
         csv_path = pathlib.Path("./fixtures/tests/probes.csv")
         surface_mesh: trimesh.Trimesh = trimesh.load_mesh("./fixtures/tests/altimetry/terrain.stl")
