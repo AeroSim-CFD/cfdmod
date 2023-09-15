@@ -3,18 +3,35 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to CFD Mods's documentation!
-====================================
+CFD Mod docs
+============
+
+`CFD Mod <https://github.com/AeroSim-CFD/cfdmod>`_ **is a collection of Python modules to assist a serve tools for simulation post-processing.** 
+
+It features modules for **consulting use cases** in addition to providing **analysis tools** and an **API** 
+for consuming externally or internally.
+
+A brief list of the modules available can be found in the `Release notes <release_notes.html>`_
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: Use Cases
+   :hidden:
+
+   Altimetry <use_cases/altimetry/index.rst>
 
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Others
+   :hidden:
 
-Indices and tables
-==================
+   Release Notes <release_notes.rst>
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
