@@ -4,7 +4,40 @@ import numpy as np
 
 from cfdmod.utils import create_folders_for_file
 
-__all__ = ["export_stl"]
+__all__ = ["export_stl", "read_stl"]
+
+
+def read_stl(filename: pathlib.Path) -> tuple[np.ndarray, np.ndarray]:
+    """Read file content as STL file
+
+    Args:
+        filename (pathlib.Path): Path of the file to read from
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: return STL representation as (triangles, normals).
+    """
+    with open(filename, "r") as f:
+        buff = f.read()
+
+    # pass header
+    buff.read(80)
+
+    # Read number of triangles
+    n_triangles = np.frombuffer(buff.read(4), dtype=np.uint32)[0]
+    if n_triangles == 0:
+        raise ValueError("Unable to read number of triangles as 0")
+
+    triangles = np.empty((n_triangles, 3, 3), dtype=np.float32)
+    normals = np.empty((n_triangles, 3), dtype=np.float32)
+
+    for idx in range(n_triangles):
+        content = buff.read(50)
+        normal = np.frombuffer(content[0:12], dtype=np.float32)
+        triangle = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
+        triangles[idx] = triangle
+        normals[idx] = normal
+
+    return triangles, normals
 
 
 def export_stl(filename: pathlib.Path, geom_vertices: np.ndarray, geom_triangles: np.ndarray):
@@ -35,13 +68,11 @@ def export_stl(filename: pathlib.Path, geom_vertices: np.ndarray, geom_triangles
 
     normals = np.apply_along_axis(calc_normal, axis=1, arr=geom_triangles)
     normals = np.apply_along_axis(normalize_func, axis=1, arr=normals)
-    print(normals)
 
     for idx, tri in enumerate(geom_triangles):
         p0, p1, p2 = [geom_vertices[tri[0]], geom_vertices[tri[1]], geom_vertices[tri[2]]]
         normal = normals[idx]
         t_arr = np.array([normal, p0, p1, p2], dtype=np.float32)
-        print(t_arr)
 
         # Add triangles to STL content and 2 bytes padding
         stl_content[idx_curr : idx_curr + 50] = t_arr.tobytes("C") + b"\x00\x00"
