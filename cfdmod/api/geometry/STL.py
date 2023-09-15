@@ -1,4 +1,5 @@
 import pathlib
+from io import BytesIO
 
 import numpy as np
 
@@ -14,11 +15,10 @@ def read_stl(filename: pathlib.Path) -> tuple[np.ndarray, np.ndarray]:
         filename (pathlib.Path): Path of the file to read from
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: return STL representation as (triangles, normals).
+        tuple[np.ndarray, np.ndarray]: return STL representation as (vertices, triangles).
     """
-    with open(filename, "r") as f:
-        buff = f.read()
-
+    with open(filename, "rb") as f:
+        buff = BytesIO(f.read())
     # pass header
     buff.read(80)
 
@@ -30,12 +30,19 @@ def read_stl(filename: pathlib.Path) -> tuple[np.ndarray, np.ndarray]:
     triangles = np.empty((n_triangles, 3, 3), dtype=np.float32)
     normals = np.empty((n_triangles, 3), dtype=np.float32)
 
+    stl_vertices = np.empty((n_triangles * 3, 3, 3), dtype=np.float32)
+
     for idx in range(n_triangles):
         content = buff.read(50)
+
+        # triangle = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
         normal = np.frombuffer(content[0:12], dtype=np.float32)
-        triangle = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
-        triangles[idx] = triangle
+        tri_points = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
+
+        stl_vertices[idx] = tri_points
         normals[idx] = normal
+        # triangles[idx] = triangle
+    print(stl_vertices, n_triangles)
 
     return triangles, normals
 
