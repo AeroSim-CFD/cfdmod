@@ -1,5 +1,5 @@
 from .vertices import SectionVertices
-from .shed import Shed, ShedProfile
+from .shed import Shed
 from .section import AltimetrySection
 from .probe import AltimetryProbe
 
@@ -14,7 +14,6 @@ that is defined by its normal and origin.
 __all__ = [
     "SectionVertices",
     "Shed",
-    "ShedProfile",
     "AltimetrySection",
     "AltimetryProbe",
 ]

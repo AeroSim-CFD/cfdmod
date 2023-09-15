@@ -16,7 +16,7 @@ class AltimetryProbe(BaseModel):
     Used for defining building position and section plane
     """
 
-    coordinate: np.ndarray = Field(
+    probe_coordinate: tuple[float, float, float] = Field(
         ...,
         title="Coordinate of altimetry probe",
         description="Spatial 3D coordinate that defines probe location",
@@ -46,6 +46,10 @@ class AltimetryProbe(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @property
+    def coordinate(self) -> np.ndarray:
+        return np.array(self.probe_coordinate, dtype=np.float32)
+
     @classmethod
     def from_csv(cls, csv_path: pathlib.Path) -> list[AltimetryProbe]:
         probes_df = pd.read_csv(csv_path)
@@ -60,10 +64,10 @@ class AltimetryProbe(BaseModel):
             section_label = data["section"] if data["section"] else "default"
             case_label = str(data["case"]) if str(data["case"]) else "default"
             probe_label = data["probe_name"] if data["probe_name"] else f"Probe {len(probes_list)}"
-            probe_coords = np.array([data["X"], data["Y"], data["Z"]])
+            probe_coords = (data["X"], data["Y"], data["Z"])
             probes_list.append(
                 AltimetryProbe(
-                    coordinate=probe_coords,
+                    probe_coordinate=probe_coords,
                     building_label=building_label,
                     section_label=section_label,
                     probe_label=probe_label,
