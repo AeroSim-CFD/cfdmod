@@ -24,7 +24,7 @@ def export_stl(filename: pathlib.Path, geom_vertices: np.ndarray, geom_triangles
 
     # Add header and number of triangles
     stl_content[: len(HEADER)] = HEADER
-    stl_content[len(HEADER) : len(HEADER) + 4] += np.uint32(n_triangles).tobytes()
+    stl_content[len(HEADER) : len(HEADER) + 4] = np.uint32(n_triangles).tobytes()
 
     idx_curr = len(HEADER) + 4
 
