@@ -1,7 +1,9 @@
 import pathlib
+from typing import Any
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from ruamel.yaml import YAML
 
 
 def savefig_to_file(fig: Figure, filename: pathlib.Path):
@@ -35,11 +37,6 @@ def create_folder_path(path: pathlib.Path):
 
     path.mkdir(parents=True, exist_ok=True)
 
-import pathlib
-from typing import Any
-
-from ruamel.yaml import YAML
-
 
 def read_yaml(filename: pathlib.Path) -> Any:
     """Read YAML from file
@@ -62,6 +59,4 @@ def read_yaml(filename: pathlib.Path) -> Any:
             yaml = YAML(typ="safe")
             return yaml.load(f)
         except Exception as e:
-            raise Exception(
-                f"Unable to load YAML from {filename}. Exception {e}"
-            ) from e
+            raise Exception(f"Unable to load YAML from {filename}. Exception {e}") from e

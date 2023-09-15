@@ -2,6 +2,10 @@ from typing import Literal
 
 import numpy as np
 
+__all__ = [
+    "linear_pattern",
+]
+
 
 def linear_pattern(
     vertices: np.ndarray,

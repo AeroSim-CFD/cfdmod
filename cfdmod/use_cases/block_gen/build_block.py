@@ -2,10 +2,12 @@ import numpy as np
 
 from cfdmod.use_cases.block_gen import BlockParams
 
+__all__ = [
+    "build_single_block",
+]
 
-def _find_triangle_indices(
-    vertices: np.ndarray, triangle_vertices: np.ndarray
-) -> list[int]:
+
+def _find_triangle_indices(vertices: np.ndarray, triangle_vertices: np.ndarray) -> list[int]:
     """Find the indices of vertices in the given triangle
 
     Args:
