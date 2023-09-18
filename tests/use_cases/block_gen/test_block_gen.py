@@ -1,17 +1,25 @@
 import pathlib
 import unittest
 
-from cfdmod.use_cases.block_gen import *
-from cfdmod.use_cases.block_gen import SpacingParams
+from cfdmod.use_cases.block_gen import (
+    BlockParams,
+    GenerationParams,
+    OffsetDirection,
+    SpacingParams,
+    build_single_block,
+    linear_pattern,
+)
 
 
 class TestBlockGenerationUseCase(unittest.TestCase):
     def test_block_generation(self):
-        output_path = pathlib.Path("./output/block_gen")
-
         block_params = BlockParams(height=5, width=5, length=5)
         spacing_params = SpacingParams(
-            spacing_x=2, spacing_y=2, line_offset=5, is_abs=False, offset_direction="x"
+            spacing_x=2,
+            spacing_y=2,
+            line_offset=5,
+            is_abs=False,
+            offset_direction=OffsetDirection.x,
         )
         cfg = GenerationParams(
             N_blocks_x=10, N_blocks_y=10, block_params=block_params, spacing_params=spacing_params
@@ -22,7 +30,7 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         single_line_vertices, single_line_triangles = linear_pattern(
             vertices,
             triangles,
-            direction=cfg.spacing_params.offset_direction,
+            direction=cfg.spacing_params.offset_direction.value,
             n_repeats=cfg.single_line_blocks,
             spacing_value=cfg.single_line_spacing,
         )
@@ -30,10 +38,10 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         full_vertices, full_triangles = linear_pattern(
             single_line_vertices,
             single_line_triangles,
-            direction=cfg.perpendicular_direction,
+            direction=cfg.perpendicular_direction.value,
             n_repeats=cfg.multi_line_blocks,
             spacing_value=cfg.multi_line_spacing,
-            offset_value=cfg.calculate_spacing(direction=cfg.perpendicular_direction),
+            offset_value=cfg.offset_spacing,
         )
 
         self.assertEqual(len(vertices), 8)

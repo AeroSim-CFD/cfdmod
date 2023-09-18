@@ -23,19 +23,19 @@ class OffsetDirection(str, Enum):
 class SpacingParams(BaseModel):
     spacing_x: float = Field(
         ...,
-        name="X spacing",
+        title="X spacing",
         description="Block line X spacing",
         gt=0,
     )
     spacing_y: float = Field(
         ...,
-        name="Y spacing",
+        title="Y spacing",
         description="Block line Y spacing",
         gt=0,
     )
     line_offset: float = Field(
         ...,
-        name="Line offset",
+        title="Line offset",
         description="Offset percentage between each block line",
         ge=0,
     )
@@ -45,7 +45,7 @@ class SpacingParams(BaseModel):
     )
     offset_direction: OffsetDirection = Field(
         OffsetDirection.y,
-        name="Offset Direction",
+        title="Offset Direction",
         description="Direction which the blocks should be offseted to",
     )
 
@@ -53,19 +53,19 @@ class SpacingParams(BaseModel):
 class BlockParams(BaseModel):
     height: float = Field(
         ...,
-        name="Block height",
+        title="Block height",
         description="Size of the generated blocks in Z axis",
         gt=0,
     )
     width: float = Field(
         ...,
-        name="Block width",
+        title="Block width",
         description="Size of the generated blocks in Y axis",
         gt=0,
     )
     length: float = Field(
         ...,
-        name="Block length",
+        title="Block length",
         description="Size of the generated blocks in X axis",
         gt=0,
     )
@@ -74,21 +74,21 @@ class BlockParams(BaseModel):
 class GenerationParams(BaseModel):
     N_blocks_x: int = Field(
         ...,
-        name="Number of blocks in X",
+        title="Number of blocks in X",
         description="Defines the number of blocks in the X axis",
         gt=0,
     )
     N_blocks_y: int = Field(
         ...,
-        name="Number of blocks in Y",
+        title="Number of blocks in Y",
         description="Defines the number of blocks in the Y axis",
         gt=0,
     )
     block_params: BlockParams = Field(
-        ..., name="Block parameters", description="Object with block parameters"
+        ..., title="Block parameters", description="Object with block parameters"
     )
     spacing_params: SpacingParams = Field(
-        ..., name="Spacing parameters", description="Object with spacing parameters"
+        ..., title="Spacing parameters", description="Object with spacing parameters"
     )
 
     @property
@@ -184,4 +184,4 @@ class GenerationParams(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. Filename {file_path.name} does not exists")
+            raise Exception(f"Unable to read yaml. Filetitle {file_path.name} does not exists")
