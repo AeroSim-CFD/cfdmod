@@ -105,6 +105,38 @@ class GenerationParams(BaseModel):
         return line_offset
 
     @property
+    def single_line_blocks(self) -> int:
+        match self.spacing_params.offset_direction:
+            case OffsetDirection.x:
+                return self.N_blocks_x - 1
+            case OffsetDirection.y:
+                return self.N_blocks_y - 1
+
+    @property
+    def single_line_spacing(self) -> float:
+        match self.spacing_params.offset_direction:
+            case OffsetDirection.x:
+                return self.spacing_params.spacing_x + self.block_params.length
+            case OffsetDirection.y:
+                return self.spacing_params.spacing_y + self.block_params.width
+
+    @property
+    def multi_line_blocks(self) -> int:
+        match self.spacing_params.offset_direction:
+            case OffsetDirection.x:
+                return self.N_blocks_y - 1
+            case OffsetDirection.y:
+                return self.N_blocks_x - 1
+
+    @property
+    def multi_line_spacing(self) -> float:
+        match self.spacing_params.offset_direction:
+            case OffsetDirection.x:
+                return self.spacing_params.spacing_y + self.block_params.width
+            case OffsetDirection.y:
+                return self.spacing_params.spacing_x + self.block_params.length
+
+    @property
     def perpendicular_direction(self) -> OffsetDirection:
         return (
             OffsetDirection.x

@@ -48,37 +48,20 @@ def main(*args):
 
     vertices, triangles = build_single_block(cfg.block_params)
 
-    single_line_repeat = (
-        cfg.N_blocks_y - 1 if cfg.spacing_params.offset_direction == "y" else cfg.N_blocks_x - 1
-    )
-    single_line_spacing = (
-        cfg.spacing_params.spacing_x + cfg.block_params.length
-        if cfg.spacing_params.offset_direction == "x"
-        else cfg.spacing_params.spacing_y + cfg.block_params.width
-    )
-    multiple_line_repeat = (
-        cfg.N_blocks_x - 1 if cfg.spacing_params.offset_direction == "y" else cfg.N_blocks_y - 1
-    )
-    multiple_line_spacing = (
-        cfg.spacing_params.spacing_x + cfg.block_params.length
-        if cfg.spacing_params.offset_direction == "y"
-        else cfg.spacing_params.spacing_y + cfg.block_params.width
-    )
-
     single_line_vertices, single_line_triangles = linear_pattern(
         vertices,
         triangles,
         direction=cfg.spacing_params.offset_direction,
-        n_repeats=single_line_repeat,
-        spacing_value=single_line_spacing,
+        n_repeats=cfg.single_line_blocks,
+        spacing_value=cfg.single_line_spacing,
     )
 
     full_vertices, full_triangles = linear_pattern(
         single_line_vertices,
         single_line_triangles,
         direction=cfg.perpendicular_direction,
-        n_repeats=multiple_line_repeat,
-        spacing_value=multiple_line_spacing,
+        n_repeats=cfg.multi_line_blocks,
+        spacing_value=cfg.multi_line_spacing,
         offset_value=cfg.calculate_spacing(direction=cfg.perpendicular_direction),
     )
 
