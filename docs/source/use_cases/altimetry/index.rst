@@ -47,7 +47,10 @@ There are several ways to use **altimetry** module. The main one is to run as a 
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.altimetry --csv {CSV_PATH} --surface {SURFACE_PATH} --output {OUTPUT_PATH}
+   poetry run python -m cfdmod.use_cases.altimetry \
+      --csv {CSV_PATH} \
+      --surface {SURFACE_PATH} \
+      --output {OUTPUT_PATH}
 
 Where the arguments are the paths of the probe **table file**, terrain **surface STL** and the **simulation case path** for saving the images of the **altimetric profiles**.
 
