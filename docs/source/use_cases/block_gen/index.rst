@@ -44,6 +44,11 @@ The value for offseting even rows can be defined in two ways, by setting the *is
 giving the **absolute value** of the offset; 
 or a **relative size**, based on the size of the block in the offset direction and the spacing in the same direction.
 
+The expected output is a STL file containing the information for creating the geometry.
+This file can be inspected in CAD softwares, such as mesh lab.
+An example of the output can be seen below:
+
+.. figure:: /_static/block_gen/blocks.png
 
 .. toctree::
    :maxdepth: -1
