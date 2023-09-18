@@ -62,7 +62,7 @@ def main(*args):
         direction=cfg.perpendicular_direction,
         n_repeats=cfg.multi_line_blocks,
         spacing_value=cfg.multi_line_spacing,
-        offset_value=cfg.calculate_spacing(direction=cfg.perpendicular_direction),
+        offset_value=cfg.offset_spacing,
     )
 
     export_stl(output_path / "block_gen.stl", full_vertices, full_triangles)

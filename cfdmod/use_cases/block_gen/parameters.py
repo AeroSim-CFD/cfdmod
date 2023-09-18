@@ -91,7 +91,15 @@ class GenerationParams(BaseModel):
         ..., name="Spacing parameters", description="Object with spacing parameters"
     )
 
-    def calculate_spacing(self, direction: OffsetDirection) -> float:
+    @property
+    def offset_spacing(self) -> float:
+        """Calculates the spacing for offseting. If is_abs flag is true, then
+        this is an absolute size. Else, it is calculated from the size of the block
+        and the spacing for the offset direction
+
+        Returns:
+            float: Value for offseting a row of blocks
+        """
         offset_size = (
             self.block_params.length + self.spacing_params.spacing_x
             if self.spacing_params.offset_direction == "x"
@@ -106,6 +114,11 @@ class GenerationParams(BaseModel):
 
     @property
     def single_line_blocks(self) -> int:
+        """Calculates the number of blocks in a single line based on the offset direction
+
+        Returns:
+            int: Number of repetitions applied to a block to form a row
+        """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
                 return self.N_blocks_x - 1
@@ -114,6 +127,11 @@ class GenerationParams(BaseModel):
 
     @property
     def single_line_spacing(self) -> float:
+        """Calculates the single line spacing based on the offset direction
+
+        Returns:
+            float: Value for spacing the blocks in a single row
+        """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
                 return self.spacing_params.spacing_x + self.block_params.length
@@ -122,6 +140,11 @@ class GenerationParams(BaseModel):
 
     @property
     def multi_line_blocks(self) -> int:
+        """Calculates the number of rows to be replicated based on the offset direction
+
+        Returns:
+            int: Number of repetitions applied to a row of blocks
+        """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
                 return self.N_blocks_y - 1
@@ -130,6 +153,11 @@ class GenerationParams(BaseModel):
 
     @property
     def multi_line_spacing(self) -> float:
+        """Calculates the row spacing based on the offset direction
+
+        Returns:
+            float: Value for spacing each row
+        """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
                 return self.spacing_params.spacing_y + self.block_params.width
@@ -138,6 +166,11 @@ class GenerationParams(BaseModel):
 
     @property
     def perpendicular_direction(self) -> OffsetDirection:
+        """Defines the perpendicular direction to the offset direction
+
+        Returns:
+            OffsetDirection: Perpendicular direction
+        """
         return (
             OffsetDirection.x
             if self.spacing_params.offset_direction == OffsetDirection.y
