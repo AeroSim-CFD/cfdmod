@@ -6,7 +6,7 @@ Release Notes
 v0.1.1
 ******
 
-Added block generation module and an api for geometry.
+Added block generation module and an API for geometry.
 The API currently supports STL reading and writing.
 
 The available use cases are
