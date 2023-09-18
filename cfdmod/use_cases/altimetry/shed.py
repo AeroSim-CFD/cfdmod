@@ -1,11 +1,13 @@
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 __all__ = ["Shed"]
 
 
 class Shed(BaseModel):
     """Representation of a standard shed for consulting cases"""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     start_coordinate: np.ndarray = Field(
         ...,
@@ -28,6 +30,3 @@ class Shed(BaseModel):
         description="Size of the shed/building in z axis."
         + "Used to determine the limits when plotting, connecting the shed coordinates",
     )
-
-    class Config:
-        arbitrary_types_allowed = True

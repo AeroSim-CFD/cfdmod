@@ -43,9 +43,6 @@ class AltimetryProbe(BaseModel):
         + "Normally this label is used to define the wind direction",
     )
 
-    class Config:
-        arbitrary_types_allowed = True
-
     @property
     def coordinate(self) -> np.ndarray:
         return np.array(self.probe_coordinate, dtype=np.float32)
