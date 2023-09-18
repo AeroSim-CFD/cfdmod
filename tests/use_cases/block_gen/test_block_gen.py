@@ -39,11 +39,15 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         self.assertEqual(len(vertices), 8)
         self.assertEqual(len(triangles), 10)
 
-        self.assertEqual(len(single_line_vertices), 8 * cfg.single_line_blocks)
-        self.assertEqual(len(single_line_triangles), 10 * cfg.single_line_blocks)
+        self.assertEqual(len(single_line_vertices), 8 * (cfg.single_line_blocks + 1))
+        self.assertEqual(len(single_line_triangles), 10 * (cfg.single_line_blocks + 1))
 
-        self.assertEqual(len(full_vertices), 8 * cfg.single_line_blocks * cfg.multi_line_blocks)
-        self.assertEqual(len(full_triangles), 10 * cfg.single_line_blocks * cfg.multi_line_blocks)
+        self.assertEqual(
+            len(full_vertices), 8 * (cfg.single_line_blocks + 1) * (cfg.multi_line_blocks + 1)
+        )
+        self.assertEqual(
+            len(full_triangles), 10 * (cfg.single_line_blocks + 1) * (cfg.multi_line_blocks + 1)
+        )
 
 
 if __name__ == "__main__":
