@@ -37,8 +37,8 @@ def plot_surface(
     )
     ax.set_aspect("equal")
 
+    color = np.random.choice(range(256), size=3).reshape(1, -1) / 255
     for section in altimetry_sections:
-        color = np.random.choice(range(256), size=3) / 255
         ax.plot(
             section.section_vertices.pos[:, 0],
             section.section_vertices.pos[:, 1],
@@ -51,7 +51,7 @@ def plot_surface(
                 sec_shed.start_coordinate[0],
                 sec_shed.start_coordinate[1],
                 sec_shed.start_coordinate[2],
-                color=color,
+                c=color,
                 s=2,
                 marker="o",
                 edgecolors="black",
@@ -61,7 +61,7 @@ def plot_surface(
                 sec_shed.end_coordinate[0],
                 sec_shed.end_coordinate[1],
                 sec_shed.end_coordinate[2],
-                color=color,
+                c=color,
                 s=2,
                 marker="o",
                 edgecolors="black",
