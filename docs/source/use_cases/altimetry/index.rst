@@ -53,6 +53,18 @@ Where the arguments are the paths of the probe **table file**, terrain **surface
 
 You can also use the example notebooks, found in `Altimetry from probes <altimetry_from_probes.ipynb>`_ and `Generic use of altimetry <altimetry_from_coordinates.ipynb>`_
 
+Using the altimetry module, the user can generate the altimetric profiles, as well as debug figures to overlook the probes position and the section profile.
+The altimetric profile should look like this:
+
+.. figure:: /_static/altimetry/section-example.png
+
+The debug figures should look like this:
+
+.. figure:: /_static/altimetry/profiles.png
+
+.. figure:: /_static/altimetry/surface.png
+
+
 .. toctree::
    :maxdepth: -1
    :hidden:
@@ -64,14 +76,3 @@ You can also use the example notebooks, found in `Altimetry from probes <altimet
    :hidden:
 
    Generic use of altimetry<altimetry_from_coordinates.ipynb>
-
-Using the altimetry module, the user can generate the altimetric profiles, as well as debug figures to overlook the probes position and the section profile.
-The altimetric profile should look like this:
-
-.. figure:: /_static/altimetry/section-example.png
-
-The debug figures should look like this:
-
-.. figure:: /_static/altimetry/profiles.png
-
-.. figure:: /_static/altimetry/surface.png

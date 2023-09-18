@@ -19,6 +19,7 @@ A brief list of the modules available can be found in the `Release notes <releas
    :hidden:
 
    Altimetry <use_cases/altimetry/index.rst>
+   Block Generation <use_cases/block_gen/index.rst>
 
 
 .. toctree::
