@@ -30,21 +30,39 @@ def read_stl(filename: pathlib.Path) -> tuple[np.ndarray, np.ndarray]:
     triangles = np.empty((n_triangles, 3, 3), dtype=np.float32)
     normals = np.empty((n_triangles, 3), dtype=np.float32)
 
-    stl_vertices = np.empty((n_triangles * 3, 3, 3), dtype=np.float32)
+    stl_vertices = np.empty((n_triangles, 3, 3), dtype=np.float32)
+
+    calc_normal = lambda x: np.cross(x[1] - x[0], x[2] - x[0])
+    normalize_func = lambda x: x / np.linalg.norm(x)
 
     for idx in range(n_triangles):
         content = buff.read(50)
 
-        # triangle = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
         normal = np.frombuffer(content[0:12], dtype=np.float32)
         tri_points = np.frombuffer(content[12:48], dtype=np.float32).reshape((3, 3))
 
+        current_normal = calc_normal(tri_points)
+        current_normal = normalize_func(current_normal)
+
+        if not np.allclose(current_normal, normal):
+            tri_points = np.flip(tri_points)
+
         stl_vertices[idx] = tri_points
         normals[idx] = normal
-        # triangles[idx] = triangle
-    print(stl_vertices, n_triangles)
+        triangles[idx] = tri_points
 
-    return triangles, normals
+    stl_vertices = stl_vertices.reshape((n_triangles * 3, 3))
+
+    unique_vertices, indices = np.unique(stl_vertices, axis=0, return_index=True)
+    unique_vertices = stl_vertices[np.sort(indices)]
+    mapped_triangles = np.empty((n_triangles, 3), dtype=np.uint32)
+
+    for i, triangle in enumerate(triangles):
+        mapped_triangles[i] = np.array(
+            [np.where((unique_vertices == vert).all(axis=1)) for vert in triangle]
+        ).reshape(1, 3)[0]
+
+    return unique_vertices, mapped_triangles
 
 
 def export_stl(filename: pathlib.Path, geom_vertices: np.ndarray, geom_triangles: np.ndarray):
