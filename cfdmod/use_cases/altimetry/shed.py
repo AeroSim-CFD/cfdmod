@@ -1,5 +1,5 @@
 import numpy as np
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = ["Shed"]
 
@@ -25,7 +25,7 @@ class Shed(BaseModel):
         description="Label of the shed/building represented by the object",
     )
     height: float = Field(
-        15.0,
+        default=15.0,
         title="Shed height",
         description="Size of the shed/building in z axis."
         + "Used to determine the limits when plotting, connecting the shed coordinates",
