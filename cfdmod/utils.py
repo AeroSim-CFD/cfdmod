@@ -1,7 +1,9 @@
 import pathlib
+from typing import Any
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from ruamel.yaml import YAML
 
 
 def savefig_to_file(fig: Figure, filename: pathlib.Path):
@@ -34,3 +36,27 @@ def create_folder_path(path: pathlib.Path):
     """
 
     path.mkdir(parents=True, exist_ok=True)
+
+
+def read_yaml(filename: pathlib.Path) -> Any:
+    """Read YAML from file
+
+    Args:
+        filename (str): File to read from
+
+    Raises:
+        Exception: Unable to read YAML from file
+
+    Returns:
+        Any: YAML content as python objects (dict, list, etc.)
+    """
+    if not filename.exists():
+        raise Exception(f"Unable to read yaml. Filename {filename} does not exists")
+
+    # Read YAML from file
+    with open(filename, "r", encoding="utf-8") as f:
+        try:
+            yaml = YAML(typ="safe")
+            return yaml.load(f)
+        except Exception as e:
+            raise Exception(f"Unable to load YAML from {filename}. Exception {e}") from e

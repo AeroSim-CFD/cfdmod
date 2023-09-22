@@ -1,12 +1,10 @@
 N_blocks_x: 10
 N_blocks_y: 10
 block_params:
-  height: 10
-  width: 10
-  length: 10
+  height: 5
+  width: 5
+  length: 5
 spacing_params:
-  spacing_x: 10
-  spacing_y: 10
-  line_offset: 10
-  is_abs: True # Optional, default is True
+  spacing: [2, 2] # Spacing indexed by axis (X=0, Y=1)
+  line_offset: 5
   offset_direction: x # Optional, default is y

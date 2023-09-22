@@ -7,18 +7,24 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.13"
-numpy = "^1.25.2"
-notebook = "^7.0.3"
+numpy = "^1.26.0"
 scipy = "^1.11.2"
 matplotlib = "^3.7.3"
 pandas = "^2.1.0"
 pydantic = "^2.3.0"
+ruamel-yaml = "^0.17.32"
 
 [tool.poetry.group.altimetry]
 optional = true
 
 [tool.poetry.group.altimetry.dependencies]
 trimesh = "^3.23.5"
+
+[tool.poetry.group.geometry.dependencies]
+pymeshlab = "^2022.2.post4"
+
+[tool.poetry.group.geometry]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
