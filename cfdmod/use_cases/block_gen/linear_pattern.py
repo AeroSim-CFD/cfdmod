@@ -8,29 +8,28 @@ __all__ = [
 
 
 def linear_pattern(
-    vertices: np.ndarray,
     triangles: np.ndarray,
+    normals: np.ndarray,
     direction: Literal["x", "y"],
     n_repeats: int,
     spacing_value: float,
     offset_value: float = 0,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Applies linear pattern to vertices
+    """Applies linear pattern to geometry objects
 
     Args:
-        vertices (np.ndarray): Array of vertices
-        triangles (np.ndarray): Array of triangles
-        direction (Literal): Direction of the linear pattern (x or y)
-        n_repeats (int): Number of times to repeat the pattern
-        spacing_value (float): Spacing value for the linear pattern
+        triangles (np.ndarray): Array of triangles vertices.
+        normals (np.ndarray): Array of triangles normals.
+        direction (Literal): Direction of the linear pattern (x or y).
+        n_repeats (int): Number of times to copy the pattern.
+        spacing_value (float): Spacing value for the linear pattern.
         offset_value (float, optional): Offset value for the linear pattern perpendicular to the pattern direction. Defaults to 0.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: _description_
+        tuple[np.ndarray, np.ndarray]: Replicated geometry in STL representation (triangles, normals)
     """
-
-    full_vertices = vertices.copy()
-    full_triangles = triangles.copy()
+    full_triangles = np.tile(triangles, (n_repeats + 1, 1, 1))
+    full_normals = np.tile(normals, (n_repeats + 1, 1))
 
     spacing_array = np.array(
         [
@@ -47,13 +46,13 @@ def linear_pattern(
         ]
     )
 
-    number_of_vertices_to_replicate = max(triangles.flatten()) + 1
-
     for i in range(n_repeats):
-        new_v = vertices.copy() + spacing_array * (i + 1)
-        new_v = new_v + offset_array if i % 2 == 0 else new_v
-        new_t = triangles.copy() + np.repeat(number_of_vertices_to_replicate * (i + 1), 3)
-        full_vertices = np.concatenate((full_vertices, new_v))
-        full_triangles = np.concatenate((full_triangles, new_t))
+        # Iterations starts at the first row to be replicated, original is skipped.
+        # In that way, the row index is i+1
+        # For each replication, calculate the spacing between the rows.
+        # For odd rows, apply the offset value.
+        full_triangles[
+            (i + 1) * triangles.shape[0] : (i + 2) * triangles.shape[0], :, :
+        ] += spacing_array * (i + 1) + offset_array * ((i + 1) % 2)
 
-    return full_vertices, full_triangles
+    return full_triangles, full_normals

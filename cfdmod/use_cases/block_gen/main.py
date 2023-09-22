@@ -3,7 +3,7 @@ import pathlib
 from dataclasses import dataclass
 
 from cfdmod.api.geometry.STL import export_stl
-from cfdmod.use_cases.block_gen import *
+from cfdmod.use_cases.block_gen import GenerationParams, build_single_block, linear_pattern
 
 
 @dataclass
@@ -51,7 +51,7 @@ def main(*args):
     single_line_vertices, single_line_triangles = linear_pattern(
         vertices,
         triangles,
-        direction=cfg.spacing_params.offset_direction,
+        direction=cfg.spacing_params.offset_direction.value,
         n_repeats=cfg.single_line_blocks,
         spacing_value=cfg.single_line_spacing,
     )
@@ -59,7 +59,7 @@ def main(*args):
     full_vertices, full_triangles = linear_pattern(
         single_line_vertices,
         single_line_triangles,
-        direction=cfg.perpendicular_direction,
+        direction=cfg.perpendicular_direction.value,
         n_repeats=cfg.multi_line_blocks,
         spacing_value=cfg.multi_line_spacing,
         offset_value=cfg.offset_spacing,
