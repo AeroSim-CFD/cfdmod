@@ -52,4 +52,4 @@ An example of the output can be seen below:
    :maxdepth: -1
    :hidden:
 
-   Generation from config<blocks_from_cfg.ipynb>
+   Generating roughness blocks <gen_roughness_blocks.ipynb>
