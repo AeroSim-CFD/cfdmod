@@ -46,23 +46,23 @@ def main(*args):
     cfg = GenerationParams.from_file(pathlib.Path(args_use.config))
     output_path = pathlib.Path(args_use.output)
 
-    vertices, triangles = build_single_block(cfg.block_params)
+    triangles, normals = build_single_block(cfg.block_params)
 
-    single_line_vertices, single_line_triangles = linear_pattern(
-        vertices,
+    single_line_triangles, single_line_normals = linear_pattern(
         triangles,
+        normals,
         direction=cfg.spacing_params.offset_direction.value,
         n_repeats=cfg.single_line_blocks,
         spacing_value=cfg.single_line_spacing,
     )
 
-    full_vertices, full_triangles = linear_pattern(
-        single_line_vertices,
+    full_triangles, full_normals = linear_pattern(
         single_line_triangles,
+        single_line_normals,
         direction=cfg.perpendicular_direction.value,
         n_repeats=cfg.multi_line_blocks,
         spacing_value=cfg.multi_line_spacing,
-        offset_value=cfg.offset_spacing,
+        offset_value=cfg.spacing_params.line_offset,
     )
 
-    export_stl(output_path / "block_gen.stl", full_vertices, full_triangles)
+    export_stl(output_path / "block_gen.stl", full_triangles, full_normals)

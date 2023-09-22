@@ -5,8 +5,6 @@ block_params:
   width: 10
   length: 10
 spacing_params:
-  spacing_x: 10
-  spacing_y: 10
+  spacing: [10, 10] # Spacing indexed by axis (X=0, Y=1)
   line_offset: 10
-  is_abs: True # Optional, default is True
   offset_direction: x # Optional, default is y

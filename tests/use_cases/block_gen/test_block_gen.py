@@ -18,10 +18,8 @@ class TestBlockGenerationUseCase(unittest.TestCase):
 
         block_params = BlockParams(height=1, width=1, length=1)
         spacing_params = SpacingParams(
-            spacing_x=1,
-            spacing_y=1,
+            spacing=(1, 1),
             line_offset=1,
-            is_abs=True,
             offset_direction=OffsetDirection.x,
         )
         cfg = GenerationParams(
@@ -47,7 +45,7 @@ class TestBlockGenerationUseCase(unittest.TestCase):
             direction=cfg.perpendicular_direction.value,
             n_repeats=cfg.multi_line_blocks,
             spacing_value=cfg.multi_line_spacing,
-            offset_value=cfg.offset_spacing,
+            offset_value=cfg.spacing_params.line_offset,
         )
 
         export_stl(output_path / "blocks_full.stl", full_triangles, full_normals)

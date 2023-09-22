@@ -21,27 +21,18 @@ class OffsetDirection(str, Enum):
 
 
 class SpacingParams(BaseModel):
-    spacing_x: float = Field(
+    spacing: tuple[float, float] = Field(
         ...,
-        title="X spacing",
-        description="Block line X spacing",
-        gt=0,
-    )
-    spacing_y: float = Field(
-        ...,
-        title="Y spacing",
-        description="Block line Y spacing",
-        gt=0,
+        title="Spacing values",
+        description="Spacing values in X axis (index 0) and Y axis (index 1)."
+        + "The spacing between each line is calculated with the spacing value "
+        + "plus the size of the block in respecting direction",
     )
     line_offset: float = Field(
         ...,
         title="Line offset",
         description="Offset percentage between each block line",
         ge=0,
-    )
-    is_abs: bool = Field(
-        True,
-        description="Flag to determine whether the line offset is absolute or relative to the spacing (percentage)",
     )
     offset_direction: OffsetDirection = Field(
         OffsetDirection.y,
@@ -92,27 +83,6 @@ class GenerationParams(BaseModel):
     )
 
     @property
-    def offset_spacing(self) -> float:
-        """Calculates the spacing for offseting. If is_abs flag is true, then
-        this is an absolute size. Else, it is calculated from the size of the block
-        and the spacing for the offset direction
-
-        Returns:
-            float: Value for offseting a row of blocks
-        """
-        offset_size = (
-            self.block_params.length + self.spacing_params.spacing_x
-            if self.spacing_params.offset_direction == "x"
-            else self.block_params.width + self.spacing_params.spacing_y
-        )
-        line_offset = (
-            self.spacing_params.line_offset
-            if self.spacing_params.is_abs
-            else self.spacing_params.line_offset * offset_size
-        )
-        return line_offset
-
-    @property
     def single_line_blocks(self) -> int:
         """Calculates the number of blocks in a single line based on the offset direction
 
@@ -134,9 +104,9 @@ class GenerationParams(BaseModel):
         """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
-                return self.spacing_params.spacing_x + self.block_params.length
+                return self.spacing_params.spacing[0] + self.block_params.length
             case OffsetDirection.y:
-                return self.spacing_params.spacing_y + self.block_params.width
+                return self.spacing_params.spacing[1] + self.block_params.width
 
     @property
     def multi_line_blocks(self) -> int:
@@ -160,9 +130,9 @@ class GenerationParams(BaseModel):
         """
         match self.spacing_params.offset_direction:
             case OffsetDirection.x:
-                return self.spacing_params.spacing_y + self.block_params.width
+                return self.spacing_params.spacing[1] + self.block_params.width
             case OffsetDirection.y:
-                return self.spacing_params.spacing_x + self.block_params.length
+                return self.spacing_params.spacing[0] + self.block_params.length
 
     @property
     def perpendicular_direction(self) -> OffsetDirection:
