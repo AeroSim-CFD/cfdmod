@@ -46,7 +46,7 @@ def linear_pattern(
         ]
     )
 
-    for i in range(1, n_repeats+1):
+    for i in range(1, n_repeats + 1):
         # Iterations starts at the first row to be replicated, original is skipped.
         # In that way, the row index is i+1
         # For each replication, calculate the spacing between the rows.
