@@ -40,9 +40,7 @@ Then, it is replicated in the main axis, defined by the offset direction.
 Later, the rows generate are replicated as well, in a way that the even rows are offseted by the defined parameter.
 The direction of the offset is also defined in the configuration parameters.
 
-The value for offseting even rows can be defined in two ways, by setting the *is_abs* flag to true: 
-giving the **absolute value** of the offset; 
-or a **relative size**, based on the size of the block in the offset direction and the spacing in the same direction.
+The value for offseting even rows can be defined by setting the absolute value of the offset.
 
 The expected output is a STL file containing the information for creating the geometry.
 This file can be inspected in CAD softwares, such as mesh lab.
@@ -55,9 +53,3 @@ An example of the output can be seen below:
    :hidden:
 
    Generation from config<blocks_from_cfg.ipynb>
-
-.. toctree::
-   :maxdepth: -1
-   :hidden:
-
-   Manual generation<blocks_manual.ipynb>
