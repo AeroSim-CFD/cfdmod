@@ -51,7 +51,7 @@ def main(*args):
     single_line_triangles, single_line_normals = linear_pattern(
         triangles,
         normals,
-        direction=cfg.spacing_params.offset_direction.value,
+        direction=cfg.spacing_params.offset_direction,
         n_repeats=cfg.single_line_blocks,
         spacing_value=cfg.single_line_spacing,
     )
@@ -59,7 +59,7 @@ def main(*args):
     full_triangles, full_normals = linear_pattern(
         single_line_triangles,
         single_line_normals,
-        direction=cfg.perpendicular_direction.value,
+        direction=cfg.perpendicular_direction,
         n_repeats=cfg.multi_line_blocks,
         spacing_value=cfg.multi_line_spacing,
         offset_value=cfg.spacing_params.line_offset,

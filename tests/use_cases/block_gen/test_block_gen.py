@@ -5,7 +5,6 @@ from cfdmod.api.geometry.STL import export_stl
 from cfdmod.use_cases.block_gen import (
     BlockParams,
     GenerationParams,
-    OffsetDirection,
     SpacingParams,
     build_single_block,
     linear_pattern,
@@ -20,7 +19,7 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         spacing_params = SpacingParams(
             spacing=(1, 1),
             line_offset=1,
-            offset_direction=OffsetDirection.x,
+            offset_direction="x",
         )
         cfg = GenerationParams(
             N_blocks_x=10,
@@ -34,7 +33,7 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         single_line_triangles, single_line_normals = linear_pattern(
             triangles,
             normals,
-            direction=cfg.spacing_params.offset_direction.value,
+            direction=cfg.spacing_params.offset_direction,
             n_repeats=cfg.single_line_blocks,
             spacing_value=cfg.single_line_spacing,
         )
@@ -42,7 +41,7 @@ class TestBlockGenerationUseCase(unittest.TestCase):
         full_triangles, full_normals = linear_pattern(
             single_line_triangles,
             single_line_normals,
-            direction=cfg.perpendicular_direction.value,
+            direction=cfg.perpendicular_direction,
             n_repeats=cfg.multi_line_blocks,
             spacing_value=cfg.multi_line_spacing,
             offset_value=cfg.spacing_params.line_offset,

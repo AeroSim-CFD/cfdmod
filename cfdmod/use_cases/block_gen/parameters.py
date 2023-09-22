@@ -1,5 +1,5 @@
 import pathlib
-from enum import Enum
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -13,11 +13,9 @@ __all__ = [
 ]
 
 
-class OffsetDirection(str, Enum):
-    """Define the offset direction for block lines"""
-
-    x = "x"
-    y = "y"
+OffsetDirection = Annotated[
+    Literal["x", "y"], Field(description="""Define the offset direction for block lines""")
+]
 
 
 class SpacingParams(BaseModel):
@@ -35,7 +33,7 @@ class SpacingParams(BaseModel):
         ge=0,
     )
     offset_direction: OffsetDirection = Field(
-        OffsetDirection.y,
+        "y",
         title="Offset Direction",
         description="Direction which the blocks should be offseted to",
     )
@@ -90,9 +88,9 @@ class GenerationParams(BaseModel):
             int: Number of repetitions applied to a block to form a row
         """
         match self.spacing_params.offset_direction:
-            case OffsetDirection.x:
+            case "x":
                 return self.N_blocks_x - 1
-            case OffsetDirection.y:
+            case "y":
                 return self.N_blocks_y - 1
 
     @property
@@ -103,9 +101,9 @@ class GenerationParams(BaseModel):
             float: Value for spacing the blocks in a single row
         """
         match self.spacing_params.offset_direction:
-            case OffsetDirection.x:
+            case "x":
                 return self.spacing_params.spacing[0] + self.block_params.length
-            case OffsetDirection.y:
+            case "y":
                 return self.spacing_params.spacing[1] + self.block_params.width
 
     @property
@@ -116,9 +114,9 @@ class GenerationParams(BaseModel):
             int: Number of repetitions applied to a row of blocks
         """
         match self.spacing_params.offset_direction:
-            case OffsetDirection.x:
+            case "x":
                 return self.N_blocks_y - 1
-            case OffsetDirection.y:
+            case "y":
                 return self.N_blocks_x - 1
 
     @property
@@ -129,9 +127,9 @@ class GenerationParams(BaseModel):
             float: Value for spacing each row
         """
         match self.spacing_params.offset_direction:
-            case OffsetDirection.x:
+            case "x":
                 return self.spacing_params.spacing[1] + self.block_params.width
-            case OffsetDirection.y:
+            case "y":
                 return self.spacing_params.spacing[0] + self.block_params.length
 
     @property
@@ -141,11 +139,7 @@ class GenerationParams(BaseModel):
         Returns:
             OffsetDirection: Perpendicular direction
         """
-        return (
-            OffsetDirection.x
-            if self.spacing_params.offset_direction == OffsetDirection.y
-            else OffsetDirection.y
-        )
+        return "x" if self.spacing_params.offset_direction == "y" else "y"
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):
