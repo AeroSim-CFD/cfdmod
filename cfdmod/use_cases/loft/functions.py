@@ -3,10 +3,8 @@ from typing import Tuple
 
 import numpy as np
 
-from cfdmod.stl import STLFile
 
-
-def find_border(stl_file: STLFile) -> Tuple[np.ndarray, set]:
+def find_border(vertices: np.ndarray) -> set:
     """Extract vertices and unique edges for the stl file's border in x-y plane
 
     Args:
@@ -15,26 +13,22 @@ def find_border(stl_file: STLFile) -> Tuple[np.ndarray, set]:
     Returns:
         Tuple[np.ndarray, set]: Tuple containing the mesh's vertices and its border edges vertices
     """
-    vertices, normals = stl_file.to_numpy()
     s = vertices.shape
 
     flattened_vertices = vertices.reshape((s[0] * s[1], 3))
 
     # Round for comparison
     decimals = 0
-    rounded_vertices = np.array(flattened_vertices * 10**decimals, dtype=np.int32)
 
     get_float_as_int = lambda v: int(v * 10**decimals)
     get_as_key = lambda v: tuple(get_float_as_int(vv) for vv in v)
 
     flat_indexes = {get_as_key(v): i for i, v in enumerate(flattened_vertices)}
 
-    triangles = stl_file.triangles
-
     # Indexed as [t_idx, edge_idx] = (v0, v1)
-    tri_index_matrix = np.empty((len(triangles), 3, 2), dtype=np.uint32)
+    tri_index_matrix = np.empty((s[0], 3, 2), dtype=np.uint32)
 
-    for t_idx, tri in enumerate(triangles):
+    for t_idx, tri in enumerate(vertices):
         v_idxs = []
         for v in (tri.v0, tri.v1, tri.v2):
             key = get_as_key(v)
