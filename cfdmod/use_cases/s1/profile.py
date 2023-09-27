@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import pathlib
 
 import numpy as np
@@ -16,25 +17,28 @@ class Profile:
         return f"pos: {self.pos} \n values: {self.values}"
 
     def __truediv__(self, rhs: Profile) -> Profile:
-        self.normalize_position()
-        rhs.normalize_position()
+        self_copy = copy.copy(self)
+        rhs_copy = copy.copy(rhs)
 
-        max_height = min(self.pos.max(), rhs.pos.max())
-        self.truncate_position(max_height)
-        rhs.truncate_position(max_height)
+        self_copy.normalize_position()
+        rhs_copy.normalize_position()
 
-        if max_height not in self.pos:
-            self.interpolate_value(max_height)
-        elif max_height not in rhs.pos:
-            rhs.interpolate_value(max_height)
+        max_height = min(self_copy.pos.max(), rhs_copy.pos.max())
+        self_copy.truncate_position(max_height)
+        rhs_copy.truncate_position(max_height)
 
-        [self.interpolate_value(val) for val in np.setdiff1d(rhs.pos, self.pos)]
-        [rhs.interpolate_value(val) for val in np.setdiff1d(self.pos, rhs.pos)]
+        if max_height not in self_copy.pos:
+            self_copy.interpolate_value(max_height)
+        elif max_height not in rhs_copy.pos:
+            rhs_copy.interpolate_value(max_height)
 
-        s1_values = self.values[1:] / rhs.values[1:]  # Ignore wall values (u=0)
-        s1_pos = self.pos[1:]  # Ignore wall values (u=0)
+        [self_copy.interpolate_value(val) for val in np.setdiff1d(rhs_copy.pos, self_copy.pos)]
+        [rhs_copy.interpolate_value(val) for val in np.setdiff1d(self_copy.pos, rhs_copy.pos)]
 
-        return Profile(s1_pos, s1_values, f"S1: {self.label} / {rhs.label}")
+        s1_values = self_copy.values[1:] / rhs_copy.values[1:]  # Ignore wall values (u=0)
+        s1_pos = self_copy.pos[1:]  # Ignore wall values (u=0)
+
+        return Profile(s1_pos, s1_values, f"S1: {self_copy.label} / {rhs_copy.label}")
 
     def normalize_position(self):
         """Normalizes the profile position"""
