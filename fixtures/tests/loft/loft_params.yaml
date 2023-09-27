@@ -1,0 +1,4 @@
+loft_length: 1200
+mesh_element_size: 25.0
+wind_source_direction: [-1, 0, 0]
+upwind_elevation: 780
