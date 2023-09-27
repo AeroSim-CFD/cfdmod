@@ -34,7 +34,7 @@ class Profile:
         s1_values = self.values[1:] / rhs.values[1:]  # Ignore wall values (u=0)
         s1_pos = self.pos[1:]  # Ignore wall values (u=0)
 
-        return Profile(s1_pos, s1_values, f"S1: {self.label}/{rhs.label}")
+        return Profile(s1_pos, s1_values, f"S1: {self.label} / {rhs.label}")
 
     def normalize_position(self):
         """Normalizes the profile position"""
