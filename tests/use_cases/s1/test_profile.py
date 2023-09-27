@@ -10,7 +10,7 @@ from cfdmod.use_cases.s1.profile import Profile
 
 class TestS1Profile(unittest.TestCase):
     def test_vtm_profiles(self):
-        field_data_path = pathlib.Path("./fixtures/tests/s1/vtm/00050000_.vtm")
+        field_data_path = pathlib.Path("./fixtures/tests/s1/vtm/example.vtm")
         pitot_probe = S1Probe(p1=[10, 10, 1], p2=[10, 10, 50], numPoints=100)
         example_probe = S1Probe(p1=[100, 10, 1], p2=[100, 10, 50], numPoints=100)
 

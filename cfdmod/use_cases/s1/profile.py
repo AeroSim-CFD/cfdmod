@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+__all__ = ["Profile"]
+
+
 import copy
 import pathlib
 

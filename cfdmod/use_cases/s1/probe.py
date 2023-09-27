@@ -1,3 +1,5 @@
+__all__ = ["S1Probe"]
+
 from typing import Sequence
 
 from pydantic import BaseModel, Field

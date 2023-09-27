@@ -1,3 +1,8 @@
+__all__ = [
+    "set_style_fancy",
+    "set_style_tech",
+]
+
 import matplotlib.pyplot as plt
 
 
