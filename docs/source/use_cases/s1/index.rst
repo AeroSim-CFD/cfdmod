@@ -4,6 +4,10 @@ S1 Profile
 
 The **S1** module is used to evaluate the topographic factor from velocity profiles.
 The topographic factor is defined as the ratio of acceleration between a reference velocity profile, usually called *Pitot*, and a given profile.
+
+A topographic factor, in the general context of wind engineering, typically refers to a factor that accounts for the influence of local terrain features (such as hills, valleys, ridges, etc.) on the wind pressure or wind speed experienced by a structure.
+This factor is used to adjust the wind loads calculated for a structure based on its location and the surrounding topography.
+
 An illustration of the topographic factor can be seen below:
 
 .. figure:: /_static/s1/topographic_factor.png
