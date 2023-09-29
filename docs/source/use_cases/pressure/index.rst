@@ -24,61 +24,51 @@ An example of a pressure signal is shown below:
     :align: center
 
 The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum or average** values for each vertex.
-But first, it needs to be adimensionalized, dividing it by a **dynamic pressure**.
-When applied this transformation to the pressure signal, **pressure coefficients** are obtained.
-The pressure coefficients can be defined as follows:
 
-.. math::
-   c_{p} = \frac{p_{v}}{\frac{1}{2} \rho V ^ 2}
+However, in order to correctly access the pressure effects over a structure, it needs to account for a correction based on the static pressure.
+For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:
 
-For engineering purposes, other coefficients come in handy, such as the **shape coefficient**.
-Shape coefficient describe the behavior of the resulting force applied to a surface.
-
-For example, consider a triangular surface.
-At each of its vertices, pressure coefficients are computed based on the signal obtained.
-However, we can calculate the resulting force by summing the pressure load of each vertex.
-To do so, pressure is transformed into a force by multiplying by an **area of influence**.
-
-For triangles, we can consider that a third of its area is influenced by each vertex.
-
-.. image:: /_static/pressure/triangle_area.png
-    :width: 50 %
+.. image:: /_static/pressure/domain.png
+    :width: 85 %
     :align: center
 
-In that way, we can define a resulting force for each vertex as:
+In order to access the effects of pressure in :math:`p_1` and :math:`p_2`, data of a probe far away from the building must be obtained.
+This data is a time series of the **domain static pressure**, :math:`p_{\infty}`.
+Multiple probes can be set to access the domain static pressure.
+
+If the fluctuation of the domain static pressure signal is not relevant, its effects can be neglected.
+Thus, the pressure signals over the structure does not need to be corrected.
+
+Pressure analysis are usually performed in an adimensionalized form. 
+To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
 
 .. math::
-   f_{v} = p_{v} * A_{v}
+   q = \frac{1}{2} \rho U_H ^ 2
 
-Or we can define a resulting force for the triangle, by summing its vertex forces:
-
-.. math::
-   F_{res} = \sum{f_{v}} = p_{v1} * A_{v1} + p_{v2} * A_{v2} + p_{v3} * A_{v3}
-
-The shape coefficient is based on the definition of an area of influence, that can be a set of triangles.
-Or it can also be defined for a whole surface, or even a set of surfaces.
-To get the shape coefficient, the **resulting pressure** for a set of triangles, that define a surface or a set of surfaces, must be calculated:
+Normally the pressure signals obtained with Nassu solver are exported using LBM units such as :math:`\rho`.
+The transformation of :math:`\rho` into pressure units :math:`[Pa]`, uses the speed of sound in the medium :math:`c_s`:
 
 .. math::
-   p_{res} = \sum{\frac{F_{res}}{A_{res}}} = \frac{p_{v1} * A_{v1} + p_{v2} * A_{v2} + p_{v3} * A_{v3}}{A_{v1} + A_{v2} + A_{v3}}
-
-Then the shape coefficient for the defined area is:
-
-.. math::
-   C_{e} = \frac{p_{res}}{\frac{1}{2} \rho V ^ 2}
-
-And we can obatin its **maximum, minimum and average** values.
-
-Another important coefficient is the **liquid force coefficient**.
-This is defined as a liquid resulting pressure between two surfaces.
-
-.. math::
-   C_{f} = \frac{p_{res1} * A_{res1} - p_{res2} * A_{res2}}{\frac{1}{2} \rho V ^ 2 A_{rep}}
-
-Like the other coefficients, we can apply statistical analysis to the liquid force coefficient.
+   p(t) = c_s ^ 2 \rho
 
 In order to use the **pressure module**, the user has to provide a set of artifacts:
 
 #. A lnas file: It contains the information about the mesh.
 #. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
 #. Zoning information (Optional): Necessary for defining the bounding area for calculating shape and liquid force coefficients. It is not necessary for pressure coefficient use case only. 
+
+The available use cases for determinating different coefficients using this module are listed below:
+
+* `Pressure Coefficient <./pressure_coefficient.rst>`_
+* `Shape Coefficient <./shape_coefficient.rst>`_
+* `Force Coefficient <./force_coefficient.rst>`_
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Pressure use Cases
+   :hidden:
+
+   Pressure Coefficient <./pressure_coefficient.rst>
+   Shape Coefficient <./shape_coefficient.rst>
+   Force Coefficient <./force_coefficient.rst>
