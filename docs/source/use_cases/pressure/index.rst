@@ -76,3 +76,9 @@ This is defined as a liquid resulting pressure between two surfaces.
    C_{f} = \frac{p_{res1} * A_{res1} - p_{res2} * A_{res2}}{\frac{1}{2} \rho V ^ 2 A_{rep}}
 
 Like the other coefficients, we can apply statistical analysis to the liquid force coefficient.
+
+In order to use the **pressure module**, the user has to provide a set of artifacts:
+
+#. A lnas file: It contains the information about the mesh.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. Zoning information (Optional): Necessary for defining the bounding area for calculating shape and liquid force coefficients. It is not necessary for pressure coefficient use case only. 
