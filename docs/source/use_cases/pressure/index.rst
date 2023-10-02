@@ -6,15 +6,15 @@ The **Pressure** module handles the analysis and post processing of pressure tim
 Data comes from CFD transient simulations, and by definition is attached to a mesh.
 
 Mesh describes a body geometry, and contains a set of **discrete vertices** and a **set of triangles**.
-Triangles represent the link between 3 different vertices. 
+Triangles represent the link between 3 different vertices (*P1, P2, P3*). 
 Illustration of a mesh and a mesh triangle can be seen below:
 
 .. image:: /_static/pressure/mesh.png
-    :width: 65 %
+    :width: 60 %
 .. image:: /_static/pressure/triangle.png
-    :width: 30 %
+    :width: 35 %
 
-Pressure data is extracted at each of the mesh vertices.
+Pressure data is extracted at the center of each of the mesh's triangles (C).
 The frequency for exporting pressure is set during the simulation setup.
 The resulting data has the form of a signal, or a time series.
 An example of a pressure signal is shown below:
@@ -38,7 +38,7 @@ Multiple probes can be set to access the domain static pressure.
 
 Normally, the static pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
 
-If the fluctuation of the domain static pressure signal is not relevant, its effects can be neglected.
+If the fluctuation of the static pressure signal is not relevant, its effects can be neglected.
 Thus, the pressure signals over the structure does not need the static pressure time series.
 Pressure signals examples can be seen below:
 
@@ -72,7 +72,7 @@ Artifacts
 In order to use the **pressure module**, the user has to provide a set of artifacts:
 
 #. A lnas file: It contains the information about the mesh.
-#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh triangles.
 #. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
 #. Zoning information (Optional): Necessary for defining the bounding area for calculating shape and net force coefficients. It is not necessary for pressure coefficient use case only. 
 

@@ -8,7 +8,7 @@ It is obtained by the following expression:
 .. math::
    c_{p}(t) = \frac{p(t) - p_{\infty}(t)}{q}
 
-By definition, the pressure coefficient is a local property for each point of the mesh.
+By definition, the pressure coefficient is a local property for each triangle of the mesh.
 It is used primarily for analysis and interpretation of the measured data.
 
 It should always be generated, since it is the first analysis step. 
@@ -19,12 +19,12 @@ Artifacts:
 ==========
 
 #. A lnas file: It contains the information about the mesh.
-#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh triangles.
 #. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
 
 Outputs:
 ========
 
-#. **Adimensionalized time series**: pressure coefficient time series for each vertex.
-#. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each vertex.
+#. **Adimensionalized time series**: pressure coefficient time series for each triangle.
+#. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each triangle.
 #. **VTK File**: contains the statistical values inside a mesh representation (VTK).
