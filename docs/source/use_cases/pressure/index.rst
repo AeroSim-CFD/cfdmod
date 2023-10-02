@@ -23,7 +23,7 @@ An example of a pressure signal is shown below:
     :width: 65 %
     :align: center
 
-The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum or average** values for each vertex.
+The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum, RMS or average** values for each vertex.
 
 However, to correctly access the pressure effects over a structure, by definition, it needs to account for the **static pressure**.
 For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:

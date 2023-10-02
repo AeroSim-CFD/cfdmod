@@ -9,10 +9,17 @@ For example, consider a building's canopy, where the lower surface is marked on 
     :width: 90 %
     :align: center
 
-The net resulting pressure coefficient is defined as, in the x axis direction:
+The net resulting pressure coefficient is defined as:
 
 .. math::
-   C_{fx} = \frac{Fx_{res1} - Fx_{res2}}{q A_{rep}}
+   C_{f} = \frac{F_{res1} - F_{res2}}{q A_{rep}} = \frac{\sum{c_{pi} A_{i}} - \sum{c_{pj} A_{j}}}{A_{rep}}
+
+.. important:: Note that the net force coefficient has a direction attached to its definition. Its direction is the same as the resulting force direction.
+
+It can also be defined for a given direction, for example in the x axis direction:
+
+.. math::
+   C_{fx} = \frac{Fx_{res1} - Fx_{res2}}{q A_{rep}} = \frac{\sum{c_{pi} A_{ix}} - \sum{c_{pj} A_{jx}}}{A_{rep}}
 
 
 But it can also be defined as a net resulting momentum between two surfaces:
@@ -20,7 +27,6 @@ But it can also be defined as a net resulting momentum between two surfaces:
 .. math::
    C_{fx} = \frac{Mx_{res1} - Mx_{res2}}{q A_{rep} Lx_{rep}}
 
-.. important:: Note that the net force coefficient has a direction attached to its definition. Its direction is the same as the resulting force direction.
 
 Like the other coefficients, we can apply statistical analysis to the net force coefficient.
 
@@ -33,8 +39,8 @@ Artifacts:
 ==========
 
 #. A lnas file: It contains the information about the mesh.
-#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
-#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
+#. Surface selection: It contains which surface inside the mesh is going to be used for evaluating net force coefficient.
+#. HDF time series: It contains the pressure coefficient signals indexed by each of the mesh triangles.
 
 Outputs:
 ========
