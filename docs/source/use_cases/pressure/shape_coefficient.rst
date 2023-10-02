@@ -44,3 +44,19 @@ By definition, the shape coefficient is a property of a surface or an area.
 It is used to evaluate **wind loads on primary and secondary structures**, such as beans, coating and sealing components.
 
 Structural engineers might use the shape coefficient for wind load evaluation on superficial and long elements.
+
+Artifacts:
+==========
+
+#. A lnas file: It contains the information about the mesh.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
+#. Zoning information: Necessary for defining the bounding area for calculating shape and liquid force coefficients. It is not necessary for pressure coefficient use case only. 
+
+Outputs:
+========
+
+#. **Adimensionalized time series**: shape coefficient time series for each region.
+#. **Regions mesh**: new mesh generated using the region information and the original mesh.
+#. **Statistical results**: maximum, minimum, RMS and average values for the shape coefficient time series, for each region.
+#. **VTK File**: contains the statistical values inside the region mesh (VTK).

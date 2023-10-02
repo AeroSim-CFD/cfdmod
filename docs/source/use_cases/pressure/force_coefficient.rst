@@ -25,3 +25,17 @@ By definition, the liquid force coefficient is a **property of a body**.
 
 It is used for primary and secondary structures design.
 It can be seen as the resulting effect of the wind induced stress over a body.
+
+Artifacts:
+==========
+
+#. A lnas file: It contains the information about the mesh.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
+
+Outputs:
+========
+
+#. **Adimensionalized time series**: force coefficient time series for each body.
+#. **Statistical results**: maximum, minimum, RMS and average values for the force coefficient time series, for each body.
+#. **VTK File**: contains the statistical values inside the original mesh (VTK).

@@ -14,3 +14,17 @@ It is use primarily for analysis and interpretation of the wind tunnel data.
 It should always be generated, since it is the first analysis step. 
 It is a fundamental property of the pressure normalization.
 However, it is not the final result to be delivered to clients.
+
+Artifacts:
+==========
+
+#. A lnas file: It contains the information about the mesh.
+#. HDF time series: It contains the pressure signals indexed by each of the mesh vertices.
+#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
+
+Outputs:
+========
+
+#. **Adimensionalized time series**: pressure coefficient time series for each vertex.
+#. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each vertex.
+#. **VTK File**: contains the statistical values inside a mesh representation (VTK).
