@@ -25,7 +25,7 @@ An example of a pressure signal is shown below:
 
 The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum or average** values for each vertex.
 
-However, in order to correctly access the pressure effects over a structure, it needs to account for a correction based on the static pressure.
+However, to correctly access the pressure effects over a structure, it needs to account for a correction based on the static pressure.
 For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:
 
 .. image:: /_static/pressure/domain.png
@@ -38,6 +38,19 @@ Multiple probes can be set to access the domain static pressure.
 
 If the fluctuation of the domain static pressure signal is not relevant, its effects can be neglected.
 Thus, the pressure signals over the structure does not need to be corrected.
+Pressure signals examples can be seen below:
+
+.. figure:: /_static/pressure/rho_inf_significant.png
+    :width: 85 %
+    :align: center
+
+    Pressure signal where domain static pressure should be considered
+
+.. figure:: /_static/pressure/rho_inf_not_significant.png
+    :width: 85 %
+    :align: center
+
+    Pressure signal where domain static pressure can be neglected
 
 Pressure analysis are usually performed in an adimensionalized form. 
 To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
@@ -49,7 +62,10 @@ Normally the pressure signals obtained with Nassu solver are exported using LBM 
 The transformation of :math:`\rho` into pressure units :math:`[Pa]`, uses the speed of sound in the medium :math:`c_s`:
 
 .. math::
-   p(t) = c_s ^ 2 \rho
+   p(t) = c_s ^ 2 \rho(t)
+
+Artifacts
+=========
 
 In order to use the **pressure module**, the user has to provide a set of artifacts:
 

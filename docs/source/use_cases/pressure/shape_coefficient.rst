@@ -39,3 +39,8 @@ Then the shape coefficient for the defined area is:
    C_{e} = \frac{p_{res}(t) - p_{\infty}(t)}{q}
 
 And we can obatin its **maximum, minimum and average** values.
+
+By definition, the shape coefficient is a property of a surface or an area.
+It is used to evaluate **wind loads on primary and secondary structures**, such as beans, coating and sealing components.
+
+Structural engineers might use the shape coefficient for wind load evaluation on superficial and long elements.
