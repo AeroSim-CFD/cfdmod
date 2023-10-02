@@ -20,7 +20,7 @@ In that way, we can define a resulting force for each vertex as:
 .. math::
    f_{i} = p_{i} A_{i} = \frac{p_{i} A_{T}}{3}
 
-Even so, we can define a resulting force for the triangle, by summing its vertex forces:
+Even so, we can define a resulting force for the triangle, by summing its vertices forces:
 
 .. math::
    F_{res} = \sum{f_{i}} = p_{1} A_{1} + p_{2} A_{2} + p_{3} A_{3} = (p_{1} + p_{2} + p_{3}) \frac{A_{T}}{3}
