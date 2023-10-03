@@ -1,0 +1,33 @@
+paths:
+  static_pressure_path: /probe.csv?
+  lnas_path: /bodies?
+  hdf_path: /hist_series?
+  cp_hist_series: /hist_series?
+  zones_cfg_path: /zones.json?
+timestep_range: [10000, 40000]
+dynamic_pressure:
+  U_H: 10
+force_coefficient:
+  marquise1:
+    surfaces: ["surface1", "surface2", "surface3"] # 1 + 2 + 3
+  galpao:
+    surfaces: [] # All surfaces
+shape_coefficient:
+  - Regra A:
+    regiao_padrao:
+      regions_intervals:
+        x: [0,20,40,60]
+        y: [0,20,40,60]
+        z: [0,20,40,60]
+      surfaces: []
+    regiao_padrao2:
+      regions_intervals:
+        x: [0,60]
+        y: [0,60]
+        z: [0,60]
+      surfaces: []
+  - Regra B:
+      - name: Regiao 1
+        surfaces: []
+      - name: Regiao 2
+        surfaces: []

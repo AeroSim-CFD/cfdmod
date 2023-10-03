@@ -14,7 +14,7 @@ Illustration of a mesh and a mesh triangle can be seen below:
 .. image:: /_static/pressure/triangle.png
     :width: 35 %
 
-Pressure data is extracted at the center of each of the mesh's triangles (C).
+Pressure data is extracted at the **center of each of the mesh's triangles (C)**.
 The frequency for exporting pressure is set during the simulation setup.
 The resulting data has the form of a signal, or a time series.
 An example of a pressure signal is shown below:
@@ -64,7 +64,7 @@ Normally the pressure signals obtained with Nassu solver are exported using LBM 
 The transformation of :math:`\rho` into pressure units :math:`[Pa]`, uses the speed of sound in the medium :math:`c_s`:
 
 .. math::
-   p(t) - p_{ref} = c_s ^ 2 (\rho(t) - \rho_{ref})
+   p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
 
 Artifacts
 =========
@@ -74,7 +74,7 @@ In order to use the **pressure module**, the user has to provide a set of artifa
 #. A lnas file: It contains the information about the mesh.
 #. HDF time series: It contains the pressure signals indexed by each of the mesh triangles.
 #. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
-#. Zoning information (Optional): Necessary for defining the bounding area for calculating shape and net force coefficients. It is not necessary for pressure coefficient use case only. 
+#. Zoning information (Optional): Necessary for defining the bounding area for calculating shape coefficients. 
 
 The available use cases for determinating different coefficients using this module are listed below:
 

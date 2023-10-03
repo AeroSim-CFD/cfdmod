@@ -50,7 +50,7 @@ Artifacts:
 
 #. A lnas file: It contains the information about the mesh.
 #. HDF time series: It contains the pressure coefficient signals indexed by each of the mesh triangles.
-#. Zoning information: Necessary for defining the bounding area for calculating shape and liquid force coefficients.
+#. Zoning information: Necessary for defining the bounding area for calculating shape coefficients.
 
 Outputs:
 ========
