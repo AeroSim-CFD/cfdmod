@@ -54,33 +54,36 @@ Pressure signals examples can be seen below:
 
     Pressure signal where domain static pressure can be neglected
 
-Pressure analysis are usually performed in an adimensionalized form. 
+Pressure analysis are usually performed in an dimensionless form. 
 To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
 
 .. math::
    q = \frac{1}{2} \bar{\rho}_{\infty} U_H ^ 2
 
-Normally the pressure signals obtained with Nassu solver are exported using LBM units such as :math:`\rho`.
-The transformation of :math:`\rho` into pressure units :math:`[Pa]`, uses the speed of sound in the medium :math:`c_s`:
+The pressure signals obtained with Nassu solver are exported using LBM density units such as :math:`\rho`.
+The transformation of :math:`\rho` into pressure units, uses the speed of sound in the medium :math:`c_s`:
 
 .. math::
    p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
+
+.. important:: It is essential to use the **same unit system** for all variables. For example, the value for the speed of sound in LBM units is 1/√3, while in SI is 340 m/s.
 
 Artifacts
 =========
 
 In order to use the **pressure module**, the user has to provide a set of artifacts:
 
-#. A lnas file: It contains the information about the mesh.
-#. HDF time series: It contains the pressure signals indexed by each of the mesh triangles.
-#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
-#. Zoning information (Optional): Necessary for defining the bounding area for calculating shape coefficients. 
+#. **A lnas file**: It contains the information about the mesh.
+#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
+#. **Static pressure time series**: It contains the pressure signals for probes far away from the building.
+#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters, such as zoning information.
 
 The available use cases for determinating different coefficients using this module are listed below:
 
 * `Pressure Coefficient <./pressure_coefficient.rst>`_
 * `Shape Coefficient <./shape_coefficient.rst>`_
 * `Force Coefficient <./force_coefficient.rst>`_
+* `Momentum Coefficient <./momentum_coefficient.rst>`_
 
 .. toctree::
    :maxdepth: 1
@@ -90,3 +93,5 @@ The available use cases for determinating different coefficients using this modu
    Pressure Coefficient <./pressure_coefficient.rst>
    Shape Coefficient <./shape_coefficient.rst>
    Force Coefficient <./force_coefficient.rst>
+   Momentum Coefficient <./momentum_coefficient.rst>
+   Parameters <./parameters.rst>

@@ -2,7 +2,7 @@
 Pressure Coefficient
 ********************
 
-The pressure coefficient is an **adimensionalized form of the pressure signal**.
+The pressure coefficient is an **dimensionless form of the pressure signal**.
 It is obtained by the following expression:
 
 .. math::
@@ -18,13 +18,14 @@ However, it is not the final result to be delivered to clients.
 Artifacts:
 ==========
 
-#. A lnas file: It contains the information about the mesh.
-#. HDF time series: It contains the pressure signals indexed by each of the mesh triangles.
-#. Domain static pressure time series: It contains the pressure signals for probes far away from the building.
+#. **A lnas file**: It contains the information about the mesh.
+#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
+#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters.
+#. **Static pressure time series**: It contains the pressure signals for probes far away from the building.
 
 Outputs:
 ========
 
-#. **Adimensionalized time series**: pressure coefficient time series for each triangle.
+#. **Dimensionless time series**: pressure coefficient time series for each triangle.
 #. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each triangle.
 #. **VTK File**: contains the statistical values inside a mesh representation (VTK).
