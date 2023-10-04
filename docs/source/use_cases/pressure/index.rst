@@ -85,6 +85,12 @@ The available use cases for determinating different coefficients using this modu
 * `Force Coefficient <./force_coefficient.rst>`_
 * `Momentum Coefficient <./momentum_coefficient.rst>`_
 
+An Illustration of the modules pipeline can be seen below:
+
+.. figure:: /_static/pressure/pressure_pipeline.png
+    :width: 100 %
+    :align: center
+
 .. toctree::
    :maxdepth: 1
    :caption: Pressure use Cases
