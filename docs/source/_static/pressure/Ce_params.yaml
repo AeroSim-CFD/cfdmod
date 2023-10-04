@@ -1,0 +1,7 @@
+zoning:
+  zoning1:
+    yaml: "zoning_params.yaml"
+shape_coefficient:
+  pattern_1:
+    zoning: zoning1
+    variables: ["min", "max", "std", "avg", "skewness", "kurtosis"]

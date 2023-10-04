@@ -2,7 +2,7 @@
 Momentum Coefficient
 ********************
 
-Similarly to the force coefficient, this coefficient is defined as a resulting momentum coefficient of a body.
+Similarly to the force coefficient, this coefficient is defined as a resulting momentum coefficient of a **body**.
 
 It is defined as a sum of the resulting momentum for each triangle of each surface of the body:
 
@@ -38,12 +38,56 @@ The representative volume can be calculated as:
 .. math::
    V_{rep} = b h l
 
+A common application of the momentum coefficient requires sectioning the body in different regions.
+To do so, the same logic applied to the shape coefficient is used to **determine the respecting region** of each of the body's triangles.
+If its center lies inside the region intervals, then it belongs to it.
+
+The result is a sectionated body in different **sub-bodies for each region**.
+When sectioning the body, the respecting representative volume should be the same as the sub-body representative volume.
+
+.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **region, surface and body** definitions.
+
 Like the other coefficients, we can apply statistical analysis to the momentum coefficient.
 
 By definition, the momentum coefficient is a **property of a body**.
 
 It is used for primary and secondary structures design.
 It can be seen as the resulting torsion effect of the wind induced stress over a body.
+
+An example of the parameters file required for calculating the momentum coefficient can be seen below:
+
+.. literalinclude:: /_static/pressure/Cm_params.yaml
+    :language: yaml
+
+To invoke and run the calculation, the following command can be used:
+
+.. code-block:: Bash
+
+   poetry run python -m cfdmod.use_cases.pressure.Cm \
+      --output {OUTPUT_PATH} \
+      --cp     {CP_SERIES_PATH} \
+      --mesh   {LNAS_PATH} \
+      --config {CONFIG_PATH}
+
+Or it can be generated together with the pressure data conversion:
+
+.. code-block:: Bash
+
+   poetry run python -m cfdmod.use_cases.pressure \
+      --output {OUTPUT_PATH} \
+      --cp     {CP_SERIES_PATH} \
+      --mesh   {LNAS_PATH} \
+      --config {CONFIG_PATH} \
+      --Cm
+
+# TODO: reference the notebooks
+
+Use cases:
+==========
+
+* **Canopies**
+* **Buildings**
+* **Building paviments**
 
 Artifacts:
 ==========

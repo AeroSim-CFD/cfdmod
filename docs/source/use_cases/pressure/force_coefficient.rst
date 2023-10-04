@@ -49,12 +49,58 @@ One can also define the representative area as a vector:
 .. math::
    A_{rep} = [A_x, A_y, A_z]
 
+A common application of the net force coefficient requires sectioning the body in different regions.
+To do so, the same logic applied to the shape coefficient is used to **determine the respecting region** of each of the body's triangles.
+If its center lies inside the region intervals, then it belongs to it.
+
+The result is a sectionated body in different **sub-bodies for each region**.
+When sectioning the body, the respecting representative area should be the same as the sub-body representative area.
+
+.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **region, surface and body** definitions.
+
 Like the other coefficients, we can apply statistical analysis to the net force coefficient.
 
 By definition, the net force coefficient is a **property of a body**.
 
 It is used for primary and secondary structures design.
 It can be seen as the resulting effect of the wind induced stress over a body.
+
+An example of the parameters file required for calculating the net force coefficient can be seen below:
+
+.. literalinclude:: /_static/pressure/Cf_params.yaml
+    :language: yaml
+
+To invoke and run the calculation, the following command can be used:
+
+.. code-block:: Bash
+
+   poetry run python -m cfdmod.use_cases.pressure.Cf \
+      --output {OUTPUT_PATH} \
+      --cp     {CP_SERIES_PATH} \
+      --mesh   {LNAS_PATH} \
+      --config {CONFIG_PATH}
+
+Or it can be generated together with the pressure data conversion:
+
+.. code-block:: Bash
+
+   poetry run python -m cfdmod.use_cases.pressure \
+      --output {OUTPUT_PATH} \
+      --cp     {CP_SERIES_PATH} \
+      --mesh   {LNAS_PATH} \
+      --config {CONFIG_PATH} \
+      --Cf
+
+# TODO: reference the notebooks
+
+
+Use cases:
+==========
+
+* **Canopies**
+* **Roof vents**
+* **Buildings**
+* **Building paviments**
 
 Artifacts:
 ==========

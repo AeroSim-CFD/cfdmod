@@ -21,12 +21,12 @@ force_coefficient:
     pattern_1:
       yaml: "zoning_params.yaml"
       variables: ["Cfx", "Cfy", "Cfz"]
-    # surfaces: ["surface1", "surface2", "surface3"] # 1 + 2 + 3
+      statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
   galpao:
     pattern_1:
       yaml: "zoning_params.yaml"
       variables: ["Cfz"]
-    # surfaces: [] # All surfaces
+      statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 shape_coefficient:
   pattern_1:
     yaml: "zoning_params.yaml"

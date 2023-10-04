@@ -66,3 +66,8 @@ To define which region the triangle belongs, its center coordinate is used to ev
 Then the triangle is indexed by the corresponding region.
 
 .. important:: The rule to apply and guarantee that **every triangle belongs to a region and one only**, is to include the upper limit only if it is the last one. Otherwise, the upper limit is not included, only the lower limit is.
+
+The definition of the region configuration has the following structure:
+
+.. literalinclude:: /_static/pressure/zoning_params.yaml
+    :language: yaml
