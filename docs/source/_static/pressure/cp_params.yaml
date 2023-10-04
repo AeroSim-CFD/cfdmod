@@ -1,0 +1,5 @@
+# Select the time interval to filter the signal and calculate statistics
+timestep_range: [10000, 40000]
+# Define values for pressure adimensionalization
+dynamic_pressure:
+  U_H: 10 # Velocity at the building interest height

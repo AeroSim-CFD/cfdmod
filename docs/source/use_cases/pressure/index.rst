@@ -95,3 +95,4 @@ The available use cases for determinating different coefficients using this modu
    Force Coefficient <./force_coefficient.rst>
    Momentum Coefficient <./momentum_coefficient.rst>
    Parameters <./parameters.rst>
+   Definitions <./definitions.rst>

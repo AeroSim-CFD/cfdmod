@@ -1,0 +1,19 @@
+global_zoning:
+  x: []
+  y: []
+  z: []
+no_zoning:
+  surfaces: [] # Ignore region mesh generation
+exclude:
+  surfaces: [] # Surfaces to ignore when calculating shape coefficient
+exceptions:
+  zoning1:
+    x: []
+    y: []
+    z: []
+    surfaces: []
+  zoning2:
+    x: []
+    y: []
+    z: []
+    surfaces: []
