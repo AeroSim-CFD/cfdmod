@@ -17,20 +17,6 @@ Its geometry is described as a STL file, which looks like this:
 
 .. important:: All surfaces of a structure **must be defined in the pre-processing** (before running the simulation).
 
-
-Body
-====
-
-Body is a collection of surfaces that together define a volume.
-For example, a generic building is composed by a left + right side roofs and walls, and a front + back side walls
-Each surface is colored with different colors in the image below:
-
-.. image:: /_static/pressure/body.png
-    :width: 85 %
-    :align: center
-
-.. important:: All of the body's surfaces **must be separated before converting to LNAS** (before running the simulation).
-
 Regions
 =======
 
@@ -38,7 +24,7 @@ Regions are defined by x, y and z intervals.
 Each combination of the three intervals result in different regions.
 For example, consider the following intervals definiton:
 
-.. code-block:: python
+.. code-block::
 
     x_intervals = [0,100,200,300,400]
     y_intervals = [0,50,100]
@@ -46,7 +32,7 @@ For example, consider the following intervals definiton:
 
 There will be 8 different regions as a result, (4 intervals in x * 2 intervals in y * 1 interval in z):
 
-.. code-block:: python
+.. code-block::
 
     R1: 0   <= x <  100, 0  <= y <  50,  0 <= z <= 15
     R2: 0   <= x <  100, 50 <= y <= 100, 0 <= z <= 15
@@ -61,7 +47,7 @@ There will be 8 different regions as a result, (4 intervals in x * 2 intervals i
     :width: 85 %
     :align: center
 
-The regions are used to filter triangles for a surface or for a body, grouping them together for processing.
+The regions are used to filter triangles for a **surface, or a collection of surfaces**, grouping them together for processing.
 To define which region the triangle belongs, its center coordinate is used to evaluate in which intervals it lies.
 Then the triangle is indexed by the corresponding region.
 
@@ -71,3 +57,35 @@ The definition of the region configuration has the following structure:
 
 .. literalinclude:: /_static/pressure/zoning_params.yaml
     :language: yaml
+
+Body
+====
+
+Body is a collection of surfaces that together define a volume.
+For example, a generic building is composed by a left + right side roofs and walls, and a front + back side walls
+Each surface is colored with different colors in the image below:
+
+.. image:: /_static/pressure/body.png
+    :width: 85 %
+    :align: center
+
+.. important:: All of the body's surfaces **must be separated before converting to LNAS** (before running the simulation).
+
+Sub-Body
+========
+
+Sub-Body is a section of a body using defined intervals.
+If we section a generic building, using the following intervals:
+
+.. code-block:: python
+
+    x_intervals = [0,200,400]
+
+We'll get 2 different Sub-Bodies:
+
+.. image:: /_static/pressure/sub_body.png
+    :width: 85 %
+    :align: center
+
+.. note:: Sub-Body division **does not require a prior separation** before converting to LNAS.
+

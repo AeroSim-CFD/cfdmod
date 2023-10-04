@@ -1,33 +1,32 @@
-zoning:
-  zoning1:
-    yaml: "zoning_params.yaml"
-  zoning2:
-    global_zoning:
-      ...
+bodies:
+  marquise:
+    surfaces: [list_of_surfaces_of_marquise]
+  lanternim:
+    surfaces: [list_of_surfaces_of_lanternim]
+  building:
+    surfaces: [building]
 pressure_coefficients:
   timestep_range: [10000, 40000]
   dynamic_pressure:
     U_H: 10
   statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 momentum_coefficient:
-  building:
-    pattern_1:
-      lever_origin: [0, 10, 10]
-      zoning: zoning2
-      variables: ["Cmx", "Cmy", "Cmz"]
-      statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  measurement_1:
+    bodies: [marquise, lanternim]
+    variables: ["Cmx", "Cmy", "Cmz"]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+    lever_origin: [0, 10, 10]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 force_coefficient:
-  marquise1:
-    pattern_1:
-      yaml: "zoning_params.yaml"
-      variables: ["Cfx", "Cfy", "Cfz"]
-      statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
-  galpao:
-    pattern_1:
-      yaml: "zoning_params.yaml"
-      variables: ["Cfz"]
-      statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  measurement_1:
+    bodies: ["building"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 shape_coefficient:
   pattern_1:
-    yaml: "zoning_params.yaml"
-    variables: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    zoning: 
+      yaml: "zoning_params.yaml"
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

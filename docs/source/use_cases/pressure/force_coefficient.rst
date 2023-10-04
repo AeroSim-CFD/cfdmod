@@ -20,13 +20,13 @@ The net resulting force coefficient is defined as:
 It can also be defined for each axis direction:
 
 .. math::
-   C_{fx} = \frac{\sum Fx_{res}}{q A_{x}} = \frac{Fx_{green} + Fx_{red}}{q A_{x}} = \frac{\sum{c_{pi} A_{ix}} - \sum{c_{pj} A_{jx}}}{A_{x}}
+   C_{fx} = \frac{\sum Fx_{res}}{q A_{x}} = \frac{Fx_{green} + Fx_{red}}{q A_{x}} = \frac{\sum{c_{pi} A_{ix}} + \sum{c_{pj} A_{jx}}}{A_{x}}
 
 .. math::
-   C_{fy} = \frac{\sum Fy_{res}}{q A_{y}} = \frac{Fy_{green} + Fy_{red}}{q A_{y}} = \frac{\sum{c_{pi} A_{iy}} - \sum{c_{pj} A_{jy}}}{A_{y}}
+   C_{fy} = \frac{\sum Fy_{res}}{q A_{y}} = \frac{Fy_{green} + Fy_{red}}{q A_{y}} = \frac{\sum{c_{pi} A_{iy}} + \sum{c_{pj} A_{jy}}}{A_{y}}
 
 .. math::
-   C_{fz} = \frac{\sum Fz_{res}}{q A_{z}} = \frac{Fz_{green} + Fz_{red}}{q A_{z}} = \frac{\sum{c_{pi} A_{iz}} - \sum{c_{pj} A_{jz}}}{A_{z}}
+   C_{fz} = \frac{\sum Fz_{res}}{q A_{z}} = \frac{Fz_{green} + Fz_{red}}{q A_{z}} = \frac{\sum{c_{pi} A_{iz}} + \sum{c_{pj} A_{jz}}}{A_{z}}
 
 The representative area is defined as a **projection of the bounding box** for the body composed by the selected surfaces, for each direction.
 For example, the following image shows a generic building, and its bounding box's dimensions:
@@ -49,14 +49,14 @@ One can also define the representative area as a vector:
 .. math::
    A_{rep} = [A_x, A_y, A_z]
 
-A common application of the net force coefficient requires sectioning the body in different regions.
-To do so, the same logic applied to the shape coefficient is used to **determine the respecting region** of each of the body's triangles.
-If its center lies inside the region intervals, then it belongs to it.
+A common application of the net force coefficient requires sectioning the body in different **sub-bodies**.
+To do so, a similar logic applied to the shape coefficient is used to **determine the respecting sub-body** of each of the body's triangles.
+If its center lies inside the sub-body volume, then it belongs to it.
 
-The result is a sectionated body in different **sub-bodies for each region**.
+The result is a sectionated body in different **sub-bodies for each interval**.
 When sectioning the body, the respecting representative area should be the same as the sub-body representative area.
 
-.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **region, surface and body** definitions.
+.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 
 Like the other coefficients, we can apply statistical analysis to the net force coefficient.
 

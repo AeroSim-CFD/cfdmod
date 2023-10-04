@@ -100,5 +100,5 @@ An Illustration of the modules pipeline can be seen below:
    Shape Coefficient <./shape_coefficient.rst>
    Force Coefficient <./force_coefficient.rst>
    Momentum Coefficient <./momentum_coefficient.rst>
-   Parameters <./parameters.rst>
    Definitions <./definitions.rst>
+   Parameters <./parameters.rst>
