@@ -44,7 +44,7 @@ For example, consider the following intervals definiton:
     y_intervals = [0,50,100]
     z_intervals = [0,15]
 
-There will be 8 different regions as a result:
+There will be 8 different regions as a result, (4 intervals in x * 2 intervals in y * 1 interval in z):
 
 .. code-block:: python
 
@@ -62,5 +62,7 @@ There will be 8 different regions as a result:
     :align: center
 
 The regions are used to filter triangles for a surface or for a body, grouping them together for processing.
+To define which region the triangle belongs, its center coordinate is used to evaluate in which intervals it lies.
+Then the triangle is indexed by the corresponding region.
 
 .. important:: The rule to apply and guarantee that **every triangle belongs to a region and one only**, is to include the upper limit only if it is the last one. Otherwise, the upper limit is not included, only the lower limit is.
