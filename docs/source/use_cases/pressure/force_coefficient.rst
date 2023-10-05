@@ -50,11 +50,11 @@ One can also define the representative area as a vector:
    A_{rep} = [A_x, A_y, A_z]
 
 A common application of the net force coefficient requires sectioning the body in different **sub-bodies**.
-To do so, a similar logic applied to the shape coefficient is used to **determine the respecting sub-body** of each of the body's triangles.
+To do so, a similar logic applied to the shape coefficient is used to **determine the respective sub-body** of each of the body's triangles.
 If its center lies inside the sub-body volume, then it belongs to it.
 
 The result is a sectionated body in different **sub-bodies for each interval**.
-When sectioning the body, the respecting representative area should be the same as the sub-body representative area.
+When sectioning the body, the respective representative area should be the same as the sub-body representative area.
 
 .. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 

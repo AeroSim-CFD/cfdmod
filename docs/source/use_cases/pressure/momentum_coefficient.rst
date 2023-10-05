@@ -39,11 +39,11 @@ The representative volume can be calculated as:
    V_{rep} = b h l
 
 A common application of the momentum coefficient requires sectioning the body in **different sub-bodies**.
-To do so, the same logic applied to the force coefficient is used to **determine the respecting sub-body** of each of the body's triangles.
+To do so, the same logic applied to the force coefficient is used to **determine the respective sub-body** of each of the body's triangles.
 If its center lies inside the sub-body volume, then it belongs to it.
 
 The result is a sectionated body in different **sub-bodies for each interval**.
-When sectioning the body, the respecting representative volume should be the same as the sub-body representative volume.
+When sectioning the body, the respective representative volume should be the same as the sub-body representative volume.
 
 .. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 

@@ -2,12 +2,12 @@
 Shape Coefficient
 *****************
 
-Shape coefficient describe the behavior of the **resulting force applied to a surface**.
+Shape coefficient describe the behavior of the **resulting pressure applied to a surface**.
 
 For example, consider a rectangular surface composed by triangles.
 At each of its triangles' center, pressure signals are obtained.
 However, we can calculate the resulting force by summing the pressure load of each triangle.
-To do so, pressure is transformed into a force by multiplying by the respecting **triangle area**.
+To do so, pressure is transformed into a force by multiplying by the respective **triangle area**.
 
 .. image:: /_static/pressure/surface.png
     :width: 50 %
@@ -23,8 +23,6 @@ Even so, we can define a resulting force for the surface, by summing its triangl
 .. math::
    F_{res} = \sum{f_{i}} = p_{1} A_{1} + p_{2} A_{2} + p_{3} A_{3} + p_{4} A_{4} = q (c_{p1} A_{1} + c_{p2} A_{2} + c_{p3} A_{3} + c_{p4} A_{4})
 
-.. important::  Note that each triangle force has a **direction** attached to it. Its direction is the same as the normal for the given triangle. The direction of each triangle force must be accounted for when summing to compose the **surface resulting force**. If all triangles are **coplanar**, then it can be perfomed a scalar sum and the resulting direction is the same as to the triangles.
-
 The shape coefficient is based on the definition of an area of influence.
 This area is delimited by x, y and z intervals.
 Each combination of the intervals results in a **region**.
@@ -34,10 +32,10 @@ Each combination of the intervals results in a **region**.
 To calculate the shape coefficient of a given region, the **surface triangles** which center lies inside this region must be filtered.
 Then, the resulting force is evaluated for the filtered triangles data. 
 After that, the shape coefficient can be calculated.
-For the previous example, considering that it only exists one region:
+For the previous example, considering a case where only one region exists:
 
 .. math::
-   C_{e} = \frac{F_{res}}{q A_{surf}} = \frac{(c_{p1} A_{1} + c_{p2} A_{2} + c_{p3} A_{3} + c_{p4} A_{4})}{A_{surf}}
+   C_{e} = \frac{F_{res}}{q A_{region}} = \frac{(c_{p1} A_{1} + c_{p2} A_{2} + c_{p3} A_{3} + c_{p4} A_{4})}{A_{region}}
 
 And we can obatin its **maximum, minimum, RMS and average** values.
 

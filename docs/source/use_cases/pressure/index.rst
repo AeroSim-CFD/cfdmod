@@ -38,8 +38,8 @@ Multiple probes can be set to access the domain static pressure.
 
 Normally, the static pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
 
-If the fluctuation of the static pressure signal is not relevant, its effects can be neglected.
-Thus, the pressure signals over the structure does not need the static pressure time series.
+If the fluctuation of the static pressure signal is not relevant, it can be considered constant.
+Thus, only the time averaged static pressure (density) is used.
 Pressure signals examples can be seen below:
 
 .. figure:: /_static/pressure/rho_inf_significant.png
