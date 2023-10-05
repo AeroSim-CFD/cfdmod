@@ -1,7 +1,7 @@
 pressure_coefficients:
   # Select the time interval to filter the signal and calculate statistics
   timestep_range: [10000, 40000]
-  # Define how to consider the effect of static pressure
+  # Define how to consider the effect of static reference pressure
   domain_pressure: "average" # or "instantaneous"
   # Define values for pressure adimensionalization
   dynamic_pressure:

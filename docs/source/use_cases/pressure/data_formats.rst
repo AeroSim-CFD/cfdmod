@@ -48,6 +48,8 @@ Coefficient data formats
 :math:`C_e`
 ==============
 
+.. important:: All tables for shape coefficient listed below are defined for **each of the body's surfaces**, unlike the other coefficients. The idea is to keep the processing for a single surface and not account for unrelated data. 
+
 .. list-table:: :math:`C_e(t)`
    :widths: 33 33 33
    :header-rows: 1

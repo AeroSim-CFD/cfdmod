@@ -25,7 +25,7 @@ An example of a pressure signal is shown below:
 
 The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum, RMS or average** values for each vertex.
 
-However, to correctly access the pressure effects over a structure, by definition, it needs to account for the **static pressure**.
+However, to correctly access the pressure effects over a structure, by definition, it needs to account for the **static reference pressure**.
 For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:
 
 .. image:: /_static/pressure/domain.png
@@ -33,26 +33,26 @@ For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a 
     :align: center
 
 In order to access the effects of pressure in :math:`p_1` and :math:`p_2`, data of a probe far away from the building must be obtained.
-This data is a time series of the **static pressure**, :math:`p_{\infty}`.
-Multiple probes can be set to access the domain static pressure.
+This data is a time series of the **static reference pressure**, :math:`p_{\infty}`.
+Multiple probes can be set to access the static reference pressure.
 
-Normally, the static pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
+Normally, the static reference pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
 
-If the fluctuation of the static pressure signal is not relevant, it can be considered constant.
-Thus, only the time averaged static pressure (density) is used.
+If the fluctuation of the static reference pressure signal is not relevant, it can be considered constant.
+Thus, only the time averaged static reference pressure (density) is used.
 Pressure signals examples can be seen below:
 
 .. figure:: /_static/pressure/rho_inf_significant.png
     :width: 85 %
     :align: center
 
-    Pressure signal where domain static pressure should be considered
+    Pressure signal where static reference pressure should be considered
 
 .. figure:: /_static/pressure/rho_inf_not_significant.png
     :width: 85 %
     :align: center
 
-    Pressure signal where domain static pressure can be neglected
+    Pressure signal where static reference pressure can be neglected
 
 Pressure analysis are usually performed in an dimensionless form. 
 To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
@@ -75,7 +75,7 @@ In order to use the **pressure module**, the user has to provide a set of artifa
 
 #. **A lnas file**: It contains the information about the mesh.
 #. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
-#. **Static pressure time series**: It contains the pressure signals for probes far away from the building.
+#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
 #. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters, such as zoning information.
 
 The available use cases for determinating different coefficients using this module are listed below:

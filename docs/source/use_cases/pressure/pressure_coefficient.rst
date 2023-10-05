@@ -39,7 +39,7 @@ Artifacts:
 #. **A lnas file**: It contains the information about the mesh.
 #. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
 #. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters.
-#. **Static pressure time series**: It contains the pressure signals for probes far away from the building.
+#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
 
 Outputs:
 ========
