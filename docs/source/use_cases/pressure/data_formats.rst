@@ -118,34 +118,30 @@ Coefficient data formats
 ==============
 
 .. list-table:: :math:`C_f(t)`
-   :widths: 15 15 15 15 15 15
+   :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - timestep
      - Cf_x
      - Cf_y
      - Cf_z
    * - 0
-     - 0
      - 10000
      - 1.25
      - 1.15
      - -1.1
    * - 1
-     - 0
      - 10000
      - 1.5
      - 0.9
      - -1.15
 
 .. list-table:: :math:`C_{fx} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -153,7 +149,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -161,7 +156,6 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
@@ -170,11 +164,10 @@ Coefficient data formats
      - 0.13
 
 .. list-table:: :math:`C_{fy} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -182,7 +175,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -190,7 +182,6 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
@@ -199,11 +190,10 @@ Coefficient data formats
      - 0.13
 
 .. list-table:: :math:`C_{fz} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -211,7 +201,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -219,7 +208,6 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
@@ -227,38 +215,45 @@ Coefficient data formats
      - 0.11
      - 0.13
 
-:math:`C_m`
-==============
-
-.. list-table:: :math:`C_m(t)`
-   :widths: 15 15 15 15 15 15
+.. list-table:: :math:`C_f` (sub-bodies)
+   :widths: 50 50
    :header-rows: 1
 
    * - point_idx
      - sub_body_idx
+   * - 0
+     - 0
+   * - 1
+     - 0
+
+:math:`C_m`
+==============
+
+.. list-table:: :math:`C_m(t)`
+   :widths: 15 15 15 15 15
+   :header-rows: 1
+
+   * - sub_body_idx
      - timestep
      - Cm_x
      - Cm_y
      - Cm_z
    * - 0
-     - 0
      - 10000
      - 1.25
      - 1.15
      - -1.1
    * - 1
-     - 0
      - 10000
      - 1.5
      - 0.9
      - -1.15
 
 .. list-table:: :math:`C_{mx} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -266,7 +261,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -274,7 +268,6 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
@@ -283,11 +276,10 @@ Coefficient data formats
      - 0.13
 
 .. list-table:: :math:`C_{my} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -295,7 +287,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -303,7 +294,6 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
@@ -312,11 +302,10 @@ Coefficient data formats
      - 0.13
 
 .. list-table:: :math:`C_{mz} (stats)`
-   :widths: 20 20 10 10 10 10 10 10
+   :widths: 20 10 10 10 10 10 10
    :header-rows: 1
 
-   * - point_idx
-     - sub_body_idx
+   * - sub_body_idx
      - max
      - min
      - avg
@@ -324,7 +313,6 @@ Coefficient data formats
      - skewness
      - kurtosis
    * - 0
-     - 0
      - 1.25
      - 0.9
      - 1.1
@@ -332,10 +320,20 @@ Coefficient data formats
      - 0.1
      - 0.15
    * - 1
-     - 0
      - 1.15
      - 0.95
      - 1.13
      - 0.19
      - 0.11
      - 0.13
+
+.. list-table:: :math:`C_m` (sub-bodies)
+   :widths: 50 50
+   :header-rows: 1
+
+   * - point_idx
+     - sub_body_idx
+   * - 0
+     - 0
+   * - 1
+     - 0
