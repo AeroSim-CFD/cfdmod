@@ -7,9 +7,8 @@ bodies:
     surfaces: [building]
 pressure_coefficients:
   timestep_range: [10000, 40000]
-  domain_pressure: "average" # or "instantaneous"
-  dynamic_pressure:
-    U_H: 10
+  reference_pressure: "average" # or "instantaneous"
+  U_H: 10 # Velocity at the building interest height
   statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 momentum_coefficient:
   measurement_1:
