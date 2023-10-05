@@ -1,6 +1,14 @@
+from __future__ import annotations
+
+__all__ = ["CpConfig"]
+
+import pathlib
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.utils import read_yaml
 
 
 class CpConfig(BaseModel):
@@ -16,8 +24,19 @@ class CpConfig(BaseModel):
         + "If set to average, static pressure signal will be averaged."
         + "If set to instantaneous, static pressure signal will be transient.",
     )
-    dynamic_pressure: dict[str, float] = Field(
+    U_H: float = Field(
         ...,
-        title="Dynamic Pressure variables",
-        description="Contains the data for calculating dynamic pressure",
+        title="Reference Flow Velocity",
+        description="Value for reference Flow Velocity to calculate dynamic pressure",
     )
+    statistics: list[Statistics] = Field(
+        ...,
+        title="List of statistics",
+        description="List of statistics to calculate from pressure coefficient signal",
+    )
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CpConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals["pressure_coefficients"])
+        return cfg
