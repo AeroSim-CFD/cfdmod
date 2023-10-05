@@ -1,9 +1,9 @@
 pressure_coefficients:
   # Select the time interval to filter the signal and calculate statistics
-  timestep_range: [10000, 40000]
+  timestep_range: [10000, 20000]
   # Define how to consider the effect of static reference pressure
   reference_pressure: "average" # or "instantaneous"
   # Velocity at the building interest height
-  U_H: 10
+  U_H: 0.05
   # Define which statistics will be calculated
   statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
