@@ -95,12 +95,12 @@ def main(*args):
         ref_press_mode=post_proc_cfg.reference_pressure,
     )
     logger.info("Transformed pressure into coefficients")
-    cp_data.to_hdf(output_path / "cp_t.hdf", key="cp_t", mode="w")
+    cp_data.to_hdf(output_path / "cp_t.hdf", key="cp_t", mode="w", index=False)
     logger.info("Exported coefficients")
 
     # OUTPUT 2: cp_stats
     cp_stats = calculate_statistics(cp_data, statistics_to_apply=post_proc_cfg.statistics)
-    cp_stats.to_hdf(output_path / "cp_stats.hdf", key="cp_t", mode="w")
+    cp_stats.to_hdf(output_path / "cp_stats.hdf", key="cp_t", mode="w", index=False)
     logger.info("Exported statistics")
 
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
