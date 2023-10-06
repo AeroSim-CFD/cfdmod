@@ -47,3 +47,9 @@ Outputs:
 #. **Dimensionless time series**: pressure coefficient time series for each triangle.
 #. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each triangle.
 #. **VTK File**: contains the statistical values inside a mesh representation (VTK).
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Generate pressure coefficients <calculate_cp.ipynb>
