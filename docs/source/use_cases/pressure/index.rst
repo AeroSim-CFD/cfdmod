@@ -5,54 +5,38 @@ Pressure
 The **Pressure** module handles the analysis and post processing of pressure time series data over a body.
 Data comes from CFD transient simulations, and by definition is attached to a mesh.
 
-Mesh describes a body geometry, and contains a set of **discrete vertices** and a **set of triangles**.
-Triangles represent the link between 3 different vertices (*P1, P2, P3*). 
-Illustration of a mesh and a mesh triangle can be seen below:
+Mesh describes a body geometry, and contains a set of **discrete vertices** and a **set of triangles**, which is defined by a sequence of 3 vertices. 
+An illustration of a mesh and a mesh triangle is presented below:
 
 .. image:: /_static/pressure/mesh.png
     :width: 60 %
 .. image:: /_static/pressure/triangle.png
     :width: 35 %
 
-Pressure data is extracted at the **center of each of the mesh's triangles (C)**.
-The frequency for exporting pressure is set during the simulation setup.
-The resulting data has the form of a signal, or a time series.
-An example of a pressure signal is shown below:
+The pressure data is extracted at the **center of each of the mesh's triangles (C)**, with frequency of this export is defined by the simulation setup.
+
+The resulting data has the form of a time series signal for each extracted point, such as the example below.
 
 .. image:: /_static/pressure/pressure_signal.png
     :width: 65 %
     :align: center
 
-The analysis of this signal is based on statistical operations, such as finding the **maximum, minimum, RMS or average** values for each vertex.
+To process these signals, statistical operations, such as **maximum, minimum, RMS or average**, are applied as required by the use case.
 
-However, to correctly access the pressure effects over a structure, by definition, it needs to account for the **static reference pressure**.
-For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:
+================
+Units conversion
+================
 
-.. image:: /_static/pressure/domain.png
-    :width: 85 %
-    :align: center
+The pressure signals obtained with Nassu solver are exported using LBM density units such as :math:`\rho`. 
+To transform it to pressure can be done using the equation below.
 
-In order to access the effects of pressure in :math:`p_1` and :math:`p_2`, data of a probe far away from the building must be obtained.
-This data is a time series of the **static reference pressure**, :math:`p_{\infty}`.
-Multiple probes can be set to access the static reference pressure.
+.. math::
+   p = c_s ^ 2 \rho
 
-Normally, the static reference pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
+The speed of sound (:math:`c_s`) is defined as :math:`c_s^2=\frac{1}{3}` for our LBM modeling.
 
-If the fluctuation of the static reference pressure signal is not relevant, it can be considered constant.
-Thus, only the time averaged static reference pressure (density) is used.
-Pressure signals examples can be seen below:
-
-.. figure:: /_static/pressure/rho_inf_significant.png
-    :width: 85 %
-    :align: center
-
-    Pressure signal where static reference pressure should be considered
-
-.. figure:: /_static/pressure/rho_inf_not_significant.png
-    :width: 85 %
-    :align: center
-
-    Pressure signal where static reference pressure can be neglected
+.. important:: 
+    It is essential to use the **same unit system** for all variables. For example, the value for the speed of sound in LBM units is :math:`c_s^2=\frac{1}{3}`, while in SI is 340 m/s.
 
 Pressure analysis are usually performed in an dimensionless form. 
 To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
@@ -60,13 +44,43 @@ To do so, it needs to be divided by a **dynamic pressure** :math:`q`:
 .. math::
    q = \frac{1}{2} \bar{\rho}_{\infty} U_H ^ 2
 
-The pressure signals obtained with Nassu solver are exported using LBM density units such as :math:`\rho`.
-The transformation of :math:`\rho` into pressure units, uses the speed of sound in the medium :math:`c_s`:
+.. todo::
+    Define and describe what is :math:`\bar{\rho}_{\infty}` and :math:`U_H`
 
-.. math::
-   p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
+==================
+Reference pressure
+==================
 
-.. important:: It is essential to use the **same unit system** for all variables. For example, the value for the speed of sound in LBM units is 1/√3, while in SI is 340 m/s.
+To correctly assess the pressure effects over a structure, the operations needs to consider the **static reference pressure**.
+
+For example, consider a wind from a **Atmospheric Boundary Flow** coming onto a building, as suggests the image below:
+
+.. image:: /_static/pressure/domain.png
+    :width: 85 %
+    :align: center
+
+In order to assess the effects of pressure in :math:`p_1` and :math:`p_2`, data of a probe far away from the building must be obtained.
+This data is a time series of the **static reference pressure**, which is used as :math:`p_{\infty}`.
+Multiple probes can be set to assess the static reference pressure.
+
+.. note::
+    Normally, the static reference pressure probe is positioned at the frontside of the building, far above to avoid flow perturbations.
+
+If the fluctuation of the static reference pressure signal is not relevant, it can be considered constant.
+Thus, only the time averaged static reference pressure (density) is used.
+Pressure signals examples are presented below:
+
+.. figure:: /_static/pressure/rho_inf_significant.png
+    :width: 65 %
+    :align: center
+
+    Pressure signal where static reference pressure should be considered
+
+.. figure:: /_static/pressure/rho_inf_not_significant.png
+    :width: 65 %
+    :align: center
+
+    Pressure signal where static reference pressure can be neglected
 
 Artifacts
 =========
