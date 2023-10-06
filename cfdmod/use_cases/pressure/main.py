@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.cp_data import (
     calculate_statistics,
@@ -72,15 +73,19 @@ def get_args_process(args: list[str]) -> ArgsModel:
 def main(*args):
     args_use = get_args_process(*args)
     post_proc_cfg = CpConfig.from_file(pathlib.Path(args_use.config))
+    logger.info("Reading mesh description...")
     mesh = LagrangianFormat.from_folder(pathlib.Path(args_use.mesh))
+    logger.info("Mesh description loaded successfully!")
     output_path = pathlib.Path(args_use.output)
 
     static_data_path = pathlib.Path(args_use.s)
     body_data_path = pathlib.Path(args_use.p)
 
+    logger.info("Preparing to read pressure data...")
     press_data, body_data = read_pressure_data(
         static_data_path, body_data_path, post_proc_cfg.timestep_range
     )
+    logger.info("Read pressure data successfully!")
 
     # OUTPUT 1: cp(t)
     cp_data = transform_to_cp(
@@ -89,13 +94,17 @@ def main(*args):
         reference_vel=post_proc_cfg.U_H,
         ref_press_mode=post_proc_cfg.reference_pressure,
     )
+    logger.info("Transformed pressure into coefficients")
     cp_data.to_hdf(output_path / "cp_t.hdf", key="cp_t", mode="w")
+    logger.info("Exported coefficients")
 
     # OUTPUT 2: cp_stats
     cp_stats = calculate_statistics(cp_data, statistics_to_apply=post_proc_cfg.statistics)
     cp_stats.to_hdf(output_path / "cp_stats.hdf", key="cp_t", mode="w")
+    logger.info("Exported statistics")
 
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
 
     # OUTPUT 3: VTK cp_stats
     write_polydata(output_path / "cp_stats.vtp", polydata)
+    logger.info("Exported VTK file")
