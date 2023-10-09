@@ -2,8 +2,9 @@
 Coefficient data formats
 ************************
 
+^^^^^^^^^^^
 :math:`c_p`
-==============
+^^^^^^^^^^^
 
 .. list-table:: :math:`c_p(t)`
    :widths: 33 33 33
@@ -45,8 +46,9 @@ Coefficient data formats
      - 0.11
      - 0.13
 
+^^^^^^^^^^^
 :math:`C_e`
-==============
+^^^^^^^^^^^
 
 .. important:: All tables for shape coefficient listed below are defined for **each of the body's surfaces**, unlike the other coefficients. The idea is to keep the processing for a single surface and not account for unrelated data. 
 
@@ -116,8 +118,9 @@ Coefficient data formats
      - 0
      - 20
 
+^^^^^^^^^^^
 :math:`C_f`
-==============
+^^^^^^^^^^^
 
 .. list-table:: :math:`C_f(t)`
    :widths: 15 15 15 15 15
@@ -228,8 +231,9 @@ Coefficient data formats
    * - 1
      - 0
 
+^^^^^^^^^^^
 :math:`C_m`
-==============
+^^^^^^^^^^^
 
 .. list-table:: :math:`C_m(t)`
    :widths: 15 15 15 15 15
