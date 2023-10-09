@@ -27,12 +27,15 @@ class CeConfig(BaseModel):
     def from_file(cls, filename: pathlib.Path) -> dict[str, CeConfig]:
         config_dict: dict[str, CeConfig] = {}
         yaml_vals = read_yaml(filename)
+
         for pattern_lbl in yaml_vals["shape_coefficient"].keys():
             if "yaml" in yaml_vals["shape_coefficient"][pattern_lbl]["zoning"].keys():
                 zoning_path = yaml_vals["shape_coefficient"][pattern_lbl]["zoning"]["yaml"]
                 zoning_cfg = ZoningConfig.from_file(pathlib.Path(zoning_path))
                 yaml_vals["shape_coefficient"][pattern_lbl]["zoning"] = zoning_cfg.model_dump()
                 del zoning_path
+
             cfg = cls.model_validate(yaml_vals["shape_coefficient"][pattern_lbl])
             config_dict[pattern_lbl] = cfg
+
         return config_dict
