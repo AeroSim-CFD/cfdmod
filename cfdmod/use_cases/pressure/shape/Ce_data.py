@@ -19,14 +19,27 @@ def calculate_statistics(
 
     statistics_data = pd.DataFrame({"region_idx": region_data["region_idx"].unique()})
 
+    # if "avg" in statistics_to_apply:
+    #     statistics_data["Ce_avg"] = group_by_point["Ce"].mean()
+    # if "min" in statistics_to_apply:
+    #     statistics_data["Ce_min"] = group_by_point["Ce"].min()
+    # if "max" in statistics_to_apply:
+    #     statistics_data["Ce_max"] = group_by_point["Ce"].max()
+    # if "std" in statistics_to_apply:
+    #     statistics_data["Ce_rms"] = group_by_point["Ce"].std()
+
     if "avg" in statistics_to_apply:
-        statistics_data["Ce_avg"] = group_by_point["Ce"].mean()
+        average = group_by_point["Ce"].apply(lambda x: x.mean()).reset_index(name="mean")
+        statistics_data["Ce_avg"] = average["mean"]
     if "min" in statistics_to_apply:
-        statistics_data["Ce_min"] = group_by_point["Ce"].min()
+        minimum = group_by_point["Ce"].apply(lambda x: x.min()).reset_index(name="min")
+        statistics_data["Ce_min"] = minimum["min"]
     if "max" in statistics_to_apply:
-        statistics_data["Ce_max"] = group_by_point["Ce"].max()
+        maximum = group_by_point["Ce"].apply(lambda x: x.max()).reset_index(name="max")
+        statistics_data["Ce_max"] = maximum["max"]
     if "std" in statistics_to_apply:
-        statistics_data["Ce_rms"] = group_by_point["Ce"].std()
+        rms = group_by_point["Ce"].apply(lambda x: x.std()).reset_index(name="std")
+        statistics_data["Ce_rms"] = rms["std"]
 
     # Calculate skewness and kurtosis using apply
     if "skewness" in statistics_to_apply:
