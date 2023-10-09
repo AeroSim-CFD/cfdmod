@@ -6,7 +6,7 @@ shape_coefficient:
   pattern_2:
     zoning: 
       global_zoning:
-        x_intervals: [0, 100]
-        y_intervals: [0, 50]
+        x_intervals: [0, 250]
+        y_intervals: [0, 200]
         z_intervals: [0, 20]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

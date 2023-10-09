@@ -1,8 +1,8 @@
 # Define a default region rule
 global_zoning:
-  x_intervals: [0, 100]
-  y_intervals: [0, 50]
-  z_intervals: [0, 20]
+  x_intervals: [0, 125, 250]
+  y_intervals: [0, 100, 200]
+  z_intervals: [0, 10, 20]
 # Optional
 no_zoning: ["surface1"] # Select the surfaces to ignore region mesh generation
 # Optional

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 __all__ = ["ZoningConfig"]
 
+import itertools
 import pathlib
 from typing import Optional
 
+import pandas as pd
 from pydantic import BaseModel, Field, validator
 
 from cfdmod.utils import read_yaml
@@ -16,32 +18,44 @@ class ZoningConfig(BaseModel):
         title="Global Zoning Config",
         description="Default Zoning Config applied to all surfaces",
     )
-    no_zoning: Optional[list[str]] = Field(
-        None,
+    no_zoning: list[str] = Field(
+        [],
         title="No Zoning Surfaces",
         description="List of surfaces to ignore region mesh generation",
     )
-    exclude: Optional[list[str]] = Field(
-        None,
+    exclude: list[str] = Field(
+        [],
         title="Surfaces to exclude",
         description="List of surfaces to ignore when calculating shape coefficient",
     )
-    exceptions: Optional[dict[str, ExceptionZoningModel]] = Field(
-        None,
+    exceptions: dict[str, ExceptionZoningModel] = Field(
+        {},
         title="Dict with specific zoning",
         description="Define specific zoning config to specific surfaces."
         + "It overrides the global zoning config.",
     )
 
+    @validator("exceptions", always=True)
+    def validate_exceptions(cls, v):
+        exceptions = []
+        for exception_cfg in v.values():
+            exceptions += exception_cfg.surfaces
+        if len(exceptions) != len(set(exceptions)):
+            raise Exception("Invalid exceptions list, surface names must not repeat")
+        return v
+
     @validator("no_zoning", "exclude", always=True)
-    def validate_interval(cls, v):
-        if v is None:
-            return v
+    def validate_surface_list(cls, v):
         if len(v) != len(set(v)):
             raise Exception("Invalid surface list, names must not repeat")
-        if len(v) == 0:
-            raise Exception("Invalid surface list, list must not be empty")
         return v
+
+    @property
+    def surfaces_in_exception(self) -> list[str]:
+        exceptions = []
+        for exception_cfg in self.exceptions.values():
+            exceptions += exception_cfg.surfaces
+        return exceptions
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> ZoningConfig:
@@ -82,6 +96,69 @@ class ZoningModel(BaseModel):
                 raise Exception("Interval must have ascending order")
         return v
 
+    def offset_limits(self, offset_value: float):
+        """Add a new offset to the intervals limits to account for mesh deformations
+
+        Args:
+            offset_value (float): Offset value to add or subtract from the limits
+        """
+        self.x_intervals[0] -= offset_value
+        self.x_intervals[-1] += offset_value
+        self.y_intervals[0] -= offset_value
+        self.y_intervals[-1] += offset_value
+        self.z_intervals[0] -= offset_value
+        self.z_intervals[-1] += offset_value
+
+    def get_regions(self) -> list[tuple[tuple[float, float], ...]]:
+        """Get regions for intervals in each dimension
+
+        Returns:
+            list[tuple[tuple[float, float], ...]]: List of regions as
+                ((x_min, x_max), (y_min, y_max), (z_min, z_max)) for all intervals combinations
+        """
+        regions = []
+
+        interval_for_region = lambda intervals: [
+            (intervals[i], intervals[i + 1]) for i in range(len(intervals) - 1)
+        ]
+        x_regions = interval_for_region(self.x_intervals)
+        y_regions = interval_for_region(self.y_intervals)
+        z_regions = interval_for_region(self.z_intervals)
+
+        regions_iter = itertools.product(x_regions, y_regions, z_regions)
+        for region in regions_iter:
+            regions.append(region)
+
+        return regions
+
+    def get_regions_df(self) -> pd.DataFrame:
+        """Get dataframe for regions of intervals in each dimension
+
+        Returns:
+            pd.DataFrame: dataframe of intervals with keys
+                ["x_min", "x_max", "y_min", "y_max", "z_min", "z_max", "region_index"]
+        """
+
+        regions = self.get_regions()
+
+        regions_dct = {
+            "x_min": [],
+            "x_max": [],
+            "y_min": [],
+            "y_max": [],
+            "z_min": [],
+            "z_max": [],
+        }
+        for region in regions:
+            for i, d in enumerate(["x", "y", "z"]):
+                regions_dct[f"{d}_min"].append(region[i][0])
+                regions_dct[f"{d}_max"].append(region[i][1])
+
+        df_regions = pd.DataFrame(regions_dct)
+        df_regions["region_index"] = df_regions.index
+
+        return df_regions
+
 
 class ExceptionZoningModel(ZoningModel):
     surfaces: list[str] = Field(
@@ -91,9 +168,9 @@ class ExceptionZoningModel(ZoningModel):
     )
 
     @validator("surfaces", always=True)
-    def validate_interval(cls, v):
+    def validate_surface_list(cls, v):
         if len(v) != len(set(v)):
-            raise Exception("Invalid surface list, names must not repeat")
+            raise Exception("Invalid exceptions surface list, names must not repeat")
         if len(v) == 0:
-            raise Exception("Invalid surface list, list must not be empty")
+            raise Exception("Invalid exceptions surface list, list must not be empty")
         return v
