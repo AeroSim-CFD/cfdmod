@@ -38,5 +38,5 @@ class CpConfig(BaseModel):
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CpConfig:
         yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals["pressure_coefficients"])
+        cfg = cls(**yaml_vals["pressure_coefficient"])
         return cfg
