@@ -1,6 +1,6 @@
-***********
-Definitions
-***********
+********
+Concepts
+********
 
 Some definitions are needed to abstract some use cases rules.
 
