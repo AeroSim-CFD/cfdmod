@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 from dataclasses import dataclass
+import pandas as pd
 
 from nassu.lnas import LagrangianFormat
 
@@ -9,7 +10,7 @@ from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.cp_data import (
     calculate_statistics,
-    read_pressure_data,
+    filter_pressure_data,
     transform_to_cp,
 )
 
@@ -82,8 +83,10 @@ def main(*args):
     body_data_path = pathlib.Path(args_use.p)
 
     logger.info("Preparing to read pressure data...")
-    press_data, body_data = read_pressure_data(
-        static_data_path, body_data_path, post_proc_cfg.timestep_range
+    press_data: pd.DataFrame = pd.read_hdf(static_data_path) # type: ignore
+    body_data: pd.DataFrame = pd.read_hdf(body_data_path) # type: ignore
+    press_data, body_data = filter_pressure_data(
+        press_data, body_data, post_proc_cfg.timestep_range
     )
     logger.info("Read pressure data successfully!")
 
