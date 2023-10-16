@@ -66,7 +66,7 @@ To invoke and run the conversion, the following command can be used:
       --mesh   {LNAS_PATH} \
       --config {CONFIG_PATH}
 
-# TODO: reference the notebooks
+Another way to run the pressure coefficient conversion, is through the `notebook <calculate_cp.ipynb>`_
 
 Data format
 ===========
@@ -110,3 +110,9 @@ Data format
      - 0.19
      - 0.11
      - 0.13
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Transform cp <calculate_cp.ipynb>
