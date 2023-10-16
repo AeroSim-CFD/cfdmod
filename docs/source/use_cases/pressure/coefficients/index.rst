@@ -38,4 +38,4 @@ To get more information about the LNAS format, please see the documentation insi
    Pressure Coefficient <./pressure_coefficient.rst>
    Shape Coefficient <./shape_coefficient.rst>
    Force Coefficient <./force_coefficient.rst>
-   Momentum Coefficient <./momentum_coefficient.rst>
+   Moment Coefficient <./moment_coefficient.rst>

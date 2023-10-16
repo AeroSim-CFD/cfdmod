@@ -1,10 +1,18 @@
-********************
-Momentum Coefficient
-********************
+******************
+Moment Coefficient
+******************
 
-Similarly to the force coefficient, this coefficient is defined as a resulting momentum coefficient of a **body**.
+The **Moment Coefficient**, :math:`C_M`, is a dimensionless parameter that provides a generalized representation of the **resultant moment** experienced by an object within a fluid flow.
+It offers a means to evaluate the **cumulative effect** of pressure coefficients, :math:`c_p` across different regions of an object's surface and how these pressures translate into aerodynamic moment forces.
 
-It is defined as a sum of the resulting momentum for each triangle of each surface of the body:
+:math:`C_M` is a fundamental tool for **torsional effects** for the design and analysis of aerodynamic components.
+
+Definition
+==========
+
+Similarly to the force coefficient, this coefficient is defined as a resulting moment coefficient of a **body**.
+
+It is defined as a sum of the resulting moment for each triangle of each surface of the body:
 
 .. math::
    \vec{C_{M}} = \frac{\sum \vec{M_{res}}}{q V_{rep}} = \frac{\sum \vec{r_o} \times \vec{f_{i}}}{q V_{rep}}
@@ -38,7 +46,10 @@ The representative volume can be calculated as:
 .. math::
    V_{rep} = b h l
 
-A common application of the momentum coefficient requires sectioning the body in **different sub-bodies**.
+Use Case
+========
+
+A common application of the moment coefficient requires sectioning the body in **different sub-bodies**.
 To do so, the same logic applied to the force coefficient is used to **determine the respective sub-body** of each of the body's triangles.
 If its center lies inside the sub-body volume, then it belongs to it.
 
@@ -47,14 +58,39 @@ When sectioning the body, the respective representative volume should be the sam
 
 .. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 
-Like the other coefficients, we can apply statistical analysis to the momentum coefficient.
+Like the other coefficients, we can apply statistical analysis to the moment coefficient.
 
-By definition, the momentum coefficient is a **property of a body**.
+By definition, the moment coefficient is a **property of a body**.
 
-It is used for primary and secondary structures design.
-It can be seen as the resulting torsion effect of the wind induced stress over a body.
+It is used for **primary and secondary structures design**, such as **canopies**.
+It can also be used for evaluating the resultant wind torsional effect over a **building** or the **building paviments**.
+It can be seen as the **resulting torsion effect** of the wind induced stress over a body.
 
-An example of the parameters file required for calculating the momentum coefficient can be seen below:
+Artifacts
+=========
+
+In order to use the moment coefficient module, the user has to provide a **set of artifacts**:
+
+#. **A lnas file**: It contains the information about the mesh.
+#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
+#. **Parameters file**: It contains the coordinate for the arbitrary point when evaluating the force moment, as well as other configs parameters.
+
+Which outputs the following data:
+
+#. **Dimensionless time series**: moment coefficient time series for each body.
+#. **Statistical results**: maximum, minimum, RMS and average values for the moment coefficient time series, for each body.
+#. **VTK File**: contains the statistical values inside the original mesh (VTK).
+
+An illustration of the moment coefficient module pipeline can be seen below:
+
+.. image:: /_static/pressure/Cm_pipeline.png
+    :width: 90 %
+    :align: center
+
+Usage
+=====
+
+An example of the parameters file required for calculating the moment coefficient can be seen below:
 
 .. literalinclude:: /_static/pressure/Cm_params.yaml
     :language: yaml
@@ -81,27 +117,6 @@ Or it can be generated together with the pressure data conversion:
       --Cm
 
 # TODO: reference the notebooks
-
-Use cases:
-==========
-
-* **Canopies**
-* **Buildings**
-* **Building paviments**
-
-Artifacts:
-==========
-
-#. **A lnas file**: It contains the information about the mesh.
-#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
-#. **Parameters file**: It contains the coordinate for the arbitrary point when evaluating the force moment, as well as other configs parameters.
-
-Outputs:
-========
-
-#. **Dimensionless time series**: momentum coefficient time series for each body.
-#. **Statistical results**: maximum, minimum, RMS and average values for the momentum coefficient time series, for each body.
-#. **VTK File**: contains the statistical values inside the original mesh (VTK).
 
 Data format
 ===========
