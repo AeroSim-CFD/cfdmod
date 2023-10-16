@@ -2,6 +2,18 @@
 Pressure
 ********
 
+Pressure is a fundamental **physical property** that describes the force exerted on a surface per unit area.
+It is a measure of the **intensity of force applied to a given area** and is commonly expressed in units such as Pascals (Pa), atmospheres (atm), among others.
+
+Wind tunnels and CFD simulations aim to measure the **wind pressure over a body**.
+The pressure data is relevant to engineers to quantify the **wind induced stress** over the structure of interest.
+
+Otherwise, it would be very difficult to predict the pressure distribution given the complexity of the problem.
+
+^^^^^^
+Module
+^^^^^^
+
 The **Pressure** module handles the analysis and post processing of pressure time series data over a body.
 Data comes from CFD transient simulations, and by definition is attached to a mesh.
 
@@ -38,7 +50,7 @@ The pressure signals obtained with Nassu solver are exported using LBM density u
 To transform it to pressure the equation below can be used.
 
 .. math::
-   p = c_s ^ 2 \rho
+   p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
 
 The speed of sound (:math:`c_s`) is defined as :math:`c_s^2=\frac{1}{3}` for our LBM modeling.
 To transform this pressure to an dimensionless form, it needs to be divided by a **dynamic pressure** :math:`q`:
