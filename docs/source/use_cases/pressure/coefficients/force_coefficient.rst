@@ -2,6 +2,14 @@
 Force Coefficient
 *****************
 
+The **Force Coefficient**, :math:`C_f`, is a dimensionless parameter that provides a generalized representation of the **resultant forces** experienced by an object within a fluid flow.
+It offers a means to evaluate the **cumulative effect** of pressure coefficients, :math:`c_p` across different regions of an object's surface and how these pressures translate into aerodynamic forces.
+
+:math:`C_f` is a fundamental tool for assessing lift, drag, and other forces crucial for the design and analysis of aerodynamic components.
+
+Definition
+==========
+
 This coefficient is defined as a net resulting force coefficient of a body.
 A body is composed by a **set of surfaces**.
 For example, consider a building's canopy, where the lower surface is marked on red, and the upper surface is marked on green:
@@ -49,6 +57,9 @@ One can also define the representative area as a vector:
 .. math::
    A_{rep} = [A_x, A_y, A_z]
 
+Use Case
+========
+
 A common application of the net force coefficient requires sectioning the body in different **sub-bodies**.
 To do so, a similar logic applied to the shape coefficient is used to **determine the respective sub-body** of each of the body's triangles.
 If its center lies inside the sub-body volume, then it belongs to it.
@@ -62,8 +73,33 @@ Like the other coefficients, we can apply statistical analysis to the net force 
 
 By definition, the net force coefficient is a **property of a body**.
 
-It is used for primary and secondary structures design.
-It can be seen as the resulting effect of the wind induced stress over a body.
+It is used for **primary and secondary structures design**, such as **canopies** and **roof vents**.
+It can also be used for evaluating the resultant wind action over a **building** or the **building paviments**.
+It can be seen as the resulting effect of the wind induced force over a body.
+
+Artifacts
+=========
+
+In order to use the force coefficient module, the user has to provide a **set of artifacts**:
+
+#. **A lnas file**: It contains the information about the mesh.
+#. **Parameters file**: It contains which surface inside the mesh is going to be used for evaluating net force coefficient as well as other configs parameters.
+#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
+
+Which outputs the following data:
+
+#. **Dimensionless time series**: force coefficient time series for each body.
+#. **Statistical results**: maximum, minimum, RMS and average values for the force coefficient time series, for each body.
+#. **VTK File**: contains the statistical values inside the original mesh (VTK).
+
+An illustration of the force coefficient module pipeline can be seen below:
+
+.. image:: /_static/pressure/Cf_pipeline.png
+    :width: 90 %
+    :align: center
+
+Usage
+=====
 
 An example of the parameters file required for calculating the net force coefficient can be seen below:
 
@@ -92,29 +128,6 @@ Or it can be generated together with the pressure data conversion:
       --Cf
 
 # TODO: reference the notebooks
-
-
-Use cases:
-==========
-
-* **Canopies**
-* **Roof vents**
-* **Buildings**
-* **Building paviments**
-
-Artifacts:
-==========
-
-#. **A lnas file**: It contains the information about the mesh.
-#. **Parameters file**: It contains which surface inside the mesh is going to be used for evaluating net force coefficient as well as other configs parameters.
-#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
-
-Outputs:
-========
-
-#. **Dimensionless time series**: force coefficient time series for each body.
-#. **Statistical results**: maximum, minimum, RMS and average values for the force coefficient time series, for each body.
-#. **VTK File**: contains the statistical values inside the original mesh (VTK).
 
 Data format
 ===========
