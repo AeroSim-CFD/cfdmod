@@ -2,18 +2,53 @@
 Pressure Coefficient
 ********************
 
-The pressure coefficient is an **dimensionless form of the pressure signal**.
+The **Pressure Coefficient**, :math:`c_p`, is a dimensionless quantity that provides a **generalized representation** of the pressure distribution on a surface, or body, exposed to a fluid flow.
+It allows us to assess how the local pressure at a specific point differs from the surrounding free-stream pressure, **accounting for the dynamic pressure** of the fluid flow.
+
+Definition
+==========
+
+The pressure coefficient is a **dimensionless form of the pressure signal**.
 It is obtained by the following expression:
 
 .. math::
    c_{p}(t) = \frac{p(t) - p_{\infty}(t)}{q}
 
 By definition, the pressure coefficient is a local property for each triangle of the mesh.
-It is used primarily for analysis and interpretation of the measured data.
+
+Use Case
+========
+
+It is used primarily for **analysis and interpretation** of the measured data.
 
 It should always be generated, since it is the first analysis step. 
 It is a fundamental property of the pressure normalization, and **it is used to calculate the other coefficients**.
 However, it is not the final result to be delivered to clients.
+
+Artifacts
+=========
+
+In order to use the pressure normalization module, the user has to provide a **set of artifacts**:
+
+#. **A lnas file**: It contains the information about the mesh.
+#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
+#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters.
+#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
+
+Which outputs the following data:
+
+#. **Dimensionless time series**: pressure coefficient time series for each triangle.
+#. **Statistical results**: statistical values for the pressure coefficient time series, for each triangle.
+#. **VTK File**: contains the statistical values inside a mesh representation (VTK).
+
+An illustration of the pressure coefficient module pipeline can be seen below:
+
+.. image:: /_static/pressure/cp_pipeline.png
+    :width: 90 %
+    :align: center
+
+Usage
+=====
 
 The parameter file for converting the pressure data into pressure coefficient looks as follows:
 
@@ -33,23 +68,45 @@ To invoke and run the conversion, the following command can be used:
 
 # TODO: reference the notebooks
 
-Artifacts:
-==========
+Data format
+===========
 
-#. **A lnas file**: It contains the information about the mesh.
-#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
-#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters.
-#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
+.. list-table:: :math:`c_p(t)`
+   :widths: 33 33 33
+   :header-rows: 1
 
-Outputs:
-========
+   * - point_idx
+     - timestep
+     - cp
+   * - 0
+     - 10000
+     - 1.25
+   * - 1
+     - 10000
+     - 1.15
 
-#. **Dimensionless time series**: pressure coefficient time series for each triangle.
-#. **Statistical results**: maximum, minimum, RMS and average values for the pressure coefficient time series, for each triangle.
-#. **VTK File**: contains the statistical values inside a mesh representation (VTK).
+.. list-table:: :math:`c_p (stats)`
+   :widths: 20 10 10 10 10 20 20
+   :header-rows: 1
 
-.. toctree::
-   :maxdepth: -1
-   :hidden:
-
-   Generate pressure coefficients <calculate_cp.ipynb>
+   * - point_idx
+     - max
+     - min
+     - avg
+     - std
+     - skewness
+     - kurtosis
+   * - 0
+     - 1.25
+     - 0.9
+     - 1.1
+     - 0.2
+     - 0.1
+     - 0.15
+   * - 1
+     - 1.15
+     - 0.95
+     - 1.13
+     - 0.19
+     - 0.11
+     - 0.13

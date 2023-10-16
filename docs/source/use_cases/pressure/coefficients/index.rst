@@ -2,64 +2,33 @@
 Pressure Coefficients
 *********************
 
-.. note::
-    Introduce here the coefficients and this module.
-    This is a copy of the artifacts from the index.
+As stated before, the pressure data is relevant for structural engineers to understand the **wind induced stress**.
 
-    I moved the parameters here as well
+However, it comes in handy to adimensionalize the pressure data into **coefficients**.
+Therefore, the analysis is **independent of the scale or unit system**.
+It is a way to generalize the pressure data.
 
-==========
-Parameters
-==========
+Available Coefficients
+======================
 
-.. note::
-    Move this
+There are several different coefficients, that are commonly used in the wind industry, such as:
 
-A full example of the parameters file can be seen below:
+* `Pressure Coefficient <./pressure_coefficient.rst>`_: It is a fundamental adimensionalization of the pressure data. It is obtained by dividing a pressure difference by the **dynamic pressure**.
+* `Shape Coefficient <./shape_coefficient.rst>`_: It is equivalent to a resulting pressure coefficient over an **area of interest**. It is used to combine the pressure effects over the area, in a way to **sum the exerted force in each triangle** inside this area. Some peaks in each triangle **may cancel each other** in when calculating the shape coefficient.
+* `Force Coefficient <./force_coefficient.rst>`_: It is a general adimensionalization of the resulting **wind induced force** over a body. It is calculated by summing the resulting force of each triangle, and dividing it by a **representative area**.
+* `Momentum Coefficient <./momentum_coefficient.rst>`_: It is a general adimensionalization of the resulting **wind induced momentum** over a body. It is calculated by summing the resulting momentum of each triangle, and dividing it by a **representative volume**. The anchor point to define the momentum lever is an **arbitrary point for the whole body**.
 
-.. literalinclude:: /_static/pressure/pressure_params.yaml
-    :language: yaml
-    :caption: pressure_params.yaml
+Geometry Artifact
+=================
 
-When calculating shape coefficient, zoning parameters must be defined as well:
+Each coefficient has its own artifacts dependencies.
+However, a common artifact shared between all of them, is a **description of the structure geometry**.
 
-.. literalinclude:: /_static/pressure/zoning_params.yaml
-    :language: yaml
-    :caption: zoning_params.yaml
+This module uses the **LNAS geometry** format to represent the geometry of interest.
+The LNAS format contains the **vertices and triangles** necessary build the structure.
+It also contains some functions to evaluate geometric properties such as triangle normals, and to filter the data for a given surface.
 
-Artifacts
-=========
-
-.. note::
-    You may speak about the artifacts from Nassu here, because they should be the same for all modules.
-
-    But the output of each coefficient is specific to it, so leave the docs there
-
-    Introduce each module with a little text, if you wish to cite them here.
-
-In order to use the **pressure module**, the user has to provide a set of artifacts:
-
-#. **A lnas file**: It contains the information about the mesh.
-#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
-#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
-#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters, such as zoning information.
-
-The available use cases for determinating different coefficients using this module are listed below:
-
-* `Pressure Coefficient <./pressure_coefficient.rst>`_
-* `Shape Coefficient <./shape_coefficient.rst>`_
-* `Force Coefficient <./force_coefficient.rst>`_
-* `Momentum Coefficient <./momentum_coefficient.rst>`_
-
-.. note::
-    Is this best here or in module specific?
-
-An Illustration of the modules pipeline can be seen below:
-
-.. figure:: /_static/pressure/pressure_pipeline.png
-    :width: 100 %
-    :align: center
-
+To get more information about the LNAS format, please see the documentation inside the `LNAS repository <https://github.com/AeroSim-CFD/stl2lnas>`_
 
 .. toctree::
    :maxdepth: 1
@@ -69,4 +38,4 @@ An Illustration of the modules pipeline can be seen below:
    Pressure Coefficient <./pressure_coefficient.rst>
    Shape Coefficient <./shape_coefficient.rst>
    Force Coefficient <./force_coefficient.rst>
-   Momentum Coefficient <./momentum_coefficient.rst>
+   Moment Coefficient <./moment_coefficient.rst>
