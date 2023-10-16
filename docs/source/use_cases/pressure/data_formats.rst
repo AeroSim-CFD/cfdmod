@@ -3,50 +3,6 @@ Coefficient data formats
 ************************
 
 ^^^^^^^^^^^
-:math:`c_p`
-^^^^^^^^^^^
-
-.. list-table:: :math:`c_p(t)`
-   :widths: 33 33 33
-   :header-rows: 1
-
-   * - point_idx
-     - timestep
-     - cp
-   * - 0
-     - 10000
-     - 1.25
-   * - 1
-     - 10000
-     - 1.15
-
-.. list-table:: :math:`c_p (stats)`
-   :widths: 20 10 10 10 10 20 20
-   :header-rows: 1
-
-   * - point_idx
-     - max
-     - min
-     - avg
-     - std
-     - skewness
-     - kurtosis
-   * - 0
-     - 1.25
-     - 0.9
-     - 1.1
-     - 0.2
-     - 0.1
-     - 0.15
-   * - 1
-     - 1.15
-     - 0.95
-     - 1.13
-     - 0.19
-     - 0.11
-     - 0.13
-
-^^^^^^^^^^^
 :math:`C_e`
 ^^^^^^^^^^^
 
