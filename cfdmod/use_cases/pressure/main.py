@@ -78,7 +78,7 @@ def main(*args):
     )
     post_proc_cfg = CpConfig.from_file(path_manager.config_path)
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_folder(path_manager.mesh_path)
+    mesh = LagrangianFormat.from_file(path_manager.mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure data...")
