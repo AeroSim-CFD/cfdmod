@@ -1,0 +1,9 @@
+---
+stl:
+  files: {}
+  folders:
+    - examples/stl/galpao
+name: galpao
+normalization: ~
+output:
+  folder: output/galpao
