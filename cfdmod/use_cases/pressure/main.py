@@ -1,8 +1,7 @@
 import argparse
-import pathlib
 from dataclasses import dataclass
-import pandas as pd
 
+import pandas as pd
 from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
@@ -13,6 +12,7 @@ from cfdmod.use_cases.pressure.cp_data import (
     filter_pressure_data,
     transform_to_cp,
 )
+from cfdmod.use_cases.pressure.path_manager import CpPathManager
 
 
 @dataclass
@@ -73,18 +73,17 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    post_proc_cfg = CpConfig.from_file(pathlib.Path(args_use.config))
+    path_manager = CpPathManager(
+        args_use.output, args_use.config, args_use.mesh, args_use.p, args_use.s
+    )
+    post_proc_cfg = CpConfig.from_file(path_manager.config_path)
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_folder(pathlib.Path(args_use.mesh))
+    mesh = LagrangianFormat.from_folder(path_manager.mesh_path)
     logger.info("Mesh description loaded successfully!")
-    output_path = pathlib.Path(args_use.output)
-
-    static_data_path = pathlib.Path(args_use.s)
-    body_data_path = pathlib.Path(args_use.p)
 
     logger.info("Preparing to read pressure data...")
-    press_data: pd.DataFrame = pd.read_hdf(static_data_path) # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(body_data_path) # type: ignore
+    press_data: pd.DataFrame = pd.read_hdf(path_manager.static_data_path)  # type: ignore
+    body_data: pd.DataFrame = pd.read_hdf(path_manager.body_data_path)  # type: ignore
     press_data, body_data = filter_pressure_data(
         press_data, body_data, post_proc_cfg.timestep_range
     )
@@ -98,16 +97,16 @@ def main(*args):
         ref_press_mode=post_proc_cfg.reference_pressure,
     )
     logger.info("Transformed pressure into coefficients")
-    cp_data.to_hdf(output_path / "cp_t.hdf", key="cp_t", mode="w", index=False)
+    cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)
     logger.info("Exported coefficients")
 
     # OUTPUT 2: cp_stats
     cp_stats = calculate_statistics(cp_data, statistics_to_apply=post_proc_cfg.statistics)
-    cp_stats.to_hdf(output_path / "cp_stats.hdf", key="cp_t", mode="w", index=False)
+    cp_stats.to_hdf(path_manager.cp_stats_path, key="cp_t", mode="w", index=False)
     logger.info("Exported statistics")
 
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
 
     # OUTPUT 3: VTK cp_stats
-    write_polydata(output_path / "cp_stats.vtp", polydata)
+    write_polydata(path_manager.vtp_path, polydata)
     logger.info("Exported VTK file")
