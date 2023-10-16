@@ -1,27 +1,19 @@
-import math
-
 import numpy as np
 import pandas as pd
 from nassu.lnas import LagrangianGeometry
 
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 
-
-def get_region_index_mask(
-    mesh: LagrangianGeometry, zoning: ZoningModel
-) -> tuple[pd.DataFrame, np.ndarray]:
+def get_region_index_mask(mesh: LagrangianGeometry, df_regions: pd.DataFrame) -> np.ndarray:
     """Index the region of each triangle in the mesh
 
     Args:
         mesh (LagrangianGeometry): Mesh with triangles to label
-        zoning (ZoningModel): Zoning configuration to use
+        df_regions (pd.DataFrame): Dataframe describing the regions intervals (x_min, x_max, y_min, y_max, z_min, z_max, region_index)
 
     Returns:
-        tuple[pd.DataFrame, np.ndarray]: Tuple with regions dataframe and triangles region indexing array
+        np.ndarray: Triangles region indexing array
     """
     triangles = mesh.triangle_vertices
-
-    df_regions = zoning.get_regions_df()
     centroids = np.mean(triangles, axis=1)
 
     triangles_region = np.full((triangles.shape[0],), -1, dtype=np.int32)
@@ -39,4 +31,4 @@ def get_region_index_mask(
         )
         triangles_region[in_idx] = region["region_index"]
 
-    return df_regions, triangles_region
+    return triangles_region

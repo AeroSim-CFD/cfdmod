@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["ZoningConfig"]
+__all__ = ["ZoningConfig", "ZoningModel"]
 
 import itertools
 import pathlib

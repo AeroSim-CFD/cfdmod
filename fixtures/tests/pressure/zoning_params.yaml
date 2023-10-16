@@ -4,14 +4,14 @@ global_zoning:
   y_intervals: [0, 25, 50, 75, 100, 125, 150, 175, 200]
   z_intervals: [0, 5, 10, 15, 20]
 # Optional
-no_zoning: ["surface1"] # Select the surfaces to ignore region mesh generation
+no_zoning: ["t1_ym"] # Select the surfaces to ignore region mesh generation
 # Optional
-exclude: ["surface1"] # Select surfaces to ignore when calculating shape coefficient
+exclude: ["p1_xp"] # Select surfaces to ignore when calculating shape coefficient
 # Optional
 exceptions:
   # Define a specific region rules
   zoning1:
-    x_intervals: [0, 100]
-    y_intervals: [0, 50]
+    x_intervals: [0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250]
+    y_intervals: [0, 25, 50, 75, 100, 125, 150, 175, 200]
     z_intervals: [0, 20]
-    surfaces: ["surface1"] # Surface to overload the default rule
+    surfaces: ["t2_yp"] # Surface to overload the default rule

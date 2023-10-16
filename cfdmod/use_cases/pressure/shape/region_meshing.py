@@ -1,7 +1,7 @@
 import numpy as np
 from nassu.lnas import LagrangianGeometry
 
-from cfdmod.use_cases.pressure.shape.regions import ZoningModel
+from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 
 
 def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -> np.ndarray:

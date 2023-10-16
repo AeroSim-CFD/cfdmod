@@ -63,16 +63,6 @@ def calculate_statistics(
 
     statistics_data = pd.DataFrame({"region_idx": region_data["region_idx"].unique()})
 
-    # BUG: NaN values
-    # if "avg" in statistics_to_apply:
-    #     statistics_data["Ce_avg"] = group_by_point["Ce"].mean()
-    # if "min" in statistics_to_apply:
-    #     statistics_data["Ce_min"] = group_by_point["Ce"].min()
-    # if "max" in statistics_to_apply:
-    #     statistics_data["Ce_max"] = group_by_point["Ce"].max()
-    # if "std" in statistics_to_apply:
-    #     statistics_data["Ce_rms"] = group_by_point["Ce"].std()
-
     if "avg" in statistics_to_apply:
         average = group_by_point["Ce"].apply(lambda x: x.mean()).reset_index(name="mean")
         statistics_data["Ce_avg"] = average["mean"]
