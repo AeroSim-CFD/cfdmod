@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-__all__ = ["CeConfig"]
-
 import pathlib
 
 from pydantic import BaseModel, Field
@@ -10,8 +8,12 @@ from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
+__all__ = ["CeConfig"]
+
 
 class CeConfig(BaseModel):
+    """Configuration for shape coefiecient"""
+
     zoning: ZoningConfig = Field(
         ...,
         title="Zoning configuration",

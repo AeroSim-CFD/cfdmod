@@ -24,6 +24,7 @@ def transform_to_Ce(
     Returns:
         pd.DataFrame: Shape coefficient for surface
     """
+
     triangles_normals = surface_mesh._cross_prod()
     triangles_areas = np.linalg.norm(triangles_normals, axis=1)
 
@@ -54,7 +55,7 @@ def calculate_statistics(
 
     Args:
         region_data (pd.DataFrame): Dataframe of the region data shape coefficients
-        statistics_to_apply (Statistics): List of statistical functions to apply
+        statistics_to_apply (list[Statistics]): List of statistical functions to apply
 
     Returns:
         pd.DataFrame: Statistics for shape coefficient

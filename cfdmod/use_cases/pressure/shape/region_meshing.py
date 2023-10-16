@@ -85,6 +85,7 @@ def slice_surface(surface: LagrangianGeometry, axis: int, interval: float) -> La
     new_triangles = np.zeros((0, 3, 3))
 
     for tri_verts, tri_normal in zip(surface.triangle_vertices, surface.normals):
+        # If triangle normal is the same of plane normal, not slice it
         if np.abs(tri_normal).max() == np.abs(tri_normal)[axis]:
             new_triangles = np.concatenate((new_triangles, [tri_verts]), axis=0)
             continue
