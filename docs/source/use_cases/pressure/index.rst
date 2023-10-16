@@ -35,33 +35,6 @@ The resulting data has the form of a time series signal for each extracted point
 
 To process these signals, statistical operations, such as **maximum, minimum, RMS or average**, are applied as required by the use case.
 
-^^^^^^^^^^^^^^^^
-Units conversion
-^^^^^^^^^^^^^^^^
-
-A common process for a pressure analysis is to convert the LBM density to pressure and then this pressure to a dimensionless value.
-This facilitates the conversion between units (LBM and international system).
-
-.. important:: 
-    It is essential to use the **same unit system** for all variables. 
-    For example, the value for the speed of sound in LBM units is :math:`c_s^2=\frac{1}{3}`, while in SI is 340 m/s.
-
-The pressure signals obtained with Nassu solver are exported using LBM density units such as :math:`\rho`. 
-To transform it to pressure the equation below can be used.
-
-.. math::
-   p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
-
-The speed of sound (:math:`c_s`) is defined as :math:`c_s^2=\frac{1}{3}` for our LBM modeling.
-To transform this pressure to an dimensionless form, it needs to be divided by a **dynamic pressure** :math:`q`:
-
-.. math::
-   q = \frac{1}{2} \bar{\rho}_{\infty} U_H ^ 2
-
-.. todo::
-   Define and describe what is :math:`\bar{\rho}_{\infty}` and :math:`U_H`
-   Write the equation of the dimensioless form
-
 ^^^^^^^^^^^^^^^^^^
 Reference pressure
 ^^^^^^^^^^^^^^^^^^
@@ -96,6 +69,36 @@ Pressure signals examples are presented below:
 
     Pressure signal where static reference pressure can be neglected
 
+^^^^^^^^^^^^^^^^
+Units conversion
+^^^^^^^^^^^^^^^^
+
+A common process for a pressure analysis is to convert the LBM density to pressure and then this pressure to a dimensionless value.
+This facilitates the conversion between units (LBM and international system).
+
+.. important:: 
+    It is essential to use the **same unit system** for all variables. 
+    For example, the value for the speed of sound in LBM units is :math:`c_s^2=\frac{1}{3}`, while in SI is 340 m/s.
+
+The pressure signals obtained with Nassu solver are exported using LBM density units such as :math:`\rho`. 
+To transform it to pressure the equation below can be used.
+
+.. math::
+   p(t) - p_{\infty}(t) = c_s ^ 2 (\rho(t) - \rho_{\infty}(t))
+
+The speed of sound (:math:`c_s`) is defined as :math:`c_s^2=\frac{1}{3}` for our LBM modeling.
+To transform this pressure to an dimensionless form, it needs to be divided by a **dynamic pressure** :math:`q`:
+
+.. math::
+   q = \frac{1}{2} \bar{\rho}_{\infty} U_H ^ 2
+
+Where :math:`U_H` is the **flow velocity** at the building's height, and :math:`\bar{\rho}_{\infty}` is the **averaged static reference pressure**.
+
+When the fluctuation of the static reference pressure signal is not relevant, the conversion can be simplified to:
+
+.. math::
+   p(t) - \bar{p}_{\infty} = c_s ^ 2 (\rho(t) - \bar{\rho}_{\infty})
+
 .. toctree::
    :maxdepth: 1
    :caption: Pressure use Cases
@@ -103,4 +106,3 @@ Pressure signals examples are presented below:
 
    Concepts <./concepts.rst>
    Coefficients <./coefficients/index.rst>
-   Data formats <./data_formats.rst>

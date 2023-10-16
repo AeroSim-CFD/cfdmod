@@ -28,6 +28,7 @@ This module uses the **LNAS geometry** format to represent the geometry of inter
 The LNAS format contains the **vertices and triangles** necessary build the structure.
 It also contains some functions to evaluate geometric properties such as triangle normals, and to filter the data for a given surface.
 
+To get more information about the LNAS format, please see the documentation inside the `LNAS repository <https://github.com/AeroSim-CFD/stl2lnas>`_
 
 .. toctree::
    :maxdepth: 1

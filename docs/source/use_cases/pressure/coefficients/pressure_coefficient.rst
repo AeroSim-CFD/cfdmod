@@ -8,7 +8,7 @@ It allows us to assess how the local pressure at a specific point differs from t
 Definition
 ==========
 
-The pressure coefficient is an **dimensionless form of the pressure signal**.
+The pressure coefficient is a **dimensionless form of the pressure signal**.
 It is obtained by the following expression:
 
 .. math::
