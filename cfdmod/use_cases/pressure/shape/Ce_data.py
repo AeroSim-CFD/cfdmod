@@ -2,7 +2,60 @@ import numpy as np
 import pandas as pd
 from nassu.lnas import LagrangianGeometry
 
+from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
+from cfdmod.use_cases.pressure.shape.region_meshing import get_mesh_bounds
+from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.statistics import Statistics
+
+
+def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> ZoningModel:
+    """Get the surface respective zoning configuration
+
+    Args:
+        mesh (LagrangianGeometry): Surface LNAS mesh
+        sfc (str): Surface label
+        config (CeConfig): Post process configuration
+
+    Returns:
+        ZoningModel: Zoning configuration
+    """
+    if sfc in config.zoning.no_zoning:
+        bounds = get_mesh_bounds(mesh)
+        zoning = ZoningModel(
+            x_intervals=[bounds[0][0], bounds[0][1]],
+            y_intervals=[bounds[1][0], bounds[1][1]],
+            z_intervals=[bounds[2][0], bounds[2][1]],
+        )
+    elif sfc in config.zoning.surfaces_in_exception:
+        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]
+    else:
+        zoning = config.zoning.global_zoning
+
+    return zoning.offset_limits(0.1)
+
+
+def combine_region_data_with_mesh(
+    regions_mesh: LagrangianGeometry,
+    regions_mesh_triangles_region: np.ndarray,
+    surface_ce_stats: pd.DataFrame,
+) -> pd.DataFrame:
+    """Combine compiled region data with surface meshing by indexing regions
+
+    Args:
+        regions_mesh (LagrangianGeometry): Generated mesh with region separation
+        regions_mesh_triangles_region (np.ndarray): Region mesh triangles indexing by region
+        surface_ce_stats (pd.DataFrame): Compiled region statistics data
+
+    Returns:
+        pd.DataFrame: Region mesh dataframe with region statistics
+    """
+    region_data_df = pd.DataFrame()
+    region_data_df["point_idx"] = np.arange(len(regions_mesh.triangle_vertices))
+    region_data_df["region_idx"] = regions_mesh_triangles_region
+    region_data_df = pd.merge(region_data_df, surface_ce_stats, on="region_idx", how="left")
+    region_data_df.drop(columns=["region_idx"], inplace=True)
+
+    return region_data_df
 
 
 def transform_to_Ce(

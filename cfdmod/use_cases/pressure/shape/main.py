@@ -10,7 +10,12 @@ from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polyda
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import calculate_statistics, transform_to_Ce
+from cfdmod.use_cases.pressure.shape.Ce_data import (
+    calculate_statistics,
+    combine_region_data_with_mesh,
+    get_surface_zoning,
+    transform_to_Ce,
+)
 from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
 from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
@@ -88,27 +93,14 @@ def main(*args):
         logger.info(f"Processing {cfg_label} ...")
         for sfc in mesh.surfaces.keys():
             if sfc in cfg.zoning.exclude:
-                # Ignore surface
-                logger.info(f"Surface {sfc} ignored!")
+                logger.info(f"Surface {sfc} ignored!")  # Ignore surface
                 continue
 
             sfc_mesh = mesh.geometry_from_surface(sfc)
-
-            if sfc in cfg.zoning.no_zoning:
-                bounds = get_mesh_bounds(sfc_mesh)
-                zoning = ZoningModel(
-                    x_intervals=[bounds[0][0], bounds[0][1]],
-                    y_intervals=[bounds[1][0], bounds[1][1]],
-                    z_intervals=[bounds[2][0], bounds[2][1]],
-                )
-            elif sfc in cfg.zoning.surfaces_in_exception:
-                zoning = [cfg for cfg in cfg.zoning.exceptions.values() if sfc in cfg.surfaces][0]
-            else:
-                zoning = cfg.zoning.global_zoning
-
-            zoning_to_use = zoning.offset_limits(0.1)
+            zoning_to_use = get_surface_zoning(sfc_mesh, sfc, cfg)
 
             logger.info(f"Processing surface {sfc} ...")
+
             # Output 1: Ce_regions
             df_regions = zoning_to_use.get_regions_df()
 
@@ -162,13 +154,9 @@ def main(*args):
                 mesh=regions_mesh, df_regions=df_regions
             )
 
-            region_data_df = pd.DataFrame()
-            region_data_df["point_idx"] = np.arange(len(regions_mesh.triangle_vertices))
-            region_data_df["region_idx"] = regions_mesh_triangles_region
-            region_data_df = pd.merge(
-                region_data_df, surface_ce_stats, on="region_idx", how="left"
+            region_data_df = combine_region_data_with_mesh(
+                regions_mesh, regions_mesh_triangles_region, surface_ce_stats
             )
-            region_data_df.drop(columns=["region_idx"], inplace=True)
 
             polydata = create_polydata_for_cell_data(region_data_df, regions_mesh)
             processed_polydata.append(polydata)
