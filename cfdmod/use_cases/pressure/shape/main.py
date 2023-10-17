@@ -1,8 +1,6 @@
 import argparse
-import pathlib
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 from nassu.lnas import LagrangianFormat
 
@@ -16,9 +14,8 @@ from cfdmod.use_cases.pressure.shape.Ce_data import (
     get_surface_zoning,
     transform_to_Ce,
 )
-from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
+from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh
 from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 
 
 @dataclass
