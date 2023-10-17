@@ -25,8 +25,7 @@ def transform_to_Ce(
         pd.DataFrame: Shape coefficient for surface
     """
 
-    triangles_normals = surface_mesh._cross_prod()
-    triangles_areas = np.linalg.norm(triangles_normals, axis=1)
+    triangles_areas = surface_mesh.areas.copy()
 
     surface_cp = cp_data[cp_data["point_idx"].isin(sfc_triangles_idxs)].copy()
 

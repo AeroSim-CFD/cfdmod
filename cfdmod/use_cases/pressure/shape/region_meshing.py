@@ -6,6 +6,9 @@ from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 
 def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -> np.ndarray:
     """Triangulates a point cloud of a triangle
+    Vertices are ordered according to the original triangle normal.
+    If there are only one vertice inserted, then the original triangle will be split into two.
+    If there are two vertices inserted, then the original triangle will be split into three.
 
     Args:
         sorted_vertices (np.ndarray): Triangle vertices ordered
@@ -36,6 +39,9 @@ def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -
 
 def slice_triangle(tri_verts: np.ndarray, axis: int, axis_value: float) -> np.ndarray:
     """Slice a triangle from a given plane
+    If the plane intersects any edge of the triangle, then new vertices are generated.
+    If there are new vertices in the triangle vertices, then it has to be triangulated
+    into smaller triangles
 
     Args:
         tri_verts (np.ndarray): Vertices of the triangle to slice

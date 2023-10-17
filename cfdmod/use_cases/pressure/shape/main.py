@@ -178,8 +178,8 @@ def main(*args):
             logger.info(f"Processed surface {sfc}")
 
             if (region_data_df.isnull().sum() != 0).any():
-                print(
-                    "Region refinement is greater than data refinement. It resulted in NaN values"
+                logger.warn(
+                    "Region refinement is greater than data refinement. Resulted in NaN values"
                 )
         merged_polydata = merge_polydata(processed_polydata)
 
