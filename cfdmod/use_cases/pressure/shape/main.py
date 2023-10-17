@@ -96,19 +96,17 @@ def main(*args):
 
             if sfc in cfg.zoning.no_zoning:
                 bounds = get_mesh_bounds(sfc_mesh)
-                zoning_to_use = ZoningModel(
+                zoning = ZoningModel(
                     x_intervals=[bounds[0][0], bounds[0][1]],
                     y_intervals=[bounds[1][0], bounds[1][1]],
                     z_intervals=[bounds[2][0], bounds[2][1]],
                 )
             elif sfc in cfg.zoning.surfaces_in_exception:
-                zoning_to_use = [
-                    cfg for cfg in cfg.zoning.exceptions.values() if sfc in cfg.surfaces
-                ][0]
+                zoning = [cfg for cfg in cfg.zoning.exceptions.values() if sfc in cfg.surfaces][0]
             else:
-                zoning_to_use = cfg.zoning.global_zoning
+                zoning = cfg.zoning.global_zoning
 
-            zoning_to_use.offset_limits(0.1)
+            zoning_to_use = zoning.offset_limits(0.1)
 
             logger.info(f"Processing surface {sfc} ...")
             # Output 1: Ce_regions

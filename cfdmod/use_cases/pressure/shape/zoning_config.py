@@ -96,18 +96,21 @@ class ZoningModel(BaseModel):
                 raise Exception("Interval must have ascending order")
         return v
 
-    def offset_limits(self, offset_value: float):
+    def offset_limits(self, offset_value: float) -> ZoningModel:
         """Add a new offset to the intervals limits to account for mesh deformations
 
         Args:
             offset_value (float): Offset value to add or subtract from the limits
         """
-        self.x_intervals[0] -= offset_value
-        self.x_intervals[-1] += offset_value
-        self.y_intervals[0] -= offset_value
-        self.y_intervals[-1] += offset_value
-        self.z_intervals[0] -= offset_value
-        self.z_intervals[-1] += offset_value
+        offsetted_zoning = self.model_copy()
+        offsetted_zoning.x_intervals[0] -= offset_value
+        offsetted_zoning.x_intervals[-1] += offset_value
+        offsetted_zoning.y_intervals[0] -= offset_value
+        offsetted_zoning.y_intervals[-1] += offset_value
+        offsetted_zoning.z_intervals[0] -= offset_value
+        offsetted_zoning.z_intervals[-1] += offset_value
+
+        return offsetted_zoning
 
     def get_regions(self) -> list[tuple[tuple[float, float], ...]]:
         """Get regions for intervals in each dimension
