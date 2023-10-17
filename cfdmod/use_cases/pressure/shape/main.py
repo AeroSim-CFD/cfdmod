@@ -8,12 +8,12 @@ from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
 from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
 from cfdmod.use_cases.pressure.shape.Ce_data import calculate_statistics, transform_to_Ce
 from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
 from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
-from cfdmod.utils import create_folder_path
 
 
 @dataclass
@@ -67,17 +67,15 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    post_proc_cfg = CeConfig.from_file(pathlib.Path(args_use.config))
+    path_manager = CePathManager(args_use.output, args_use.config, args_use.mesh, args_use.cp)
+    post_proc_cfg = CeConfig.from_file(path_manager.config_path)
 
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(pathlib.Path(args_use.mesh))
+    mesh = LagrangianFormat.from_file(path_manager.mesh_path)
     logger.info("Mesh description loaded successfully!")
-    output_path = pathlib.Path(args_use.output)
-
-    cp_data_path = pathlib.Path(args_use.cp)
 
     logger.info("Preparing to read pressure coefficients data...")
-    cp_data = pd.read_hdf(cp_data_path)
+    cp_data = pd.read_hdf(path_manager.cp_data_path)
 
     cp_data_to_use = cp_data.to_frame() if isinstance(cp_data, pd.Series) else cp_data
     logger.info("Read pressure coefficient data successfully!")
@@ -115,9 +113,9 @@ def main(*args):
             logger.info(f"Processing surface {sfc} ...")
             # Output 1: Ce_regions
             df_regions = zoning_to_use.get_regions_df()
-            create_folder_path(output_path / cfg_label / "regions")
+
             df_regions.to_hdf(
-                output_path / cfg_label / "regions" / f"regions.{sfc}.hdf",
+                path_manager.get_regions_df_path(sfc, cfg_label),
                 key="Regions",
                 mode="w",
                 index=False,
@@ -135,9 +133,9 @@ def main(*args):
                 triangles_region=triangles_region,
                 n_timesteps=n_timesteps,
             )
-            create_folder_path(output_path / cfg_label / "time_series")
+
             surface_ce.to_hdf(
-                output_path / cfg_label / "time_series" / f"Ce_t.{sfc}.hdf",
+                path_manager.get_timeseries_df_path(sfc, cfg_label),
                 key="Ce_t",
                 mode="w",
                 index=False,
@@ -147,9 +145,9 @@ def main(*args):
             surface_ce_stats = calculate_statistics(
                 surface_ce, statistics_to_apply=post_proc_cfg[cfg_label].statistics
             )
-            create_folder_path(output_path / cfg_label / "stats")
+
             surface_ce_stats.to_hdf(
-                output_path / cfg_label / "stats" / f"Ce_stats.{sfc}.hdf",
+                path_manager.get_stats_df_path(sfc, cfg_label),
                 key="Ce_stats",
                 mode="w",
                 index=False,
@@ -158,7 +156,9 @@ def main(*args):
             regions_mesh = create_regions_mesh(sfc_mesh, zoning_to_use)
 
             # Output 4: Regions Mesh
-            regions_mesh.export_stl(output_path / cfg_label / "surfaces" / f"{sfc}.regions.stl")
+            regions_mesh.export_stl(
+                path_manager.get_surface_path(sfc_label=sfc, cfg_label=cfg_label)
+            )
 
             regions_mesh_triangles_region = get_region_index_mask(
                 mesh=regions_mesh, df_regions=df_regions
@@ -184,6 +184,6 @@ def main(*args):
         merged_polydata = merge_polydata(processed_polydata)
 
         # Output 5: VTK
-        write_polydata(output_path / cfg_label / f"{mesh.name}.regions.vtp", merged_polydata)
+        write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
 
         logger.info(f"Merged polydata for {cfg_label}")
