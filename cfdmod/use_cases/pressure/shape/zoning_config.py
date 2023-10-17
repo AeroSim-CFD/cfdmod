@@ -96,6 +96,22 @@ class ZoningModel(BaseModel):
                 raise Exception("Interval must have ascending order")
         return v
 
+    def ignore_axis(self, axis: int) -> ZoningModel:
+        """Ignore intervals for a given axis
+
+        Args:
+            axis (int): Axis index (x=0, y=1, z=2)
+        """
+        new_zoning = self.model_copy()
+        if axis == 0:
+            new_zoning.x_intervals = [new_zoning.x_intervals[0], new_zoning.x_intervals[-1]]
+        elif axis == 1:
+            new_zoning.y_intervals = [new_zoning.y_intervals[0], new_zoning.y_intervals[-1]]
+        elif axis == 2:
+            new_zoning.z_intervals = [new_zoning.z_intervals[0], new_zoning.z_intervals[-1]]
+
+        return new_zoning
+
     def offset_limits(self, offset_value: float) -> ZoningModel:
         """Add a new offset to the intervals limits to account for mesh deformations
 

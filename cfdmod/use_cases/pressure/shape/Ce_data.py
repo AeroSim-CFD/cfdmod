@@ -31,6 +31,10 @@ def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> 
     else:
         zoning = config.zoning.global_zoning
 
+    if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
+        axis_to_ignore = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
+        zoning = zoning.ignore_axis(axis_to_ignore)
+
     return zoning.offset_limits(0.1)
 
 
