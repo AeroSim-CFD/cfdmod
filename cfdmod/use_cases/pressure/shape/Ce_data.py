@@ -1,11 +1,115 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from vtk import vtkPolyData
 
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
+from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.region_meshing import get_mesh_bounds
+from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
+from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.statistics import Statistics
+
+
+@dataclass
+class ProcessedSurfaceData:
+    df_regions: pd.DataFrame
+    surface_ce: pd.DataFrame
+    surface_ce_stats: pd.DataFrame
+    regions_mesh: LagrangianGeometry
+    region_data_df: pd.DataFrame
+    polydata: vtkPolyData
+
+    def save_outputs(self, sfc_label: str, cfg_label: str, path_manager: CePathManager):
+        # Output 1: Ce_regions
+        self.df_regions.to_hdf(
+            path_manager.get_regions_df_path(sfc_label, cfg_label),
+            key="Regions",
+            mode="w",
+            index=False,
+        )
+
+        # Output 2: Ce(t)
+        self.surface_ce.to_hdf(
+            path_manager.get_timeseries_df_path(sfc_label, cfg_label),
+            key="Ce_t",
+            mode="w",
+            index=False,
+        )
+
+        # Output 3: Ce_stats
+        self.surface_ce_stats.to_hdf(
+            path_manager.get_stats_df_path(sfc_label, cfg_label),
+            key="Ce_stats",
+            mode="w",
+            index=False,
+        )
+
+        # Output 4: Regions Mesh
+        self.regions_mesh.export_stl(
+            path_manager.get_surface_path(sfc_label=sfc_label, cfg_label=cfg_label)
+        )
+
+
+def process_surface(
+    body_mesh: LagrangianFormat,
+    sfc_label: str,
+    cfg: CeConfig,
+    cp_data: pd.DataFrame,
+    n_timesteps: int,
+) -> ProcessedSurfaceData:
+    """Filters a surface from the body and processes it
+
+    Args:
+        body_mesh (LagrangianFormat): LNAS body containing its surfaces
+        sfc_label (str): Surface label to be processed
+        cfg (CeConfig): Post processing configuration
+        cp_data (pd.DataFrame): Pressure coefficients DataFrame
+        n_timesteps (int): Number of timesteps to be processed
+
+    Returns:
+        ProcessedSurfaceData: Processed Surface Data object
+    """
+    sfc_mesh = body_mesh.geometry_from_surface(sfc_label)
+    zoning_to_use = get_surface_zoning(sfc_mesh, sfc_label, cfg)
+
+    df_regions = zoning_to_use.get_regions_df()
+
+    triangles_region = get_region_index_mask(mesh=sfc_mesh, df_regions=df_regions)
+    sfc_triangles_idxs = body_mesh.surfaces[sfc_label].copy()
+    surface_ce = transform_to_Ce(
+        surface_mesh=sfc_mesh,
+        cp_data=cp_data,
+        sfc_triangles_idxs=sfc_triangles_idxs,
+        triangles_region=triangles_region,
+        n_timesteps=n_timesteps,
+    )
+
+    surface_ce_stats = calculate_statistics(surface_ce, statistics_to_apply=cfg.statistics)
+
+    regions_mesh = create_regions_mesh(sfc_mesh, zoning_to_use)
+    regions_mesh_triangles_region = get_region_index_mask(mesh=regions_mesh, df_regions=df_regions)
+
+    region_data_df = combine_region_data_with_mesh(
+        regions_mesh, regions_mesh_triangles_region, surface_ce_stats
+    )
+    if (region_data_df.isnull().sum() != 0).any():
+        logger.warning("Region refinement is greater than data refinement. Resulted in NaN values")
+
+    polydata = create_polydata_for_cell_data(region_data_df, regions_mesh)
+
+    return ProcessedSurfaceData(
+        df_regions=df_regions,
+        surface_ce=surface_ce,
+        surface_ce_stats=surface_ce_stats,
+        regions_mesh=regions_mesh,
+        region_data_df=region_data_df,
+        polydata=polydata,
+    )
 
 
 def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> ZoningModel:
@@ -31,10 +135,8 @@ def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> 
     else:
         zoning = config.zoning.global_zoning
         if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
-            axis_to_ignore = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][
-                0
-            ]
-            zoning = zoning.ignore_axis(axis_to_ignore)
+            ignore_axis = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
+            zoning = zoning.ignore_axis(ignore_axis)
 
     return zoning.offset_limits(0.1)
 

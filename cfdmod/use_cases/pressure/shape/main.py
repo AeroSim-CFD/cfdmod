@@ -4,18 +4,11 @@ from dataclasses import dataclass
 import pandas as pd
 from nassu.lnas import LagrangianFormat
 
-from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
+from cfdmod.api.vtk.write_vtk import merge_polydata, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import (
-    calculate_statistics,
-    combine_region_data_with_mesh,
-    get_surface_zoning,
-    transform_to_Ce,
-)
-from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh
-from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
+from cfdmod.use_cases.pressure.shape.Ce_data import process_surface
 
 
 @dataclass
@@ -93,80 +86,25 @@ def main(*args):
                 logger.info(f"Surface {sfc} ignored!")  # Ignore surface
                 continue
 
-            sfc_mesh = mesh.geometry_from_surface(sfc)
-            zoning_to_use = get_surface_zoning(sfc_mesh, sfc, cfg)
-
             logger.info(f"Processing surface {sfc} ...")
 
-            # Output 1: Ce_regions
-            df_regions = zoning_to_use.get_regions_df()
-
-            df_regions.to_hdf(
-                path_manager.get_regions_df_path(sfc, cfg_label),
-                key="Regions",
-                mode="w",
-                index=False,
-            )
-
-            triangles_region = get_region_index_mask(mesh=sfc_mesh, df_regions=df_regions)
-
-            sfc_triangles_idxs = mesh.surfaces[sfc].copy()
-
-            # # Output 2: Ce(t)
-            surface_ce = transform_to_Ce(
-                surface_mesh=sfc_mesh,
+            processed_surface = process_surface(
+                body_mesh=mesh,
+                sfc_label=sfc,
+                cfg=cfg,
                 cp_data=cp_data_to_use,
-                sfc_triangles_idxs=sfc_triangles_idxs,
-                triangles_region=triangles_region,
                 n_timesteps=n_timesteps,
             )
-
-            surface_ce.to_hdf(
-                path_manager.get_timeseries_df_path(sfc, cfg_label),
-                key="Ce_t",
-                mode="w",
-                index=False,
+            processed_surface.save_outputs(
+                sfc_label=sfc, cfg_label=cfg_label, path_manager=path_manager
             )
 
-            # Output 3: Ce_stats
-            surface_ce_stats = calculate_statistics(
-                surface_ce, statistics_to_apply=post_proc_cfg[cfg_label].statistics
-            )
-
-            surface_ce_stats.to_hdf(
-                path_manager.get_stats_df_path(sfc, cfg_label),
-                key="Ce_stats",
-                mode="w",
-                index=False,
-            )
-
-            regions_mesh = create_regions_mesh(sfc_mesh, zoning_to_use)
-
-            # Output 4: Regions Mesh
-            regions_mesh.export_stl(
-                path_manager.get_surface_path(sfc_label=sfc, cfg_label=cfg_label)
-            )
-
-            regions_mesh_triangles_region = get_region_index_mask(
-                mesh=regions_mesh, df_regions=df_regions
-            )
-
-            region_data_df = combine_region_data_with_mesh(
-                regions_mesh, regions_mesh_triangles_region, surface_ce_stats
-            )
-
-            polydata = create_polydata_for_cell_data(region_data_df, regions_mesh)
-            processed_polydata.append(polydata)
+            processed_polydata.append(processed_surface.polydata)
 
             logger.info(f"Processed surface {sfc}")
 
-            if (region_data_df.isnull().sum() != 0).any():
-                logger.warning(
-                    "Region refinement is greater than data refinement. Resulted in NaN values"
-                )
-        merged_polydata = merge_polydata(processed_polydata)
-
         # Output 5: VTK
+        merged_polydata = merge_polydata(processed_polydata)
         write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
 
         logger.info(f"Merged polydata for {cfg_label}")
