@@ -2,7 +2,7 @@ from typing import Literal
 
 import pandas as pd
 
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.cp_config import Statistics
 
 
 def filter_pressure_data(
