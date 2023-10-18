@@ -38,7 +38,7 @@ The shape coefficient is based on the definition of an area of influence.
 This area is delimited by x, y and z intervals.
 Each combination of the intervals results in a **region**.
 
-.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **region and surface** definitions.
+.. note:: Check out the `concepts <../concepts.rst>`_ section for more information about **region and surface** definitions.
 
 To calculate the shape coefficient of a given region, the **surface triangles** which center lies inside this region must be filtered.
 Then, the resulting force is evaluated for the filtered triangles data. 
