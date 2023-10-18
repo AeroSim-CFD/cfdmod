@@ -1,20 +1,12 @@
 import pathlib
 
+from pydantic import BaseModel, Field, validator
 
-class CpPathManager:
-    def __init__(
-        self,
-        output_path: str,
-        config_path: str,
-        mesh_path: str,
-        body_data_path: str,
-        static_data_path: str,
-    ):
-        self.output_path = pathlib.Path(output_path)
-        self.config_path = pathlib.Path(config_path)
-        self.mesh_path = pathlib.Path(mesh_path)
-        self.body_data_path = pathlib.Path(body_data_path)
-        self.static_data_path = pathlib.Path(static_data_path)
+
+class CpPathManager(BaseModel):
+    output_path: pathlib.Path = Field(
+        ..., title="Output path", description="Path for saving output files"
+    )
 
     @property
     def cp_stats_path(self):

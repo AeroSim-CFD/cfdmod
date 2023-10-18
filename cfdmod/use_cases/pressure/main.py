@@ -1,4 +1,5 @@
 import argparse
+import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
@@ -73,17 +74,16 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    path_manager = CpPathManager(
-        args_use.output, args_use.config, args_use.mesh, args_use.p, args_use.s
-    )
-    post_proc_cfg = CpConfig.from_file(path_manager.config_path)
+    path_manager = CpPathManager(output_path=pathlib.Path(args_use.output))
+
+    post_proc_cfg = CpConfig.from_file(pathlib.Path(args_use.config))
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(path_manager.mesh_path)
+    mesh = LagrangianFormat.from_file(pathlib.Path(args_use.mesh))
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure data...")
-    press_data: pd.DataFrame = pd.read_hdf(path_manager.static_data_path)  # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(path_manager.body_data_path)  # type: ignore
+    press_data: pd.DataFrame = pd.read_hdf(pathlib.Path(args_use.s))  # type: ignore
+    body_data: pd.DataFrame = pd.read_hdf(pathlib.Path(args_use.p))  # type: ignore
     press_data, body_data = filter_pressure_data(
         press_data, body_data, post_proc_cfg.timestep_range
     )
