@@ -13,7 +13,7 @@ from cfdmod.use_cases.pressure.cp_data import (
     filter_pressure_data,
     transform_to_cp,
 )
-from cfdmod.use_cases.pressure.path_manager import CpPathManager
+from cfdmod.use_cases.pressure.path_manager import CpPathManager, copy_input_artifacts
 
 
 @dataclass
@@ -76,14 +76,27 @@ def main(*args):
     args_use = get_args_process(*args)
     path_manager = CpPathManager(output_path=pathlib.Path(args_use.output))
 
-    post_proc_cfg = CpConfig.from_file(pathlib.Path(args_use.config))
+    cfg_path = pathlib.Path(args_use.config)
+    mesh_path = pathlib.Path(args_use.mesh)
+    static_data_path = pathlib.Path(args_use.s)
+    body_data_path = pathlib.Path(args_use.p)
+
+    copy_input_artifacts(
+        cfg_path=cfg_path,
+        mesh_path=mesh_path,
+        static_data_path=static_data_path,
+        body_data_path=body_data_path,
+        path_manager=path_manager,
+    )
+
+    post_proc_cfg = CpConfig.from_file(cfg_path)
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(pathlib.Path(args_use.mesh))
+    mesh = LagrangianFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure data...")
-    press_data: pd.DataFrame = pd.read_hdf(pathlib.Path(args_use.s))  # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(pathlib.Path(args_use.p))  # type: ignore
+    press_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
+    body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
     press_data, body_data = filter_pressure_data(
         press_data, body_data, post_proc_cfg.timestep_range
     )
