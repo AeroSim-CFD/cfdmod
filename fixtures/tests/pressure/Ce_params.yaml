@@ -10,3 +10,8 @@ shape_coefficient:
         y_intervals: [0, 200]
         z_intervals: [0, 20]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  pattern_3:
+    zoning: 
+      global_zoning:
+        x_intervals: [0, 125, 250]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

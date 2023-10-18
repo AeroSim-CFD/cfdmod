@@ -66,17 +66,17 @@ class ZoningConfig(BaseModel):
 
 class ZoningModel(BaseModel):
     x_intervals: list[float] = Field(
-        ...,
+        [float("-inf"), float("inf")],
         title="X intervals list",
         description="Values for the X axis intervals list, it must be unique",
     )
     y_intervals: list[float] = Field(
-        ...,
+        [float("-inf"), float("inf")],
         title="Y intervals list",
         description="Values for the Y axis intervals list, it must be unique",
     )
     z_intervals: list[float] = Field(
-        ...,
+        [float("-inf"), float("inf")],
         title="Z intervals list",
         description="Values for the Z axis intervals list, it must be unique",
     )
@@ -104,11 +104,11 @@ class ZoningModel(BaseModel):
         """
         new_zoning = self.model_copy()
         if axis == 0:
-            new_zoning.x_intervals = [new_zoning.x_intervals[0], new_zoning.x_intervals[-1]]
+            new_zoning.x_intervals = [float("-inf"), float("inf")]
         elif axis == 1:
-            new_zoning.y_intervals = [new_zoning.y_intervals[0], new_zoning.y_intervals[-1]]
+            new_zoning.y_intervals = [float("-inf"), float("inf")]
         elif axis == 2:
-            new_zoning.z_intervals = [new_zoning.z_intervals[0], new_zoning.z_intervals[-1]]
+            new_zoning.z_intervals = [float("-inf"), float("inf")]
 
         return new_zoning
 

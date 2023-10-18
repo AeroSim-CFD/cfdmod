@@ -77,9 +77,9 @@ def main(*args):
 
     n_timesteps = cp_data_to_use["time_step"].unique().shape[0]
 
-    processed_polydata = []
-
     for cfg_label, cfg in post_proc_cfg.items():
+        processed_polydata = []
+
         logger.info(f"Processing {cfg_label} ...")
         for sfc in mesh.surfaces.keys():
             if sfc in cfg.zoning.exclude:

@@ -17,8 +17,8 @@ class CePathManager:
         self.cp_data_path = pathlib.Path(cp_data_path)
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{sfc_label}.regions.stl"
+        create_folder_path(self.output_path / cfg_label / "surfaces")
+        return self.output_path / cfg_label / "surfaces" / f"{sfc_label}.regions.stl"
 
     def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         create_folder_path(self.output_path / cfg_label)
