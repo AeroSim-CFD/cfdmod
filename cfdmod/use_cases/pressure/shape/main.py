@@ -1,4 +1,5 @@
 import argparse
+import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
@@ -62,15 +63,20 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    path_manager = CePathManager(args_use.output, args_use.config, args_use.mesh, args_use.cp)
-    post_proc_cfg = CeConfig.from_file(path_manager.config_path)
+    path_manager = CePathManager(output_path=pathlib.Path(args_use.output))
+
+    cfg_path = pathlib.Path(args_use.config)
+    mesh_path = pathlib.Path(args_use.mesh)
+    cp_path = pathlib.Path(args_use.cp)
+
+    post_proc_cfg = CeConfig.from_file(cfg_path)
 
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(path_manager.mesh_path)
+    mesh = LagrangianFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure coefficients data...")
-    cp_data = pd.read_hdf(path_manager.cp_data_path)
+    cp_data = pd.read_hdf(cp_path)
 
     cp_data_to_use = cp_data.to_frame() if isinstance(cp_data, pd.Series) else cp_data
     logger.info("Read pressure coefficient data successfully!")
