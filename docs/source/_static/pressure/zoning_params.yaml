@@ -1,0 +1,21 @@
+# Define a default region rule
+global_zoning:
+  x: []
+  y: []
+  z: []
+# Optional
+no_zoning:
+   # Select the surfaces to ignore region mesh generation
+  surfaces: []
+# Optional
+exclude:
+  # Select surfaces to ignore when calculating shape coefficient
+  surfaces: [] 
+# Optional
+exceptions:
+  # Define a specific region rules
+  zoning1:
+    x: []
+    y: []
+    z: []
+    surfaces: [] # Surface to overload the default rule

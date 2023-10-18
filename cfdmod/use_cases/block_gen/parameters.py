@@ -24,7 +24,7 @@ class SpacingParams(BaseModel):
         title="Spacing values",
         description="Spacing values in X axis (index 0) and Y axis (index 1)."
         + "The spacing between each line is calculated with the spacing value "
-        + "plus the size of the block in respecting direction",
+        + "plus the size of the block in respective direction",
     )
     line_offset: float = Field(
         ...,

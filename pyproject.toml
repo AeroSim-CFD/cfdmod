@@ -11,8 +11,14 @@ numpy = "^1.26.0"
 scipy = "^1.11.2"
 matplotlib = "^3.7.3"
 pandas = "^2.1.0"
-pydantic = "^2.3.0"
+pydantic = "^1.10"
 ruamel-yaml = "^0.17.32"
+
+[tool.poetry.group.nassu]
+optional = true
+
+[tool.poetry.group.nassu.dependencies]
+nassu = { git = "git@github.com:AeroSim-CFD/nassu.git", branch = "release/v1.4" }
 
 [tool.poetry.group.altimetry]
 optional = true
