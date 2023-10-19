@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
+__all__ = ["CpConfig"]
+
 
 class CpConfig(BaseModel):
     timestep_range: tuple[float, float] = Field(

@@ -10,11 +10,12 @@ from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polyda
 
 
 class TestWritePolydata(unittest.TestCase):
-    vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
-    triangles = np.array([[0, 1, 2], [1, 3, 2]])
-    mock_data = pd.DataFrame(
-        {"point_idx": [0, 1], "scalar": np.array([0.1, 0.2], dtype=np.float32)}
-    )
+    def setUp(self):
+        self.vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
+        self.triangles = np.array([[0, 1, 2], [1, 3, 2]])
+        self.mock_data = pd.DataFrame(
+            {"point_idx": [0, 1], "scalar": np.array([0.1, 0.2], dtype=np.float32)}
+        )
 
     def test_create_polydata(self):
         mock_mesh = LagrangianGeometry(self.vertices, self.triangles)

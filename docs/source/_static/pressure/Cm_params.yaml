@@ -5,7 +5,7 @@ bodies:
     surfaces: [list_of_surfaces_of_lanternim]
   building:
     surfaces: [building]
-momentum_coefficient:
+moment_coefficient:
   measurement_1:
     bodies: [marquise, lanternim]
     variables: ["Cmx", "Cmy", "Cmz"]
