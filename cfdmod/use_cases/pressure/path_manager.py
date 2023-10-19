@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 
 from pydantic import BaseModel, Field
 
@@ -31,14 +32,6 @@ class CePathManager(BaseModel):
         return self.output_path / cfg_label / "stats" / f"Ce_stats.{sfc_label}.hdf"
 
 
-import pathlib
-import shutil
-
-from pydantic import BaseModel, Field
-
-from cfdmod.utils import create_folder_path
-
-
 class CpPathManager(BaseModel):
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
@@ -68,9 +61,16 @@ def copy_input_artifacts(
     create_folder_path(path_manager.output_path / "input_cp" / "data")
 
     shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
-    shutil.copytree(
-        mesh_path.parent, path_manager.output_path / "input_cp" / mesh_path.parent.name
-    )
+    mesh_output = path_manager.output_path / "input_cp" / mesh_path.parent.name
+    if mesh_output.is_dir():
+        # Overwrite the files in the output folder
+        for file in mesh_path.parent.iterdir():
+            shutil.copy(
+                file,
+                mesh_output / file.name,
+            )
+    else:
+        shutil.copytree(mesh_path.parent, mesh_output)
     shutil.copy(
         static_data_path, path_manager.output_path / "input_cp" / "data" / static_data_path.name
     )

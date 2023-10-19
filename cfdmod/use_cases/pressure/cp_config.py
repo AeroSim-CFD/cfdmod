@@ -7,11 +7,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
-__all__ = ["CpConfig", "Statistics"]
-
-Statistics = Literal["max", "min", "std", "avg", "skewness", "kurtosis"]
+__all__ = ["CpConfig"]
 
 
 class CpConfig(BaseModel):
