@@ -109,8 +109,7 @@ def main(*args):
 
             logger.info(f"Processed surface {sfc}")
 
-        # Output 5: VTK
         merged_polydata = merge_polydata(processed_polydata)
         write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
 
-        logger.info(f"Merged polydata for {cfg_label}")
+        logger.info(f"Merged and saved polydata for {cfg_label}")
