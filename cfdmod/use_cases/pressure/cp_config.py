@@ -9,10 +9,10 @@ from pydantic import BaseModel, Field
 
 from cfdmod.utils import read_yaml
 
-
 __all__ = ["CpConfig", "Statistics"]
 
 Statistics = Literal["max", "min", "std", "avg", "skewness", "kurtosis"]
+
 
 class CpConfig(BaseModel):
     timestep_range: tuple[float, float] = Field(
