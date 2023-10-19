@@ -121,7 +121,7 @@ Or it can be generated together with the pressure data conversion:
       --config {CONFIG_PATH} \
       --Ce
 
-# TODO: reference the notebooks
+Another way to run the shape coefficient calculation, is through the `notebook <calculate_Ce.ipynb>`_
 
 Data format
 ===========
@@ -193,3 +193,9 @@ Data format
      - 50
      - 0
      - 20
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Calculate Ce <calculate_Ce.ipynb>
