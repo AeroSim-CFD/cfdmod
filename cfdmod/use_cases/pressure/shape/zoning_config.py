@@ -4,7 +4,6 @@ __all__ = ["ZoningConfig", "ZoningModel"]
 
 import itertools
 import pathlib
-from typing import Optional
 
 import pandas as pd
 from pydantic import BaseModel, Field, validator
