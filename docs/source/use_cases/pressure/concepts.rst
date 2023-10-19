@@ -1,13 +1,27 @@
-***********
-Definitions
-***********
+********
+Concepts
+********
 
-Some definitions are needed to abstract some use cases rules.
+Some definitions are needed to abstract some use case rules.
+
+Body
+====
+
+A body is a **logical geometry entity** for the simulation. Its vertices and triangles define an **unique** *logical* entity.
+
+Body is **divided in surfaces** that together define a **volume**.
+
+For example, a generic building is composed by a left + right side roofs and walls, and a front + back side walls
+Each surface is colored with different colors in the image below:
+
+.. image:: /_static/pressure/body.png
+    :width: 85 %
+    :align: center
 
 Surface
 =======
 
-Surface is a collection of triangles that share points with its neighbors.
+Surface is a collection of geometry's triangles.
 For example, consider the left side of a building's roof.
 Its geometry is described as a STL file, which looks like this:
 
@@ -16,6 +30,13 @@ Its geometry is described as a STL file, which looks like this:
     :align: center
 
 .. important:: All surfaces of a structure **must be defined in the pre-processing** (before running the simulation).
+
+Each surface of a body has its own triangles and its vertices.
+For the previous example, we can identify each surface of a generic building, and see its triangles:
+
+.. image:: /_static/pressure/body_mesh.png
+    :width: 85 %
+    :align: center
 
 Regions
 =======
@@ -53,23 +74,7 @@ Then the triangle is indexed by the corresponding region.
 
 .. important:: The rule to apply and guarantee that **every triangle belongs to a region and one only**, is to include the upper limit only if it is the last one. Otherwise, the upper limit is not included, only the lower limit is.
 
-The definition of the region configuration has the following structure:
 
-.. literalinclude:: /_static/pressure/zoning_params.yaml
-    :language: yaml
-
-Body
-====
-
-Body is a collection of surfaces that together define a volume.
-For example, a generic building is composed by a left + right side roofs and walls, and a front + back side walls
-Each surface is colored with different colors in the image below:
-
-.. image:: /_static/pressure/body.png
-    :width: 85 %
-    :align: center
-
-.. important:: All of the body's surfaces **must be separated before converting to LNAS** (before running the simulation).
 
 Sub-Body
 ========
