@@ -1,4 +1,4 @@
-pressure_coefficients:
+pressure_coefficient:
   # Select the time interval to filter the signal and calculate statistics
   timestep_range: [10000, 40000]
   # Define how to consider the effect of static reference pressure

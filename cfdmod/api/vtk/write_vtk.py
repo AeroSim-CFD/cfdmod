@@ -3,6 +3,7 @@ import pathlib
 import pandas as pd
 from nassu.lnas import LagrangianGeometry
 from vtk import (
+    vtkAppendPolyData,
     vtkCellArray,
     vtkFloatArray,
     vtkIdList,
@@ -69,16 +70,37 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LagrangianGeometry) 
     return polyData
 
 
-def write_polydata(output_filename: pathlib.Path, poly_data: vtkPolyData):
+def merge_polydata(polydata_list: list[vtkPolyData]) -> vtkAppendPolyData:
+    """Merges a list of polydata into a vtkAppendPolyData
+
+    Args:
+        polydata_list (list[vtkPolyData]): List of vtkPolyData
+
+    Returns:
+        vtkAppendPolyData: Appended polydata object
+    """
+    append_poly_data = vtkAppendPolyData()
+
+    for polydata in polydata_list:
+        append_poly_data.AddInputData(polydata)
+
+    append_poly_data.Update()
+    return append_poly_data
+
+
+def write_polydata(output_filename: pathlib.Path, poly_data: vtkPolyData | vtkAppendPolyData):
     """Writes a polydata object to file output
 
     Args:
         output_filename (pathlib.Path): Output file path
-        poly_data (vtkPolyData): Polydata object
+        poly_data (vtkPolyData | vtkAppendPolyData): Polydata object
     """
     writer = vtkXMLPolyDataWriter()
     create_folders_for_file(output_filename)
     writer.SetFileName(output_filename.as_posix())
-    writer.SetInputData(poly_data)
+    if isinstance(poly_data, vtkPolyData):
+        writer.SetInputData(poly_data)
+    else:
+        writer.SetInputData(poly_data.GetOutput())
     writer.SetDataModeToAscii()
     writer.Write()
