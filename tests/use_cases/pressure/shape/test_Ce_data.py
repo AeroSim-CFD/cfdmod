@@ -49,7 +49,7 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
         ]
 
         # Test the function to calculate statistics
-        result = calculate_statistics(region_data, statistics_to_apply)
+        result = calculate_statistics(region_data, statistics_to_apply, variables=["Ce"])
 
         self.assertEqual(len(result), 2)  # Two regions (0, 1)
         self.assertTrue((result.isnull().sum() == 0).all())

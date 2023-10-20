@@ -9,7 +9,7 @@ from cfdmod.use_cases.pressure.shape.region_meshing import (
     slice_triangle,
     triangulate_tri,
 )
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
 class TestRegionMeshing(unittest.TestCase):
