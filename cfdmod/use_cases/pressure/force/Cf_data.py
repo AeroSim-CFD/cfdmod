@@ -1,38 +1,62 @@
 import numpy as np
-import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from nassu.lnas import LagrangianFormat, LagrangianGeometry
+
+from cfdmod.use_cases.pressure.force.body_config import BodyConfig
 
 
-def filter_surface_data(cp_data):
-    ...
-
-
-def get_sub_body_index_mask(mesh: LagrangianGeometry, df_regions: pd.DataFrame) -> np.ndarray:
-    """Index the sub body of each triangle in the mesh
+def get_geometry_from_mesh(
+    body_cfg: BodyConfig, mesh: LagrangianFormat
+) -> tuple[LagrangianGeometry, np.ndarray]:
+    """Filters the mesh from the list of surfaces that define the body in config
 
     Args:
-        mesh (LagrangianGeometry): Mesh with triangles to index
-        df_regions (pd.DataFrame): Dataframe describing the sub body intervals (x_min, x_max, y_min, y_max, z_min, z_max, sub_body_idx)
+        body_cfg (BodyConfig): Body configuration
+        mesh (LagrangianFormat): LNAS mesh
+
+    Raises:
+        Exception: Surface specified is not defined in LNAS
 
     Returns:
-        np.ndarray: Triangles sub body indexing array
+        tuple[LagrangianGeometry, np.ndarray]: Tuple containing the body geometry and the filtered triangle indexes
     """
-    triangles = mesh.triangle_vertices
-    centroids = np.mean(triangles, axis=1)
+    if len(body_cfg.surfaces) == 0:
+        # Include all surfaces
+        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
+    else:
+        # Filter mesh for all surfaces
+        geometry_idx = np.array([], dtype=np.int32)
+        for sfc in body_cfg.surfaces:
+            if sfc not in mesh.surfaces.keys():
+                raise Exception("Surface defined in body is not separated in the LNAS file.")
+            geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
 
-    triangles_region = np.full((triangles.shape[0],), -1, dtype=np.int32)
+    body_geom = LagrangianGeometry(
+        vertices=mesh.geometry.vertices.copy(),
+        triangles=mesh.geometry.triangles[geometry_idx].copy(),
+    )
 
-    for index, region in df_regions.iterrows():
-        ll = np.array([region["x_min"], region["y_min"], region["z_min"]])  # lower-left
-        ur = np.array([region["x_max"], region["y_max"], region["z_max"]])  # upper-right
+    return body_geom, geometry_idx
 
-        in_idx = np.all(
-            np.logical_and(
-                centroids >= ll,
-                centroids < ur,
-            ),
-            axis=1,
-        )
-        triangles_region[in_idx] = region["region_index"]
 
-    return triangles_region
+def get_representative_areas(input_mesh: LagrangianGeometry) -> tuple[float, float, float]:
+    """Calculates the representative areas from the bounding box of a given mesh
+
+    Args:
+        input_mesh (LagrangianGeometry): Input LNAS mesh
+
+    Returns:
+        tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
+    """
+    x_min, x_max = input_mesh.vertices[:, 0].min(), input_mesh.vertices[:, 0].max()
+    y_min, y_max = input_mesh.vertices[:, 1].min(), input_mesh.vertices[:, 1].max()
+    z_min, z_max = input_mesh.vertices[:, 2].min(), input_mesh.vertices[:, 2].max()
+
+    Lx = x_max - x_min
+    Ly = y_max - y_min
+    Lz = z_max - z_min
+
+    Ax = Ly * Lz
+    Ay = Lx * Lz
+    Az = Lx * Ly
+
+    return Ax, Ay, Az
