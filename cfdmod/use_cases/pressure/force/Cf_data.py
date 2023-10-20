@@ -52,6 +52,19 @@ class ProcessedBodyData:
 def process_body(
     mesh: LagrangianFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
 ) -> ProcessedBodyData:
+    """Processes a sub body from separating the surfaces of the original mesh
+    The pressure coefficient must already contain the areas of each triangle.
+    It must be added before calling this function
+
+    Args:
+        mesh (LagrangianFormat): LNAS mesh
+        body_cfg (BodyConfig): Body processing configuration
+        cp_data (pd.DataFrame): Pressure coefficients data
+        cfg (CfConfig): Post processing configuration
+
+    Returns:
+        ProcessedBodyData: Processed body object
+    """
     body_geom, geometry_idx = get_geometry_from_mesh(body_cfg=body_cfg, mesh=mesh)
 
     zoning_to_use = body_cfg.sub_bodies.offset_limits(0.1)
@@ -83,7 +96,18 @@ def process_body(
     )
 
 
-def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry):
+def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> pd.DataFrame:
+    """Converts pressure coefficient data for a body into force coefficients
+    The pressure coefficient must already contain the areas of each triangle.
+    It must be added before calling this function
+
+    Args:
+        body_data (pd.DataFrame): Pressure coefficient data for the body
+        body_geom (LagrangianGeometry): LNAS mesh for the body geometry
+
+    Returns:
+        pd.DataFrame: Body force coefficients data
+    """
     body_data["fx"] = body_data["cp"] * body_data["Ax"]
     body_data["fy"] = body_data["cp"] * body_data["Ay"]
     body_data["fz"] = body_data["cp"] * body_data["Az"]
