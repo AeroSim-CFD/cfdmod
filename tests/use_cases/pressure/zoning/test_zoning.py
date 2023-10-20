@@ -3,12 +3,12 @@ import unittest
 import numpy as np
 from nassu.lnas import LagrangianGeometry
 
-from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask
+from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
 class TestGetRegionIndexMask(unittest.TestCase):
-    def test_get_region_index_mask(self):
+    def test_get_indexing_mask(self):
         vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
         mesh = LagrangianGeometry(vertices, triangles)
@@ -19,7 +19,7 @@ class TestGetRegionIndexMask(unittest.TestCase):
         df_regions = zoning.get_regions_df()
 
         # Test the function to get region index mask
-        region_mask = get_region_index_mask(mesh, df_regions)
+        region_mask = get_indexing_mask(mesh, df_regions)
 
         # Check if the region mask has the correct length
         self.assertEqual(len(region_mask), len(triangles))
