@@ -13,7 +13,7 @@ bodies:
       z_intervals: [0,10,20]
 force_coefficient:
   measurement_1:
-    bodies: ["building"]
+    bodies: ["building", "building2"]
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
   measurement_2:
