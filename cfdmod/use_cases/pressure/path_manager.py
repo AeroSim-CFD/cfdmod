@@ -15,6 +15,14 @@ class CfPathManager(BaseModel):
         create_folder_path(self.output_path / cfg_label)
         return self.output_path / cfg_label / f"{body_label}.body.vtp"
 
+    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label)
+        return self.output_path / cfg_label / f"{body_label}.time_series.hdf"
+
+    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label)
+        return self.output_path / cfg_label / f"{body_label}.stats.hdf"
+
 
 class CePathManager(BaseModel):
     output_path: pathlib.Path = Field(

@@ -1,7 +1,110 @@
-import numpy as np
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from dataclasses import dataclass
 
+import numpy as np
+import pandas as pd
+from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from vtk import vtkPolyData
+
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.use_cases.pressure.force.body_config import BodyConfig
+from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
+from cfdmod.use_cases.pressure.path_manager import CfPathManager
+from cfdmod.use_cases.pressure.zoning.processing import (
+    calculate_statistics,
+    combine_stats_data_with_mesh,
+    get_indexing_mask,
+)
+
+
+@dataclass
+class ProcessedBodyData:
+    df_regions: pd.DataFrame
+    body_cf: pd.DataFrame
+    body_cf_stats: pd.DataFrame
+    body_geom: LagrangianGeometry
+    body_data_df: pd.DataFrame
+    polydata: vtkPolyData
+
+    def save_outputs(self, body_label: str, cfg_label: str, path_manager: CfPathManager):
+        # Output 1: Ce(t)
+        self.body_cf.to_hdf(
+            path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
+            key="Ce_t",
+            mode="w",
+            index=False,
+        )
+
+        # Output 2: Ce_stats
+        self.body_cf_stats.to_hdf(
+            path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
+            key="Ce_stats",
+            mode="w",
+            index=False,
+        )
+
+        # Output 3: VTK
+        write_polydata(
+            path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label),
+            self.polydata,
+        )
+
+
+def process_body(
+    mesh: LagrangianFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
+) -> ProcessedBodyData:
+    body_geom, geometry_idx = get_geometry_from_mesh(body_cfg=body_cfg, mesh=mesh)
+
+    zoning_to_use = body_cfg.sub_bodies.offset_limits(0.1)
+    df_regions = zoning_to_use.get_regions_df()
+
+    sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
+    sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
+
+    body_data = cp_data[cp_data["point_idx"].isin(geometry_idx)].copy()
+    body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
+
+    body_cf = transform_to_Cf(body_data=body_data, body_geom=body_geom)
+
+    body_cf_stats = calculate_statistics(body_cf, cfg.statistics, variables=cfg.variables)
+
+    body_data_df = combine_stats_data_with_mesh(
+        mesh=body_geom, region_idx_array=sub_body_idx_array, data_stats=body_cf_stats
+    )
+
+    polydata = create_polydata_for_cell_data(body_data_df, body_geom)
+
+    return ProcessedBodyData(
+        df_regions=df_regions,
+        body_cf=body_cf,
+        body_cf_stats=body_cf_stats,
+        body_geom=body_geom,
+        body_data_df=body_data_df,
+        polydata=polydata,
+    )
+
+
+def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry):
+    body_data["fx"] = body_data["cp"] * body_data["Ax"]
+    body_data["fy"] = body_data["cp"] * body_data["Ay"]
+    body_data["fz"] = body_data["cp"] * body_data["Az"]
+
+    body_cf = (
+        body_data.groupby(["region_idx", "time_step"])  # type: ignore
+        .agg(
+            Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
+            Fy=pd.NamedAgg(column="fy", aggfunc="sum"),
+            Fz=pd.NamedAgg(column="fz", aggfunc="sum"),
+        )
+        .reset_index()
+    )
+
+    Ax, Ay, Az = get_representative_areas(body_geom)
+
+    body_cf["Cfx"] = body_cf["Fx"] / Ax
+    body_cf["Cfy"] = body_cf["Fy"] / Ay
+    body_cf["Cfz"] = body_cf["Fz"] / Az
+
+    return body_cf
 
 
 def get_geometry_from_mesh(
