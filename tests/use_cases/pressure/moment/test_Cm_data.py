@@ -11,7 +11,7 @@ from cfdmod.use_cases.pressure.moment.Cm_data import (
 )
 
 
-class TestCfData(unittest.TestCase):
+class TestCmData(unittest.TestCase):
     def setUp(self):
         self.body_data = pd.DataFrame(
             {
@@ -21,6 +21,7 @@ class TestCfData(unittest.TestCase):
                 "Az": [3, 3, 3, 3],
                 "region_idx": [0, 0, 0, 0],
                 "time_step": [0, 0, 1, 1],
+                "point_idx": [0, 1, 0, 1],
             }
         )
 
@@ -29,7 +30,7 @@ class TestCfData(unittest.TestCase):
 
         self.body_geom = LagrangianGeometry(vertices, triangles)
 
-    def test_transform_to_Cf(self):
+    def test_transform_to_Cm(self):
         centroids = np.mean(self.body_geom.triangle_vertices, axis=1)
         position_df = get_lever_relative_position_df(
             centroids=centroids, lever_origin=(0, 0, 0), geometry_idx=np.array([0, 1])
@@ -39,7 +40,7 @@ class TestCfData(unittest.TestCase):
         self.assertIsNotNone(transformed_data)
         # Add more assertions to check the actual data
 
-    def test_get_representative_areas(self):
+    def test_get_representative_volume(self):
         V_rep = get_representative_volume(self.body_geom)
         self.assertIsNotNone(V_rep)
         # Add more assertions to check the actual data
