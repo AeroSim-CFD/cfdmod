@@ -26,13 +26,13 @@ It is defined as a sum of the resulting moment for each triangle of each surface
 The position vector :math:`r_o` is defined for each triangle, from a common arbitrary points :math:`o`. One can also define it for each axis direction:
 
 .. math::
-   C_{M_x} = \frac{\sum M_{res_x}}{q V_{rep}} = \frac{\sum (r_{ox} A_{ix}) c_{pi}}{V_{rep}}
+   C_{M_x} = \frac{\sum M_{res_x}}{q V_{rep}} = \frac{\sum (r_{oy} A_{iz} - r_{oz} A_{iy}) c_{pi}}{V_{rep}}
 
 .. math::
-   C_{M_y} = \frac{\sum M_{res_y}}{q V_{rep}} = \frac{\sum (r_{oy} A_{iy}) c_{pi}}{V_{rep}}
+   C_{M_y} = \frac{\sum M_{res_y}}{q V_{rep}} = \frac{\sum (r_{oz} A_{ix} - r_{ox} A_{iz}) c_{pi}}{V_{rep}}
 
 .. math::
-   C_{M_z} = \frac{\sum M_{res_z}}{q V_{rep}} = \frac{\sum (r_{oz} A_{iz}) c_{pi}}{V_{rep}}
+   C_{M_z} = \frac{\sum M_{res_z}}{q V_{rep}} = \frac{\sum (r_{ox} A_{iy} - r_{oy} A_{ix}) c_{pi}}{V_{rep}}
 
 The representative volume :math:`V_{rep}` is defined as the volume of the structure's bounding box.
 For example, consider a tall building:
