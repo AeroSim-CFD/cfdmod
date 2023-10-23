@@ -2,39 +2,39 @@ import pathlib
 import unittest
 
 from cfdmod.api.geometry.STL import export_stl
-from cfdmod.use_cases.block_gen import (
-    BlockParams,
+from cfdmod.use_cases.roughness_gen import (
+    ElementParams,
     GenerationParams,
     SpacingParams,
-    build_single_block,
+    build_single_element,
     linear_pattern,
 )
 
 
-class TestBlockGenerationUseCase(unittest.TestCase):
-    def test_block_generation(self):
-        output_path = pathlib.Path("./output/block_gen")
+class TestElementGenerationUseCase(unittest.TestCase):
+    def test_element_generation(self):
+        output_path = pathlib.Path("./output/roughness_gen")
 
-        block_params = BlockParams(height=1, width=1, length=1)
+        element_params = ElementParams(height=1, width=1)
         spacing_params = SpacingParams(
             spacing=(1, 1),
             line_offset=1,
             offset_direction="x",
         )
         cfg = GenerationParams(
-            N_blocks_x=10,
-            N_blocks_y=10,
-            block_params=block_params,
+            N_elements_x=10,
+            N_elements_y=10,
+            element_params=element_params,
             spacing_params=spacing_params,
         )
 
-        triangles, normals = build_single_block(cfg.block_params)
+        triangles, normals = build_single_element(cfg.element_params)
 
         single_line_triangles, single_line_normals = linear_pattern(
             triangles,
             normals,
             direction=cfg.spacing_params.offset_direction,
-            n_repeats=cfg.single_line_blocks,
+            n_repeats=cfg.single_line_elements,
             spacing_value=cfg.single_line_spacing,
         )
 
@@ -42,23 +42,25 @@ class TestBlockGenerationUseCase(unittest.TestCase):
             single_line_triangles,
             single_line_normals,
             direction=cfg.perpendicular_direction,
-            n_repeats=cfg.multi_line_blocks,
+            n_repeats=cfg.multi_line_elements,
             spacing_value=cfg.multi_line_spacing,
             offset_value=cfg.spacing_params.line_offset,
         )
 
-        export_stl(output_path / "blocks_full.stl", full_triangles, full_normals)
-        export_stl(output_path / "blocks_line.stl", single_line_triangles, single_line_normals)
-        export_stl(output_path / "block.stl", triangles, normals)
+        export_stl(output_path / "roughness_full.stl", full_triangles, full_normals)
+        export_stl(output_path / "roughness_line.stl", single_line_triangles, single_line_normals)
+        export_stl(output_path / "roughness_element.stl", triangles, normals)
 
         self.assertEqual(len(triangles), len(normals), 10)
         self.assertEqual(
-            len(single_line_triangles), len(single_line_normals), 10 * (cfg.single_line_blocks + 1)
+            len(single_line_triangles),
+            len(single_line_normals),
+            10 * (cfg.single_line_elements + 1),
         )
         self.assertEqual(
             len(full_triangles),
             len(full_normals),
-            10 * (cfg.single_line_blocks + 1) * (cfg.multi_line_blocks + 1),
+            10 * (cfg.single_line_elements + 1) * (cfg.multi_line_elements + 1),
         )
 
 

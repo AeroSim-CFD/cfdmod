@@ -8,13 +8,13 @@ from cfdmod.utils import read_yaml
 __all__ = [
     "OffsetDirection",
     "GenerationParams",
-    "BlockParams",
+    "ElementParams",
     "SpacingParams",
 ]
 
 
 OffsetDirection = Annotated[
-    Literal["x", "y"], Field(description="""Define the offset direction for block lines""")
+    Literal["x", "y"], Field(description="""Define the offset direction for element lines""")
 ]
 
 
@@ -39,85 +39,79 @@ class SpacingParams(BaseModel):
     )
 
 
-class BlockParams(BaseModel):
+class ElementParams(BaseModel):
     height: float = Field(
         ...,
-        title="Block height",
-        description="Size of the generated blocks in Z axis",
+        title="Element height",
+        description="Size of the generated elements in Z axis",
         gt=0,
     )
     width: float = Field(
         ...,
-        title="Block width",
-        description="Size of the generated blocks in Y axis",
-        gt=0,
-    )
-    length: float = Field(
-        ...,
-        title="Block length",
-        description="Size of the generated blocks in X axis",
+        title="Element width",
+        description="Size of the generated elements in Y axis",
         gt=0,
     )
 
 
 class GenerationParams(BaseModel):
-    N_blocks_x: int = Field(
+    N_elements_x: int = Field(
         ...,
-        title="Number of blocks in X",
-        description="Defines the number of blocks in the X axis",
+        title="Number of elements in X",
+        description="Defines the number of elements in the X axis",
         gt=0,
     )
-    N_blocks_y: int = Field(
+    N_elements_y: int = Field(
         ...,
-        title="Number of blocks in Y",
-        description="Defines the number of blocks in the Y axis",
+        title="Number of elements in Y",
+        description="Defines the number of elements in the Y axis",
         gt=0,
     )
-    block_params: BlockParams = Field(
-        ..., title="Block parameters", description="Object with block parameters"
+    element_params: ElementParams = Field(
+        ..., title="Element parameters", description="Object with element geometry parameters"
     )
     spacing_params: SpacingParams = Field(
         ..., title="Spacing parameters", description="Object with spacing parameters"
     )
 
     @property
-    def single_line_blocks(self) -> int:
-        """Calculates the number of blocks in a single line based on the offset direction
+    def single_line_elements(self) -> int:
+        """Calculates the number of elements in a single line based on the offset direction
 
         Returns:
-            int: Number of repetitions applied to a block to form a row
+            int: Number of repetitions applied to an element to form a row
         """
         match self.spacing_params.offset_direction:
             case "x":
-                return self.N_blocks_x - 1
+                return self.N_elements_x - 1
             case "y":
-                return self.N_blocks_y - 1
+                return self.N_elements_y - 1
 
     @property
     def single_line_spacing(self) -> float:
         """Calculates the single line spacing based on the offset direction
 
         Returns:
-            float: Value for spacing the blocks in a single row
+            float: Value for spacing the elements in a single row
         """
         match self.spacing_params.offset_direction:
             case "x":
-                return self.spacing_params.spacing[0] + self.block_params.length
+                return self.spacing_params.spacing[0]
             case "y":
-                return self.spacing_params.spacing[1] + self.block_params.width
+                return self.spacing_params.spacing[1] + self.element_params.width
 
     @property
-    def multi_line_blocks(self) -> int:
+    def multi_line_elements(self) -> int:
         """Calculates the number of rows to be replicated based on the offset direction
 
         Returns:
-            int: Number of repetitions applied to a row of blocks
+            int: Number of repetitions applied to a row of elements
         """
         match self.spacing_params.offset_direction:
             case "x":
-                return self.N_blocks_y - 1
+                return self.N_elements_y - 1
             case "y":
-                return self.N_blocks_x - 1
+                return self.N_elements_x - 1
 
     @property
     def multi_line_spacing(self) -> float:
@@ -128,9 +122,9 @@ class GenerationParams(BaseModel):
         """
         match self.spacing_params.offset_direction:
             case "x":
-                return self.spacing_params.spacing[1] + self.block_params.width
+                return self.spacing_params.spacing[1] + self.element_params.width
             case "y":
-                return self.spacing_params.spacing[0] + self.block_params.length
+                return self.spacing_params.spacing[0]
 
     @property
     def perpendicular_direction(self) -> OffsetDirection:
@@ -148,4 +142,4 @@ class GenerationParams(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. Filetitle {file_path.name} does not exists")
+            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")

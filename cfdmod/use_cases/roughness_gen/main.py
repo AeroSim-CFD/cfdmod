@@ -3,7 +3,7 @@ import pathlib
 from dataclasses import dataclass
 
 from cfdmod.api.geometry.STL import export_stl
-from cfdmod.use_cases.block_gen import GenerationParams, build_single_block, linear_pattern
+from cfdmod.use_cases.roughness_gen import GenerationParams, build_single_element, linear_pattern
 
 
 @dataclass
@@ -46,13 +46,13 @@ def main(*args):
     cfg = GenerationParams.from_file(pathlib.Path(args_use.config))
     output_path = pathlib.Path(args_use.output)
 
-    triangles, normals = build_single_block(cfg.block_params)
+    triangles, normals = build_single_element(cfg.element_params)
 
     single_line_triangles, single_line_normals = linear_pattern(
         triangles,
         normals,
         direction=cfg.spacing_params.offset_direction,
-        n_repeats=cfg.single_line_blocks,
+        n_repeats=cfg.single_line_elements,
         spacing_value=cfg.single_line_spacing,
     )
 
@@ -60,9 +60,9 @@ def main(*args):
         single_line_triangles,
         single_line_normals,
         direction=cfg.perpendicular_direction,
-        n_repeats=cfg.multi_line_blocks,
+        n_repeats=cfg.multi_line_elements,
         spacing_value=cfg.multi_line_spacing,
         offset_value=cfg.spacing_params.line_offset,
     )
 
-    export_stl(output_path / "block_gen.stl", full_triangles, full_normals)
+    export_stl(output_path / "roughness_elements.stl", full_triangles, full_normals)
