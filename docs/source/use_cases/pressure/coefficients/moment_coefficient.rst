@@ -116,7 +116,7 @@ Or it can be generated together with the pressure data conversion:
       --config {CONFIG_PATH} \
       --Cm
 
-# TODO: reference the notebooks
+Another way to run the shape coefficient calculation, is through the `notebook <calculate_Cm.ipynb>`_
 
 Data format
 ===========
@@ -229,3 +229,10 @@ Data format
      - 0
    * - 1
      - 0
+
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Calculate Cm <calculate_Cm.ipynb>
