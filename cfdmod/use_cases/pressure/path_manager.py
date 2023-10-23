@@ -11,6 +11,18 @@ class CmPathManager(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
+    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label)
+        return self.output_path / cfg_label / f"{body_label}.cm_body.vtp"
+
+    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label)
+        return self.output_path / cfg_label / f"{body_label}.cm_time_series.hdf"
+
+    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label)
+        return self.output_path / cfg_label / f"{body_label}.cm_stats.hdf"
+
 
 class CfPathManager(BaseModel):
     output_path: pathlib.Path = Field(
@@ -19,15 +31,15 @@ class CfPathManager(BaseModel):
 
     def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.body.vtp"
+        return self.output_path / cfg_label / f"{body_label}.cf_body.vtp"
 
     def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.time_series.hdf"
+        return self.output_path / cfg_label / f"{body_label}.cf_time_series.hdf"
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.stats.hdf"
+        return self.output_path / cfg_label / f"{body_label}.cf_stats.hdf"
 
 
 class CePathManager(BaseModel):

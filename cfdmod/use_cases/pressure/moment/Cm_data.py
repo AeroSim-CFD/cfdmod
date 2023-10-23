@@ -7,7 +7,7 @@ from vtk import vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.path_manager import CfPathManager
+from cfdmod.use_cases.pressure.path_manager import CmPathManager
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
@@ -19,25 +19,25 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 @dataclass
 class ProcessedBodyData:
     df_regions: pd.DataFrame
-    body_cf: pd.DataFrame
-    body_cf_stats: pd.DataFrame
+    body_cm: pd.DataFrame
+    body_cm_stats: pd.DataFrame
     body_geom: LagrangianGeometry
     body_data_df: pd.DataFrame
     polydata: vtkPolyData
 
-    def save_outputs(self, body_label: str, cfg_label: str, path_manager: CfPathManager):
-        # Output 1: Ce(t)
-        self.body_cf.to_hdf(
+    def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
+        # Output 1: Cm(t)
+        self.body_cm.to_hdf(
             path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Ce_t",
+            key="Cm_t",
             mode="w",
             index=False,
         )
 
-        # Output 2: Ce_stats
-        self.body_cf_stats.to_hdf(
+        # Output 2: Cm_stats
+        self.body_cm_stats.to_hdf(
             path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Ce_stats",
+            key="Cm_stats",
             mode="w",
             index=False,
         )
@@ -88,8 +88,8 @@ def process_body(
 
     return ProcessedBodyData(
         df_regions=df_regions,
-        body_cf=body_cf,
-        body_cf_stats=body_cf_stats,
+        body_cm=body_cf,
+        body_cm_stats=body_cf_stats,
         body_geom=body_geom,
         body_data_df=body_data_df,
         polydata=polydata,

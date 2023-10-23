@@ -17,7 +17,16 @@ class CmConfig(BaseModel):
         ..., title="Bodies definition", description="Named bodies definition"
     )
     variables: list[MomentVariables]
-    statistics: list[Statistics]
+    lever_origin: tuple[float, float, float] = Field(
+        ...,
+        title="Lever origin",
+        description="Coordinate of the reference point to evaluate the lever for moment calculations",
+    )
+    statistics: list[Statistics] = Field(
+        ...,
+        title="List of statistics",
+        description="Define which statistical analysis will be performed to the coefficient",
+    )
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> dict[str, CmConfig]:
