@@ -26,18 +26,18 @@ class ProcessedBodyData:
     polydata: vtkPolyData
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CfPathManager):
-        # Output 1: Ce(t)
+        # Output 1: Cf(t)
         self.body_cf.to_hdf(
             path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Ce_t",
+            key="Cf_t",
             mode="w",
             index=False,
         )
 
-        # Output 2: Ce_stats
+        # Output 2: Cf_stats
         self.body_cf_stats.to_hdf(
             path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Ce_stats",
+            key="Cf_stats",
             mode="w",
             index=False,
         )
