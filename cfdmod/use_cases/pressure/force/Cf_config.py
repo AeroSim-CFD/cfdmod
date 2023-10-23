@@ -16,8 +16,16 @@ class CfConfig(BaseModel):
     bodies: dict[str, BodyConfig] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )
-    variables: list[ForceVariables]
-    statistics: list[Statistics]
+    variables: list[ForceVariables] = Field(
+        ...,
+        title="List of variables",
+        description="Define which variables will be calculated",
+    )
+    statistics: list[Statistics] = Field(
+        ...,
+        title="List of statistics",
+        description="Define which statistical analysis will be performed to the coefficient",
+    )
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> dict[str, CfConfig]:
