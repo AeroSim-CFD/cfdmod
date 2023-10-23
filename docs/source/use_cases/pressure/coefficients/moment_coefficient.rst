@@ -116,7 +116,7 @@ Or it can be generated together with the pressure data conversion:
       --config {CONFIG_PATH} \
       --Cm
 
-Another way to run the shape coefficient calculation, is through the `notebook <calculate_Cm.ipynb>`_
+Another way to run the moment coefficient calculation, is through the `notebook <calculate_Cm.ipynb>`_
 
 Data format
 ===========
