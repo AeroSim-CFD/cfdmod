@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 from cfdmod.utils import create_folder_path
 
 
+class CmPathManager(BaseModel):
+    output_path: pathlib.Path = Field(
+        ..., title="Output path", description="Path for saving output files"
+    )
+
+
 class CfPathManager(BaseModel):
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
