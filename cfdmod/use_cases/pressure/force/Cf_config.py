@@ -2,19 +2,43 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import ForceVariables
 from cfdmod.utils import read_yaml
 
-__all__ = ["CfConfig"]
+__all__ = ["CfConfig", "CfCaseConfig"]
+
+
+class CfCaseConfig(BaseModel):
+    bodies: dict[str, BodyConfig] = Field(
+        ..., title="Bodies definition", description="Named bodies definition"
+    )
+    force_coefficient: dict[str, CfConfig] = Field(
+        ...,
+        title="Force Coefficient configs",
+        description="Dictionary with Force Coefficient configuration",
+    )
+
+    @validator("force_coefficient", always=True)
+    def valdate_body_list(cls, v, values):
+        for body_label in [b for cfg in v.values() for b in cfg.bodies]:
+            if body_label not in values["bodies"].keys():
+                raise Exception(f"Body {body_label} is not defined in the configuration file")
+        return v
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CfCaseConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals)
+        return cfg
 
 
 class CfConfig(BaseModel):
-    bodies: dict[str, BodyConfig] = Field(
-        ..., title="Bodies definition", description="Named bodies definition"
+    bodies: list[str] = Field(
+        ..., title="Bodies definition", description="List of bodies to be processed"
     )
     variables: list[ForceVariables] = Field(
         ...,
@@ -26,28 +50,3 @@ class CfConfig(BaseModel):
         title="List of statistics",
         description="Define which statistical analysis will be performed to the coefficient",
     )
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> dict[str, CfConfig]:
-        config_dict: dict[str, CfConfig] = {}
-        yaml_vals = read_yaml(filename)
-
-        if "bodies" not in yaml_vals.keys():
-            raise Exception("There is no body defined in the configuration file")
-
-        for measurement_lbl in yaml_vals["force_coefficient"].keys():
-            body_list: list[str] = yaml_vals["force_coefficient"][measurement_lbl]["bodies"]
-            yaml_vals["force_coefficient"][measurement_lbl]["bodies"] = {}
-            for body_label in body_list:
-                if body_label not in yaml_vals["bodies"].keys():
-                    raise Exception("Body is not defined in the configuration file")
-
-                body_cfg = BodyConfig.model_validate(yaml_vals["bodies"][body_label])
-                yaml_vals["force_coefficient"][measurement_lbl]["bodies"][
-                    body_label
-                ] = body_cfg.model_dump()
-
-            cfg = cls.model_validate(yaml_vals["force_coefficient"][measurement_lbl])
-            config_dict[measurement_lbl] = cfg
-
-        return config_dict

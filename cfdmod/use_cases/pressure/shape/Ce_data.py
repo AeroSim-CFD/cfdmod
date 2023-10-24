@@ -5,11 +5,11 @@ import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 from vtk import vtkPolyData
 
+from cfdmod.api.geometry.region_meshing import create_regions_mesh
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
@@ -128,17 +128,12 @@ def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> 
     Returns:
         ZoningModel: Zoning configuration
     """
-    if sfc in config.zoning.no_zoning:
-        bounds = get_mesh_bounds(mesh)
-        zoning = ZoningModel(
-            x_intervals=[bounds[0][0], bounds[0][1]],
-            y_intervals=[bounds[1][0], bounds[1][1]],
-            z_intervals=[bounds[2][0], bounds[2][1]],
-        )
-    elif sfc in config.zoning.surfaces_in_exception:
-        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]
+    if sfc in config.zoning.no_zoning:  # type: ignore
+        zoning = ZoningModel(**{})
+    elif sfc in config.zoning.surfaces_in_exception:  # type: ignore
+        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]  # type: ignore
     else:
-        zoning = config.zoning.global_zoning
+        zoning = config.zoning.global_zoning  # type: ignore
         if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
             ignore_axis = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
             zoning = zoning.ignore_axis(ignore_axis)

@@ -73,7 +73,8 @@ def process_body(
     sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
-    body_data = cp_data[cp_data["point_idx"].isin(geometry_idx)].copy()
+    mask = cp_data["point_idx"].isin(geometry_idx)
+    body_data = cp_data[mask].copy()
     body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
 
     body_cf = transform_to_Cf(body_data=body_data, body_geom=body_geom)

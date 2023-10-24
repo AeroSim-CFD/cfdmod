@@ -8,7 +8,7 @@ from nassu.lnas import LagrangianFormat
 from cfdmod.api.vtk.write_vtk import merge_polydata, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
-from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
+from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
 from cfdmod.use_cases.pressure.shape.Ce_data import process_surface
 
 
@@ -69,7 +69,7 @@ def main(*args):
     mesh_path = pathlib.Path(args_use.mesh)
     cp_path = pathlib.Path(args_use.cp)
 
-    post_proc_cfg = CeConfig.from_file(cfg_path)
+    post_proc_cfg = CeCaseConfig.from_file(cfg_path)
 
     logger.info("Reading mesh description...")
     mesh = LagrangianFormat.from_file(mesh_path)
@@ -83,12 +83,12 @@ def main(*args):
 
     n_timesteps = cp_data_to_use["time_step"].unique().shape[0]
 
-    for cfg_label, cfg in post_proc_cfg.items():
+    for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
         processed_polydata = []
 
         logger.info(f"Processing {cfg_label} ...")
         for sfc in mesh.surfaces.keys():
-            if sfc in cfg.zoning.exclude:
+            if sfc in cfg.zoning.exclude:  # type: ignore
                 logger.info(f"Surface {sfc} ignored!")  # Ignore surface
                 continue
 

@@ -6,7 +6,7 @@ import pandas as pd
 from nassu.lnas import LagrangianFormat
 
 from cfdmod.logger import logger
-from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
+from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.use_cases.pressure.force.Cf_data import process_body
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 
@@ -68,7 +68,7 @@ def main(*args):
     mesh_path = pathlib.Path(args_use.mesh)
     cp_path = pathlib.Path(args_use.cp)
 
-    post_proc_cfg = CfConfig.from_file(cfg_path)
+    post_proc_cfg = CfCaseConfig.from_file(cfg_path)
 
     logger.info("Reading mesh description...")
     mesh = LagrangianFormat.from_file(mesh_path)
@@ -86,8 +86,9 @@ def main(*args):
 
     cp_data = pd.merge(cp_data_to_use, areas_df, on="point_idx", how="left")
 
-    for cfg_label, cfg in post_proc_cfg.items():
-        for body_label, body_cfg in cfg.bodies.items():
+    for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
+        for body_label in cfg.bodies:
+            body_cfg = post_proc_cfg.bodies[body_label]
             logger.info(f"Processing body {body_label} ...")
 
             processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
