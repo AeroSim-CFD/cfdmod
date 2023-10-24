@@ -4,7 +4,7 @@ __all__ = ["ZoningConfig"]
 
 import pathlib
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import read_yaml
@@ -17,7 +17,7 @@ class ExceptionZoningModel(ZoningModel):
         description="List of surfaces to include in the exceptional zoning",
     )
 
-    @validator("surfaces", always=True)
+    @field_validator("surfaces")
     def validate_surface_list(cls, v):
         if len(v) != len(set(v)):
             raise Exception("Invalid exceptions surface list, names must not repeat")
@@ -49,7 +49,7 @@ class ZoningConfig(BaseModel):
         + "It overrides the global zoning config.",
     )
 
-    @validator("exceptions", always=True)
+    @field_validator("exceptions")
     def validate_exceptions(cls, v):
         exceptions = []
         for exception_cfg in v.values():
@@ -58,7 +58,7 @@ class ZoningConfig(BaseModel):
             raise Exception("Invalid exceptions list, surface names must not repeat")
         return v
 
-    @validator("no_zoning", "exclude", always=True)
+    @field_validator("no_zoning", "exclude")
     def validate_surface_list(cls, v):
         if len(v) != len(set(v)):
             raise Exception("Invalid surface list, names must not repeat")

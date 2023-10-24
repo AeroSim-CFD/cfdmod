@@ -5,7 +5,7 @@ __all__ = ["ZoningModel"]
 import itertools
 
 import pandas as pd
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ZoningModel(BaseModel):
@@ -25,13 +25,13 @@ class ZoningModel(BaseModel):
         description="Values for the Z axis intervals list, it must be unique",
     )
 
-    @validator("x_intervals", "y_intervals", "z_intervals", always=True)
+    @field_validator("x_intervals", "y_intervals", "z_intervals")
     def validate_interval(cls, v):
         if len(v) != len(set(v)):
             raise Exception("Invalid region intervals, values must not repeat")
         return v
 
-    @validator("x_intervals", "y_intervals", "z_intervals", always=True)
+    @field_validator("x_intervals", "y_intervals", "z_intervals")
     def validate_intervals(cls, v):
         if len(v) < 2:
             raise Exception("Interval must have at least 2 values")

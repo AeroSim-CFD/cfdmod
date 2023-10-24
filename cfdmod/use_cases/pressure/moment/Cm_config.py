@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
@@ -22,7 +22,7 @@ class CmCaseConfig(BaseModel):
         description="Dictionary with Moment Coefficient configuration",
     )
 
-    @validator("moment_coefficient", always=True)
+    @field_validator("moment_coefficient")
     def valdate_body_list(cls, v, values):
         for body_label in [b for cfg in v.values() for b in cfg.bodies]:
             if body_label not in values["bodies"].keys():
