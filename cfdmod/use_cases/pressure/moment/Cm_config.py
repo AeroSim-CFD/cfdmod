@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
@@ -22,12 +22,12 @@ class CmCaseConfig(BaseModel):
         description="Dictionary with Moment Coefficient configuration",
     )
 
-    @field_validator("moment_coefficient")
-    def valdate_body_list(cls, v, values):
-        for body_label in [b for cfg in v.values() for b in cfg.bodies]:
-            if body_label not in values["bodies"].keys():
+    @model_validator(mode="after")
+    def valdate_body_list(self):
+        for body_label in [b for cfg in self.moment_coefficient.values() for b in cfg.bodies]:
+            if body_label not in self.bodies.keys():
                 raise Exception(f"Body {body_label} is not defined in the configuration file")
-        return v
+        return self
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CmCaseConfig:
