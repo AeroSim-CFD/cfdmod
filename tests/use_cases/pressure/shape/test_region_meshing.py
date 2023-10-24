@@ -43,7 +43,7 @@ class TestRegionMeshing(unittest.TestCase):
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
         mock_mesh = LagrangianGeometry(vertices, triangles)
         zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
-        zoning.offset_limits(0.1)
+        zoning = zoning.offset_limits(0.1)
         region_mesh = create_regions_mesh(mock_mesh, zoning)
 
         self.assertEqual(len(region_mesh.vertices), 7)
