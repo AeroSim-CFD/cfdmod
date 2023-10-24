@@ -43,6 +43,21 @@ class Profile:
 
         return Profile(s1_pos, s1_values, f"S1: {self_copy.label} / {rhs_copy.label}")
 
+    def smoothen_values(self):
+        """Removes duplicate values from the profile.
+        Duplicate values are a result of probing a vtm with more resolution than the multiblock data.
+        """
+        dup_indices = np.where(self.values[:-1] == self.values[1:])[0]
+
+        x = self.pos.copy()
+        x[dup_indices + 1] = (self.pos[dup_indices] + self.pos[dup_indices + 1]) / 2
+        x = np.delete(x, dup_indices)
+
+        y = np.delete(self.values, dup_indices)
+
+        self.pos = x
+        self.values = y
+
     def normalize_position(self):
         """Normalizes the profile position"""
 
