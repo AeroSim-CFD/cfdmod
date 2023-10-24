@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from nassu.lnas import LagrangianGeometry
 
-from cfdmod.use_cases.pressure.shape.region_meshing import (
+from cfdmod.api.geometry.region_meshing import (
     create_regions_mesh,
     slice_surface,
     slice_triangle,
