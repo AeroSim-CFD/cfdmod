@@ -5,11 +5,10 @@ from dataclasses import dataclass
 import pandas as pd
 from nassu.lnas import LagrangianFormat
 
-from cfdmod.api.vtk.write_vtk import merge_polydata, write_polydata
 from cfdmod.logger import logger
-from cfdmod.use_cases.pressure.path_manager import CePathManager
-from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import process_surface
+from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
+from cfdmod.use_cases.pressure.force.Cf_data import process_body
+from cfdmod.use_cases.pressure.path_manager import CfPathManager
 
 
 @dataclass
@@ -63,13 +62,13 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    path_manager = CePathManager(output_path=pathlib.Path(args_use.output))
+    path_manager = CfPathManager(output_path=pathlib.Path(args_use.output))
 
     cfg_path = pathlib.Path(args_use.config)
     mesh_path = pathlib.Path(args_use.mesh)
     cp_path = pathlib.Path(args_use.cp)
 
-    post_proc_cfg = CeCaseConfig.from_file(cfg_path)
+    post_proc_cfg = CfCaseConfig.from_file(cfg_path)
 
     logger.info("Reading mesh description...")
     mesh = LagrangianFormat.from_file(mesh_path)
@@ -81,35 +80,20 @@ def main(*args):
     cp_data_to_use = cp_data.to_frame() if isinstance(cp_data, pd.Series) else cp_data
     logger.info("Read pressure coefficient data successfully!")
 
-    n_timesteps = cp_data_to_use["time_step"].unique().shape[0]
+    vec_areas = mesh.geometry._cross_prod() / 2
+    areas_df = pd.DataFrame({"Ax": vec_areas[:, 0], "Ay": vec_areas[:, 1], "Az": vec_areas[:, 2]})
+    areas_df["point_idx"] = areas_df.index
 
-    for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
-        processed_polydata = []
+    cp_data = pd.merge(cp_data_to_use, areas_df, on="point_idx", how="left")
 
-        logger.info(f"Processing {cfg_label} ...")
-        for sfc in mesh.surfaces.keys():
-            if sfc in cfg.zoning.exclude:  # type: ignore
-                logger.info(f"Surface {sfc} ignored!")  # Ignore surface
-                continue
+    for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
+        for body_label in cfg.bodies:
+            body_cfg = post_proc_cfg.bodies[body_label]
+            logger.info(f"Processing body {body_label} ...")
 
-            logger.info(f"Processing surface {sfc} ...")
-
-            processed_surface = process_surface(
-                body_mesh=mesh,
-                sfc_label=sfc,
-                cfg=cfg,
-                cp_data=cp_data_to_use,
-                n_timesteps=n_timesteps,
-            )
-            processed_surface.save_outputs(
-                sfc_label=sfc, cfg_label=cfg_label, path_manager=path_manager
+            processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
+            processed_body.save_outputs(
+                body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
             )
 
-            processed_polydata.append(processed_surface.polydata)
-
-            logger.info(f"Processed surface {sfc}")
-
-        merged_polydata = merge_polydata(processed_polydata)
-        write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
-
-        logger.info(f"Merged and saved polydata for {cfg_label}")
+            logger.info(f"Processed body {body_label}")

@@ -1,0 +1,22 @@
+bodies:
+  marquise:
+    surfaces: ["m1_yp", "m2_zp", "m3_zm"]
+  lanternim:
+    surfaces: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+  building:
+    surfaces: [] # If empty, all surfaces from LNAS will be included
+    sub_bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+  building2:
+    surfaces: ["p1_xp", "p2_xp", "p3_ym", "p4_ym", "p5_ym", "p6c_yp", "p7_xm", "p8_yp", "p9_yp", "t1_ym", "t2_yp"] # If empty, all surfaces from LNAS will be included
+    sub_bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+force_coefficient:
+  measurement_1:
+    bodies: ["building", "building2"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  measurement_2:
+    bodies: ["marquise", "lanternim"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

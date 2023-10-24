@@ -3,13 +3,13 @@ import unittest
 import numpy as np
 from nassu.lnas import LagrangianGeometry
 
-from cfdmod.use_cases.pressure.shape.region_meshing import (
+from cfdmod.api.geometry.region_meshing import (
     create_regions_mesh,
     slice_surface,
     slice_triangle,
     triangulate_tri,
 )
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
 class TestRegionMeshing(unittest.TestCase):
@@ -43,8 +43,10 @@ class TestRegionMeshing(unittest.TestCase):
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
         mock_mesh = LagrangianGeometry(vertices, triangles)
         zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
-        zoning.offset_limits(0.1)
-        region_mesh = create_regions_mesh(mock_mesh, zoning)
+        zoning = zoning.offset_limits(0.1)
+        region_mesh = create_regions_mesh(
+            mock_mesh, (zoning.x_intervals, zoning.y_intervals, zoning.z_intervals)
+        )
 
         self.assertEqual(len(region_mesh.vertices), 7)
         self.assertEqual(len(region_mesh.triangles), 6)

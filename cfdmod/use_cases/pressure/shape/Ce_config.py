@@ -2,19 +2,31 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
-__all__ = ["CeConfig"]
+__all__ = ["CeConfig", "CeCaseConfig"]
+
+
+class ZoningBuilder(BaseModel):
+    yaml: str = Field(
+        ...,
+        title="Path to Zoning yaml",
+        description="Path to Zoning yaml for construction zoning configuration",
+    )
+
+    def to_zoning_config(self) -> ZoningConfig:
+        zoning_cfg = ZoningConfig.from_file(pathlib.Path(self.yaml))
+        return zoning_cfg
 
 
 class CeConfig(BaseModel):
-    """Configuration for shape coefiecient"""
+    """Configuration for shape coefficient"""
 
-    zoning: ZoningConfig = Field(
+    zoning: ZoningConfig | ZoningBuilder = Field(
         ...,
         title="Zoning configuration",
         description="Zoning configuration with intervals information",
@@ -25,19 +37,23 @@ class CeConfig(BaseModel):
         description="List of statistics to calculate from shape coefficient signal",
     )
 
+    @validator("zoning", always=True)
+    def validate_zoning(cls, v):
+        if isinstance(v, ZoningBuilder):
+            return v.to_zoning_config()
+        else:
+            return v
+
+
+class CeCaseConfig(BaseModel):
+    shape_coefficient: dict[str, CeConfig] = Field(
+        ...,
+        title="Shape Coefficient configs",
+        description="Dictionary of shape coefficient configurations",
+    )
+
     @classmethod
-    def from_file(cls, filename: pathlib.Path) -> dict[str, CeConfig]:
-        config_dict: dict[str, CeConfig] = {}
+    def from_file(cls, filename: pathlib.Path) -> CeCaseConfig:
         yaml_vals = read_yaml(filename)
-
-        for pattern_lbl in yaml_vals["shape_coefficient"].keys():
-            if "yaml" in yaml_vals["shape_coefficient"][pattern_lbl]["zoning"].keys():
-                zoning_path = yaml_vals["shape_coefficient"][pattern_lbl]["zoning"]["yaml"]
-                zoning_cfg = ZoningConfig.from_file(pathlib.Path(zoning_path))
-                yaml_vals["shape_coefficient"][pattern_lbl]["zoning"] = zoning_cfg.model_dump()
-                del zoning_path
-
-            cfg = cls.model_validate(yaml_vals["shape_coefficient"][pattern_lbl])
-            config_dict[pattern_lbl] = cfg
-
-        return config_dict
+        cfg = cls(**yaml_vals)
+        return cfg

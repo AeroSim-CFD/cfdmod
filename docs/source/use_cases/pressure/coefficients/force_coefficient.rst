@@ -127,7 +127,7 @@ Or it can be generated together with the pressure data conversion:
       --config {CONFIG_PATH} \
       --Cf
 
-# TODO: reference the notebooks
+Another way to run the force coefficient calculation, is through the `notebook <calculate_Cf.ipynb>`_
 
 Data format
 ===========
@@ -240,3 +240,9 @@ Data format
      - 0
    * - 1
      - 0
+
+.. toctree::
+   :maxdepth: -1
+   :hidden:
+
+   Calculate Cf <calculate_Cf.ipynb>

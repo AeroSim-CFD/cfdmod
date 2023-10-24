@@ -5,14 +5,17 @@ import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 from vtk import vtkPolyData
 
+from cfdmod.api.geometry.region_meshing import create_regions_mesh
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
-from cfdmod.use_cases.pressure.shape.regions import get_region_index_mask
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.zoning.processing import (
+    calculate_statistics,
+    combine_stats_data_with_mesh,
+    get_indexing_mask,
+)
 
 
 @dataclass
@@ -79,7 +82,7 @@ def process_surface(
 
     df_regions = zoning_to_use.get_regions_df()
 
-    triangles_region = get_region_index_mask(mesh=sfc_mesh, df_regions=df_regions)
+    triangles_region = get_indexing_mask(mesh=sfc_mesh, df_regions=df_regions)
     sfc_triangles_idxs = body_mesh.surfaces[sfc_label].copy()
     surface_ce = transform_to_Ce(
         surface_mesh=sfc_mesh,
@@ -89,12 +92,16 @@ def process_surface(
         n_timesteps=n_timesteps,
     )
 
-    surface_ce_stats = calculate_statistics(surface_ce, statistics_to_apply=cfg.statistics)
+    surface_ce_stats = calculate_statistics(
+        surface_ce, statistics_to_apply=cfg.statistics, variables=["Ce"]
+    )
 
-    regions_mesh = create_regions_mesh(sfc_mesh, zoning_to_use)
-    regions_mesh_triangles_region = get_region_index_mask(mesh=regions_mesh, df_regions=df_regions)
+    regions_mesh = create_regions_mesh(
+        sfc_mesh, (zoning_to_use.x_intervals, zoning_to_use.y_intervals, zoning_to_use.z_intervals)
+    )
+    regions_mesh_triangles_region = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
 
-    region_data_df = combine_region_data_with_mesh(
+    region_data_df = combine_stats_data_with_mesh(
         regions_mesh, regions_mesh_triangles_region, surface_ce_stats
     )
     if (region_data_df.isnull().sum() != 0).any():
@@ -123,46 +130,17 @@ def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> 
     Returns:
         ZoningModel: Zoning configuration
     """
-    if sfc in config.zoning.no_zoning:
-        bounds = get_mesh_bounds(mesh)
-        zoning = ZoningModel(
-            x_intervals=[bounds[0][0], bounds[0][1]],
-            y_intervals=[bounds[1][0], bounds[1][1]],
-            z_intervals=[bounds[2][0], bounds[2][1]],
-        )
-    elif sfc in config.zoning.surfaces_in_exception:
-        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]
+    if sfc in config.zoning.no_zoning:  # type: ignore
+        zoning = ZoningModel(**{})
+    elif sfc in config.zoning.surfaces_in_exception:  # type: ignore
+        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]  # type: ignore
     else:
-        zoning = config.zoning.global_zoning
+        zoning = config.zoning.global_zoning  # type: ignore
         if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
             ignore_axis = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
             zoning = zoning.ignore_axis(ignore_axis)
 
     return zoning.offset_limits(0.1)
-
-
-def combine_region_data_with_mesh(
-    regions_mesh: LagrangianGeometry,
-    regions_mesh_triangles_region: np.ndarray,
-    surface_ce_stats: pd.DataFrame,
-) -> pd.DataFrame:
-    """Combine compiled region data with surface meshing by indexing regions
-
-    Args:
-        regions_mesh (LagrangianGeometry): Generated mesh with region separation
-        regions_mesh_triangles_region (np.ndarray): Region mesh triangles indexing by region
-        surface_ce_stats (pd.DataFrame): Compiled region statistics data
-
-    Returns:
-        pd.DataFrame: Region mesh dataframe with region statistics
-    """
-    region_data_df = pd.DataFrame()
-    region_data_df["point_idx"] = np.arange(len(regions_mesh.triangle_vertices))
-    region_data_df["region_idx"] = regions_mesh_triangles_region
-    region_data_df = pd.merge(region_data_df, surface_ce_stats, on="region_idx", how="left")
-    region_data_df.drop(columns=["region_idx"], inplace=True)
-
-    return region_data_df
 
 
 def transform_to_Ce(
@@ -205,43 +183,3 @@ def transform_to_Ce(
     surface_ce["Ce"] = surface_ce["total_force"] / surface_ce["total_area"]
 
     return surface_ce
-
-
-def calculate_statistics(
-    region_data: pd.DataFrame, statistics_to_apply: list[Statistics]
-) -> pd.DataFrame:
-    """Calculates statistics for pressure coefficient of a body data
-
-    Args:
-        region_data (pd.DataFrame): Dataframe of the region data shape coefficients
-        statistics_to_apply (list[Statistics]): List of statistical functions to apply
-
-    Returns:
-        pd.DataFrame: Statistics for shape coefficient
-    """
-    group_by_point = region_data.groupby("region_idx")
-
-    statistics_data = pd.DataFrame({"region_idx": region_data["region_idx"].unique()})
-
-    if "avg" in statistics_to_apply:
-        average = group_by_point["Ce"].apply(lambda x: x.mean()).reset_index(name="mean")
-        statistics_data["Ce_avg"] = average["mean"]
-    if "min" in statistics_to_apply:
-        minimum = group_by_point["Ce"].apply(lambda x: x.min()).reset_index(name="min")
-        statistics_data["Ce_min"] = minimum["min"]
-    if "max" in statistics_to_apply:
-        maximum = group_by_point["Ce"].apply(lambda x: x.max()).reset_index(name="max")
-        statistics_data["Ce_max"] = maximum["max"]
-    if "std" in statistics_to_apply:
-        rms = group_by_point["Ce"].apply(lambda x: x.std()).reset_index(name="std")
-        statistics_data["Ce_rms"] = rms["std"]
-
-    # Calculate skewness and kurtosis using apply
-    if "skewness" in statistics_to_apply:
-        skewness = group_by_point["Ce"].apply(lambda x: x.skew()).reset_index(name="skewness")
-        statistics_data["Ce_skewness"] = skewness["skewness"]
-    if "kurtosis" in statistics_to_apply:
-        kurtosis = group_by_point["Ce"].apply(lambda x: x.kurt()).reset_index(name="kurtosis")
-        statistics_data["Ce_kurtosis"] = kurtosis["kurtosis"]
-
-    return statistics_data
