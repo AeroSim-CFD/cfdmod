@@ -7,7 +7,7 @@ from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
-from cfdmod.use_cases.pressure.cp_config import CpConfig
+from cfdmod.use_cases.pressure.cp_config import CpCaseConfig
 from cfdmod.use_cases.pressure.cp_data import (
     calculate_statistics,
     filter_pressure_data,
@@ -89,7 +89,9 @@ def main(*args):
         path_manager=path_manager,
     )
 
-    post_proc_cfg = CpConfig.from_file(cfg_path)
+    post_proc_cfg = CpCaseConfig.from_file(cfg_path)
+    cfg = post_proc_cfg.pressure_coefficient
+
     logger.info("Reading mesh description...")
     mesh = LagrangianFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
@@ -97,24 +99,22 @@ def main(*args):
     logger.info("Preparing to read pressure data...")
     press_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
     body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
-    press_data, body_data = filter_pressure_data(
-        press_data, body_data, post_proc_cfg.timestep_range
-    )
+    press_data, body_data = filter_pressure_data(press_data, body_data, cfg.timestep_range)
     logger.info("Read pressure data successfully!")
 
     # OUTPUT 1: cp(t)
     cp_data = transform_to_cp(
         press_data,
         body_data,
-        reference_vel=post_proc_cfg.U_H,
-        ref_press_mode=post_proc_cfg.reference_pressure,
+        reference_vel=cfg.U_H,
+        ref_press_mode=cfg.reference_pressure,
     )
     logger.info("Transformed pressure into coefficients")
     cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)
     logger.info("Exported coefficients")
 
     # OUTPUT 2: cp_stats
-    cp_stats = calculate_statistics(cp_data, statistics_to_apply=post_proc_cfg.statistics)
+    cp_stats = calculate_statistics(cp_data, statistics_to_apply=cfg.statistics)
     cp_stats.to_hdf(path_manager.cp_stats_path, key="cp_t", mode="w", index=False)
     logger.info("Exported statistics")
 
