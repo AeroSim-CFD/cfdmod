@@ -6,8 +6,25 @@ import pathlib
 
 from pydantic import BaseModel, Field, validator
 
-from cfdmod.utils import read_yaml
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.utils import read_yaml
+
+
+class ExceptionZoningModel(ZoningModel):
+    surfaces: list[str] = Field(
+        ...,
+        title="List of surfaces",
+        description="List of surfaces to include in the exceptional zoning",
+    )
+
+    @validator("surfaces", always=True)
+    def validate_surface_list(cls, v):
+        if len(v) != len(set(v)):
+            raise Exception("Invalid exceptions surface list, names must not repeat")
+        if len(v) == 0:
+            raise Exception("Invalid exceptions surface list, list must not be empty")
+        return v
+
 
 class ZoningConfig(BaseModel):
     global_zoning: ZoningModel = Field(
@@ -59,19 +76,3 @@ class ZoningConfig(BaseModel):
         yaml_vals = read_yaml(filename)
         cfg = cls.model_validate(yaml_vals)
         return cfg
-
-
-class ExceptionZoningModel(ZoningModel):
-    surfaces: list[str] = Field(
-        ...,
-        title="List of surfaces",
-        description="List of surfaces to include in the exceptional zoning",
-    )
-
-    @validator("surfaces", always=True)
-    def validate_surface_list(cls, v):
-        if len(v) != len(set(v)):
-            raise Exception("Invalid exceptions surface list, names must not repeat")
-        if len(v) == 0:
-            raise Exception("Invalid exceptions surface list, list must not be empty")
-        return v
