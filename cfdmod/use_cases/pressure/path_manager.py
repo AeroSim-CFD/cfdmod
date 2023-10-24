@@ -6,22 +6,40 @@ from pydantic import BaseModel, Field
 from cfdmod.utils import create_folder_path
 
 
+class CmPathManager(BaseModel):
+    output_path: pathlib.Path = Field(
+        ..., title="Output path", description="Path for saving output files"
+    )
+
+    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label / "Cm")
+        return self.output_path / cfg_label / "Cm" / f"{body_label}.body.vtp"
+
+    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label / "Cm")
+        return self.output_path / cfg_label / "Cm" / f"{body_label}.time_series.hdf"
+
+    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label / "Cm")
+        return self.output_path / cfg_label / "Cm" / f"{body_label}.stats.hdf"
+
+
 class CfPathManager(BaseModel):
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
     )
 
     def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.body.vtp"
+        create_folder_path(self.output_path / cfg_label / "Cf")
+        return self.output_path / cfg_label / "Cf" / f"{body_label}.body.vtp"
 
     def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.time_series.hdf"
+        create_folder_path(self.output_path / cfg_label / "Cf")
+        return self.output_path / cfg_label / "Cf" / f"{body_label}.time_series.hdf"
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.stats.hdf"
+        create_folder_path(self.output_path / cfg_label / "Cf")
+        return self.output_path / cfg_label / "Cf" / f"{body_label}.stats.hdf"
 
 
 class CePathManager(BaseModel):

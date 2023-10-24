@@ -7,6 +7,7 @@ from nassu.lnas import LagrangianGeometry
 from cfdmod.use_cases.pressure.statistics import Statistics
 
 ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
+MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
 ShapeVariables = Literal["Ce"]
 
 
@@ -44,7 +45,7 @@ def get_indexing_mask(mesh: LagrangianGeometry, df_regions: pd.DataFrame) -> np.
 def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
-    variables: list[ShapeVariables] | list[ForceVariables],
+    variables: list[ShapeVariables] | list[ForceVariables] | list[MomentVariables],
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
 

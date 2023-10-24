@@ -6,44 +6,45 @@ from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
-from cfdmod.use_cases.pressure.zoning.processing import ForceVariables
+from cfdmod.use_cases.pressure.zoning.processing import MomentVariables
 from cfdmod.utils import read_yaml
 
-__all__ = ["CfConfig", "CfCaseConfig"]
+__all__ = ["CmConfig", "CmCaseConfig"]
 
 
-class CfCaseConfig(BaseModel):
+class CmCaseConfig(BaseModel):
     bodies: dict[str, BodyConfig] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )
-    force_coefficient: dict[str, CfConfig] = Field(
+    moment_coefficient: dict[str, CmConfig] = Field(
         ...,
-        title="Force Coefficient configs",
-        description="Dictionary with Force Coefficient configuration",
+        title="Moment Coefficient configs",
+        description="Dictionary with Moment Coefficient configuration",
     )
 
     @model_validator(mode="after")
     def valdate_body_list(self):
-        for body_label in [b for cfg in self.force_coefficient.values() for b in cfg.bodies]:
+        for body_label in [b for cfg in self.moment_coefficient.values() for b in cfg.bodies]:
             if body_label not in self.bodies.keys():
                 raise Exception(f"Body {body_label} is not defined in the configuration file")
         return self
 
     @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CfCaseConfig:
+    def from_file(cls, filename: pathlib.Path) -> CmCaseConfig:
         yaml_vals = read_yaml(filename)
         cfg = cls(**yaml_vals)
         return cfg
 
 
-class CfConfig(BaseModel):
+class CmConfig(BaseModel):
     bodies: list[str] = Field(
         ..., title="Bodies definition", description="List of bodies to be processed"
     )
-    variables: list[ForceVariables] = Field(
+    variables: list[MomentVariables]
+    lever_origin: tuple[float, float, float] = Field(
         ...,
-        title="List of variables",
-        description="Define which variables will be calculated",
+        title="Lever origin",
+        description="Coordinate of the reference point to evaluate the lever for moment calculations",
     )
     statistics: list[Statistics] = Field(
         ...,

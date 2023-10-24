@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
@@ -37,7 +37,7 @@ class CeConfig(BaseModel):
         description="List of statistics to calculate from shape coefficient signal",
     )
 
-    @validator("zoning", always=True)
+    @field_validator("zoning")
     def validate_zoning(cls, v):
         if isinstance(v, ZoningBuilder):
             return v.to_zoning_config()

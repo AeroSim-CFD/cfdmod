@@ -1,10 +1,10 @@
 bodies:
   marquise:
-    surfaces: [list_of_surfaces_of_marquise]
+    surfaces: ["m1_yp", "m2_zp", "m3_zm"]
   lanternim:
-    surfaces: [list_of_surfaces_of_lanternim]
+    surfaces: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
   building:
-    surfaces: [building]
+    surfaces: []
     sub-bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
 moment_coefficient:
