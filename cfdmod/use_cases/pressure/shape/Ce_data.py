@@ -5,11 +5,11 @@ import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 from vtk import vtkPolyData
 
+from cfdmod.api.geometry.region_meshing import create_regions_mesh
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.region_meshing import create_regions_mesh, get_mesh_bounds
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
