@@ -44,7 +44,9 @@ class TestRegionMeshing(unittest.TestCase):
         mock_mesh = LagrangianGeometry(vertices, triangles)
         zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
         zoning = zoning.offset_limits(0.1)
-        region_mesh = create_regions_mesh(mock_mesh, zoning)
+        region_mesh = create_regions_mesh(
+            mock_mesh, (zoning.x_intervals, zoning.y_intervals, zoning.z_intervals)
+        )
 
         self.assertEqual(len(region_mesh.vertices), 7)
         self.assertEqual(len(region_mesh.triangles), 6)
