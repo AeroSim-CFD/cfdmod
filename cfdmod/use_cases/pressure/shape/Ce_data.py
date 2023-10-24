@@ -96,7 +96,9 @@ def process_surface(
         surface_ce, statistics_to_apply=cfg.statistics, variables=["Ce"]
     )
 
-    regions_mesh = create_regions_mesh(sfc_mesh, zoning_to_use)
+    regions_mesh = create_regions_mesh(
+        sfc_mesh, (zoning_to_use.x_intervals, zoning_to_use.y_intervals, zoning_to_use.z_intervals)
+    )
     regions_mesh_triangles_region = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
 
     region_data_df = combine_stats_data_with_mesh(

@@ -121,13 +121,13 @@ def get_mesh_bounds(input_mesh: LagrangianGeometry) -> tuple[tuple[float, float]
 
 
 def create_regions_mesh(
-    input_mesh: LagrangianGeometry, regions_intervals: ZoningModel
+    input_mesh: LagrangianGeometry, intervals: tuple[list[float], ...]
 ) -> LagrangianGeometry:
-    """Generates a new LagrangianGeometry mesh from intersecting regions intervals
+    """Generates a new LagrangianGeometry mesh from intersecting intervals
 
     Args:
         input_mesh (LagrangianGeometry): Input LNAS mesh
-        regions_intervals (ZoningModel): Region intervals description
+        intervals (tuple[list[float], ...]): List of intervals in each axis
 
     Returns:
         LagrangianGeometry: New intersected mesh
@@ -135,17 +135,17 @@ def create_regions_mesh(
     mesh_bounds = get_mesh_bounds(input_mesh)
     slicing_mesh = input_mesh.copy()
 
-    for x_int in regions_intervals.x_intervals:
+    for x_int in intervals[0]:
         if x_int <= mesh_bounds[0][0] or x_int >= mesh_bounds[0][1]:
             continue
         slicing_mesh = slice_surface(slicing_mesh, 0, x_int)
 
-    for y_int in regions_intervals.y_intervals:
+    for y_int in intervals[1]:
         if y_int <= mesh_bounds[1][0] or y_int >= mesh_bounds[1][1]:
             continue
         slicing_mesh = slice_surface(slicing_mesh, 1, y_int)
 
-    for z_int in regions_intervals.z_intervals:
+    for z_int in intervals[2]:
         if z_int <= mesh_bounds[2][0] or z_int >= mesh_bounds[2][1]:
             continue
         slicing_mesh = slice_surface(slicing_mesh, 2, z_int)
