@@ -1,5 +1,6 @@
 import unittest
 
+from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.main import main
 
 
@@ -11,7 +12,9 @@ class TestCeMain(unittest.TestCase):
         config = "./fixtures/tests/pressure/cp_params.yaml"
         mesh = "./fixtures/tests/pressure/galpao/galpao.lnas"
 
+        logger.disabled = True
         main(["--output", output, "--p", p, "--s", s, "--config", config, "--mesh", mesh])
+        logger.disabled = False
 
 
 if __name__ == "__main__":
