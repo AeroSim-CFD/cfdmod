@@ -23,6 +23,10 @@ def convert_folder(folder: pathlib.Path):
     )
     lnas.to_file(folder / "mesh.lnas")
     print("Converted file", folder / "mesh.lnas")
+    
+    # lnas_from = LagrangianFormat.from_file(folder / "mesh.lnas")
+    # np.testing.assert_equal(lnas_from.geometry.vertices, points)
+    # np.testing.assert_equal(lnas_from.geometry.triangles, triangles)
 
 
 def recursively_convert_folders(folder: pathlib.Path):
