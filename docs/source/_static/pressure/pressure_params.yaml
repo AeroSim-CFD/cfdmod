@@ -1,0 +1,32 @@
+bodies:
+  marquise:
+    surfaces: [list_of_surfaces_of_marquise]
+  lanternim:
+    surfaces: [list_of_surfaces_of_lanternim]
+  building:
+    surfaces: [building]
+pressure_coefficient:
+  timestep_range: [10000, 40000]
+  reference_pressure: "average" # or "instantaneous"
+  U_H: 10 # Velocity at the building interest height
+  statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+momentum_coefficient:
+  measurement_1:
+    bodies: [marquise, lanternim]
+    variables: ["Cmx", "Cmy", "Cmz"]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+    lever_origin: [0, 10, 10]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+force_coefficient:
+  measurement_1:
+    bodies: ["building"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+shape_coefficient:
+  pattern_1:
+    zoning: 
+      yaml: "zoning_params.yaml"
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

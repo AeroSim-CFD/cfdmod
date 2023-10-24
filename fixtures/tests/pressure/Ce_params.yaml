@@ -1,0 +1,18 @@
+shape_coefficient:
+  pattern_1:
+    zoning: 
+      yaml: "./fixtures/tests/pressure/zoning_params.yaml"
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  pattern_2:
+    zoning: 
+      global_zoning:
+        x_intervals: [0, 250]
+        y_intervals: [0, 200]
+        z_intervals: [0, 20]
+      no_zoning: ["L2_yp"]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  pattern_3:
+    zoning: 
+      global_zoning:
+        x_intervals: [0, 125, 250]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]

@@ -1,0 +1,18 @@
+bodies:
+  marquise:
+    surfaces: [list_of_surfaces_of_marquise]
+  lanternim:
+    surfaces: [list_of_surfaces_of_lanternim]
+  building:
+    surfaces: [building]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+force_coefficient:
+  measurement_1:
+    bodies: ["building"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  measurement_2:
+    bodies: ["marquise", "lanternim"]
+    variables: ["Cfx", "Cfy", "Cfz"]
+    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
