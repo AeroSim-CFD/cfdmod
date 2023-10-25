@@ -55,6 +55,12 @@ jupyter = "^1.0.0"
 ipython = "^8.15.0"
 ipykernel = "^6.25.2"
 
+[tool.poetry.group.vtk]
+optional = true
+
+[tool.poetry.group.vtk.dependencies]
+vtk = "^9.2.6"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
