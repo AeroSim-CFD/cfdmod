@@ -2,8 +2,6 @@ from __future__ import annotations
 
 __all__ = ["Profile"]
 
-
-import copy
 import pathlib
 
 import numpy as np
@@ -11,37 +9,45 @@ import pandas as pd
 
 
 class Profile:
-    def __init__(self, pos: np.ndarray, values: np.ndarray, label: str):
-        self.pos = pos
+    def __init__(self, heights: np.ndarray, values: np.ndarray, label: str):
+        self.heights = heights
         self.values = values
         self.label = label
 
     def __repr__(self):
-        return f"pos: {self.pos} \n values: {self.values}"
+        return f"pos: {self.heights} \n values: {self.values}"
+
+    def update_height_values(self, new_heights: np.ndarray):
+        self.values = np.interp(new_heights, self.heights, self.values)
+        self.heights = new_heights.copy()
+
+    def copy(self) -> Profile:
+        return Profile(
+            heights=self.heights.copy(), values=self.values.copy(), label=self.label
+        )
 
     def __truediv__(self, rhs: Profile) -> Profile:
-        self_copy = copy.copy(self)
-        rhs_copy = copy.copy(rhs)
+        self_copy = self.copy()
+        rhs_copy = rhs.copy()
 
         self_copy.normalize_position()
         rhs_copy.normalize_position()
 
-        max_height = min(self_copy.pos.max(), rhs_copy.pos.max())
+        max_height = min(self_copy.heights.max(), rhs_copy.heights.max())
         self_copy.truncate_position(max_height)
         rhs_copy.truncate_position(max_height)
 
-        if max_height not in self_copy.pos:
-            self_copy.interpolate_value(max_height)
-        elif max_height not in rhs_copy.pos:
-            rhs_copy.interpolate_value(max_height)
+        # pos_use = np.append(self_copy.heights, rhs_copy.heights, axis=0)
+        pos_use = self_copy.heights.copy()
 
-        [self_copy.interpolate_value(val) for val in np.setdiff1d(rhs_copy.pos, self_copy.pos)]
-        [rhs_copy.interpolate_value(val) for val in np.setdiff1d(self_copy.pos, rhs_copy.pos)]
+        rhs_copy.update_height_values(pos_use)
 
-        s1_values = self_copy.values[1:] / rhs_copy.values[1:]  # Ignore wall values (u=0)
-        s1_pos = self_copy.pos[1:]  # Ignore wall values (u=0)
+        mask_use = np.abs(rhs_copy.values) > 1e-6
+        mask_use[0] = False # Ignore wall values (u=0)
+        s1 = self_copy.values[mask_use] / rhs_copy.values[mask_use] 
+        s1_heights = self_copy.heights[mask_use]  # Ignore wall values (u=0)
 
-        return Profile(s1_pos, s1_values, f"S1: {self_copy.label} / {rhs_copy.label}")
+        return Profile(s1_heights, s1, f"S1: {self_copy.label} / {rhs_copy.label}")
 
     def smoothen_values(self):
         """Removes duplicate values from the profile.
@@ -49,37 +55,27 @@ class Profile:
         """
         dup_indices = np.where(self.values[:-1] == self.values[1:])[0]
 
-        x = self.pos.copy()
-        x[dup_indices + 1] = (self.pos[dup_indices] + self.pos[dup_indices + 1]) / 2
+        x = self.heights.copy()
+        x[dup_indices + 1] = (self.heights[dup_indices] + self.heights[dup_indices + 1]) / 2
         x = np.delete(x, dup_indices)
 
         y = np.delete(self.values, dup_indices)
 
-        self.pos = x
+        self.heights = x
         self.values = y
 
     def normalize_position(self):
         """Normalizes the profile position"""
 
-        min_pos = self.pos.min()
-        self.pos -= min_pos
+        min_pos = self.heights.min()
+        self.heights -= min_pos
 
     def truncate_position(self, max_height: float):
         """Truncate the profile given a maximum height"""
 
-        slice_index = np.searchsorted(self.pos, max_height, side="right")
-        self.pos = self.pos[:slice_index]
+        slice_index = np.searchsorted(self.heights, max_height, side="right")
+        self.heights = self.heights[:slice_index]
         self.values = self.values[:slice_index]
-
-    def interpolate_value(self, new_pos: float):
-        """Interpolate the value given a new position"""
-
-        if new_pos not in self.pos:
-            insert_idx = np.searchsorted(self.pos, new_pos)
-            interp_val = np.interp(new_pos, self.pos, self.values)
-
-            self.pos = np.insert(self.pos, insert_idx, new_pos)
-            self.values = np.insert(self.values, insert_idx, interp_val)
 
     @classmethod
     def from_csv(
