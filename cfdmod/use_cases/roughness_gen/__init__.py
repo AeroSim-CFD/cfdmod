@@ -1,17 +1,17 @@
 __all__ = [
-    "BlockParams",
+    "ElementParams",
     "GenerationParams",
     "SpacingParams",
     "OffsetDirection",
-    "build_single_block",
+    "build_single_element",
     "linear_pattern",
 ]
 
 from .parameters import (
-    BlockParams,
+    ElementParams,
     GenerationParams,
     SpacingParams,
     OffsetDirection,
 )
-from .build_block import build_single_block
+from .build_element import build_single_element
 from .linear_pattern import linear_pattern
