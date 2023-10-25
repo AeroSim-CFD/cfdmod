@@ -32,6 +32,13 @@ def build_single_element(element_params: ElementParams) -> tuple[np.ndarray, np.
     return triangles, normals
 
 
+def _get_triangle_normal(t: np.ndarray):
+    u, v = t[1] - t[0], t[2] - t[0]
+    n = np.cross(u, v)
+    n /= np.linalg.norm(n)
+    return n
+
+
 def _triangulate_element(
     vertices: np.ndarray, element_params: ElementParams
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -51,20 +58,28 @@ def _triangulate_element(
 
     f_normal = np.array([-1, 0, 0])
 
-    t_0 = vertices[0:3]
-    n_0 = np.cross(t_0[1] - t_0[0], t_0[2] - t_0[1])
-    n_0 /= np.linalg.norm(n_0)
-    t_0 = t_0 if np.all(n_0 == f_normal) else t_0[::-1]
+    t0 = vertices[0:3]
+    n0 = _get_triangle_normal(t0)
+    if not np.all(n0 == f_normal):
+        p1, p2 = t0[1].copy(), t0[2].copy()
+        t0[1] = p2
+        t0[2] = p1
+        n0 = _get_triangle_normal(t0)
 
-    t_1 = vertices[1:4]
-    n_1 = np.cross(t_1[1] - t_1[0], t_1[2] - t_1[1])
-    n_1 /= np.linalg.norm(n_1)
-    t_1 = t_1 if np.all(n_1 == f_normal) else t_1[::-1]
+    t0 = t0 if np.all(n0 == f_normal) else t0[::-1]
 
-    triangles[0] = t_0
-    triangles[1] = t_1
+    t1 = vertices[1:4]
+    n1 = _get_triangle_normal(t1)
+    if not np.all(n1 == f_normal):
+        p1, p2 = t1[1].copy(), t1[2].copy()
+        t1[1] = p2
+        t1[2] = p1
+        n1 = _get_triangle_normal(t1)
 
-    normals[0] = n_0
-    normals[1] = n_1
+    triangles[0] = t0
+    triangles[1] = t1
+
+    normals[0] = n0
+    normals[1] = n1
 
     return triangles, normals

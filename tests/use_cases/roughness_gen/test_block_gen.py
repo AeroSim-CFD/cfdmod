@@ -1,6 +1,8 @@
 import pathlib
 import unittest
 
+import numpy as np
+
 from cfdmod.api.geometry.STL import export_stl
 from cfdmod.use_cases.roughness_gen import (
     ElementParams,
@@ -29,6 +31,8 @@ class TestElementGenerationUseCase(unittest.TestCase):
         )
 
         triangles, normals = build_single_element(cfg.element_params)
+        for n in normals:
+            np.testing.assert_equal(n, [-1, 0, 0])
 
         single_line_triangles, single_line_normals = linear_pattern(
             triangles,
