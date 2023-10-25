@@ -1,0 +1,9 @@
+N_elements_x: 7
+N_elements_y: 5
+element_params:
+  height: 5
+  width: 5
+spacing_params:
+  spacing: [20, 20] # Spacing indexed by axis (X=0, Y=1)
+  line_offset: 10
+  offset_direction: x # Optional, default is y

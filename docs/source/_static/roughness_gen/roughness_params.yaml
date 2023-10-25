@@ -1,19 +1,17 @@
-N_blocks_x: 10
-N_blocks_y: 10
-block_params:
+N_elements_x: 10
+N_elements_y: 10
+element_params:
   # Size in Z axis:
   height: 10
   # Size in Y axis:
   width: 10
-  # Size in X axis:
-  length: 10
 spacing_params:
-  # Spacing value is defined by the distance between the end of a block
+  # Spacing value is defined by the distance between the end of a element
   # and the start of another one.
   # Spacing indexed by axis (X=0, Y=1)
   spacing: [10, 10]
   # Line offset is defined by the distance between the the start of a line
-  # and the start of the first block
+  # and the start of the first element
   line_offset: 10
   # Optional, default is y
   offset_direction: x
