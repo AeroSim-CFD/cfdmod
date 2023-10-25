@@ -1,8 +1,8 @@
-*****************************
-Roughness Elements Generation
-*****************************
+******************
+Roughness Elements
+******************
 
-The **Roughness Elements Generation** module is used to generate the geometry of the roughness elements, used in CFD Simulations.
+The **Roughness Elements** module is used to generate the geometry of the roughness elements, used in CFD Simulations.
 These elements are used to represent the roughness of the terrain, just like how it is done in physical wind tunnels.
 
 A standard configuration of the objects used for representing atmospheric flow can be seen in the following image:
@@ -14,9 +14,9 @@ The following image shows this effect:
 
 .. figure:: /_static/roughness_gen/ABL.png
 
-According to Brazilian and European wind standards, the ABL profile can me represented by a roughness factor (z_0).
+According to Brazilian and European wind standards, the ABL profile can me represented by a roughness factor (:math:`z_0`).
 The objective of this module is to serve as a tool for generating the geometry of the roughness elements, in order to achieve a corresponding ABL profile.
-The validation of the ABL profile is based on the mean velocity profile.
+The validation of the ABL profile is based on the mean velocity profile and turbulence intensity.
 This profile is then used to obtain a corresponding roughness factor and compared to the ones presented by the standards.
 
 Usage
@@ -36,14 +36,10 @@ One example of the configuration is as it follows:
     :language: yaml
 
 The parameters consist in defining the number of replication in each axis.
-The logic follows the **linear pattern** thought.
+The figure below shows how the blocks are generated through configuration
 
-First, it is generated only a single element.
-Then, it is replicated in the main axis, defined by the offset direction.
-Later, the rows generate are replicated as well, in a way that the even rows are offseted by the defined parameter.
-The direction of the offset is also defined in the configuration parameters.
-
-The value for offseting even rows can be defined by setting the absolute value of the offset.
+.. figure:: /_static/roughness_gen/roughness_config.png
+   :width: 100%
 
 Output
 ^^^^^^
