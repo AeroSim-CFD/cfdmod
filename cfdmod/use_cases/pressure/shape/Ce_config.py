@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
@@ -36,6 +36,28 @@ class CeConfig(BaseModel):
         title="List of statistics",
         description="List of statistics to calculate from shape coefficient signal",
     )
+    sets: dict[str, list[str]] = Field(
+        {}, title="Surface sets", description="Combine multiple surfaces into a set of surfaces"
+    )
+
+    @property
+    def surfaces_in_sets(self):
+        surface_list = [sfc for sfc_list in self.sets.values() for sfc in sfc_list]
+        return surface_list
+
+    @model_validator(mode="after")
+    def validate_config(self) -> CeConfig:
+        common_surfaces = set(self.surfaces_in_sets).intersection(set(self.zoning.surfaces_listed))
+        if len(common_surfaces) != 0:
+            raise Exception("Surfaces inside a set cannot be listed in zoning")
+        return self
+
+    @field_validator("sets")
+    def validate_sets(cls, v):
+        surface_list = [sfc for sfc_list in v.values() for sfc in sfc_list]
+        if len(surface_list) != len(set(surface_list)):
+            raise Exception(f"A surface cannot be listed in more than one set")
+        return v
 
     @field_validator("zoning")
     def validate_zoning(cls, v):

@@ -3,6 +3,8 @@ shape_coefficient:
     zoning: 
       yaml: "./fixtures/tests/pressure/zoning_params.yaml"
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    sets:
+      lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
   pattern_2:
     zoning: 
       global_zoning:
