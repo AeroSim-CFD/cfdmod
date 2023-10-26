@@ -73,9 +73,5 @@ The debug figures should look like this:
    :hidden:
 
    Altimetry from probes<altimetry_from_probes.ipynb>
-
-.. toctree::
-   :maxdepth: -1
-   :hidden:
-
    Generic use of altimetry<altimetry_from_coordinates.ipynb>
+

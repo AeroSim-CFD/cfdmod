@@ -5,12 +5,12 @@ bodies:
     surfaces: [list_of_surfaces_of_lanternim]
   building:
     surfaces: [building]
+    sub-bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
 moment_coefficient:
   measurement_1:
     bodies: [marquise, lanternim]
     variables: ["Cmx", "Cmy", "Cmz"]
-    sub-bodies: # Optional, default is the whole body
-      z_intervals: [0,10,20]
     lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
   measurement_2:
