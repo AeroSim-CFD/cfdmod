@@ -5,11 +5,11 @@ from dataclasses import dataclass
 import pandas as pd
 from nassu.lnas import LagrangianFormat
 
-from cfdmod.api.vtk.write_vtk import merge_polydata, write_polydata
+from cfdmod.api.vtk.write_vtk import merge_polydata, vtkPolyData, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import process_surface
+from cfdmod.use_cases.pressure.shape.Ce_data import RawSurfaceData, filter_surface, process_surface
 
 
 @dataclass
@@ -84,30 +84,39 @@ def main(*args):
     n_timesteps = cp_data_to_use["time_step"].unique().shape[0]
 
     for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
-        processed_polydata = []
+        processed_polydata: list[vtkPolyData] = []
+        surfaces_to_process: dict[str, RawSurfaceData] = {}
 
         logger.info(f"Processing {cfg_label} ...")
+        for set_lbl in cfg.sets.keys():
+            raw_surface = filter_surface(body_mesh=mesh, sfc_label=set_lbl, cfg=cfg, is_set=True)
+            surfaces_to_process[set_lbl] = raw_surface
+
         for sfc in mesh.surfaces.keys():
-            if sfc in cfg.zoning.exclude:  # type: ignore
+            if sfc in cfg.surfaces_in_sets:
+                continue  # Skip surfaces that already are in a set
+            if sfc in cfg.zoning.exclude:  # type: ignore (already validated in class)
                 logger.info(f"Surface {sfc} ignored!")  # Ignore surface
                 continue
+            raw_surface = filter_surface(body_mesh=mesh, sfc_label=sfc, cfg=cfg)
+            surfaces_to_process[sfc] = raw_surface
 
-            logger.info(f"Processing surface {sfc} ...")
+        for sfc_lbl, raw_surface in surfaces_to_process.items():
+            logger.info(f"Processing surface {sfc_lbl}")
 
             processed_surface = process_surface(
-                body_mesh=mesh,
-                sfc_label=sfc,
+                raw_surface=raw_surface,
                 cfg=cfg,
                 cp_data=cp_data_to_use,
                 n_timesteps=n_timesteps,
             )
             processed_surface.save_outputs(
-                sfc_label=sfc, cfg_label=cfg_label, path_manager=path_manager
+                sfc_label=sfc_lbl, cfg_label=cfg_label, path_manager=path_manager
             )
 
             processed_polydata.append(processed_surface.polydata)
 
-            logger.info(f"Processed surface {sfc}")
+        logger.info(f"Processed surface {sfc_lbl}")
 
         merged_polydata = merge_polydata(processed_polydata)
         write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)

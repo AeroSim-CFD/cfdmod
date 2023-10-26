@@ -19,6 +19,13 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 
 
 @dataclass
+class RawSurfaceData:
+    sfc_mesh: LagrangianGeometry
+    zoning_to_use: ZoningModel
+    sfc_triangles_idxs: np.ndarray
+
+
+@dataclass
 class ProcessedSurfaceData:
     df_regions: pd.DataFrame
     surface_ce: pd.DataFrame
@@ -58,9 +65,45 @@ class ProcessedSurfaceData:
         )
 
 
+def filter_surface(
+    body_mesh: LagrangianFormat, sfc_label: str, cfg: CeConfig, is_set: bool = False
+) -> RawSurfaceData:
+    """Filter body from surface list
+    It can filter from a set of surfaces and returns a compiled raw surface data object
+
+    Args:
+        body_mesh (LagrangianFormat): LNAS body mesh
+        sfc_label (str): Surface or set label
+        cfg (CeConfig): Shape coefficient post processing configuration
+        is_set (bool, optional): Flag to define if surface is a set of surfaces. Defaults to False.
+
+    Returns:
+        RawSurfaceData: Compiled raw surface data object
+    """
+    if is_set:
+        sfc_mesh = LagrangianGeometry(
+            vertices=body_mesh.geometry.vertices, triangles=np.empty((0, 3), dtype=np.uint32)
+        )
+        sfc_triangles_idxs = np.array([])
+
+        sfc_list = cfg.sets[sfc_label]
+        for sfc in sfc_list:
+            m = body_mesh.geometry_from_surface(sfc)
+            sfc_mesh.triangles = np.vstack((sfc_mesh.triangles, m.triangles))
+            sfc_triangles_idxs = np.hstack((sfc_triangles_idxs, body_mesh.surfaces[sfc].copy()))
+    else:
+        sfc_mesh = body_mesh.geometry_from_surface(sfc_label)
+        sfc_triangles_idxs = body_mesh.surfaces[sfc_label].copy()
+
+    zoning_to_use = get_surface_zoning(sfc_mesh, sfc_label, cfg)
+
+    return RawSurfaceData(
+        sfc_mesh=sfc_mesh, zoning_to_use=zoning_to_use, sfc_triangles_idxs=sfc_triangles_idxs
+    )
+
+
 def process_surface(
-    body_mesh: LagrangianFormat,
-    sfc_label: str,
+    raw_surface: RawSurfaceData,
     cfg: CeConfig,
     cp_data: pd.DataFrame,
     n_timesteps: int,
@@ -68,8 +111,7 @@ def process_surface(
     """Filters a surface from the body and processes it
 
     Args:
-        body_mesh (LagrangianFormat): LNAS body containing its surfaces
-        sfc_label (str): Surface label to be processed
+        raw_surface (RawSurfaceData): Raw surface to process
         cfg (CeConfig): Post processing configuration
         cp_data (pd.DataFrame): Pressure coefficients DataFrame
         n_timesteps (int): Number of timesteps to be processed
@@ -77,17 +119,13 @@ def process_surface(
     Returns:
         ProcessedSurfaceData: Processed Surface Data object
     """
-    sfc_mesh = body_mesh.geometry_from_surface(sfc_label)
-    zoning_to_use = get_surface_zoning(sfc_mesh, sfc_label, cfg)
+    df_regions = raw_surface.zoning_to_use.get_regions_df()
 
-    df_regions = zoning_to_use.get_regions_df()
-
-    triangles_region = get_indexing_mask(mesh=sfc_mesh, df_regions=df_regions)
-    sfc_triangles_idxs = body_mesh.surfaces[sfc_label].copy()
+    triangles_region = get_indexing_mask(mesh=raw_surface.sfc_mesh, df_regions=df_regions)
     surface_ce = transform_to_Ce(
-        surface_mesh=sfc_mesh,
+        surface_mesh=raw_surface.sfc_mesh,
         cp_data=cp_data,
-        sfc_triangles_idxs=sfc_triangles_idxs,
+        sfc_triangles_idxs=raw_surface.sfc_triangles_idxs,
         triangles_region=triangles_region,
         n_timesteps=n_timesteps,
     )
@@ -97,7 +135,12 @@ def process_surface(
     )
 
     regions_mesh = create_regions_mesh(
-        sfc_mesh, (zoning_to_use.x_intervals, zoning_to_use.y_intervals, zoning_to_use.z_intervals)
+        raw_surface.sfc_mesh,
+        (
+            raw_surface.zoning_to_use.x_intervals,
+            raw_surface.zoning_to_use.y_intervals,
+            raw_surface.zoning_to_use.z_intervals,
+        ),
     )
     regions_mesh_triangles_region = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
 
