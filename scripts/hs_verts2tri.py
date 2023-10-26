@@ -1,14 +1,16 @@
-import pathlib
 import argparse
+import pathlib
 import sys
+import time
 
 import numpy as np
 import pandas as pd
-import time
-
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 
-def get_vertices_ratios(geometry: LagrangianGeometry) -> tuple[list[set[int]], list[list[tuple[int, float]]]]:
+
+def get_vertices_ratios(
+    geometry: LagrangianGeometry,
+) -> tuple[list[set[int]], list[list[tuple[int, float]]]]:
     # Set of triangles that each vertice participates to
     vertices_triangles_set: list[set[int]] = [set() for _ in geometry.vertices]
     # Ratio for each triangle to spread as (t_idx, ratio)
@@ -54,7 +56,7 @@ def convert_folder(folder: pathlib.Path):
 
     t_convert = time.time()
     for step_idx, step in enumerate(steps_arr):
-        df_use = df.iloc[n_verts * step_idx :  n_verts * (step_idx + 1)]
+        df_use = df.iloc[n_verts * step_idx : n_verts * (step_idx + 1)]
         for idx, row in df_use.iterrows():
             # print(row)
             v_idx = int(row[idx_key])
@@ -64,7 +66,12 @@ def convert_folder(folder: pathlib.Path):
                 # FIXME Do we divide here by three?
                 value_add = value * ratio
                 hs_triangles[step_idx, t_idx] += value_add
-        df_step = pd.DataFrame({interp_key: hs_triangles[step_idx], idx_key: np.arange(len(geometry.triangles), dtype=np.int32)})
+        df_step = pd.DataFrame(
+            {
+                interp_key: hs_triangles[step_idx],
+                idx_key: np.arange(len(geometry.triangles), dtype=np.int32),
+            }
+        )
         df_step[time_key] = step
         dfs_join.append(df_step)
     print(f"Conversion time {time.time() - t_convert:.2f}")

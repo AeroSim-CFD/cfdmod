@@ -1,9 +1,8 @@
-import pathlib
 import argparse
+import pathlib
 import sys
 
 import numpy as np
-
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 
 
@@ -23,7 +22,7 @@ def convert_folder(folder: pathlib.Path):
     )
     lnas.to_file(folder / "mesh.lnas")
     print("Converted file", folder / "mesh.lnas")
-    
+
     # lnas_from = LagrangianFormat.from_file(folder / "mesh.lnas")
     # np.testing.assert_equal(lnas_from.geometry.vertices, points)
     # np.testing.assert_equal(lnas_from.geometry.triangles, triangles)
