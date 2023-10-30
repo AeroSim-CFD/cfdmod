@@ -1,0 +1,13 @@
+element_params:
+  height: 5
+  width: 5
+spacing_params:
+  spacing: [20, 20] # Spacing indexed by axis (X=0, Y=1)
+  line_offset: 10
+  offset_direction: x # Optional, default is y
+bounding_box:
+  start: [700,-1000,0]
+  end: [2400,1000,0]
+surfaces:
+  disk: "./fixtures/tests/roughness_gen/disk/disk.lnas"
+  loft: "./fixtures/tests/roughness_gen/loft/loft.lnas"
