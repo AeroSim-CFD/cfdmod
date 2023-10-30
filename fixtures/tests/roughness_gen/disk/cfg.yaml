@@ -1,0 +1,9 @@
+---
+stl:
+  files:
+    disk: examples/stl/disk.stl
+  folders: []
+name: disk
+normalization: ~
+output:
+  folder: output/disk
