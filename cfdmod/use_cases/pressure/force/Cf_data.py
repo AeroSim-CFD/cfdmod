@@ -49,6 +49,37 @@ class ProcessedBodyData:
         )
 
 
+def get_excluded_surfaces(
+    original_mesh: LagrangianFormat, body_cfg: BodyConfig
+) -> LagrangianGeometry | None:
+    """Exports the surfaces that were excluded in body configuration
+
+    Args:
+        original_mesh (LagrangianFormat): LNAS body mesh
+        body_cfg (BodyConfig): Body object configuration
+
+    Returns:
+        LagrangianGeometry | None: Returns a LagrangianGeometry if any surface was excluded
+    """
+    excluded_ids = np.array([], dtype=np.uint32)
+    for excluded_sfc in [
+        sfc for sfc in original_mesh.surfaces.keys() if sfc not in body_cfg.surfaces
+    ]:
+        if not excluded_sfc in original_mesh.surfaces.keys():
+            continue
+        ids = original_mesh.surfaces[excluded_sfc].copy()
+        excluded_ids = np.concatenate((excluded_ids, ids))
+
+    if excluded_ids.size != 0:
+        excluded_geom = LagrangianGeometry(
+            vertices=original_mesh.geometry.vertices.copy(),
+            triangles=original_mesh.geometry.triangles[excluded_ids].copy(),
+        )
+        return excluded_geom
+    else:
+        return None
+
+
 def process_body(
     mesh: LagrangianFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
 ) -> ProcessedBodyData:
