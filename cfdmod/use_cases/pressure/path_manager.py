@@ -11,6 +11,10 @@ class CmPathManager(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
+    def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
+        create_folder_path(self.output_path / cfg_label / "Cm")
+        return self.output_path / cfg_label / "Cm" / "excluded_surfaces.stl"
+
     def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         create_folder_path(self.output_path / cfg_label / "Cm")
         return self.output_path / cfg_label / "Cm" / f"{body_label}.body.vtp"
