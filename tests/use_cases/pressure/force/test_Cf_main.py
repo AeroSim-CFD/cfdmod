@@ -4,7 +4,7 @@ from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.force.main import main
 
 
-class TestCeMain(unittest.TestCase):
+class TestCfMain(unittest.TestCase):
     def test_main(self):
         output = "./output/pressure"
         cp = "./fixtures/tests/pressure/data/cp_t.resampled.hdf"
