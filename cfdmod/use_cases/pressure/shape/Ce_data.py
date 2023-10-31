@@ -1,3 +1,4 @@
+import pathlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -100,6 +101,35 @@ def filter_surface(
     return RawSurfaceData(
         sfc_mesh=sfc_mesh, zoning_to_use=zoning_to_use, sfc_triangles_idxs=sfc_triangles_idxs
     )
+
+
+def get_excluded_surfaces(
+    original_mesh: LagrangianFormat, cfg: CeConfig
+) -> LagrangianGeometry | None:
+    """Exports the surfaces that were excluded in zoning configuration
+
+    Args:
+        original_mesh (LagrangianFormat): LNAS body mesh
+        cfg (CeConfig): Post processing configuration
+
+    Returns:
+        LagrangianGeometry | None: Returns a LagrangianGeometry if any surface was excluded
+    """
+    excluded_ids = np.array([], dtype=np.uint32)
+    for excluded_sfc in cfg.zoning.exclude:  # type: ignore
+        if not excluded_sfc in original_mesh.surfaces.keys():
+            continue
+        ids = original_mesh.surfaces[excluded_sfc].copy()
+        excluded_ids = np.concatenate((excluded_ids, ids))
+
+    if excluded_ids.size != 0:
+        excluded_geom = LagrangianGeometry(
+            vertices=original_mesh.geometry.vertices.copy(),
+            triangles=original_mesh.geometry.triangles[excluded_ids].copy(),
+        )
+        return excluded_geom
+    else:
+        return None
 
 
 def process_surface(
