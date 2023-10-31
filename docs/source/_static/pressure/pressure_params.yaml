@@ -12,7 +12,7 @@ pressure_coefficient:
   statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 momentum_coefficient:
   measurement_1:
-    bodies: [marquise, lanternim]
+    body: marquise
     variables: ["Cmx", "Cmy", "Cmz"]
     sub-bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
@@ -20,7 +20,7 @@ momentum_coefficient:
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
 force_coefficient:
   measurement_1:
-    bodies: ["building"]
+    body: building
     variables: ["Cfx", "Cfy", "Cfz"]
     sub-bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]

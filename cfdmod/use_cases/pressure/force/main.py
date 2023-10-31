@@ -87,13 +87,12 @@ def main(*args):
     cp_data = pd.merge(cp_data_to_use, areas_df, on="point_idx", how="left")
 
     for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
-        for body_label in cfg.bodies:
-            body_cfg = post_proc_cfg.bodies[body_label]
-            logger.info(f"Processing body {body_label} ...")
+        body_label = cfg.body
+        body_cfg = post_proc_cfg.bodies[body_label]
+        logger.info(f"Processing body {body_label} ...")
 
-            processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
-            processed_body.save_outputs(
-                body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
-            )
-
-            logger.info(f"Processed body {body_label}")
+        processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
+        processed_body.save_outputs(
+            body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
+        )
+        logger.info(f"Processed body {body_label}")

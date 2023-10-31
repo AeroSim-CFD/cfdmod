@@ -67,7 +67,7 @@ def process_body(
     """
     body_geom, geometry_idx = get_geometry_from_mesh(body_cfg=body_cfg, mesh=mesh)
 
-    zoning_to_use = body_cfg.sub_bodies.offset_limits(0.1)
+    zoning_to_use = cfg.sub_bodies.offset_limits(0.1)
     df_regions = zoning_to_use.get_regions_df()
 
     sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
