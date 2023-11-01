@@ -15,6 +15,7 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     combine_stats_data_with_mesh,
     get_indexing_mask,
 )
+from cfdmod.utils import create_folders_for_file
 
 
 @dataclass
@@ -28,26 +29,21 @@ class ProcessedBodyData:
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
         # Output 1: Cm(t)
-        self.body_cm.to_hdf(
-            path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cm_t",
-            mode="w",
-            index=False,
+        timeseries_path = path_manager.get_timeseries_df_path(
+            body_label=body_label, cfg_label=cfg_label
         )
+        create_folders_for_file(timeseries_path)
+        self.body_cm.to_hdf(timeseries_path, key="Cm_t", mode="w", index=False)
 
         # Output 2: Cm_stats
-        self.body_cm_stats.to_hdf(
-            path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cm_stats",
-            mode="w",
-            index=False,
-        )
+        stats_path = path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(stats_path)
+        self.body_cm_stats.to_hdf(stats_path, key="Cm_stats", mode="w", index=False)
 
         # Output 3: VTK
-        write_polydata(
-            path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label),
-            self.polydata,
-        )
+        vtp_path = path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(vtp_path)
+        write_polydata(output_filename=vtp_path, poly_data=self.polydata)
 
 
 def process_body(

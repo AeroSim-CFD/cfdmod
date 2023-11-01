@@ -1,19 +1,22 @@
 shape_coefficient:
-  pattern_1:
+  measurement_1:
     zoning: 
       yaml: "./fixtures/tests/pressure/zoning_params.yaml"
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
-  pattern_2:
+  measurement_2:
     zoning: 
       global_zoning:
         x_intervals: [0, 250]
         y_intervals: [0, 200]
         z_intervals: [0, 20]
-      no_zoning: ["L2_yp"]
+      no_zoning: ["t2_yp"]
+      exclude: ["lanternim", "t1_ym"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
-  pattern_3:
+    sets:
+      lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+  measurement_3:
     zoning: 
       global_zoning:
         x_intervals: [0, 125, 250]

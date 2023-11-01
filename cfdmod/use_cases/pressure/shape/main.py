@@ -7,9 +7,10 @@ from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import merge_polydata, vtkPolyData, write_polydata
 from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.geometry import get_excluded_surfaces
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import RawSurfaceData, filter_surface, process_surface
+from cfdmod.use_cases.pressure.shape.Ce_data import get_surfaces_raw_data, process_surface
 
 
 @dataclass
@@ -85,21 +86,12 @@ def main(*args):
 
     for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
         processed_polydata: list[vtkPolyData] = []
-        surfaces_to_process: dict[str, RawSurfaceData] = {}
-
         logger.info(f"Processing {cfg_label} ...")
-        for set_lbl in cfg.sets.keys():
-            raw_surface = filter_surface(body_mesh=mesh, sfc_label=set_lbl, cfg=cfg, is_set=True)
-            surfaces_to_process[set_lbl] = raw_surface
 
-        for sfc in mesh.surfaces.keys():
-            if sfc in cfg.surfaces_in_sets:
-                continue  # Skip surfaces that already are in a set
-            if sfc in cfg.zoning.exclude:  # type: ignore (already validated in class)
-                logger.info(f"Surface {sfc} ignored!")  # Ignore surface
-                continue
-            raw_surface = filter_surface(body_mesh=mesh, sfc_label=sfc, cfg=cfg)
-            surfaces_to_process[sfc] = raw_surface
+        sfc_dict = {set_lbl: sfc_list for set_lbl, sfc_list in cfg.sets.items()}
+        sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
+
+        surfaces_to_process = get_surfaces_raw_data(surface_dict=sfc_dict, cfg=cfg, mesh=mesh)
 
         for sfc_lbl, raw_surface in surfaces_to_process.items():
             logger.info(f"Processing surface {sfc_lbl}")
@@ -120,5 +112,16 @@ def main(*args):
 
         merged_polydata = merge_polydata(processed_polydata)
         write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
+
+        sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]
+        sfc_list += [
+            sfc
+            for set_lbl, sfc_set in cfg.sets.items()
+            for sfc in sfc_set
+            if set_lbl in cfg.zoning.exclude
+        ]
+        if len(sfc_list) != 0:
+            excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=sfc_list)
+            excluded_sfcs.export_stl(path_manager.get_excluded_surface_path(cfg_label))
 
         logger.info(f"Merged and saved polydata for {cfg_label}")

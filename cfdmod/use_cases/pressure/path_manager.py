@@ -1,83 +1,64 @@
 import pathlib
 import shutil
+from typing import ClassVar
 
 from pydantic import BaseModel, Field
 
 from cfdmod.utils import create_folder_path
 
 
-class CmPathManager(BaseModel):
+class PathManagerBase(BaseModel):
+    _FOLDERNAME: ClassVar[str]
+
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
     )
 
     def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cm")
-        return self.output_path / cfg_label / "Cm" / "excluded_surfaces.stl"
+        return (
+            self.output_path / cfg_label / self._FOLDERNAME / "surfaces" / "excluded_surfaces.stl"
+        )
 
     def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cm")
-        return self.output_path / cfg_label / "Cm" / f"{body_label}.body.vtp"
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.vtp"
 
     def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cm")
-        return self.output_path / cfg_label / "Cm" / f"{body_label}.time_series.hdf"
+        return (
+            self.output_path
+            / cfg_label
+            / self._FOLDERNAME
+            / "time_series"
+            / f"{body_label}.time_series.hdf"
+        )
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cm")
-        return self.output_path / cfg_label / "Cm" / f"{body_label}.stats.hdf"
+        return (
+            self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.hdf"
+        )
 
 
-class CfPathManager(BaseModel):
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
-
-    def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cf")
-        return self.output_path / cfg_label / "Cf" / "excluded_surfaces.stl"
-
-    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cf")
-        return self.output_path / cfg_label / "Cf" / f"{body_label}.body.vtp"
-
-    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cf")
-        return self.output_path / cfg_label / "Cf" / f"{body_label}.time_series.hdf"
-
-    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "Cf")
-        return self.output_path / cfg_label / "Cf" / f"{body_label}.stats.hdf"
+class CmPathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "Cm"
 
 
-class CePathManager(BaseModel):
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
+class CfPathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "Cf"
 
-    def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "surfaces")
-        return self.output_path / cfg_label / "surfaces" / "excluded_surfaces.stl"
+
+class CePathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "Cf"
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "surfaces")
-        return self.output_path / cfg_label / "surfaces" / f"{sfc_label}.regions.stl"
-
-    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label)
-        return self.output_path / cfg_label / f"{body_label}.regions.vtp"
+        return (
+            self.output_path
+            / cfg_label
+            / self._FOLDERNAME
+            / "surfaces"
+            / f"{sfc_label}.regions.stl"
+        )
 
     def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "regions")
-        return self.output_path / cfg_label / "regions" / f"regions.{sfc_label}.hdf"
-
-    def get_timeseries_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "time_series")
-        return self.output_path / cfg_label / "time_series" / f"Ce_t.{sfc_label}.hdf"
-
-    def get_stats_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        create_folder_path(self.output_path / cfg_label / "stats")
-        return self.output_path / cfg_label / "stats" / f"Ce_stats.{sfc_label}.hdf"
+        return self.output_path / cfg_label / "Ce" / "regions" / f"regions.{sfc_label}.hdf"
 
 
 class CpPathManager(BaseModel):
