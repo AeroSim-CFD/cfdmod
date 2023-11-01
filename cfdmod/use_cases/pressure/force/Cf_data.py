@@ -7,6 +7,7 @@ from vtk import vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
+from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
@@ -130,40 +131,6 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> p
     body_cf["Cfz"] = body_cf["Fz"] / Az
 
     return body_cf
-
-
-def get_geometry_from_mesh(
-    body_cfg: BodyConfig, mesh: LagrangianFormat
-) -> tuple[LagrangianGeometry, np.ndarray]:
-    """Filters the mesh from the list of surfaces that define the body in config
-
-    Args:
-        body_cfg (BodyConfig): Body configuration
-        mesh (LagrangianFormat): LNAS mesh
-
-    Raises:
-        Exception: Surface specified is not defined in LNAS
-
-    Returns:
-        tuple[LagrangianGeometry, np.ndarray]: Tuple containing the body geometry and the filtered triangle indexes
-    """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-    else:
-        # Filter mesh for all surfaces
-        geometry_idx = np.array([], dtype=np.int32)
-        for sfc in body_cfg.surfaces:
-            if sfc not in mesh.surfaces.keys():
-                raise Exception("Surface defined in body is not separated in the LNAS file.")
-            geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
-
-    body_geom = LagrangianGeometry(
-        vertices=mesh.geometry.vertices.copy(),
-        triangles=mesh.geometry.triangles[geometry_idx].copy(),
-    )
-
-    return body_geom, geometry_idx
 
 
 def get_representative_areas(input_mesh: LagrangianGeometry) -> tuple[float, float, float]:

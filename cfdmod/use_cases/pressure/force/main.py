@@ -8,6 +8,7 @@ from nassu.lnas import LagrangianFormat
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.use_cases.pressure.force.Cf_data import process_body
+from cfdmod.use_cases.pressure.geometry import get_excluded_surfaces
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 
 
@@ -95,4 +96,12 @@ def main(*args):
         processed_body.save_outputs(
             body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
         )
+        sfc_list = [
+            sfc
+            for sfc in mesh.surfaces.keys()
+            if sfc not in post_proc_cfg.bodies[body_label].surfaces
+        ]
+        if len(sfc_list) != 0:
+            excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=sfc_list)
+            excluded_sfcs.export_stl(path_manager.get_excluded_surface_path(cfg_label))
         logger.info(f"Processed body {body_label}")

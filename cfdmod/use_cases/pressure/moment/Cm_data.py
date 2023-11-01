@@ -6,6 +6,7 @@ from nassu.lnas import LagrangianFormat, LagrangianGeometry
 from vtk import vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
@@ -14,6 +15,7 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     combine_stats_data_with_mesh,
     get_indexing_mask,
 )
+from cfdmod.utils import create_folders_for_file
 
 
 @dataclass
@@ -27,26 +29,21 @@ class ProcessedBodyData:
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
         # Output 1: Cm(t)
-        self.body_cm.to_hdf(
-            path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cm_t",
-            mode="w",
-            index=False,
+        timeseries_path = path_manager.get_timeseries_df_path(
+            body_label=body_label, cfg_label=cfg_label
         )
+        create_folders_for_file(timeseries_path)
+        self.body_cm.to_hdf(timeseries_path, key="Cm_t", mode="w", index=False)
 
         # Output 2: Cm_stats
-        self.body_cm_stats.to_hdf(
-            path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cm_stats",
-            mode="w",
-            index=False,
-        )
+        stats_path = path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(stats_path)
+        self.body_cm_stats.to_hdf(stats_path, key="Cm_stats", mode="w", index=False)
 
         # Output 3: VTK
-        write_polydata(
-            path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label),
-            self.polydata,
-        )
+        vtp_path = path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(vtp_path)
+        write_polydata(output_filename=vtp_path, poly_data=self.polydata)
 
 
 def process_body(
@@ -146,42 +143,6 @@ def transform_to_Cm(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> p
     body_cm["Cmz"] = body_cm["Mz"] / V_rep
 
     return body_cm
-
-
-def get_geometry_from_mesh(
-    body_cfg: BodyConfig, mesh: LagrangianFormat
-) -> tuple[LagrangianGeometry, np.ndarray]:
-    """Filters the mesh from the list of surfaces that define the body in config
-
-    Args:
-        body_cfg (BodyConfig): Body configuration
-        mesh (LagrangianFormat): LNAS mesh
-
-    Raises:
-        Exception: Surface specified is not defined in LNAS
-
-    Returns:
-        tuple[LagrangianGeometry, np.ndarray]: Tuple containing the body geometry and the filtered triangle indexes
-    """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-    else:
-        # Filter mesh for all surfaces
-        geometry_idx = np.array([], dtype=np.int32)
-        for sfc in body_cfg.surfaces:
-            if sfc not in mesh.surfaces.keys():
-                raise Exception(
-                    f"Surface {sfc} defined in body is not separated in the LNAS file."
-                )
-            geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
-
-    body_geom = LagrangianGeometry(
-        vertices=mesh.geometry.vertices.copy(),
-        triangles=mesh.geometry.triangles[geometry_idx].copy(),
-    )
-
-    return body_geom, geometry_idx
 
 
 def get_lever_relative_position_df(
