@@ -17,7 +17,7 @@ def get_excluded_surfaces(mesh: LagrangianFormat, sfc_list: list[str]) -> Lagran
     excluded_ids = np.array([], dtype=np.uint32)
     for excluded_sfc in sfc_list:
         if not excluded_sfc in mesh.surfaces.keys():
-            continue
+            raise Exception("Surface is not defined in LNAS.")
         ids = mesh.surfaces[excluded_sfc].copy()
         excluded_ids = np.concatenate((excluded_ids, ids))
 
