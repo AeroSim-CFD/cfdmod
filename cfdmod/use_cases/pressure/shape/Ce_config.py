@@ -17,9 +17,10 @@ class ZoningBuilder(BaseModel):
         title="Path to Zoning yaml",
         description="Path to Zoning yaml for construction zoning configuration",
     )
+    base_path: pathlib.Path
 
     def to_zoning_config(self) -> ZoningConfig:
-        zoning_cfg = ZoningConfig.from_file(pathlib.Path(self.yaml))
+        zoning_cfg = ZoningConfig.from_file(self.base_path / pathlib.Path(self.yaml))
         return zoning_cfg
 
 
@@ -77,5 +78,8 @@ class CeCaseConfig(BaseModel):
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CeCaseConfig:
         yaml_vals = read_yaml(filename)
+        for case_cfg in yaml_vals["shape_coefficient"].values():
+            if "yaml" in case_cfg["zoning"].keys():
+                case_cfg["zoning"]["base_path"] = filename.parent
         cfg = cls(**yaml_vals)
         return cfg

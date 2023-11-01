@@ -28,5 +28,6 @@ force_coefficient:
 shape_coefficient:
   pattern_1:
     zoning: 
+      # Relative path to this file
       yaml: "zoning_params.yaml"
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
