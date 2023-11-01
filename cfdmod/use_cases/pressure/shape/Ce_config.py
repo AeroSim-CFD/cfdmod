@@ -73,9 +73,6 @@ class CeCaseConfig(BaseModel):
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CeCaseConfig:
         yaml_vals = read_yaml(filename)
-        # for case_cfg in yaml_vals["shape_coefficient"].values():
-        #     if "yaml" in case_cfg["zoning"].keys():
-        #         case_cfg["zoning"]["_base_path"] = filename.parent
         cfg = cls(**yaml_vals)
         for s in cfg.shape_coefficient.values():
             s.zoning._base_path = filename.parent
