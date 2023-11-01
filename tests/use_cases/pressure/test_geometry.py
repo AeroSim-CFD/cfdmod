@@ -30,7 +30,9 @@ class TestGeometry(unittest.TestCase):
     def test_some_excluded_surfaces(self):
         sfc_list = ["sfc2"]
         geometry = get_excluded_surfaces(self.mesh, sfc_list)
-        self.assertIsInstance(geometry, LagrangianGeometry)  # Expecting a LagrangianGeometry object
+        self.assertIsInstance(
+            geometry, LagrangianGeometry
+        )  # Expecting a LagrangianGeometry object
         surface_use = self.mesh.geometry_from_surface(sfc_list[0])
         np.testing.assert_equal(geometry.triangle_vertices, surface_use.triangle_vertices)
 
