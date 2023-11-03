@@ -13,20 +13,6 @@ from cfdmod.utils import read_yaml
 __all__ = ["CpConfig", "CpCaseConfig"]
 
 
-class CpCaseConfig(BaseModel):
-    pressure_coefficient: CpConfig = Field(
-        ...,
-        title="Cp configuration",
-        description="Configuration with pressure coefficient post processing configs",
-    )
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
-        return cfg
-
-
 class CpConfig(BaseModel):
     timestep_range: tuple[float, float] = Field(
         ...,
@@ -50,3 +36,17 @@ class CpConfig(BaseModel):
         title="List of statistics",
         description="List of statistics to calculate from pressure coefficient signal",
     )
+
+
+class CpCaseConfig(BaseModel):
+    pressure_coefficient: CpConfig = Field(
+        ...,
+        title="Cp configuration",
+        description="Configuration with pressure coefficient post processing configs",
+    )
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals)
+        return cfg

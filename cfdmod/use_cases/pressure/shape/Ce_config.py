@@ -58,7 +58,7 @@ class CeConfig(BaseModel):
             self.zoning = self.zoning.to_zoning_config()
 
     def validate_zoning_surfaces(self):
-        common_surfaces = set(self.surfaces_in_sets).intersection(set(self.zoning.surfaces_listed))
+        common_surfaces = set(self.surfaces_in_sets).intersection(set(self.zoning.surfaces_listed))  # type: ignore
         if len(common_surfaces) != 0:
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 

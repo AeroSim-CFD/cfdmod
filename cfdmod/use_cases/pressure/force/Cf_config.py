@@ -13,6 +13,29 @@ from cfdmod.utils import read_yaml
 __all__ = ["CfConfig", "CfCaseConfig"]
 
 
+class CfConfig(BaseModel):
+    body: str = Field(..., title="Body label", description="Define which body should be processed")
+    sub_bodies: ZoningModel = Field(
+        ZoningModel(
+            x_intervals=[float("-inf"), float("inf")],
+            y_intervals=[float("-inf"), float("inf")],
+            z_intervals=[float("-inf"), float("inf")],
+        ),
+        title="Sub body intervals",
+        description="Definition of the intervals that will section the body into sub-bodies",
+    )
+    variables: list[ForceVariables] = Field(
+        ...,
+        title="List of variables",
+        description="Define which variables will be calculated",
+    )
+    statistics: list[Statistics] = Field(
+        ...,
+        title="List of statistics",
+        description="Define which statistical analysis will be performed to the coefficient",
+    )
+
+
 class CfCaseConfig(BaseModel):
     bodies: dict[str, BodyConfig] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
@@ -35,26 +58,3 @@ class CfCaseConfig(BaseModel):
         yaml_vals = read_yaml(filename)
         cfg = cls(**yaml_vals)
         return cfg
-
-
-class CfConfig(BaseModel):
-    body: str = Field(..., title="Body label", description="Define which body should be processed")
-    sub_bodies: ZoningModel = Field(
-        ZoningModel(
-            x_intervals=[float("-inf"), float("inf")],
-            y_intervals=[float("-inf"), float("inf")],
-            z_intervals=[float("-inf"), float("inf")],
-        ),
-        title="Sub body intervals",
-        description="Definition of the intervals that will section the body into sub-bodies",
-    )
-    variables: list[ForceVariables] = Field(
-        ...,
-        title="List of variables",
-        description="Define which variables will be calculated",
-    )
-    statistics: list[Statistics] = Field(
-        ...,
-        title="List of statistics",
-        description="Define which statistical analysis will be performed to the coefficient",
-    )
