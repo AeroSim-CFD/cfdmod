@@ -13,30 +13,6 @@ from cfdmod.utils import read_yaml
 __all__ = ["CmConfig", "CmCaseConfig"]
 
 
-class CmCaseConfig(BaseModel):
-    bodies: dict[str, BodyConfig] = Field(
-        ..., title="Bodies definition", description="Named bodies definition"
-    )
-    moment_coefficient: dict[str, CmConfig] = Field(
-        ...,
-        title="Moment Coefficient configs",
-        description="Dictionary with Moment Coefficient configuration",
-    )
-
-    @model_validator(mode="after")
-    def valdate_body_list(self):
-        for body_label in [cfg.body for cfg in self.moment_coefficient.values()]:
-            if body_label not in self.bodies.keys():
-                raise Exception(f"Body {body_label} is not defined in the configuration file")
-        return self
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CmCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
-        return cfg
-
-
 class CmConfig(BaseModel):
     body: str = Field(..., title="Body label", description="Define which body should be processed")
     sub_bodies: ZoningModel = Field(
@@ -59,3 +35,27 @@ class CmConfig(BaseModel):
         title="List of statistics",
         description="Define which statistical analysis will be performed to the coefficient",
     )
+
+
+class CmCaseConfig(BaseModel):
+    bodies: dict[str, BodyConfig] = Field(
+        ..., title="Bodies definition", description="Named bodies definition"
+    )
+    moment_coefficient: dict[str, CmConfig] = Field(
+        ...,
+        title="Moment Coefficient configs",
+        description="Dictionary with Moment Coefficient configuration",
+    )
+
+    @model_validator(mode="after")
+    def valdate_body_list(self):
+        for body_label in [cfg.body for cfg in self.moment_coefficient.values()]:
+            if body_label not in self.bodies.keys():
+                raise Exception(f"Body {body_label} is not defined in the configuration file")
+        return self
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CmCaseConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals)
+        return cfg
