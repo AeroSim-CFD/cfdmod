@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import pathlib
 
 from pydantic import BaseModel, Field, model_validator
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import ForceVariables
@@ -13,7 +15,7 @@ from cfdmod.utils import read_yaml
 __all__ = ["CfConfig", "CfCaseConfig"]
 
 
-class CfConfig(BaseModel):
+class CfConfig(HashableConfig):
     body: str = Field(..., title="Body label", description="Define which body should be processed")
     sub_bodies: ZoningModel = Field(
         ZoningModel(

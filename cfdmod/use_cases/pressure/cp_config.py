@@ -7,13 +7,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
 __all__ = ["CpConfig", "CpCaseConfig"]
 
 
-class CpConfig(BaseModel):
+class CpConfig(HashableConfig):
     timestep_range: tuple[float, float] = Field(
         ...,
         title="Timestep Range",

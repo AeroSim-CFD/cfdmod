@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
@@ -24,7 +25,7 @@ class ZoningBuilder(BaseModel):
         return zoning_cfg
 
 
-class CeConfig(BaseModel):
+class CeConfig(HashableConfig):
     """Configuration for shape coefficient"""
 
     zoning: ZoningConfig | ZoningBuilder = Field(
