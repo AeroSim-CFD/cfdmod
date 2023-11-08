@@ -72,8 +72,8 @@ def calculate_statistics(
             maximum = group_by_point[var].apply(lambda x: x.max()).reset_index(name="max")
             statistics_data[f"{var}_max"] = maximum["max"]
         if "std" in statistics_to_apply:
-            rms = group_by_point[var].apply(lambda x: x.std()).reset_index(name="std")
-            statistics_data[f"{var}_rms"] = rms["std"]
+            std = group_by_point[var].apply(lambda x: x.std()).reset_index(name="std")
+            statistics_data[f"{var}_std"] = std["std"]
 
         # Calculate skewness and kurtosis using apply
         if "skewness" in statistics_to_apply:

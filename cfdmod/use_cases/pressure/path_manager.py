@@ -46,7 +46,7 @@ class CfPathManager(PathManagerBase):
 
 
 class CePathManager(PathManagerBase):
-    _FOLDERNAME: ClassVar[str] = "Cf"
+    _FOLDERNAME: ClassVar[str] = "Ce"
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
         return (
