@@ -42,7 +42,7 @@ class TestCpData(unittest.TestCase):
         self.assertIn("cp_avg", statistics_data.columns)
         self.assertIn("cp_min", statistics_data.columns)
         self.assertIn("cp_max", statistics_data.columns)
-        self.assertIn("cp_rms", statistics_data.columns)
+        self.assertIn("cp_std", statistics_data.columns)
         self.assertIn("cp_skewness", statistics_data.columns)
         self.assertIn("cp_kurtosis", statistics_data.columns)
 

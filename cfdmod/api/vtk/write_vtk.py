@@ -1,4 +1,5 @@
 import pathlib
+from typing import Sequence
 
 import pandas as pd
 from nassu.lnas import LagrangianGeometry
@@ -70,7 +71,7 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LagrangianGeometry) 
     return polyData
 
 
-def merge_polydata(polydata_list: list[vtkPolyData]) -> vtkAppendPolyData:
+def merge_polydata(polydata_list: Sequence[vtkPolyData | vtkAppendPolyData]) -> vtkAppendPolyData:
     """Merges a list of polydata into a vtkAppendPolyData
 
     Args:

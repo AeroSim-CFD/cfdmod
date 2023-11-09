@@ -1,6 +1,9 @@
 import numpy as np
+import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from vtk import vtkPolyData
 
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 
 
@@ -29,6 +32,24 @@ def get_excluded_surfaces(mesh: LagrangianFormat, sfc_list: list[str]) -> Lagran
         return excluded_geom
     else:
         raise Exception("No geometry could be filtered from the list of surfaces.")
+
+
+def create_NaN_polydata(mesh: LagrangianGeometry, column_labels: list[str]) -> vtkPolyData:
+    """Creates vtkPolyData from a given mesh and populate column labels with NaN values
+
+    Args:
+        mesh (LagrangianGeometry): Input LNAS mesh
+        column_labels (list[str]): Column labels to populate with NaN values
+
+    Returns:
+        vtkPolyData: Polydata with the input mesh and NaN values
+    """
+    mock_df = pd.DataFrame(columns=column_labels)
+    mock_df["point_idx"] = np.arange(0, mesh.triangles.shape[0])
+    # All other columns will be NaN except for point_idx
+    polydata = create_polydata_for_cell_data(data=mock_df, mesh=mesh)
+
+    return polydata
 
 
 def get_geometry_from_mesh(

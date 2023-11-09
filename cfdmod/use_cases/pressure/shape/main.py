@@ -7,7 +7,7 @@ from nassu.lnas import LagrangianFormat
 
 from cfdmod.api.vtk.write_vtk import merge_polydata, vtkPolyData, write_polydata
 from cfdmod.logger import logger
-from cfdmod.use_cases.pressure.geometry import get_excluded_surfaces
+from cfdmod.use_cases.pressure.geometry import create_NaN_polydata, get_excluded_surfaces
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
 from cfdmod.use_cases.pressure.shape.Ce_data import get_surfaces_raw_data, process_surface
@@ -91,8 +91,8 @@ def main(*args):
         sfc_dict = {set_lbl: sfc_list for set_lbl, sfc_list in cfg.sets.items()}
         sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
 
+        data_columns = []
         surfaces_to_process = get_surfaces_raw_data(surface_dict=sfc_dict, cfg=cfg, mesh=mesh)
-
         for sfc_lbl, raw_surface in surfaces_to_process.items():
             logger.info(f"Processing surface {sfc_lbl}")
 
@@ -107,21 +107,26 @@ def main(*args):
             )
 
             processed_polydata.append(processed_surface.polydata)
+            data_columns = processed_surface.surface_ce_stats.columns
 
-        logger.info(f"Processed surface {sfc_lbl}")
+            logger.info(f"Processed surface {sfc_lbl}")
 
-        merged_polydata = merge_polydata(processed_polydata)
-        write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
-
-        sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]
+        sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
         sfc_list += [
             sfc
             for set_lbl, sfc_set in cfg.sets.items()
             for sfc in sfc_set
-            if set_lbl in cfg.zoning.exclude
+            if set_lbl in cfg.zoning.exclude  # type: ignore
         ]
         if len(sfc_list) != 0:
             excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=sfc_list)
             excluded_sfcs.export_stl(path_manager.get_excluded_surface_path(cfg_label))
+            # Include polydata with NaN values
+            columns = [col for col in data_columns if col not in ["point_idx", "region_idx"]]
+            excluded_polydata = create_NaN_polydata(mesh=excluded_sfcs, column_labels=columns)
+            processed_polydata.append(excluded_polydata)
+
+        merged_polydata = merge_polydata(processed_polydata)
+        write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
 
         logger.info(f"Merged and saved polydata for {cfg_label}")

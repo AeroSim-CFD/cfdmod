@@ -94,7 +94,7 @@ def calculate_statistics(
     if "max" in statistics_to_apply:
         statistics_data["cp_max"] = group_by_point_cp.max()
     if "std" in statistics_to_apply:
-        statistics_data["cp_rms"] = group_by_point_cp.std()
+        statistics_data["cp_std"] = group_by_point_cp.std()
 
     # Calculate skewness and kurtosis using apply
     if "skewness" in statistics_to_apply:
