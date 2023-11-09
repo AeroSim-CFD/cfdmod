@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
 
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
@@ -29,6 +30,13 @@ def get_excluded_surfaces(mesh: LagrangianFormat, sfc_list: list[str]) -> Lagran
         return excluded_geom
     else:
         raise Exception("No geometry could be filtered from the list of surfaces.")
+
+
+def create_NaN_data_for_mesh(mesh: LagrangianGeometry, column_labels: list[str]) -> pd.DataFrame:
+    mock_df = pd.DataFrame(columns=column_labels)
+    mock_df["point_idx"] = np.arange(0, mesh.triangles.shape[0])
+
+    return mock_df
 
 
 def get_geometry_from_mesh(
