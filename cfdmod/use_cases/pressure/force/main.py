@@ -5,10 +5,11 @@ from dataclasses import dataclass
 import pandas as pd
 from nassu.lnas import LagrangianFormat
 
+from cfdmod.api.vtk.write_vtk import merge_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.use_cases.pressure.force.Cf_data import process_body
-from cfdmod.use_cases.pressure.geometry import get_excluded_surfaces
+from cfdmod.use_cases.pressure.geometry import create_NaN_polydata, get_excluded_surfaces
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 
 
@@ -93,9 +94,7 @@ def main(*args):
         logger.info(f"Processing body {body_label} ...")
 
         processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
-        processed_body.save_outputs(
-            body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
-        )
+
         sfc_list = [
             sfc
             for sfc in mesh.surfaces.keys()
@@ -104,4 +103,14 @@ def main(*args):
         if len(sfc_list) != 0:
             excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=sfc_list)
             excluded_sfcs.export_stl(path_manager.get_excluded_surface_path(cfg_label))
+            # Include polydata with NaN values
+            data_columns = processed_body.body_cf_stats.columns
+            columns = [col for col in data_columns if col not in ["point_idx", "region_idx"]]
+            excluded_polydata = create_NaN_polydata(mesh=excluded_sfcs, column_labels=columns)
+            processed_body.polydata = merge_polydata([processed_body.polydata, excluded_polydata])
+
+        processed_body.save_outputs(
+            body_label=body_label, cfg_label=cfg_label, path_manager=path_manager
+        )
+
         logger.info(f"Processed body {body_label}")

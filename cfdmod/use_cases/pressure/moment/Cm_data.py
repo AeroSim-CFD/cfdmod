@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
-from vtk import vtkPolyData
+from vtk import vtkAppendPolyData, vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
@@ -25,7 +25,7 @@ class ProcessedBodyData:
     body_cm_stats: pd.DataFrame
     body_geom: LagrangianGeometry
     body_data_df: pd.DataFrame
-    polydata: vtkPolyData
+    polydata: vtkPolyData | vtkAppendPolyData
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
         # Output 1: Cm(t)
