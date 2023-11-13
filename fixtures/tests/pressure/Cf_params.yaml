@@ -14,7 +14,11 @@ force_coefficient:
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
     sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
+    transformation:
+      rotation: [0, 0, 0]
   measurement_2:
     body: marquise
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]

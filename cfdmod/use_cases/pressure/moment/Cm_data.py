@@ -67,13 +67,18 @@ def process_body(
     zoning_to_use = cfg.sub_bodies.offset_limits(0.1)
     df_regions = zoning_to_use.get_regions_df()
 
-    sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
+    transformed_body = body_geom.copy()
+    transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
+
+    sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
+    # sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
     body_data = cp_data[cp_data["point_idx"].isin(geometry_idx)].copy()
     body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
 
-    centroids = np.mean(body_geom.triangle_vertices, axis=1)
+    centroids = np.mean(transformed_body.triangle_vertices, axis=1)
+    # centroids = np.mean(body_geom.triangle_vertices, axis=1)
 
     position_df = get_lever_relative_position_df(
         centroids=centroids, lever_origin=cfg.lever_origin, geometry_idx=geometry_idx

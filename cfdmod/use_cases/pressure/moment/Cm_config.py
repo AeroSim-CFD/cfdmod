@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
+from nassu.cfg.schemes.base import GeometryTransformationConfig
 from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
@@ -35,6 +36,11 @@ class CmConfig(HashableConfig):
         ...,
         title="List of statistics",
         description="Define which statistical analysis will be performed to the coefficient",
+    )
+    transformation: GeometryTransformationConfig = Field(
+        ...,
+        title="Transformation config",
+        description="Configuration for mesh transformation",
     )
 
 
