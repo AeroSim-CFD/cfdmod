@@ -153,7 +153,11 @@ def process_surface(
     """
     df_regions = raw_surface.zoning_to_use.get_regions_df()
 
-    triangles_region = get_indexing_mask(mesh=raw_surface.sfc_mesh, df_regions=df_regions)
+    transformed_surface = raw_surface.sfc_mesh.copy()
+    transformed_surface.apply_transformation(cfg.transformation.get_geometry_transformation())
+
+    triangles_region = get_indexing_mask(mesh=transformed_surface, df_regions=df_regions)
+    # triangles_region = get_indexing_mask(mesh=raw_surface.sfc_mesh, df_regions=df_regions)
     surface_ce = transform_to_Ce(
         surface_mesh=raw_surface.sfc_mesh,
         cp_data=cp_data,

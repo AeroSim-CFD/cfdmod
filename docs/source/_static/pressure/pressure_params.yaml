@@ -18,6 +18,11 @@ momentum_coefficient:
       z_intervals: [0,10,20]
     lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]
 force_coefficient:
   measurement_1:
     body: building
@@ -25,9 +30,17 @@ force_coefficient:
     sub-bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]
 shape_coefficient:
   pattern_1:
     zoning: 
       # Relative path to this file
       yaml: "zoning_params.yaml"
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]

@@ -18,7 +18,7 @@ ruamel-yaml = "^0.17.32"
 optional = true
 
 [tool.poetry.group.nassu.dependencies]
-nassu = { git = "git@github.com:AeroSim-CFD/nassu.git", branch = "release/v1.5" }
+nassu = { git = "git@github.com:AeroSim-CFD/nassu.git", tag = "v1.5.0a3" }
 
 [tool.poetry.group.altimetry]
 optional = true

@@ -12,7 +12,17 @@ force_coefficient:
       z_intervals: [0,10,20]
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]
   measurement_2:
     body: marquise
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]

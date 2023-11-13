@@ -5,6 +5,8 @@ shape_coefficient:
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+    transformation:
+      rotation: [0, 0, 0]
   measurement_2:
     zoning: 
       global_zoning:
@@ -16,8 +18,12 @@ shape_coefficient:
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+    transformation:
+      rotation: [0, 0, 0]
   measurement_3:
     zoning: 
       global_zoning:
         x_intervals: [0, 125, 250]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]

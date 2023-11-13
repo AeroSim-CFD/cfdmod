@@ -5,6 +5,7 @@ import pathlib
 from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import MomentVariables
@@ -35,6 +36,11 @@ class CmConfig(HashableConfig):
         ...,
         title="List of statistics",
         description="Define which statistical analysis will be performed to the coefficient",
+    )
+    transformation: TransformationConfig = Field(
+        ...,
+        title="Transformation config",
+        description="Configuration for mesh transformation",
     )
 
 

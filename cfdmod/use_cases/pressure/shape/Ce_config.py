@@ -5,6 +5,7 @@ import pathlib
 from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
@@ -40,6 +41,11 @@ class CeConfig(HashableConfig):
     )
     sets: dict[str, list[str]] = Field(
         {}, title="Surface sets", description="Combine multiple surfaces into a set of surfaces"
+    )
+    transformation: TransformationConfig = Field(
+        ...,
+        title="Transformation config",
+        description="Configuration for mesh transformation",
     )
 
     @property

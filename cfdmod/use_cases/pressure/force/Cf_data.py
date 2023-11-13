@@ -66,7 +66,11 @@ def process_body(
     zoning_to_use = cfg.sub_bodies.offset_limits(0.1)
     df_regions = zoning_to_use.get_regions_df()
 
-    sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
+    transformed_body = body_geom.copy()
+    transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
+
+    sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
+    # sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
     mask = cp_data["point_idx"].isin(geometry_idx)

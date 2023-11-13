@@ -11,6 +11,8 @@ moment_coefficient:
     variables: ["Cmx", "Cmy", "Cmz"]
     lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]
   measurement_2:
     body: building
     sub-bodies: # Optional, default is the whole body
@@ -18,3 +20,5 @@ moment_coefficient:
     variables: ["Cmx", "Cmy", "Cmz"]
     lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]
