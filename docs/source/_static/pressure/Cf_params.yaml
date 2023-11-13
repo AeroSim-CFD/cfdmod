@@ -17,7 +17,6 @@ force_coefficient:
       translation: [0, 0, 0]
       rotation: [0, 0, 0]
       fixed_point: [0, 0, 0]
-      scale: [1, 1, 1]
   measurement_2:
     body: marquise
     variables: ["Cfx", "Cfy", "Cfz"]
@@ -27,4 +26,3 @@ force_coefficient:
       translation: [0, 0, 0]
       rotation: [0, 0, 0]
       fixed_point: [0, 0, 0]
-      scale: [1, 1, 1]
