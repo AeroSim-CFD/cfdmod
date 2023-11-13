@@ -178,7 +178,10 @@ def process_surface(
             raw_surface.zoning_to_use.z_intervals,
         ),
     )
-    regions_mesh_triangles_region = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
+
+    translated_mesh = regions_mesh.copy()
+    translated_mesh.apply_transformation(cfg.transformation.get_geometry_transformation())
+    regions_mesh_triangles_region = get_indexing_mask(mesh=translated_mesh, df_regions=df_regions)
 
     region_data_df = combine_stats_data_with_mesh(
         regions_mesh, regions_mesh_triangles_region, surface_ce_stats
