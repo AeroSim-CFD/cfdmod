@@ -181,6 +181,7 @@ def process_surface(
 
     translated_mesh = regions_mesh.copy()
     translated_mesh.apply_transformation(cfg.transformation.get_geometry_transformation())
+
     regions_mesh_triangles_region = get_indexing_mask(mesh=translated_mesh, df_regions=df_regions)
 
     region_data_df = combine_stats_data_with_mesh(
