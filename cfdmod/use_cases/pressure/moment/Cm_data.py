@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from lnas import LnasFormat, LnasGeometry
 from vtk import vtkAppendPolyData, vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
@@ -23,7 +23,7 @@ class ProcessedBodyData:
     df_regions: pd.DataFrame
     body_cm: pd.DataFrame
     body_cm_stats: pd.DataFrame
-    body_geom: LagrangianGeometry
+    body_geom: LnasGeometry
     body_data_df: pd.DataFrame
     polydata: vtkPolyData | vtkAppendPolyData
 
@@ -47,14 +47,14 @@ class ProcessedBodyData:
 
 
 def process_body(
-    mesh: LagrangianFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CmConfig
+    mesh: LnasFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CmConfig
 ) -> ProcessedBodyData:
     """Processes a sub body from separating the surfaces of the original mesh
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
-        mesh (LagrangianFormat): LNAS mesh
+        mesh (LnasFormat): LNAS mesh
         body_cfg (BodyConfig): Body processing configuration
         cp_data (pd.DataFrame): Pressure coefficients data
         cfg (CmConfig): Post processing configuration
@@ -105,14 +105,14 @@ def process_body(
     )
 
 
-def transform_to_Cm(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> pd.DataFrame:
+def transform_to_Cm(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.DataFrame:
     """Converts pressure coefficient data for a body into force coefficients
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
         body_data (pd.DataFrame): Pressure coefficient data for the body
-        body_geom (LagrangianGeometry): LNAS mesh for the body geometry
+        body_geom (LnasGeometry): LNAS mesh for the body geometry
 
     Returns:
         pd.DataFrame: Body force coefficients data
@@ -172,11 +172,11 @@ def get_lever_relative_position_df(
     return position_df
 
 
-def get_representative_volume(input_mesh: LagrangianGeometry) -> float:
+def get_representative_volume(input_mesh: LnasGeometry) -> float:
     """Calculates the representative volume from the bounding box of a given mesh
 
     Args:
-        input_mesh (LagrangianGeometry): Input LNAS mesh
+        input_mesh (LnasGeometry): Input LNAS mesh
 
     Returns:
         float: Representative volume value

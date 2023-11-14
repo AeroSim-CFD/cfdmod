@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.use_cases.pressure.geometry import get_excluded_surfaces
 
@@ -10,8 +10,8 @@ class TestGeometry(unittest.TestCase):
     def setUp(self):
         vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
-        geometry = LagrangianGeometry(vertices=vertices, triangles=triangles)
-        self.mesh = LagrangianFormat(
+        geometry = LnasGeometry(vertices=vertices, triangles=triangles)
+        self.mesh = LnasFormat(
             version="",
             name="mock mesh",
             normalization=None,
@@ -30,9 +30,7 @@ class TestGeometry(unittest.TestCase):
     def test_some_excluded_surfaces(self):
         sfc_list = ["sfc2"]
         geometry = get_excluded_surfaces(self.mesh, sfc_list)
-        self.assertIsInstance(
-            geometry, LagrangianGeometry
-        )  # Expecting a LagrangianGeometry object
+        self.assertIsInstance(geometry, LnasGeometry)  # Expecting a LnasGeometry object
         surface_use = self.mesh.geometry_from_surface(sfc_list[0])
         np.testing.assert_equal(geometry.triangle_vertices, surface_use.triangle_vertices)
 

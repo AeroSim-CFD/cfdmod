@@ -2,7 +2,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 
@@ -11,11 +11,11 @@ MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
 ShapeVariables = Literal["Ce"]
 
 
-def get_indexing_mask(mesh: LagrangianGeometry, df_regions: pd.DataFrame) -> np.ndarray:
+def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarray:
     """Index each triangle in the mesh in the respective region
 
     Args:
-        mesh (LagrangianGeometry): Mesh with triangles to index
+        mesh (LnasGeometry): Mesh with triangles to index
         df_regions (pd.DataFrame): Dataframe describing the zoning intervals (x_min, x_max, y_min, y_max, z_min, z_max, region_idx)
 
     Returns:
@@ -87,14 +87,14 @@ def calculate_statistics(
 
 
 def combine_stats_data_with_mesh(
-    mesh: LagrangianGeometry,
+    mesh: LnasGeometry,
     region_idx_array: np.ndarray,
     data_stats: pd.DataFrame,
 ) -> pd.DataFrame:
     """Combine compiled statistical data with surface meshing by indexing regions
 
     Args:
-        mesh (LagrangianGeometry): LNAS mesh to be combined
+        mesh (LnasGeometry): LNAS mesh to be combined
         region_idx_array (np.ndarray): Triangles indexing by region
         data_stats (pd.DataFrame): Compiled statistics data
 

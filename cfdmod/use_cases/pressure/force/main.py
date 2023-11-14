@@ -3,7 +3,7 @@ import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
-from nassu.lnas import LagrangianFormat
+from lnas import LnasFormat
 
 from cfdmod.api.vtk.write_vtk import merge_polydata
 from cfdmod.logger import logger
@@ -73,7 +73,7 @@ def main(*args):
     post_proc_cfg = CfCaseConfig.from_file(cfg_path)
 
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure coefficients data...")

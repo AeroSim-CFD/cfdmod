@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.moment.Cm_data import (
     get_lever_relative_position_df,
@@ -28,7 +28,7 @@ class TestCmData(unittest.TestCase):
         vertices = np.array([[0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
 
-        self.body_geom = LagrangianGeometry(vertices, triangles)
+        self.body_geom = LnasGeometry(vertices, triangles)
 
     def test_transform_to_Cm(self):
         centroids = np.mean(self.body_geom.triangle_vertices, axis=1)
