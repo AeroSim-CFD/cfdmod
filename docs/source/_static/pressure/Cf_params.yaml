@@ -8,7 +8,7 @@ bodies:
 force_coefficient:
   measurement_1:
     body: building
-    sub-bodies: # Optional, default is the whole body
+    sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
