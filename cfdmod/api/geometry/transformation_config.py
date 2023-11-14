@@ -27,7 +27,7 @@ class TransformationConfig(BaseModel):
         return hash((self.translation, self.rotation, self.fixed_point))
 
     def get_geometry_transformation(self):
-        from nassu.lnas import TransformationsMatrix
+        from lnas import TransformationsMatrix
 
         return TransformationsMatrix(
             angle=np.array(self.rotation, dtype=np.float64),

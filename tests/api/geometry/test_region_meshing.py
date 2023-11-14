@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.api.geometry.region_meshing import (
     create_regions_mesh,
@@ -32,7 +32,7 @@ class TestRegionMeshing(unittest.TestCase):
     def test_slice_surface(self):
         vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
-        mock_mesh = LagrangianGeometry(vertices, triangles)
+        mock_mesh = LnasGeometry(vertices, triangles)
         sliced_mesh = slice_surface(mock_mesh, 1, 5)
 
         self.assertEqual(len(sliced_mesh.vertices), 7)
@@ -41,7 +41,7 @@ class TestRegionMeshing(unittest.TestCase):
     def test_create_regions_mesh(self):
         vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
-        mock_mesh = LagrangianGeometry(vertices, triangles)
+        mock_mesh = LnasGeometry(vertices, triangles)
         zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
         zoning = zoning.offset_limits(0.1)
         region_mesh = create_regions_mesh(

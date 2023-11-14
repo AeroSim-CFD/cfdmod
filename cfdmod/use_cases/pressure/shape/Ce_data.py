@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
 from cfdmod.api.geometry.region_meshing import create_regions_mesh
@@ -22,7 +22,7 @@ from cfdmod.utils import create_folders_for_file
 
 @dataclass
 class RawSurfaceData:
-    sfc_mesh: LagrangianGeometry
+    sfc_mesh: LnasGeometry
     zoning_to_use: ZoningModel
     sfc_triangles_idxs: np.ndarray
 
@@ -32,7 +32,7 @@ class ProcessedSurfaceData:
     df_regions: pd.DataFrame
     surface_ce: pd.DataFrame
     surface_ce_stats: pd.DataFrame
-    regions_mesh: LagrangianGeometry
+    regions_mesh: LnasGeometry
     region_data_df: pd.DataFrame
     polydata: vtkPolyData
 
@@ -59,14 +59,14 @@ class ProcessedSurfaceData:
 
 
 def get_surfaces_raw_data(
-    surface_dict: dict[str, list[str]], cfg: CeConfig, mesh: LagrangianFormat
+    surface_dict: dict[str, list[str]], cfg: CeConfig, mesh: LnasFormat
 ) -> dict[str, RawSurfaceData]:
     """Get surfaces raw data from mesh
 
     Args:
         surface_dict (dict[str, list[str]]): Dictionary with surface list keyed by surface label
         cfg (CeConfig): Post processing configuration
-        mesh (LagrangianFormat): LNAS mesh
+        mesh (LnasFormat): LNAS mesh
 
     Returns:
         dict[str, RawSurfaceData]: Dictionary with raw surface data keyed by surface label
@@ -88,19 +88,19 @@ def get_surfaces_raw_data(
 
 
 def filter_surface_geometry(
-    mesh: LagrangianFormat, sfc_list: list[str]
-) -> tuple[LagrangianGeometry, np.ndarray]:
+    mesh: LnasFormat, sfc_list: list[str]
+) -> tuple[LnasGeometry, np.ndarray]:
     """Filter body from surface list
 
     Args:
-        mesh (LagrangianFormat): LNAS mesh with every surface available
+        mesh (LnasFormat): LNAS mesh with every surface available
         sfc_list (list[str]): List of surfaces to be filtered
 
     Returns:
-        tuple[LagrangianGeometry, np.ndarray]: Tuple with filtered LNAS mesh geometry
+        tuple[LnasGeometry, np.ndarray]: Tuple with filtered LNAS mesh geometry
         and the filtered triangle indices
     """
-    sfc_mesh = LagrangianGeometry(
+    sfc_mesh = LnasGeometry(
         vertices=mesh.geometry.vertices, triangles=np.empty((0, 3), dtype=np.uint32)
     )
     sfc_triangles_idxs = np.array([])
@@ -114,12 +114,12 @@ def filter_surface_geometry(
 
 
 def build_surface_raw_data(
-    sfc_mesh: LagrangianGeometry, sfc_label: str, cfg: CeConfig, sfc_triangles_idxs: np.ndarray
+    sfc_mesh: LnasGeometry, sfc_label: str, cfg: CeConfig, sfc_triangles_idxs: np.ndarray
 ) -> RawSurfaceData:
     """Builds a raw surface data object
 
     Args:
-        sfc_mesh (LagrangianGeometry): Geometry of the surface
+        sfc_mesh (LnasGeometry): Geometry of the surface
         sfc_label (str): Surface label
         cfg (CeConfig): Post processing configuration
         sfc_triangles_idxs (np.ndarray): Filtered triangle indices
@@ -157,7 +157,6 @@ def process_surface(
     transformed_surface.apply_transformation(cfg.transformation.get_geometry_transformation())
 
     triangles_region = get_indexing_mask(mesh=transformed_surface, df_regions=df_regions)
-    # triangles_region = get_indexing_mask(mesh=raw_surface.sfc_mesh, df_regions=df_regions)
     surface_ce = transform_to_Ce(
         surface_mesh=raw_surface.sfc_mesh,
         cp_data=cp_data,
@@ -171,7 +170,7 @@ def process_surface(
     )
 
     regions_mesh = create_regions_mesh(
-        raw_surface.sfc_mesh,
+        transformed_surface,
         (
             raw_surface.zoning_to_use.x_intervals,
             raw_surface.zoning_to_use.y_intervals,
@@ -179,10 +178,10 @@ def process_surface(
         ),
     )
 
-    translated_mesh = regions_mesh.copy()
-    translated_mesh.apply_transformation(cfg.transformation.get_geometry_transformation())
-
-    regions_mesh_triangles_region = get_indexing_mask(mesh=translated_mesh, df_regions=df_regions)
+    regions_mesh_triangles_region = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
+    regions_mesh.apply_transformation(
+        cfg.transformation.get_geometry_transformation(), invert_transf=True
+    )
 
     region_data_df = combine_stats_data_with_mesh(
         regions_mesh, regions_mesh_triangles_region, surface_ce_stats
@@ -202,11 +201,11 @@ def process_surface(
     )
 
 
-def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> ZoningModel:
+def get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> ZoningModel:
     """Get the surface respective zoning configuration
 
     Args:
-        mesh (LagrangianGeometry): Surface LNAS mesh
+        mesh (LnasGeometry): Surface LNAS mesh
         sfc (str): Surface label
         config (CeConfig): Post process configuration
 
@@ -227,7 +226,7 @@ def get_surface_zoning(mesh: LagrangianGeometry, sfc: str, config: CeConfig) -> 
 
 
 def transform_to_Ce(
-    surface_mesh: LagrangianGeometry,
+    surface_mesh: LnasGeometry,
     cp_data: pd.DataFrame,
     sfc_triangles_idxs: np.ndarray,
     triangles_region: np.ndarray,
@@ -236,7 +235,7 @@ def transform_to_Ce(
     """Transforms pressure coefficient for surface to shape coefficient
 
     Args:
-        surface_mesh (LagrangianGeometry): Surface mesh
+        surface_mesh (LnasGeometry): Surface mesh
         cp_data (pd.DataFrame): Body pressure coefficient data
         sfc_triangles_idxs (np.ndarray): Surface triangles index from body mesh
         triangles_region (np.ndarray): Surface triangles region indexing
