@@ -15,7 +15,7 @@ moment_coefficient:
       rotation: [0, 0, 0]
   measurement_2:
     body: building
-    sub-bodies: # Optional, default is the whole body
+    sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     variables: ["Cmx", "Cmy", "Cmz"]
     lever_origin: [0, 10, 10]

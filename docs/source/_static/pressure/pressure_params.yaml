@@ -14,7 +14,7 @@ momentum_coefficient:
   measurement_1:
     body: marquise
     variables: ["Cmx", "Cmy", "Cmz"]
-    sub-bodies: # Optional, default is the whole body
+    sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
@@ -27,7 +27,7 @@ force_coefficient:
   measurement_1:
     body: building
     variables: ["Cfx", "Cfy", "Cfz"]
-    sub-bodies: # Optional, default is the whole body
+    sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
     transformation:

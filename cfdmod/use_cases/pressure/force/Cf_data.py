@@ -70,7 +70,6 @@ def process_body(
     transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
 
     sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
-    # sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
     mask = cp_data["point_idx"].isin(geometry_idx)
@@ -141,9 +140,10 @@ def get_representative_areas(input_mesh: LnasGeometry) -> tuple[float, float, fl
     Returns:
         tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
     """
-    x_min, x_max = input_mesh.vertices[:, 0].min(), input_mesh.vertices[:, 0].max()
-    y_min, y_max = input_mesh.vertices[:, 1].min(), input_mesh.vertices[:, 1].max()
-    z_min, z_max = input_mesh.vertices[:, 2].min(), input_mesh.vertices[:, 2].max()
+    geom_verts = input_mesh.triangle_vertices.reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
 
     Lx = x_max - x_min
     Ly = y_max - y_min

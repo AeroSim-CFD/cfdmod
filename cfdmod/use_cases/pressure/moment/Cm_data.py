@@ -181,9 +181,10 @@ def get_representative_volume(input_mesh: LnasGeometry) -> float:
     Returns:
         float: Representative volume value
     """
-    x_min, x_max = input_mesh.vertices[:, 0].min(), input_mesh.vertices[:, 0].max()
-    y_min, y_max = input_mesh.vertices[:, 1].min(), input_mesh.vertices[:, 1].max()
-    z_min, z_max = input_mesh.vertices[:, 2].min(), input_mesh.vertices[:, 2].max()
+    geom_verts = input_mesh.triangle_vertices.reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
 
     Lx = x_max - x_min
     Ly = y_max - y_min
