@@ -9,7 +9,7 @@ pressure_coefficient:
   timestep_range: [10000, 40000]
   reference_pressure: "average" # or "instantaneous"
   U_H: 10 # Velocity at the building interest height
-  statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+  statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
 momentum_coefficient:
   measurement_1:
     body: marquise
@@ -17,7 +17,7 @@ momentum_coefficient:
     sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     lever_origin: [0, 10, 10]
-    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     # Apply transformations before indexing the regions
     transformation:
       translation: [0, 0, 0]
@@ -29,7 +29,7 @@ force_coefficient:
     variables: ["Cfx", "Cfy", "Cfz"]
     sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
-    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     transformation:
       translation: [0, 0, 0]
       rotation: [0, 0, 0]
@@ -39,7 +39,7 @@ shape_coefficient:
     zoning: 
       # Relative path to this file
       yaml: "zoning_params.yaml"
-    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     transformation:
       translation: [0, 0, 0]
       rotation: [0, 0, 0]

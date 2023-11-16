@@ -92,7 +92,7 @@ Data format
    * - point_idx
      - max
      - min
-     - avg
+     - mean
      - std
      - skewness
      - kurtosis

@@ -36,10 +36,10 @@ class TestCpData(unittest.TestCase):
     def test_statistics_calculation(self):
         body_data = pd.DataFrame({"point_idx": [1, 1, 2, 2], "cp": [1.1, 1.2, 2.1, 2.2]})
         statistics_data = calculate_statistics(
-            body_data, ["max", "min", "std", "avg", "skewness", "kurtosis"]
+            body_data, ["max", "min", "std", "mean", "skewness", "kurtosis"]
         )
 
-        self.assertIn("cp_avg", statistics_data.columns)
+        self.assertIn("cp_mean", statistics_data.columns)
         self.assertIn("cp_min", statistics_data.columns)
         self.assertIn("cp_max", statistics_data.columns)
         self.assertIn("cp_std", statistics_data.columns)
