@@ -9,12 +9,17 @@ readme = "README.md"
 python = "^3.10, <3.13"
 numpy = "^1.26.0"
 scipy = "^1.11.2"
-matplotlib = "^3.7.3"
 pandas = "^2.1.0"
 pydantic = "^2.3"
 ruamel-yaml = "^0.18.5"
 lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
 tables = "^3.9.1"
+
+[tool.poetry.group.plotting]
+optional = true
+
+[tool.poetry.group.plotting.dependencies]
+matplotlib = "^3.7.3"
 
 [tool.poetry.group.altimetry]
 optional = true
