@@ -12,8 +12,13 @@ scipy = "^1.11.2"
 pandas = "^2.1.0"
 pydantic = "^2.3"
 ruamel-yaml = "^0.18.5"
-lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
 tables = "^3.9.1"
+
+[tool.poetry.group.lnas]
+optional = true
+
+[tool.poetry.group.lnas.dependencies]
+lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
 
 [tool.poetry.group.plotting]
 optional = true
