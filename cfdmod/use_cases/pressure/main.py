@@ -108,6 +108,7 @@ def main(*args):
         body_data,
         reference_vel=cfg.U_H,
         ref_press_mode=cfg.reference_pressure,
+        correction_factor=cfg.U_H_correction_factor,
     )
     logger.info("Transformed pressure into coefficients")
     cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)
