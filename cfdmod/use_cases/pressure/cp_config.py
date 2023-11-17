@@ -32,6 +32,11 @@ class CpConfig(HashableConfig):
         title="Reference Flow Velocity",
         description="Value for reference Flow Velocity to calculate dynamic pressure",
     )
+    U_H_correction_factor: float = Field(
+        1,
+        title="Reference Flow Velocity correction factor",
+        description="Value for reference Flow Velocity correction factor multiplier",
+    )
     statistics: list[Statistics] = Field(
         ...,
         title="List of statistics",
