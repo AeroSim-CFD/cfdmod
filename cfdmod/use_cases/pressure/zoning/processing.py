@@ -62,9 +62,9 @@ def calculate_statistics(
     statistics_data = pd.DataFrame({"region_idx": historical_data["region_idx"].unique()})
 
     for var in variables:
-        if "avg" in statistics_to_apply:
+        if "mean" in statistics_to_apply:
             average = group_by_point[var].apply(lambda x: x.mean()).reset_index(name="mean")
-            statistics_data[f"{var}_avg"] = average["mean"]
+            statistics_data[f"{var}_mean"] = average["mean"]
         if "min" in statistics_to_apply:
             minimum = group_by_point[var].apply(lambda x: x.min()).reset_index(name="min")
             statistics_data[f"{var}_min"] = minimum["min"]

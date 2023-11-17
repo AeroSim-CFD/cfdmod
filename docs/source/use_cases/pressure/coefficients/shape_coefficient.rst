@@ -149,7 +149,7 @@ Data format
    * - region_idx
      - max
      - min
-     - avg
+     - mean
      - std
      - skewness
      - kurtosis

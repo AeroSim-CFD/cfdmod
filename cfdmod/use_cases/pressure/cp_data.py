@@ -87,8 +87,8 @@ def calculate_statistics(
 
     statistics_data = pd.DataFrame({"point_idx": body_data["point_idx"].unique()})
 
-    if "avg" in statistics_to_apply:
-        statistics_data["cp_avg"] = group_by_point_cp.mean()
+    if "mean" in statistics_to_apply:
+        statistics_data["cp_mean"] = group_by_point_cp.mean()
     if "min" in statistics_to_apply:
         statistics_data["cp_min"] = group_by_point_cp.min()
     if "max" in statistics_to_apply:

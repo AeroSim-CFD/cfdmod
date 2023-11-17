@@ -23,7 +23,7 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
             }
         )
         self.statistics_to_apply: list[Statistics] = [
-            "avg",
+            "mean",
             "min",
             "max",
             "std",
