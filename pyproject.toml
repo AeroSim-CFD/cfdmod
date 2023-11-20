@@ -9,10 +9,22 @@ readme = "README.md"
 python = "^3.10, <3.13"
 numpy = "^1.26.0"
 scipy = "^1.11.2"
-matplotlib = "^3.7.3"
 pandas = "^2.1.0"
-pydantic = "^2.3.0"
-ruamel-yaml = "^0.17.32"
+pydantic = "^2.3"
+ruamel-yaml = "^0.18.5"
+tables = "^3.9.1"
+
+[tool.poetry.group.lnas]
+optional = true
+
+[tool.poetry.group.lnas.dependencies]
+lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
+
+[tool.poetry.group.plotting]
+optional = true
+
+[tool.poetry.group.plotting.dependencies]
+matplotlib = "^3.7.3"
 
 [tool.poetry.group.altimetry]
 optional = true
@@ -48,6 +60,12 @@ optional = true
 jupyter = "^1.0.0"
 ipython = "^8.15.0"
 ipykernel = "^6.25.2"
+
+[tool.poetry.group.vtk]
+optional = true
+
+[tool.poetry.group.vtk.dependencies]
+vtk = "^9.2.6"
 
 [build-system]
 requires = ["poetry-core"]

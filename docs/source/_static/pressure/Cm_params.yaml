@@ -1,0 +1,30 @@
+bodies:
+  marquise:
+    surfaces: [list_of_surfaces_of_marquise]
+  lanternim:
+    surfaces: [list_of_surfaces_of_lanternim]
+  building:
+    surfaces: [building]
+moment_coefficient:
+  measurement_1:
+    body: marquise
+    variables: ["Cmx", "Cmy", "Cmz"]
+    lever_origin: [0, 10, 10]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]
+  measurement_2:
+    body: building
+    sub_bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
+    variables: ["Cmx", "Cmy", "Cmz"]
+    lever_origin: [0, 10, 10]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]

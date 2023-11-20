@@ -1,0 +1,11 @@
+shape_coefficient:
+  pattern_1:
+    zoning: 
+      # Relative path to this file
+      yaml: "./zoning_params.yaml" 
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    # Apply transformations before indexing the regions
+    transformation:
+      translation: [0, 0, 0]
+      rotation: [0, 0, 0]
+      fixed_point: [0, 0, 0]

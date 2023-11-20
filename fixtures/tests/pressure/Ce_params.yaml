@@ -1,0 +1,29 @@
+shape_coefficient:
+  measurement_1:
+    zoning: 
+      yaml: "./zoning_params.yaml"
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    sets:
+      lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+    transformation:
+      rotation: [0, 0, 0]
+  measurement_2:
+    zoning: 
+      global_zoning:
+        x_intervals: [0, 250]
+        y_intervals: [0, 200]
+        z_intervals: [0, 20]
+      no_zoning: ["t2_yp"]
+      exclude: ["lanternim", "t1_ym"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    sets:
+      lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
+    transformation:
+      rotation: [0, 0, 0]
+  measurement_3:
+    zoning: 
+      global_zoning:
+        x_intervals: [0, 125, 250]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]
