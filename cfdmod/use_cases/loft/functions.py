@@ -80,7 +80,9 @@ def get_angle_between(ref_vec: np.ndarray, target_vec: np.ndarray) -> float:
     return angle + 360 if angle < 0 else angle
 
 
-def project_border(border_vertices: np.ndarray, projection_diretion: np.ndarray) -> np.ndarray:
+def project_border(
+    border_vertices: np.ndarray, projection_diretion: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Projects the border vertices based on wind source direction
 
     Args:
@@ -88,7 +90,7 @@ def project_border(border_vertices: np.ndarray, projection_diretion: np.ndarray)
         projection_diretion (np.ndarray): Direction which to project the border
 
     Returns:
-        np.ndarray: Ordered border profile vertices
+        tuple[np.ndarray, np.ndarray]: Ordered border profile vertices and mesh center coordinate
     """
     flow_angle = get_angle_between(
         ref_vec=(1, 0, 0),
@@ -135,4 +137,137 @@ def project_border(border_vertices: np.ndarray, projection_diretion: np.ndarray)
 
     profile_vertices = np.array(sorted(profile_vertices, key=theta_sort))
 
-    return profile_vertices
+    return profile_vertices, center
+
+
+def generate_circular_loft_vertices(
+    border_profile: np.ndarray,
+    projection_diretion: np.ndarray,
+    loft_length: float,
+    loft_z_pos: float,
+    mesh_center: np.ndarray,
+) -> np.ndarray:
+    """Generates vertices to use for building loft
+
+    Args:
+        border_profile (np.ndarray): Vertices in terrain that will connect to loft
+        projection_diretion (np.ndarray): Direction which to project the border
+        loft_length (float): Loft's length
+        loft_z_pos (float): Loft's position in z (height)
+        mesh_center (np.ndarray): Coordinate for the center of the surface mesh.
+
+    Returns:
+        np.ndarray: Vertices to use for building loft, aligned and ordered with border profile
+    """
+
+    loft_vertices: list[np.ndarray] = []
+
+    normal = projection_diretion
+    normal[2] = 0
+
+    max_center_distance = np.array([np.dot(x - mesh_center, normal) for x in border_profile]).max()
+
+    for v in border_profile:
+        v_center_distance = np.dot(v - np.array(mesh_center), normal)
+        sum_arr = np.array(
+            [
+                (loft_length + (max_center_distance - v_center_distance)) * normal[0],
+                (loft_length + (max_center_distance - v_center_distance)) * normal[1],
+                0,
+            ],
+            dtype=np.float32,
+        )
+        # Move vertice to border
+        loft_v = v + sum_arr
+        # Update height of vertice
+        loft_v[2] = loft_z_pos
+        loft_vertices.append(loft_v)
+
+    return np.array(loft_vertices, dtype=np.float32)
+
+
+def generate_loft_triangles(
+    border_profile: np.ndarray, loft_vertices: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Generates STL of loft
+
+    Note that terrain and loft vertices are assumed to be ordered and aligned correctly
+
+    Args:
+        border_profile (np.ndarray): Vertices in terrain
+        loft_vertices (np.ndarray): Vertices generated for loft
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Tuple with loft surface triangles and normals
+    """
+
+    def normal_from_vertices(v0: np.ndarray, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+        u = v1 - v0
+        v = v2 - v0
+        return np.cross(u, v)
+
+    def fix_vertices_order(
+        v0: np.ndarray, v1: np.ndarray, v2: np.ndarray
+    ) -> tuple[list[np.ndarray], np.ndarray]:
+        v = [v0, v1, v2]
+        n = normal_from_vertices(*v)
+        # Normal pointing to z negative, wrong order
+        if n[2] < 0:
+            # Change vertices order
+            v = [v0, v2, v1]
+            n = normal_from_vertices(*v)
+        return v, n
+
+    normals = []
+    triangles = []
+    for i in range(1, len(border_profile)):
+        vt0, vt1 = border_profile[i - 1 : i + 1]
+        vl0, vl1 = loft_vertices[i - 1 : i + 1]
+
+        t0_v = [vt0, vl0, vt1]
+        t1_v = [vl0, vl1, vt1]
+
+        t0_v, t0_n = fix_vertices_order(*t0_v)
+        t1_v, t1_n = fix_vertices_order(*t1_v)
+
+        normals.append(t0_n)
+        normals.append(t1_n)
+        triangles.append(t0_v)
+        triangles.append(t1_v)
+
+    return np.array(triangles), np.array(normals)
+
+
+def generate_loft_surface(
+    triangle_vertices: np.ndarray,
+    projection_diretion: np.ndarray,
+    loft_length: float,
+    loft_z_pos: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Generate loft surface (triangles and normals)
+
+    Args:
+        triangle_vertices (np.ndarray): Mesh triangle vertices
+        projection_diretion (np.ndarray): Direction of loft projection
+        loft_length (float): Minimum length of loft
+        loft_z_pos (float): Target z position
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Loft triangles and normals
+    """
+    border_verts, border_edges = find_border(triangle_vertices=triangle_vertices)
+    border_profile, mesh_center = project_border(
+        border_verts, projection_diretion=projection_diretion
+    )
+    loft_verts = generate_circular_loft_vertices(
+        border_profile=border_profile,
+        projection_diretion=projection_diretion,
+        loft_length=loft_length,
+        loft_z_pos=loft_z_pos,
+        mesh_center=mesh_center,
+    )
+    loft_tri, loft_normals = generate_loft_triangles(
+        border_profile=border_profile, loft_vertices=loft_verts
+    )
+
+    return loft_tri, loft_normals
