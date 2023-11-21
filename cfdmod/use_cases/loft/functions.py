@@ -1,6 +1,9 @@
 import math
+import pathlib
 
 import numpy as np
+import pymeshlab
+from pymeshlab import AbsoluteValue, MeshSet
 
 
 def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
@@ -271,3 +274,19 @@ def generate_loft_surface(
     )
 
     return loft_tri, loft_normals
+
+
+def apply_remeshing(element_size: float, mesh_path: pathlib.Path, output_path: pathlib.Path):
+    """Create a remeshed surface from input mesh
+
+    Args:
+        element_size (float): Target element size
+        mesh_path (pathlib.Path): Original mesh path
+        output_path (pathlib.Path): Output mesh path
+    """
+    ms: MeshSet = pymeshlab.MeshSet()
+    ms.load_new_mesh(str(mesh_path.absolute()))
+    ms.meshing_isotropic_explicit_remeshing(
+        iterations=15, targetlen=AbsoluteValue(element_size), selectedonly=True
+    )
+    ms.save_current_mesh(str(output_path.absolute()), binary=False)
