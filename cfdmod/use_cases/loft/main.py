@@ -5,13 +5,13 @@ from dataclasses import dataclass
 import numpy as np
 
 from cfdmod.api.geometry.STL import export_stl, read_stl
+from cfdmod.logger import logger
 from cfdmod.use_cases.loft.functions import (
     apply_remeshing,
     generate_loft_surface,
     rotate_vector_around_z,
 )
 from cfdmod.use_cases.loft.parameters import LoftCaseConfig
-from cfdmod.logger import logger
 
 
 @dataclass
@@ -84,13 +84,22 @@ def main(*args):
                     loft_z_pos=loft_params.upwind_elevation,
                 )
 
-                export_stl(output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft.stl", loft_tri, loft_normals)
+                export_stl(
+                    output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft.stl",
+                    loft_tri,
+                    loft_normals,
+                )
                 apply_remeshing(
                     element_size=loft_params.mesh_element_size,
                     mesh_path=output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft.stl",
-                    output_path=output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft_remeshed.stl",
+                    output_path=output_path
+                    / f"{case_lbl}"
+                    / f"{wind_angle}"
+                    / f"{side}_loft_remeshed.stl",
                 )
-            export_stl(output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain.stl", triangles, normals)
+            export_stl(
+                output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain.stl", triangles, normals
+            )
             apply_remeshing(
                 element_size=loft_params.mesh_element_size,
                 mesh_path=output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain.stl",
