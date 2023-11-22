@@ -39,6 +39,13 @@ Calling the loft module will generate the following files:
 #. **Upwind and downwind remeshed lofts**: Remeshed loft surfaces with target element size.
 #. **Terrain remeshed**: Remeshed terrain surface with target element size.
 
+An example of the expected output file is shown below:
+
+.. image:: /_static/loft/loft.png
+    :width: 90 %
+    :align: center
+
+
 Usage
 =====
 
