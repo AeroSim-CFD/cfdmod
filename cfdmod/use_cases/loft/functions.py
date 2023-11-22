@@ -290,3 +290,26 @@ def apply_remeshing(element_size: float, mesh_path: pathlib.Path, output_path: p
         iterations=15, targetlen=AbsoluteValue(element_size), selectedonly=True
     )
     ms.save_current_mesh(str(output_path.absolute()), binary=True)
+
+
+def rotate_vector_around_z(vector: np.ndarray, angle_degrees: float) -> np.ndarray:
+    """Rotates a vector around z axis from a given angle
+
+    Args:
+        vector (np.ndarray): Vector to be rotated (x, y, z)
+        angle_degrees (float): Angle of rotation in degrees
+
+    Returns:
+        np.ndarray: Rotated 3D vector
+    """
+    angle_radians = np.radians(angle_degrees)
+    rotation_matrix = np.array(
+        [
+            [np.cos(angle_radians), -np.sin(angle_radians), 0],
+            [np.sin(angle_radians), np.cos(angle_radians), 0],
+            [0, 0, 1],
+        ]
+    )
+    rotated_vector = np.dot(rotation_matrix, vector)
+
+    return rotated_vector

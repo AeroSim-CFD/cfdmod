@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from cfdmod.utils import read_yaml
 
 __all__ = [
-    "LoftParams",
+    "LoftCaseConfig",
 ]
 
 
@@ -20,16 +20,27 @@ class LoftParams(BaseModel):
         title="Mesh element size",
         description="Target of the output mesh element size.",
     )
-    wind_source_direction: tuple[float, float, float] = Field(
+    wind_source_angle: float = Field(
         ...,
-        title="Wind source direction",
-        description="Direction for the wind source direction."
-        + "If it flows in the positive x axis, then the source direction is -x.",
+        title="Wind source angle",
+        description="Angle for the wind source direction."
+        + "Rotated around +z axis, from the reference direction.",
     )
     upwind_elevation: float = Field(
         ...,
         title="Upwind elevation",
         description="Elevation for upwind direction.",
+    )
+
+
+class LoftCaseConfig(BaseModel):
+    reference_direction: tuple[float, float, float] = Field(
+        [-1, 0, 0], title="Reference direction", description="Reference direction for 0° angle"
+    )
+    cases: dict[str, LoftParams] = Field(
+        ...,
+        title="Loft cases",
+        description="Setup for multiple loft configurations, for each wind source direction.",
     )
 
     @classmethod
