@@ -7,7 +7,7 @@ class TestLoftMain(unittest.TestCase):
     def test_main(self):
         config = "./fixtures/tests/loft/loft_params.yaml"
         surface = "./fixtures/tests/loft/terrain.stl"
-        output = "./fixtures/tests/loft"
+        output = "./output/loft"
 
         main(["--config", config, "--surface", surface, "--output", output])
 

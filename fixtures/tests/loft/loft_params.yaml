@@ -1,4 +1,36 @@
-loft_length: 1200
-mesh_element_size: 25.0
-wind_source_direction: [-1, 0, 0]
-upwind_elevation: 780
+cases:
+  "000":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 0
+    upwind_elevation: 780
+  "045":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 45
+    upwind_elevation: 780
+  "090":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 90
+    upwind_elevation: 780
+  "135":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 135
+    upwind_elevation: 780
+  "180":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 180
+    upwind_elevation: 780
+  "225":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 225
+    upwind_elevation: 780
+  "315":
+    loft_length: 1200
+    mesh_element_size: 25.0
+    wind_source_angle: 315
+    upwind_elevation: 780
