@@ -1,12 +1,12 @@
-__all__ = [
-    "LoftParams",
-]
-
 import pathlib
 
 from pydantic import BaseModel, Field
 
 from cfdmod.utils import read_yaml
+
+__all__ = [
+    "LoftParams",
+]
 
 
 class LoftParams(BaseModel):
