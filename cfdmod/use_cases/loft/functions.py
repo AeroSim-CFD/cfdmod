@@ -289,4 +289,4 @@ def apply_remeshing(element_size: float, mesh_path: pathlib.Path, output_path: p
     ms.meshing_isotropic_explicit_remeshing(
         iterations=15, targetlen=AbsoluteValue(element_size), selectedonly=True
     )
-    ms.save_current_mesh(str(output_path.absolute()), binary=False)
+    ms.save_current_mesh(str(output_path.absolute()), binary=True)
