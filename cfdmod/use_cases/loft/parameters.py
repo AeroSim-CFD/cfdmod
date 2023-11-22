@@ -20,7 +20,7 @@ class LoftParams(BaseModel):
         title="Mesh element size",
         description="Target of the output mesh element size.",
     )
-    wind_source_angle: float = Field(
+    wind_source_angles: list[float] = Field(
         ...,
         title="Wind source angle",
         description="Angle for the wind source direction."
