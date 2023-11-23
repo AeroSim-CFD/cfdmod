@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 import pathlib
+from dataclasses import dataclass
 from typing import Literal
 
-import numpy as np
 import pandas as pd
 
 from cfdmod.analysis.inflow.functions import spectral_density
 
 VelocityComponents = Literal["ux", "uy", "uz"]
+
+
+@dataclass
+class NormalizationParameters:
+    reference_velocity: float
+    characteristic_length: float
 
 
 class InflowData:
@@ -72,13 +78,17 @@ class InflowData:
         return turbulence_data[["point_idx"] + [f"I_{component}" for component in for_components]]
 
     def calculate_spectral_density(
-        self, target_index: int, for_components: list[VelocityComponents]
+        self,
+        target_index: int,
+        for_components: list[VelocityComponents],
+        normalization_params: NormalizationParameters,
     ) -> pd.DataFrame:
         """Calculates the spectral density for a given target point index
 
         Args:
             target_index (int): Index of the target point
             for_components (list[VelocityComponents]): List of components to calculate turbulence intensity from
+            normalization_params (NormalizationParameters): Parameters for spectral density normalization
 
         Returns:
             pd.DataFrame: Spectral density data
@@ -92,8 +102,8 @@ class InflowData:
             spec_dens, norm_freq = spectral_density(
                 velocity_signal=vel_arr,
                 timestamps=time_arr,
-                reference_velocity=1,
-                characteristic_length=1,
+                reference_velocity=normalization_params.reference_velocity,
+                characteristic_length=normalization_params.characteristic_length,
             )
             spectral_data[f"S ({component})"] = spec_dens
             spectral_data[f"f ({component})"] = norm_freq
