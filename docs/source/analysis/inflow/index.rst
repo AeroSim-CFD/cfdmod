@@ -13,6 +13,9 @@ This involves a detailed investigation into the **velocity profiles and turbulen
 
 The accuracy of these inflow conditions significantly influences the fidelity of CFD simulations, as discrepancies in the representation of the atmospheric boundary layer can lead to **inaccurate predictions and compromise the reliability** of the results.
 
+.. note::
+   Check the `notebook <./inflow_analysis.ipynb>`_ for examples on how to perform the inflow analysis.
+
 .. toctree::
    :maxdepth: 1
    :hidden:
@@ -21,3 +24,4 @@ The accuracy of these inflow conditions significantly influences the fidelity of
    Turbulence Intensity <./turbulence_intensity.rst>
    Spectral Density <./spectral_density.rst>
    Length Scale <./length_scale.rst>
+   Usage <./inflow_analysis.ipynb>
