@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-__all__ = ["CmConfig", "CmCaseConfig"]
-
 import pathlib
 
 from pydantic import BaseModel, Field, model_validator
@@ -13,6 +11,8 @@ from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import MomentVariables
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import read_yaml
+
+__all__ = ["CmConfig", "CmCaseConfig"]
 
 
 class CmConfig(HashableConfig):
