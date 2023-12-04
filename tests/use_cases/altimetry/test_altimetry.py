@@ -5,8 +5,8 @@ import numpy as np
 import trimesh
 
 from cfdmod.use_cases.altimetry import AltimetryProbe, AltimetrySection, Shed
+from cfdmod.use_cases.altimetry.figure import savefig_to_file
 from cfdmod.use_cases.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
-from cfdmod.utils import savefig_to_file
 
 
 class TestAltimetryUseCase(unittest.TestCase):
