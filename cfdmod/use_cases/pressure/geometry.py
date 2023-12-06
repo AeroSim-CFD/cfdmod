@@ -80,8 +80,9 @@ def get_geometry_from_mesh(
                 )
             geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
 
+    geometry_idx = np.unique(geometry_idx)
     boolean_array = np.full(len(mesh.geometry.triangles), False, dtype=bool)
     boolean_array[geometry_idx] = True
     filtered_format = mesh.filter_triangles(boolean_array)
 
-    return filtered_format.geometry, np.unique(geometry_idx)
+    return filtered_format.geometry, geometry_idx
