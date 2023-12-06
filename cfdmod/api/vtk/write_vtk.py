@@ -1,7 +1,8 @@
 import pathlib
+from typing import Sequence
 
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 from vtk import (
     vtkAppendPolyData,
     vtkCellArray,
@@ -33,12 +34,12 @@ def _mkVtkIdList(it) -> vtkIdList:
     return vil
 
 
-def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LagrangianGeometry) -> vtkPolyData:
+def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtkPolyData:
     """Creates a vtkPolyData for cell data combined with mesh description
 
     Args:
         data (pd.DataFrame): Compiled cell data
-        mesh (LagrangianGeometry): Mesh description
+        mesh (LnasGeometry): Mesh description
 
     Returns:
         vtkPolyData: Extracted polydata
@@ -70,7 +71,7 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LagrangianGeometry) 
     return polyData
 
 
-def merge_polydata(polydata_list: list[vtkPolyData]) -> vtkAppendPolyData:
+def merge_polydata(polydata_list: Sequence[vtkPolyData | vtkAppendPolyData]) -> vtkAppendPolyData:
     """Merges a list of polydata into a vtkAppendPolyData
 
     Args:

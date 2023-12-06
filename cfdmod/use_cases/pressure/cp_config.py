@@ -7,27 +7,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
 
 __all__ = ["CpConfig", "CpCaseConfig"]
 
 
-class CpCaseConfig(BaseModel):
-    pressure_coefficient: CpConfig = Field(
-        ...,
-        title="Cp configuration",
-        description="Configuration with pressure coefficient post processing configs",
-    )
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
-        return cfg
-
-
-class CpConfig(BaseModel):
+class CpConfig(HashableConfig):
     timestep_range: tuple[float, float] = Field(
         ...,
         title="Timestep Range",
@@ -45,8 +32,27 @@ class CpConfig(BaseModel):
         title="Reference Flow Velocity",
         description="Value for reference Flow Velocity to calculate dynamic pressure",
     )
+    U_H_correction_factor: float = Field(
+        1,
+        title="Reference Flow Velocity correction factor",
+        description="Value for reference Flow Velocity correction factor multiplier",
+    )
     statistics: list[Statistics] = Field(
         ...,
         title="List of statistics",
         description="List of statistics to calculate from pressure coefficient signal",
     )
+
+
+class CpCaseConfig(BaseModel):
+    pressure_coefficient: CpConfig = Field(
+        ...,
+        title="Cp configuration",
+        description="Configuration with pressure coefficient post processing configs",
+    )
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals)
+        return cfg

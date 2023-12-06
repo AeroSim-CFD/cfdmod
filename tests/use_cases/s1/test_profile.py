@@ -26,7 +26,9 @@ class TestS1Profile(unittest.TestCase):
         probe_data = get_array_from_filter(probe_filter, array_lbl="ux")
 
         pitot_heights = np.linspace(pitot_probe.p1[2], pitot_probe.p2[2], pitot_probe.numPoints)
-        probe_heights = np.linspace(example_probe.p1[2], example_probe.p2[2], example_probe.numPoints)
+        probe_heights = np.linspace(
+            example_probe.p1[2], example_probe.p2[2], example_probe.numPoints
+        )
 
         pitot_profile = Profile(heights=pitot_heights, values=pitot_data, label="Pitot")
         probe_profile = Profile(heights=probe_heights, values=probe_data, label="Example probe")

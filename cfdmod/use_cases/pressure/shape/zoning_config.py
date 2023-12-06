@@ -4,7 +4,7 @@ __all__ = ["ZoningConfig"]
 
 import pathlib
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import read_yaml
@@ -49,6 +49,15 @@ class ZoningConfig(BaseModel):
         + "It overrides the global zoning config.",
     )
 
+    @model_validator(mode="after")
+    def validate_config(self) -> ZoningConfig:
+        common_surfaces = set(self.no_zoning).intersection(
+            set(self.exclude), set(self.surfaces_in_exception)
+        )
+        if len(common_surfaces) != 0:
+            raise Exception("Surfaces name must not be in two different zoning rules")
+        return self
+
     @field_validator("exceptions")
     def validate_exceptions(cls, v):
         exceptions = []
@@ -70,6 +79,10 @@ class ZoningConfig(BaseModel):
         for exception_cfg in self.exceptions.values():
             exceptions += exception_cfg.surfaces
         return exceptions
+
+    @property
+    def surfaces_listed(self) -> list[str]:
+        return self.surfaces_in_exception + self.no_zoning + self.exclude
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> ZoningConfig:

@@ -39,6 +39,7 @@ def transform_to_cp(
     body_data: pd.DataFrame,
     reference_vel: float,
     ref_press_mode: Literal["instantaneous", "average"],
+    correction_factor: float = 1,
 ) -> pd.DataFrame:
     """Transform the body pressure data into Cp coefficient
 
@@ -47,13 +48,13 @@ def transform_to_cp(
         body_data (pd.DataFrame): Body's DataFrame
         reference_vel (float): Value of reference velocity for dynamic pressure
         ref_press_mode (Literal["instantaneous", "average"]): Sets how to account for reference pressure effects
+        correction_factor (float, optional): Reference Velocity correction factor. Defaults to 1.
 
     Returns:
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
-
     average_static_pressure = press_data["rho"].to_numpy().mean()
-    dynamic_pressure = 0.5 * average_static_pressure * reference_vel**2
+    dynamic_pressure = 0.5 * average_static_pressure * (reference_vel * correction_factor) ** 2
     cs_square = 1 / 3
     multiplier = cs_square / dynamic_pressure
 
@@ -87,14 +88,14 @@ def calculate_statistics(
 
     statistics_data = pd.DataFrame({"point_idx": body_data["point_idx"].unique()})
 
-    if "avg" in statistics_to_apply:
-        statistics_data["cp_avg"] = group_by_point_cp.mean()
+    if "mean" in statistics_to_apply:
+        statistics_data["cp_mean"] = group_by_point_cp.mean()
     if "min" in statistics_to_apply:
         statistics_data["cp_min"] = group_by_point_cp.min()
     if "max" in statistics_to_apply:
         statistics_data["cp_max"] = group_by_point_cp.max()
     if "std" in statistics_to_apply:
-        statistics_data["cp_rms"] = group_by_point_cp.std()
+        statistics_data["cp_std"] = group_by_point_cp.std()
 
     # Calculate skewness and kurtosis using apply
     if "skewness" in statistics_to_apply:

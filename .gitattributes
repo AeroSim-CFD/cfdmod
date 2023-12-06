@@ -1,1 +1,1 @@
-*.stl                binary
+*.stl -diff -merge -text

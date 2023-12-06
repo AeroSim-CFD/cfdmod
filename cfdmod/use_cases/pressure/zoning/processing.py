@@ -2,7 +2,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.statistics import Statistics
 
@@ -11,11 +11,11 @@ MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
 ShapeVariables = Literal["Ce"]
 
 
-def get_indexing_mask(mesh: LagrangianGeometry, df_regions: pd.DataFrame) -> np.ndarray:
+def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarray:
     """Index each triangle in the mesh in the respective region
 
     Args:
-        mesh (LagrangianGeometry): Mesh with triangles to index
+        mesh (LnasGeometry): Mesh with triangles to index
         df_regions (pd.DataFrame): Dataframe describing the zoning intervals (x_min, x_max, y_min, y_max, z_min, z_max, region_idx)
 
     Returns:
@@ -62,9 +62,9 @@ def calculate_statistics(
     statistics_data = pd.DataFrame({"region_idx": historical_data["region_idx"].unique()})
 
     for var in variables:
-        if "avg" in statistics_to_apply:
+        if "mean" in statistics_to_apply:
             average = group_by_point[var].apply(lambda x: x.mean()).reset_index(name="mean")
-            statistics_data[f"{var}_avg"] = average["mean"]
+            statistics_data[f"{var}_mean"] = average["mean"]
         if "min" in statistics_to_apply:
             minimum = group_by_point[var].apply(lambda x: x.min()).reset_index(name="min")
             statistics_data[f"{var}_min"] = minimum["min"]
@@ -72,8 +72,8 @@ def calculate_statistics(
             maximum = group_by_point[var].apply(lambda x: x.max()).reset_index(name="max")
             statistics_data[f"{var}_max"] = maximum["max"]
         if "std" in statistics_to_apply:
-            rms = group_by_point[var].apply(lambda x: x.std()).reset_index(name="std")
-            statistics_data[f"{var}_rms"] = rms["std"]
+            std = group_by_point[var].apply(lambda x: x.std()).reset_index(name="std")
+            statistics_data[f"{var}_std"] = std["std"]
 
         # Calculate skewness and kurtosis using apply
         if "skewness" in statistics_to_apply:
@@ -87,14 +87,14 @@ def calculate_statistics(
 
 
 def combine_stats_data_with_mesh(
-    mesh: LagrangianGeometry,
+    mesh: LnasGeometry,
     region_idx_array: np.ndarray,
     data_stats: pd.DataFrame,
 ) -> pd.DataFrame:
     """Combine compiled statistical data with surface meshing by indexing regions
 
     Args:
-        mesh (LagrangianGeometry): LNAS mesh to be combined
+        mesh (LnasGeometry): LNAS mesh to be combined
         region_idx_array (np.ndarray): Triangles indexing by region
         data_stats (pd.DataFrame): Compiled statistics data
 

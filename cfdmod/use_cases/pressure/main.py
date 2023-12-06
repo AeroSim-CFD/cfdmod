@@ -3,7 +3,7 @@ import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
-from nassu.lnas import LagrangianFormat
+from lnas import LnasFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
@@ -93,7 +93,7 @@ def main(*args):
     cfg = post_proc_cfg.pressure_coefficient
 
     logger.info("Reading mesh description...")
-    mesh = LagrangianFormat.from_file(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure data...")
@@ -108,6 +108,7 @@ def main(*args):
         body_data,
         reference_vel=cfg.U_H,
         ref_press_mode=cfg.reference_pressure,
+        correction_factor=cfg.U_H_correction_factor,
     )
     logger.info("Transformed pressure into coefficients")
     cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)

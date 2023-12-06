@@ -22,9 +22,7 @@ class Profile:
         self.heights = new_heights.copy()
 
     def copy(self) -> Profile:
-        return Profile(
-            heights=self.heights.copy(), values=self.values.copy(), label=self.label
-        )
+        return Profile(heights=self.heights.copy(), values=self.values.copy(), label=self.label)
 
     def __truediv__(self, rhs: Profile) -> Profile:
         self_copy = self.copy()
@@ -43,8 +41,8 @@ class Profile:
         rhs_copy.update_height_values(pos_use)
 
         mask_use = np.abs(rhs_copy.values) > 1e-6
-        mask_use[0] = False # Ignore wall values (u=0)
-        s1 = self_copy.values[mask_use] / rhs_copy.values[mask_use] 
+        mask_use[0] = False  # Ignore wall values (u=0)
+        s1 = self_copy.values[mask_use] / rhs_copy.values[mask_use]
         s1_heights = self_copy.heights[mask_use]  # Ignore wall values (u=0)
 
         return Profile(s1_heights, s1, f"S1: {self_copy.label} / {rhs_copy.label}")

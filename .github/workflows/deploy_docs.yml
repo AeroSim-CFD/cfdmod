@@ -14,17 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
+        with:
+          python-version: '3.11' 
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install poetry
+          pip install -U poetry
+          poetry cache clear --all pypi
           poetry install --with docs
       - name: Sphinx build
         run: |
           sudo apt-get install -y pandoc
           cd docs
           poetry run make html  # Build HTML docs
-          ls
-          ls 
           cd ..
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

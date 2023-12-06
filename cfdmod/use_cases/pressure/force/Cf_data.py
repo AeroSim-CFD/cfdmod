@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
-from vtk import vtkPolyData
+from lnas import LnasFormat, LnasGeometry
+from vtk import vtkAppendPolyData, vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
+from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
@@ -14,6 +14,7 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     combine_stats_data_with_mesh,
     get_indexing_mask,
 )
+from cfdmod.utils import create_folders_for_file
 
 
 @dataclass
@@ -21,43 +22,38 @@ class ProcessedBodyData:
     df_regions: pd.DataFrame
     body_cf: pd.DataFrame
     body_cf_stats: pd.DataFrame
-    body_geom: LagrangianGeometry
+    body_geom: LnasGeometry
     body_data_df: pd.DataFrame
-    polydata: vtkPolyData
+    polydata: vtkPolyData | vtkAppendPolyData
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CfPathManager):
         # Output 1: Cf(t)
-        self.body_cf.to_hdf(
-            path_manager.get_timeseries_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cf_t",
-            mode="w",
-            index=False,
+        timeseries_path = path_manager.get_timeseries_df_path(
+            body_label=body_label, cfg_label=cfg_label
         )
+        create_folders_for_file(timeseries_path)
+        self.body_cf.to_hdf(timeseries_path, key="Cf_t", mode="w", index=False)
 
         # Output 2: Cf_stats
-        self.body_cf_stats.to_hdf(
-            path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label),
-            key="Cf_stats",
-            mode="w",
-            index=False,
-        )
+        stats_path = path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(stats_path)
+        self.body_cf_stats.to_hdf(stats_path, key="Cf_stats", mode="w", index=False)
 
         # Output 3: VTK
-        write_polydata(
-            path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label),
-            self.polydata,
-        )
+        vtp_path = path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label)
+        create_folders_for_file(vtp_path)
+        write_polydata(vtp_path, self.polydata)
 
 
 def process_body(
-    mesh: LagrangianFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
+    mesh: LnasFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
 ) -> ProcessedBodyData:
     """Processes a sub body from separating the surfaces of the original mesh
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
-        mesh (LagrangianFormat): LNAS mesh
+        mesh (LnasFormat): LNAS mesh
         body_cfg (BodyConfig): Body processing configuration
         cp_data (pd.DataFrame): Pressure coefficients data
         cfg (CfConfig): Post processing configuration
@@ -67,10 +63,13 @@ def process_body(
     """
     body_geom, geometry_idx = get_geometry_from_mesh(body_cfg=body_cfg, mesh=mesh)
 
-    zoning_to_use = body_cfg.sub_bodies.offset_limits(0.1)
+    zoning_to_use = cfg.sub_bodies.offset_limits(0.1)
     df_regions = zoning_to_use.get_regions_df()
 
-    sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
+    transformed_body = body_geom.copy()
+    transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
+
+    sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
     mask = cp_data["point_idx"].isin(geometry_idx)
@@ -97,14 +96,14 @@ def process_body(
     )
 
 
-def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> pd.DataFrame:
+def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.DataFrame:
     """Converts pressure coefficient data for a body into force coefficients
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
         body_data (pd.DataFrame): Pressure coefficient data for the body
-        body_geom (LagrangianGeometry): LNAS mesh for the body geometry
+        body_geom (LnasGeometry): LNAS mesh for the body geometry
 
     Returns:
         pd.DataFrame: Body force coefficients data
@@ -132,52 +131,19 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LagrangianGeometry) -> p
     return body_cf
 
 
-def get_geometry_from_mesh(
-    body_cfg: BodyConfig, mesh: LagrangianFormat
-) -> tuple[LagrangianGeometry, np.ndarray]:
-    """Filters the mesh from the list of surfaces that define the body in config
-
-    Args:
-        body_cfg (BodyConfig): Body configuration
-        mesh (LagrangianFormat): LNAS mesh
-
-    Raises:
-        Exception: Surface specified is not defined in LNAS
-
-    Returns:
-        tuple[LagrangianGeometry, np.ndarray]: Tuple containing the body geometry and the filtered triangle indexes
-    """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-    else:
-        # Filter mesh for all surfaces
-        geometry_idx = np.array([], dtype=np.int32)
-        for sfc in body_cfg.surfaces:
-            if sfc not in mesh.surfaces.keys():
-                raise Exception("Surface defined in body is not separated in the LNAS file.")
-            geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
-
-    body_geom = LagrangianGeometry(
-        vertices=mesh.geometry.vertices.copy(),
-        triangles=mesh.geometry.triangles[geometry_idx].copy(),
-    )
-
-    return body_geom, geometry_idx
-
-
-def get_representative_areas(input_mesh: LagrangianGeometry) -> tuple[float, float, float]:
+def get_representative_areas(input_mesh: LnasGeometry) -> tuple[float, float, float]:
     """Calculates the representative areas from the bounding box of a given mesh
 
     Args:
-        input_mesh (LagrangianGeometry): Input LNAS mesh
+        input_mesh (LnasGeometry): Input LNAS mesh
 
     Returns:
         tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
     """
-    x_min, x_max = input_mesh.vertices[:, 0].min(), input_mesh.vertices[:, 0].max()
-    y_min, y_max = input_mesh.vertices[:, 1].min(), input_mesh.vertices[:, 1].max()
-    z_min, z_max = input_mesh.vertices[:, 2].min(), input_mesh.vertices[:, 2].max()
+    geom_verts = input_mesh.triangle_vertices.reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
 
     Lx = x_max - x_min
     Ly = y_max - y_min

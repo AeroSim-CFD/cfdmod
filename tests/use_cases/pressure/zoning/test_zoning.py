@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
@@ -11,7 +11,7 @@ class TestGetRegionIndexMask(unittest.TestCase):
     def test_get_indexing_mask(self):
         vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]])
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
-        mesh = LagrangianGeometry(vertices, triangles)
+        mesh = LnasGeometry(vertices, triangles)
 
         zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
         zoning.offset_limits(0.1)

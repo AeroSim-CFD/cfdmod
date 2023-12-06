@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 from vtk.util.numpy_support import vtk_to_numpy  # type: ignore
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
@@ -18,7 +18,7 @@ class TestWritePolydata(unittest.TestCase):
         )
 
     def test_create_polydata(self):
-        mock_mesh = LagrangianGeometry(self.vertices, self.triangles)
+        mock_mesh = LnasGeometry(self.vertices, self.triangles)
         polydata = create_polydata_for_cell_data(data=self.mock_data, mesh=mock_mesh)
         data = vtk_to_numpy(polydata.GetCellData().GetArray("scalar"))
 
@@ -27,7 +27,7 @@ class TestWritePolydata(unittest.TestCase):
 
     def test_write_polydata(self):
         output_filename = pathlib.Path("./output/vtk_test.vtp")
-        mock_mesh = LagrangianGeometry(self.vertices, self.triangles)
+        mock_mesh = LnasGeometry(self.vertices, self.triangles)
 
         polydata = create_polydata_for_cell_data(data=self.mock_data, mesh=mock_mesh)
         write_polydata(output_filename, polydata)

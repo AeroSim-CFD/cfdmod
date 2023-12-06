@@ -148,7 +148,7 @@ Data format
    * - sub_body_idx
      - max
      - min
-     - avg
+     - mean
      - std
      - skewness
      - kurtosis
@@ -174,7 +174,7 @@ Data format
    * - sub_body_idx
      - max
      - min
-     - avg
+     - mean
      - std
      - skewness
      - kurtosis
@@ -200,7 +200,7 @@ Data format
    * - sub_body_idx
      - max
      - min
-     - avg
+     - mean
      - std
      - skewness
      - kurtosis

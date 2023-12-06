@@ -1,7 +1,5 @@
 import numpy as np
-from nassu.lnas import LagrangianGeometry
-
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from lnas import LnasGeometry
 
 
 def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -> np.ndarray:
@@ -77,16 +75,16 @@ def slice_triangle(tri_verts: np.ndarray, axis: int, axis_value: float) -> np.nd
         return triangulate_tri(intersected_pts, sorted(insertion_indices))
 
 
-def slice_surface(surface: LagrangianGeometry, axis: int, interval: float) -> LagrangianGeometry:
+def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeometry:
     """From a given plane, slice the surface's triangles
 
     Args:
-        surface (LagrangianGeometry): Input LNAS surface mesh
+        surface (LnasGeometry): Input LNAS surface mesh
         axis (int): Axis index (x=0, y=1, z=2)
         interval (float): Value of the interval
 
     Returns:
-        LagrangianGeometry: Sliced LNAS surface mesh
+        LnasGeometry: Sliced LNAS surface mesh
     """
     new_triangles = np.zeros((0, 3, 3))
 
@@ -101,14 +99,14 @@ def slice_surface(surface: LagrangianGeometry, axis: int, interval: float) -> La
     full_verts = new_triangles.reshape(len(new_triangles) * 3, 3)
     verts, triangles = np.unique(full_verts, axis=0, return_inverse=True)
 
-    return LagrangianGeometry(verts, triangles.reshape(-1, 3))
+    return LnasGeometry(verts, triangles.reshape(-1, 3))
 
 
-def get_mesh_bounds(input_mesh: LagrangianGeometry) -> tuple[tuple[float, float], ...]:
+def get_mesh_bounds(input_mesh: LnasGeometry) -> tuple[tuple[float, float], ...]:
     """Calculates the bounding box of a given mesh
 
     Args:
-        input_mesh (LagrangianGeometry): Input LNAS mesh
+        input_mesh (LnasGeometry): Input LNAS mesh
 
     Returns:
         tuple[tuple[float, float], ...]: Bounding box tuples ((x_min, x_max), (y_min, y_max), (z_min, z_max))
@@ -121,16 +119,16 @@ def get_mesh_bounds(input_mesh: LagrangianGeometry) -> tuple[tuple[float, float]
 
 
 def create_regions_mesh(
-    input_mesh: LagrangianGeometry, intervals: tuple[list[float], ...]
-) -> LagrangianGeometry:
-    """Generates a new LagrangianGeometry mesh from intersecting intervals
+    input_mesh: LnasGeometry, intervals: tuple[list[float], ...]
+) -> LnasGeometry:
+    """Generates a new LnasGeometry mesh from intersecting intervals
 
     Args:
-        input_mesh (LagrangianGeometry): Input LNAS mesh
+        input_mesh (LnasGeometry): Input LNAS mesh
         intervals (tuple[list[float], ...]): List of intervals in each axis
 
     Returns:
-        LagrangianGeometry: New intersected mesh
+        LnasGeometry: New intersected mesh
     """
     mesh_bounds = get_mesh_bounds(input_mesh)
     slicing_mesh = input_mesh.copy()
