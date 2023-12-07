@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianGeometry
+from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.shape.Ce_data import calculate_statistics, transform_to_Ce
 from cfdmod.use_cases.pressure.statistics import Statistics
@@ -12,7 +12,7 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
     def setUp(self):
         vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
         triangles = np.array([[0, 1, 2]])
-        self.surface_mesh = LagrangianGeometry(vertices, triangles)
+        self.surface_mesh = LnasGeometry(vertices, triangles)
         self.cp_data = pd.DataFrame(
             {"point_idx": [0, 0, 0], "cp": [0.1, 0.2, 0.3], "time_step": [0, 1, 2]}
         )
@@ -23,7 +23,7 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
             }
         )
         self.statistics_to_apply: list[Statistics] = [
-            "avg",
+            "mean",
             "min",
             "max",
             "std",

@@ -5,16 +5,20 @@ bodies:
     surfaces: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
   building:
     surfaces: []
-    sub-bodies: # Optional, default is the whole body
-      z_intervals: [0,10,20]
 moment_coefficient:
   measurement_1:
-    bodies: [marquise, lanternim]
+    body: marquise
     variables: ["Cmx", "Cmy", "Cmz"]
     lever_origin: [0, 10, 10]
-    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]
   measurement_2:
-    bodies: [building]
+    body: building
+    sub_bodies: # Optional, default is the whole body
+      z_intervals: [0,10,20]
     variables: ["Cmx", "Cmy", "Cmz"]
     lever_origin: [0, 10, 10]
-    statistics: ["min", "max", "std", "avg", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    transformation:
+      rotation: [0, 0, 0]

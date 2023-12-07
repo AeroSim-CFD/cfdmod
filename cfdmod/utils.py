@@ -1,21 +1,7 @@
 import pathlib
 from typing import Any
 
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from ruamel.yaml import YAML
-
-
-def savefig_to_file(fig: Figure, filename: pathlib.Path):
-    """Creates folders to save given file
-
-    Args:
-        fig (Figure): Figure object to save
-        filename (pathlib.Path): Filename to setup folder
-    """
-    create_folders_for_file(filename)
-    fig.savefig(filename.as_posix())
-    plt.close(fig)
 
 
 def create_folders_for_file(filename: pathlib.Path):
