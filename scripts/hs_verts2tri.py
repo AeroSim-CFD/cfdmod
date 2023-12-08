@@ -5,11 +5,11 @@ import time
 
 import numpy as np
 import pandas as pd
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from lnas import LnasFormat, LnasGeometry
 
 
 def get_vertices_ratios(
-    geometry: LagrangianGeometry,
+    geometry: LnasGeometry,
 ) -> tuple[list[set[int]], list[list[tuple[int, float]]]]:
     # Set of triangles that each vertice participates to
     vertices_triangles_set: list[set[int]] = [set() for _ in geometry.vertices]
@@ -32,7 +32,7 @@ def get_vertices_ratios(
 def convert_folder(folder: pathlib.Path):
     filename = folder / "hist_series.triangles.hdf"
     filename_read = folder / "hist_series.pickle"
-    geometry = LagrangianFormat.from_file(folder / "mesh.lnas").geometry
+    geometry = LnasFormat.from_file(folder / "mesh.lnas").geometry
     if filename.exists():
         print(f"Already converted to file {filename}")
         return

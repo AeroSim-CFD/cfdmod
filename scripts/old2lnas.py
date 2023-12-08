@@ -3,7 +3,7 @@ import pathlib
 import sys
 
 import numpy as np
-from nassu.lnas import LagrangianFormat, LagrangianGeometry
+from lnas import LnasFormat, LnasGeometry
 
 
 def convert_folder(folder: pathlib.Path):
@@ -16,14 +16,14 @@ def convert_folder(folder: pathlib.Path):
     triangles = np.fromfile(folder / "mesh_triangles.npy", dtype=np.int32)
     triangles = np.reshape(triangles, (triangles.shape[0] // 3, 3))
 
-    lnas_geometry = LagrangianGeometry(vertices=points, triangles=triangles)
-    lnas = LagrangianFormat(
+    lnas_geometry = LnasGeometry(vertices=points, triangles=triangles)
+    lnas = LnasFormat(
         version="v0.4.3", name=folder.name, normalization=None, geometry=lnas_geometry, surfaces={}
     )
     lnas.to_file(folder / "mesh.lnas")
     print("Converted file", folder / "mesh.lnas")
 
-    # lnas_from = LagrangianFormat.from_file(folder / "mesh.lnas")
+    # lnas_from = LnasFormat.from_file(folder / "mesh.lnas")
     # np.testing.assert_equal(lnas_from.geometry.vertices, points)
     # np.testing.assert_equal(lnas_from.geometry.triangles, triangles)
 
