@@ -43,11 +43,6 @@ class CpConfig(HashableConfig):
 
 
 class CpCaseConfig(BaseModel):
-    # pressure_coefficient: CpConfig = Field(
-    #     ...,
-    #     title="Cp configuration",
-    #     description="Configuration with pressure coefficient post processing configs",
-    # )
     pressure_coefficient: dict[str, CpConfig] = Field(
         ...,
         title="Pressure Coefficient configs",

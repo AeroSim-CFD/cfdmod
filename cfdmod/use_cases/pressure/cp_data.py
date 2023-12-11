@@ -21,17 +21,17 @@ def filter_pressure_data(
         tuple[pd.DataFrame, pd.DataFrame]: Tuple with static pressure data and body pressure data sliced
     """
 
-    press_data = press_data[
+    filtered_press_data = press_data[
         (press_data["time_step"] >= timestep_range[0])
         & (press_data["time_step"] <= timestep_range[1])
-    ]
+    ].copy()
 
-    body_data = body_data[
+    filtered_body_data = body_data[
         (body_data["time_step"] >= timestep_range[0])
         & (body_data["time_step"] <= timestep_range[1])
-    ]
+    ].copy()
 
-    return press_data, body_data
+    return filtered_press_data, filtered_body_data
 
 
 def transform_to_cp(
