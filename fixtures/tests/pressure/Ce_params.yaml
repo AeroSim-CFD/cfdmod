@@ -2,7 +2,7 @@ shape_coefficient:
   measurement_1:
     zoning: 
       yaml: "./zoning_params.yaml"
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     transformation:
@@ -15,7 +15,7 @@ shape_coefficient:
         z_intervals: [0, 20]
       no_zoning: ["t2_yp"]
       exclude: ["lanternim", "t1_ym"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     transformation:
@@ -24,6 +24,14 @@ shape_coefficient:
     zoning: 
       global_zoning:
         x_intervals: [0, 125, 250]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
     transformation:
       rotation: [0, 0, 0]
+
+extreme_values:
+  CST_real: 0.56
+  CST_sim: 16.89
+  t:  0.3  # (s) duracao do evento extremo
+  T0: 6  # (s) actual observation period
+  T1: 60  # (s) target observation period
+  yR: 1.4
