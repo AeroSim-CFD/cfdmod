@@ -14,6 +14,7 @@ from cfdmod.use_cases.pressure.cp_data import (
     transform_to_cp,
 )
 from cfdmod.use_cases.pressure.path_manager import CpPathManager, copy_input_artifacts
+from cfdmod.utils import create_folders_for_file
 
 
 @dataclass
@@ -90,37 +91,51 @@ def main(*args):
     )
 
     post_proc_cfg = CpCaseConfig.from_file(cfg_path)
-    cfg = post_proc_cfg.pressure_coefficient
 
     logger.info("Reading mesh description...")
     mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
     logger.info("Preparing to read pressure data...")
-    press_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
-    press_data, body_data = filter_pressure_data(press_data, body_data, cfg.timestep_range)
+    pressure_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
+    original_body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
     logger.info("Read pressure data successfully!")
 
-    # OUTPUT 1: cp(t)
-    cp_data = transform_to_cp(
-        press_data,
-        body_data,
-        reference_vel=cfg.U_H,
-        ref_press_mode=cfg.reference_pressure,
-        correction_factor=cfg.U_H_correction_factor,
-    )
-    logger.info("Transformed pressure into coefficients")
-    cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)
-    logger.info("Exported coefficients")
+    for cfg_lbl, cfg in post_proc_cfg.pressure_coefficient.items():
+        logger.info(f"Processing pressure coefficients for config {cfg_lbl} ...")
+        press_data, body_data = filter_pressure_data(
+            pressure_data, original_body_data, cfg.timestep_range
+        )
 
-    # OUTPUT 2: cp_stats
-    cp_stats = calculate_statistics(cp_data, statistics_to_apply=cfg.statistics)
-    cp_stats.to_hdf(path_manager.cp_stats_path, key="cp_t", mode="w", index=False)
-    logger.info("Exported statistics")
+        # OUTPUT 1: cp(t)
+        cp_data = transform_to_cp(
+            press_data,
+            body_data,
+            reference_vel=cfg.U_H,
+            ref_press_mode=cfg.reference_pressure,
+            correction_factor=cfg.U_H_correction_factor,
+        )
+        logger.info("Transformed pressure into coefficients")
+        timeseries_path = path_manager.get_cp_t_path(cfg_label=cfg_lbl)
+        create_folders_for_file(timeseries_path)
+        cp_data.to_hdf(timeseries_path, key="cp_t", mode="w", index=False)
+        logger.info("Exported coefficients")
 
-    polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
+        # OUTPUT 2: cp_stats
+        cp_stats = calculate_statistics(
+            cp_data,
+            statistics_to_apply=cfg.statistics,
+            extreme_params=post_proc_cfg.extreme_values,
+        )
+        stats_path = path_manager.get_cp_stats_path(cfg_label=cfg_lbl)
+        create_folders_for_file(stats_path)
+        cp_stats.to_hdf(stats_path, key="cp_t", mode="w", index=False)
+        logger.info("Exported statistics")
 
-    # OUTPUT 3: VTK cp_stats
-    write_polydata(path_manager.vtp_path, polydata)
-    logger.info("Exported VTK file")
+        polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
+
+        # OUTPUT 3: VTK cp_stats
+        vtp_path = path_manager.get_vtp_path(cfg_label=cfg_lbl)
+        create_folders_for_file(vtp_path)
+        write_polydata(vtp_path, polydata)
+        logger.info("Exported VTK file")

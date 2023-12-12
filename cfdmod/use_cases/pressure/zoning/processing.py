@@ -1,9 +1,13 @@
-from typing import Literal
+from typing import Literal, Optional
 
 import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
+from cfdmod.use_cases.pressure.extreme_values import (
+    ExtremeValuesParameters,
+    calculate_extreme_values,
+)
 from cfdmod.use_cases.pressure.statistics import Statistics
 
 ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
@@ -46,6 +50,7 @@ def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
     variables: list[ShapeVariables] | list[ForceVariables] | list[MomentVariables],
+    extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
 
@@ -53,6 +58,7 @@ def calculate_statistics(
         historical_data (pd.DataFrame): Dataframe of the data coefficients historical series
         statistics_to_apply (list[Statistics]): List of statistical functions to apply
         variables (list[str]): List of variables to apply statistical analysis
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         pd.DataFrame: Statistics for the given coefficient
@@ -82,6 +88,28 @@ def calculate_statistics(
         if "kurtosis" in statistics_to_apply:
             kurtosis = group_by_point[var].apply(lambda x: x.kurt()).reset_index(name="kurtosis")
             statistics_data[f"{var}_kurtosis"] = kurtosis["kurtosis"]
+
+        # Extreme values analysis
+        if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
+            if extreme_params is None:
+                raise ValueError("Missing extreme values parameters!")
+            timestep = pd.unique(historical_data.time_step).to_numpy(dtype=np.float32)
+            xtr_stats = (
+                group_by_point[var]
+                .apply(
+                    lambda x: calculate_extreme_values(
+                        params=extreme_params, timestep_arr=timestep, hist_series=x
+                    )
+                )
+                .reset_index(name="xtr_val")
+            )
+            statistics_data[[f"{var}_xtr_min", f"{var}_xtr_max"]] = xtr_stats["xtr_val"].apply(
+                lambda x: pd.Series(x)
+            )
+            if "xtr_min" not in statistics_to_apply:
+                statistics_data = statistics_data.drop(f"{var}_xtr_min", axis=1)
+            if "xtr_max" not in statistics_to_apply:
+                statistics_data = statistics_data.drop(f"{var}_xtr_max", axis=1)
 
     return statistics_data
 

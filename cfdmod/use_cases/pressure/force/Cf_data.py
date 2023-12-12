@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 from vtk import vtkAppendPolyData, vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
 from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
@@ -46,7 +48,11 @@ class ProcessedBodyData:
 
 
 def process_body(
-    mesh: LnasFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CfConfig
+    mesh: LnasFormat,
+    body_cfg: BodyConfig,
+    cp_data: pd.DataFrame,
+    cfg: CfConfig,
+    extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> ProcessedBodyData:
     """Processes a sub body from separating the surfaces of the original mesh
     The pressure coefficient must already contain the areas of each triangle.
@@ -57,6 +63,7 @@ def process_body(
         body_cfg (BodyConfig): Body processing configuration
         cp_data (pd.DataFrame): Pressure coefficients data
         cfg (CfConfig): Post processing configuration
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         ProcessedBodyData: Processed body object
@@ -78,7 +85,9 @@ def process_body(
 
     body_cf = transform_to_Cf(body_data=body_data, body_geom=body_geom)
 
-    body_cf_stats = calculate_statistics(body_cf, cfg.statistics, variables=cfg.variables)
+    body_cf_stats = calculate_statistics(
+        body_cf, cfg.statistics, variables=cfg.variables, extreme_params=extreme_params
+    )
 
     body_data_df = combine_stats_data_with_mesh(
         mesh=body_geom, region_idx_array=sub_body_idx_array, data_stats=body_cf_stats
