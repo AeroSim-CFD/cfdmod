@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["ExtremeValuesParameters"]
+__all__ = ["ExtremeValuesParameters", "calculate_extreme_values"]
 
 
 import math

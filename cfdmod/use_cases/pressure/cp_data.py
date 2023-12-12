@@ -1,8 +1,13 @@
-from typing import Literal
+from typing import Literal, Optional
 
+import numpy as np
 import pandas as pd
 
 from cfdmod.use_cases.pressure.cp_config import Statistics
+from cfdmod.use_cases.pressure.extreme_values import (
+    ExtremeValuesParameters,
+    calculate_extreme_values,
+)
 
 
 def filter_pressure_data(
@@ -73,13 +78,16 @@ def transform_to_cp(
 
 
 def calculate_statistics(
-    body_data: pd.DataFrame, statistics_to_apply: list[Statistics]
+    body_data: pd.DataFrame,
+    statistics_to_apply: list[Statistics],
+    extreme_params: Optional[ExtremeValuesParameters],
 ) -> pd.DataFrame:
     """Calculates statistics for pressure coefficient of a body data
 
     Args:
         body_data (pd.DataFrame): Dataframe of the body data pressure coefficients
         statistics_to_apply (Statistics): List of statistical functions to apply
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis
 
     Returns:
         pd.DataFrame: Statistics for pressure coefficient
@@ -104,5 +112,23 @@ def calculate_statistics(
     if "kurtosis" in statistics_to_apply:
         kurtosis = group_by_point_cp.apply(lambda x: x.kurt()).reset_index(name="kurtosis")
         statistics_data["cp_kurtosis"] = kurtosis["kurtosis"]
+
+    # Extreme values analysis
+    if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
+        if extreme_params is None:
+            raise ValueError("Missing extreme values parameters!")
+        timestep = np.unique(body_data.time_step.to_numpy())
+        xtr_stats = group_by_point_cp.apply(
+            lambda x: calculate_extreme_values(
+                params=extreme_params, timestep_arr=timestep, hist_series=x
+            )
+        ).reset_index(name="xtr_val")
+        statistics_data[["cp_xtr_min", "cp_xtr_max"]] = xtr_stats["xtr_val"].apply(
+            lambda x: pd.Series(x)
+        )
+        if "xtr_min" not in statistics_to_apply:
+            statistics_data = statistics_data.drop("cp_xtr_min", axis=1)
+        if "xtr_max" not in statistics_to_apply:
+            statistics_data = statistics_data.drop("cp_xtr_max", axis=1)
 
     return statistics_data

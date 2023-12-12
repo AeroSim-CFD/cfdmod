@@ -7,13 +7,12 @@ pressure_coefficient:
     # Velocity at the building interest height
     U_H: 0.05
     # Define which statistics will be calculated
-    # statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
 
 extreme_values:
   CST_real: 0.56
   CST_sim: 16.89
-  t :  0.5  # (s) duracao do evento extremo
-  T0 :  0.6  # (s) actual observation period
-  T1 :  6  # (s) target observation period
-  yR :  1.4 
+  t:  0.3  # (s) duracao do evento extremo
+  T0: 6  # (s) actual observation period
+  T1: 60  # (s) target observation period
+  yR: 1.4
