@@ -38,6 +38,27 @@ class ExtremeValuesParameters(BaseModel):
         return self.CST_real / self.CST_sim
 
 
+def fit_gumbel_model(data: np.ndarray, time_ratio: float, yR: float) -> float:
+    """Fits the Gumbel model to predict extreme events
+
+    Args:
+        data (np.ndarray): Historic series
+        time_ratio (float): Ratio of simulated events to real events time scales
+        yR (float): Certainty parameter
+
+    Returns:
+        float: Gumbel value for data
+    """
+    N = len(data)
+    y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
+    A = np.vstack([y, np.ones(len(y))]).T
+    a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
+    U_T1 = U_T0 + a_inv * math.log(time_ratio)
+    extreme_val = a_inv * yR + U_T1
+
+    return extreme_val
+
+
 def calculate_extreme_values(
     params: ExtremeValuesParameters, timestep_arr: np.ndarray, hist_series: np.ndarray
 ) -> tuple[float, float]:
@@ -57,31 +78,16 @@ def calculate_extreme_values(
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
 
     new_time = time[window_size // 2 - 2 : -window_size // 2 - 1]
-
-    # 2 - make sets of same observation period
     N = int(round((new_time[-1] - new_time[0]) / params.T0))  # num_divisions
     sub_arrays = np.array_split(smooth_parent_cp, N)
-    # 3 - get the extreme values
-    cp_max = np.array([])
-    cp_min = np.array([])
-    for sub_arr in sub_arrays:
-        cp_max = np.append(cp_max, np.max(sub_arr))
-        cp_min = np.append(cp_min, np.min(sub_arr))
-    cp_max = np.sort(cp_max)  ######################
-    cp_min = np.sort(cp_min)[::-1]  ################
 
-    # 4 - Gumbel model for the maximum extreme value
-    y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
-    A = np.vstack([y, np.ones(len(y))]).T
-    a_inv, U_T0 = np.linalg.lstsq(A, cp_max, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * math.log(params.T1 / params.T0)
-    max_extreme_val = a_inv * params.yR + U_T1  # This is the design value
+    cp_max = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
+    cp_min = np.array([np.min(sub_arr) for sub_arr in sub_arrays])
 
-    # 5 - Gumbel model for the minimum extreme value
-    y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
-    A = np.vstack([y, np.ones(len(y))]).T
-    a_inv, U_T0 = np.linalg.lstsq(A, cp_min, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * math.log(params.T1 / params.T0)
-    min_extreme_val = a_inv * params.yR + U_T1  # This is the design value
+    cp_max = np.sort(cp_max)
+    cp_min = np.sort(cp_min)[::-1]
+
+    max_extreme_val = fit_gumbel_model(cp_max, math.log(params.T1 / params.T0), params.yR)
+    min_extreme_val = fit_gumbel_model(cp_min, math.log(params.T1 / params.T0), params.yR)
 
     return min_extreme_val, max_extreme_val
