@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -6,6 +7,7 @@ from lnas import LnasFormat, LnasGeometry
 from vtk import vtkAppendPolyData, vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
@@ -47,7 +49,11 @@ class ProcessedBodyData:
 
 
 def process_body(
-    mesh: LnasFormat, body_cfg: BodyConfig, cp_data: pd.DataFrame, cfg: CmConfig
+    mesh: LnasFormat,
+    body_cfg: BodyConfig,
+    cp_data: pd.DataFrame,
+    cfg: CmConfig,
+    extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> ProcessedBodyData:
     """Processes a sub body from separating the surfaces of the original mesh
     The pressure coefficient must already contain the areas of each triangle.
@@ -58,6 +64,7 @@ def process_body(
         body_cfg (BodyConfig): Body processing configuration
         cp_data (pd.DataFrame): Pressure coefficients data
         cfg (CmConfig): Post processing configuration
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         ProcessedBodyData: Processed body object
@@ -71,14 +78,12 @@ def process_body(
     transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
 
     sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
-    # sub_body_idx_array = get_indexing_mask(body_geom, df_regions)
     sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
 
     body_data = cp_data[cp_data["point_idx"].isin(geometry_idx)].copy()
     body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
 
     centroids = np.mean(transformed_body.triangle_vertices, axis=1)
-    # centroids = np.mean(body_geom.triangle_vertices, axis=1)
 
     position_df = get_lever_relative_position_df(
         centroids=centroids, lever_origin=cfg.lever_origin, geometry_idx=geometry_idx
@@ -87,7 +92,9 @@ def process_body(
 
     body_cf = transform_to_Cm(body_data=body_data, body_geom=body_geom)
 
-    body_cf_stats = calculate_statistics(body_cf, cfg.statistics, variables=cfg.variables)
+    body_cf_stats = calculate_statistics(
+        body_cf, cfg.statistics, variables=cfg.variables, extreme_params=extreme_params
+    )
 
     body_data_df = combine_stats_data_with_mesh(
         mesh=body_geom, region_idx_array=sub_body_idx_array, data_stats=body_cf_stats
