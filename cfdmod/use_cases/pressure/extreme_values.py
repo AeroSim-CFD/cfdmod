@@ -41,6 +41,16 @@ class ExtremeValuesParameters(BaseModel):
 def calculate_extreme_values(
     params: ExtremeValuesParameters, timestep_arr: np.ndarray, hist_series: np.ndarray
 ) -> tuple[float, float]:
+    """Apply extreme values analysis to coefficient historic series
+
+    Args:
+        params (ExtremeValuesParameters): Parameters for extreme values calculation
+        timestep_arr (np.ndarray): Array of simulated timesteps
+        hist_series (np.ndarray): Coefficient historic series
+
+    Returns:
+        tuple[float, float]: Tuple with (min, max) extreme values
+    """
     time = (timestep_arr - timestep_arr[0]) * params.time_scale
 
     window_size = int(params.t / (time[1] - time[0]))

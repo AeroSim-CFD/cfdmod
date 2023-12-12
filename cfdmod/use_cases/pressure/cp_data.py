@@ -80,14 +80,14 @@ def transform_to_cp(
 def calculate_statistics(
     body_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
-    extreme_params: Optional[ExtremeValuesParameters],
+    extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> pd.DataFrame:
     """Calculates statistics for pressure coefficient of a body data
 
     Args:
         body_data (pd.DataFrame): Dataframe of the body data pressure coefficients
         statistics_to_apply (Statistics): List of statistical functions to apply
-        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         pd.DataFrame: Statistics for pressure coefficient

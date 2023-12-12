@@ -122,7 +122,11 @@ def main(*args):
         logger.info("Exported coefficients")
 
         # OUTPUT 2: cp_stats
-        cp_stats = calculate_statistics(cp_data, statistics_to_apply=cfg.statistics)
+        cp_stats = calculate_statistics(
+            cp_data,
+            statistics_to_apply=cfg.statistics,
+            extreme_params=post_proc_cfg.extreme_values,
+        )
         stats_path = path_manager.get_cp_stats_path(cfg_label=cfg_lbl)
         create_folders_for_file(stats_path)
         cp_stats.to_hdf(stats_path, key="cp_t", mode="w", index=False)
