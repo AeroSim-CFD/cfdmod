@@ -117,7 +117,7 @@ def calculate_statistics(
     if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
         if extreme_params is None:
             raise ValueError("Missing extreme values parameters!")
-        timestep = np.unique(body_data.time_step.to_numpy())
+        timestep = pd.unique(body_data.time_step).to_numpy(dtype=np.float32)
         xtr_stats = group_by_point_cp.apply(
             lambda x: calculate_extreme_values(
                 params=extreme_params, timestep_arr=timestep, hist_series=x
