@@ -38,13 +38,12 @@ class ExtremeValuesParameters(BaseModel):
         return self.CST_real / self.CST_sim
 
 
-def fit_gumbel_model(data: np.ndarray, time_ratio: float, yR: float) -> float:
+def fit_gumbel_model(data: np.ndarray, params: ExtremeValuesParameters) -> float:
     """Fits the Gumbel model to predict extreme events
 
     Args:
         data (np.ndarray): Historic series
-        time_ratio (float): Ratio of simulated events to real events time scales
-        yR (float): Certainty parameter
+        params (ExtremeValuesParameters): Parameters for Gumbel model analysis
 
     Returns:
         float: Gumbel value for data
@@ -53,8 +52,8 @@ def fit_gumbel_model(data: np.ndarray, time_ratio: float, yR: float) -> float:
     y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
     A = np.vstack([y, np.ones(len(y))]).T
     a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * math.log(time_ratio)
-    extreme_val = a_inv * yR + U_T1
+    U_T1 = U_T0 + a_inv * math.log(params.T1 / params.T0)
+    extreme_val = a_inv * params.yR + U_T1  # This is the design value
 
     return extreme_val
 
@@ -87,7 +86,7 @@ def calculate_extreme_values(
     cp_max = np.sort(cp_max)
     cp_min = np.sort(cp_min)[::-1]
 
-    max_extreme_val = fit_gumbel_model(cp_max, math.log(params.T1 / params.T0), params.yR)
-    min_extreme_val = fit_gumbel_model(cp_min, math.log(params.T1 / params.T0), params.yR)
+    max_extreme_val = fit_gumbel_model(cp_max, params=params)
+    min_extreme_val = fit_gumbel_model(cp_min, params=params)
 
     return min_extreme_val, max_extreme_val
