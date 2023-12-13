@@ -105,4 +105,5 @@ When the fluctuation of the static reference pressure signal is not relevant, th
    :hidden:
 
    Concepts <./concepts.rst>
+   Statistics <./statistics.rst>
    Coefficients <./coefficients/index.rst>
