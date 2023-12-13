@@ -172,6 +172,7 @@ def process_surface(
         surface_ce,
         statistics_to_apply=cfg.statistics,
         variables=["Ce"],
+        group_by_key="region_idx",
         extreme_params=extreme_params,
     )
 

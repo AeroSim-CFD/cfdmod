@@ -86,7 +86,11 @@ def process_body(
     body_cf = transform_to_Cf(body_data=body_data, body_geom=body_geom)
 
     body_cf_stats = calculate_statistics(
-        body_cf, cfg.statistics, variables=cfg.variables, extreme_params=extreme_params
+        body_cf,
+        cfg.statistics,
+        variables=cfg.variables,
+        group_by_key="region_idx",
+        extreme_params=extreme_params,
     )
 
     body_data_df = combine_stats_data_with_mesh(

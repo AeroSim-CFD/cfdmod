@@ -45,7 +45,9 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
 
     def test_calculate_statistics(self):
         # Test the function to calculate statistics
-        result = calculate_statistics(self.region_data, self.statistics_to_apply, variables=["Ce"])
+        result = calculate_statistics(
+            self.region_data, self.statistics_to_apply, variables=["Ce"], group_by_key="region_idx"
+        )
 
         self.assertEqual(len(result), 2)  # Two regions (0, 1)
         self.assertTrue((result.isnull().sum() == 0).all())
