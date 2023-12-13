@@ -57,6 +57,6 @@ For example, the mean quasi static value of a pressure coefficient signal is def
 .. math::
     f &= (\frac{S_{2,600s}}{S_{2,3s}}) ^ 2
 
-    cp_{mean-qs} &= max(cp_{mean}, f cp_{xtr-max})   //  if cp_{mean} > 0
+    cp_{mean-qs} &= max(cp_{mean}, f cp_{xtr-max})   \text{   if  } cp_{mean} > 0
 
-    cp_{mean-qs} &= min(cp_{mean}, f cp_{xtr-min})   //  if cp_{mean} < 0
+    cp_{mean-qs} &= min(cp_{mean}, f cp_{xtr-min})   \text{   if  } cp_{mean} < 0
