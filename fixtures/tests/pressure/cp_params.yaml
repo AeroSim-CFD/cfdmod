@@ -7,7 +7,7 @@ pressure_coefficient:
     # Velocity at the building interest height
     U_H: 0.05
     # Define which statistics will be calculated
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
 
 extreme_values:
   CST_real: 0.56

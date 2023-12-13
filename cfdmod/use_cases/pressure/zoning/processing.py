@@ -63,12 +63,19 @@ def calculate_statistics(
     Returns:
         pd.DataFrame: Statistics for the given coefficient
     """
+
+    def _get_mean_peak_value(row: pd.Series, variable: str) -> float:
+        if row[f"{variable}_mean"] < 0:
+            return min(row[f"{variable}_mean"], 0.48 * row[f"{variable}_xtr_min"])
+        else:
+            return max(row[f"{variable}_mean"], 0.48 * row[f"{variable}_xtr_max"])
+
     group_by_point = historical_data.groupby("region_idx")
 
     statistics_data = pd.DataFrame({"region_idx": historical_data["region_idx"].unique()})
 
     for var in variables:
-        if "mean" in statistics_to_apply:
+        if "mean" in statistics_to_apply or "mean_qs" in statistics_to_apply:
             average = group_by_point[var].apply(lambda x: x.mean()).reset_index(name="mean")
             statistics_data[f"{var}_mean"] = average["mean"]
         if "min" in statistics_to_apply:
@@ -90,7 +97,10 @@ def calculate_statistics(
             statistics_data[f"{var}_kurtosis"] = kurtosis["kurtosis"]
 
         # Extreme values analysis
-        if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
+        if (
+            any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]])
+            or "mean_qs" in statistics_to_apply
+        ):
             if extreme_params is None:
                 raise ValueError("Missing extreme values parameters!")
             timestep = pd.unique(historical_data.time_step)
@@ -106,6 +116,13 @@ def calculate_statistics(
             statistics_data[[f"{var}_xtr_min", f"{var}_xtr_max"]] = xtr_stats["xtr_val"].apply(
                 lambda x: pd.Series(x)
             )
+            if "mean_qs" in statistics_to_apply:
+                mean_qs = statistics_data.apply(
+                    lambda x: _get_mean_peak_value(x, var), axis=1
+                ).reset_index(name="mean_qs")
+                statistics_data[f"{var}_mean_qs"] = mean_qs["mean_qs"]
+                if "mean" not in statistics_to_apply:
+                    statistics_data = statistics_data.drop(f"{var}_mean", axis=1)
             if "xtr_min" not in statistics_to_apply:
                 statistics_data = statistics_data.drop(f"{var}_xtr_min", axis=1)
             if "xtr_max" not in statistics_to_apply:

@@ -92,11 +92,18 @@ def calculate_statistics(
     Returns:
         pd.DataFrame: Statistics for pressure coefficient
     """
+
+    def _get_mean_peak_value(row: pd.Series) -> float:
+        if row["cp_mean"] < 0:
+            return min(row["cp_mean"], 0.48 * row["cp_xtr_min"])
+        else:
+            return max(row["cp_mean"], 0.48 * row["cp_xtr_max"])
+
     group_by_point_cp = body_data.groupby("point_idx")["cp"]
 
     statistics_data = pd.DataFrame({"point_idx": body_data["point_idx"].unique()})
 
-    if "mean" in statistics_to_apply:
+    if "mean" in statistics_to_apply or "mean_qs" in statistics_to_apply:
         statistics_data["cp_mean"] = group_by_point_cp.mean()
     if "min" in statistics_to_apply:
         statistics_data["cp_min"] = group_by_point_cp.min()
@@ -114,7 +121,10 @@ def calculate_statistics(
         statistics_data["cp_kurtosis"] = kurtosis["kurtosis"]
 
     # Extreme values analysis
-    if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
+    if (
+        any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]])
+        or "mean_qs" in statistics_to_apply
+    ):
         if extreme_params is None:
             raise ValueError("Missing extreme values parameters!")
         timestep = pd.unique(body_data.time_step)
@@ -126,6 +136,13 @@ def calculate_statistics(
         statistics_data[["cp_xtr_min", "cp_xtr_max"]] = xtr_stats["xtr_val"].apply(
             lambda x: pd.Series(x)
         )
+        if "mean_qs" in statistics_to_apply:
+            mean_qs = statistics_data.apply(lambda x: _get_mean_peak_value(x), axis=1).reset_index(
+                name="mean_qs"
+            )
+            statistics_data["cp_mean_qs"] = mean_qs["mean_qs"]
+            if "mean" not in statistics_to_apply:
+                statistics_data = statistics_data.drop("cp_mean", axis=1)
         if "xtr_min" not in statistics_to_apply:
             statistics_data = statistics_data.drop("cp_xtr_min", axis=1)
         if "xtr_max" not in statistics_to_apply:
