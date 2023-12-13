@@ -8,12 +8,9 @@ from lnas import LnasFormat
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.cp_config import CpCaseConfig
-from cfdmod.use_cases.pressure.cp_data import (
-    calculate_statistics,
-    filter_pressure_data,
-    transform_to_cp,
-)
+from cfdmod.use_cases.pressure.cp_data import filter_pressure_data, transform_to_cp
 from cfdmod.use_cases.pressure.path_manager import CpPathManager, copy_input_artifacts
+from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 from cfdmod.utils import create_folders_for_file
 
 
@@ -125,6 +122,8 @@ def main(*args):
         cp_stats = calculate_statistics(
             cp_data,
             statistics_to_apply=cfg.statistics,
+            variables=["cp"],
+            group_by_key="point_idx",
             extreme_params=post_proc_cfg.extreme_values,
         )
         stats_path = path_manager.get_cp_stats_path(cfg_label=cfg_lbl)

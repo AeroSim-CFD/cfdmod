@@ -11,7 +11,7 @@ force_coefficient:
   measurement_1:
     body: "building2"
     variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
     sub_bodies: # Optional, default is the whole body
       z_intervals: [0,10,20]
     transformation:
@@ -19,7 +19,7 @@ force_coefficient:
   measurement_2:
     body: marquise
     variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max"]
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
     transformation:
       rotation: [0, 0, 0]
     

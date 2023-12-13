@@ -13,6 +13,7 @@ from cfdmod.use_cases.pressure.statistics import Statistics
 ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
 MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
 ShapeVariables = Literal["Ce"]
+PressureVariables = Literal["cp"]
 
 
 def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarray:
@@ -46,10 +47,68 @@ def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarra
     return triangles_region
 
 
+def perform_extreme_value_analysis(
+    historical_data: pd.DataFrame,
+    statistics_to_apply: list[Statistics],
+    var_name: ShapeVariables | ForceVariables | MomentVariables | PressureVariables,
+    extreme_params: ExtremeValuesParameters,
+    statistics_data: pd.DataFrame,
+    group_by_key: str,
+):
+    """Perform extreme values analysis to historical data and add to statistics data
+
+    Args:
+        historical_data (pd.DataFrame): Time series data
+        statistics_to_apply (list[Statistics]): List of statistics to apply
+        var_name (ShapeVariables | ForceVariables | MomentVariables | PressureVariables): Current
+            variable being processed
+        extreme_params (ExtremeValuesParameters): Parameters for extreme value analysis
+        statistics_data (pd.DataFrame): Compiled statistics data
+        group_by_key (str): Key to identify a parameter for grouping
+    """
+
+    def _get_mean_peak_value(row: pd.Series, variable: str) -> float:
+        factor = extreme_params.time_scale_correction_factor
+        if row[f"{variable}_mean"] < 0:
+            return min(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_min"])
+        else:
+            return max(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_max"])
+
+    group_by_point = historical_data.groupby(group_by_key)
+    timestep = pd.unique(historical_data.time_step)
+    xtr_stats = (
+        group_by_point[var_name]
+        .apply(
+            lambda x: calculate_extreme_values(
+                params=extreme_params, timestep_arr=timestep, hist_series=x
+            )
+        )
+        .reset_index(name="xtr_val")
+    )
+    statistics_data[[f"{var_name}_xtr_min", f"{var_name}_xtr_max"]] = xtr_stats["xtr_val"].apply(
+        lambda x: pd.Series(x)
+    )
+    if "mean_qs" in statistics_to_apply:
+        mean_qs = statistics_data.apply(
+            lambda x: _get_mean_peak_value(x, var_name), axis=1
+        ).reset_index(name="mean_qs")
+        statistics_data[f"{var_name}_mean_qs"] = mean_qs["mean_qs"]
+        if "mean" not in statistics_to_apply:
+            statistics_data = statistics_data.drop(f"{var_name}_mean", axis=1)
+    if "xtr_min" not in statistics_to_apply:
+        statistics_data = statistics_data.drop(f"{var_name}_xtr_min", axis=1)
+    if "xtr_max" not in statistics_to_apply:
+        statistics_data = statistics_data.drop(f"{var_name}_xtr_max", axis=1)
+
+
 def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
-    variables: list[ShapeVariables] | list[ForceVariables] | list[MomentVariables],
+    variables: list[ShapeVariables]
+    | list[ForceVariables]
+    | list[MomentVariables]
+    | list[PressureVariables],
+    group_by_key: str,
     extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
@@ -58,58 +117,56 @@ def calculate_statistics(
         historical_data (pd.DataFrame): Dataframe of the data coefficients historical series
         statistics_to_apply (list[Statistics]): List of statistical functions to apply
         variables (list[str]): List of variables to apply statistical analysis
+        group_by_key (str): Key to identify a parameter for grouping
         extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         pd.DataFrame: Statistics for the given coefficient
     """
-    group_by_point = historical_data.groupby("region_idx")
+    group_by_point = historical_data.groupby(group_by_key)
+    statistics_data = pd.DataFrame({group_by_key: historical_data[group_by_key].unique()})
 
-    statistics_data = pd.DataFrame({"region_idx": historical_data["region_idx"].unique()})
-
-    for var in variables:
-        if "mean" in statistics_to_apply:
-            average = group_by_point[var].apply(lambda x: x.mean()).reset_index(name="mean")
-            statistics_data[f"{var}_mean"] = average["mean"]
+    for var_name in variables:
+        if "mean" in statistics_to_apply or "mean_qs" in statistics_to_apply:
+            average = group_by_point[var_name].apply(lambda x: x.mean()).reset_index(name="mean")
+            statistics_data[f"{var_name}_mean"] = average["mean"]
         if "min" in statistics_to_apply:
-            minimum = group_by_point[var].apply(lambda x: x.min()).reset_index(name="min")
-            statistics_data[f"{var}_min"] = minimum["min"]
+            minimum = group_by_point[var_name].apply(lambda x: x.min()).reset_index(name="min")
+            statistics_data[f"{var_name}_min"] = minimum["min"]
         if "max" in statistics_to_apply:
-            maximum = group_by_point[var].apply(lambda x: x.max()).reset_index(name="max")
-            statistics_data[f"{var}_max"] = maximum["max"]
+            maximum = group_by_point[var_name].apply(lambda x: x.max()).reset_index(name="max")
+            statistics_data[f"{var_name}_max"] = maximum["max"]
         if "std" in statistics_to_apply:
-            std = group_by_point[var].apply(lambda x: x.std()).reset_index(name="std")
-            statistics_data[f"{var}_std"] = std["std"]
+            std = group_by_point[var_name].apply(lambda x: x.std()).reset_index(name="std")
+            statistics_data[f"{var_name}_std"] = std["std"]
 
         # Calculate skewness and kurtosis using apply
         if "skewness" in statistics_to_apply:
-            skewness = group_by_point[var].apply(lambda x: x.skew()).reset_index(name="skewness")
-            statistics_data[f"{var}_skewness"] = skewness["skewness"]
+            skewness = (
+                group_by_point[var_name].apply(lambda x: x.skew()).reset_index(name="skewness")
+            )
+            statistics_data[f"{var_name}_skewness"] = skewness["skewness"]
         if "kurtosis" in statistics_to_apply:
-            kurtosis = group_by_point[var].apply(lambda x: x.kurt()).reset_index(name="kurtosis")
-            statistics_data[f"{var}_kurtosis"] = kurtosis["kurtosis"]
+            kurtosis = (
+                group_by_point[var_name].apply(lambda x: x.kurt()).reset_index(name="kurtosis")
+            )
+            statistics_data[f"{var_name}_kurtosis"] = kurtosis["kurtosis"]
 
         # Extreme values analysis
-        if any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]]):
+        if (
+            any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]])
+            or "mean_qs" in statistics_to_apply
+        ):
             if extreme_params is None:
                 raise ValueError("Missing extreme values parameters!")
-            timestep = pd.unique(historical_data.time_step)
-            xtr_stats = (
-                group_by_point[var]
-                .apply(
-                    lambda x: calculate_extreme_values(
-                        params=extreme_params, timestep_arr=timestep, hist_series=x
-                    )
-                )
-                .reset_index(name="xtr_val")
+            perform_extreme_value_analysis(
+                historical_data=historical_data,
+                statistics_to_apply=statistics_to_apply,
+                var_name=var_name,
+                extreme_params=extreme_params,
+                statistics_data=statistics_data,
+                group_by_key=group_by_key,
             )
-            statistics_data[[f"{var}_xtr_min", f"{var}_xtr_max"]] = xtr_stats["xtr_val"].apply(
-                lambda x: pd.Series(x)
-            )
-            if "xtr_min" not in statistics_to_apply:
-                statistics_data = statistics_data.drop(f"{var}_xtr_min", axis=1)
-            if "xtr_max" not in statistics_to_apply:
-                statistics_data = statistics_data.drop(f"{var}_xtr_max", axis=1)
 
     return statistics_data
 

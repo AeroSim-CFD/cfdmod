@@ -2,11 +2,8 @@ import unittest
 
 import pandas as pd
 
-from cfdmod.use_cases.pressure.cp_data import (
-    calculate_statistics,
-    filter_pressure_data,
-    transform_to_cp,
-)
+from cfdmod.use_cases.pressure.cp_data import filter_pressure_data, transform_to_cp
+from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 
 
 class TestCpData(unittest.TestCase):
@@ -36,7 +33,10 @@ class TestCpData(unittest.TestCase):
     def test_statistics_calculation(self):
         body_data = pd.DataFrame({"point_idx": [1, 1, 2, 2], "cp": [1.1, 1.2, 2.1, 2.2]})
         statistics_data = calculate_statistics(
-            body_data, ["max", "min", "std", "mean", "skewness", "kurtosis"]
+            body_data,
+            ["max", "min", "std", "mean", "skewness", "kurtosis"],
+            variables=["cp"],
+            group_by_key="point_idx",
         )
 
         self.assertIn("cp_mean", statistics_data.columns)
