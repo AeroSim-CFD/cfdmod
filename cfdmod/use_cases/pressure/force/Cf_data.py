@@ -121,6 +121,11 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
     Returns:
         pd.DataFrame: Body force coefficients data
     """
+
+    def sum_positive_values(series):
+        # TODO: Refactor representative area method
+        return series[series > 0].sum()
+
     body_data["fx"] = -(body_data["cp"] * body_data["Ax"])
     body_data["fy"] = -(body_data["cp"] * body_data["Ay"])
     body_data["fz"] = -(body_data["cp"] * body_data["Az"])
@@ -131,9 +136,9 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),
             Fz=pd.NamedAgg(column="fz", aggfunc="sum"),
-            ATx=pd.NamedAgg(column="Ax", aggfunc="sum"),
-            ATy=pd.NamedAgg(column="Ay", aggfunc="sum"),
-            ATz=pd.NamedAgg(column="Az", aggfunc="sum"),
+            ATx=pd.NamedAgg(column="Ax", aggfunc=sum_positive_values),
+            ATy=pd.NamedAgg(column="Ay", aggfunc=sum_positive_values),
+            ATz=pd.NamedAgg(column="Az", aggfunc=sum_positive_values),
         )
         .reset_index()
     )
