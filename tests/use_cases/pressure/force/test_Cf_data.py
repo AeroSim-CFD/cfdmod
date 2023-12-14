@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.force.Cf_data import get_representative_areas, transform_to_Cf
+from cfdmod.use_cases.pressure.force.Cf_data import transform_to_Cf
 
 
 class TestCfData(unittest.TestCase):
@@ -28,11 +28,3 @@ class TestCfData(unittest.TestCase):
     def test_transform_to_Cf(self):
         transformed_data = transform_to_Cf(self.body_data, self.body_geom)
         self.assertIsNotNone(transformed_data)
-        # Add more assertions to check the actual data
-
-    def test_get_representative_areas(self):
-        Ax, Ay, Az = get_representative_areas(self.body_geom)
-        self.assertIsNotNone(Ax)
-        self.assertIsNotNone(Ay)
-        self.assertIsNotNone(Az)
-        # Add more assertions to check the actual data
