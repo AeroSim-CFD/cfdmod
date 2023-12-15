@@ -121,9 +121,14 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
     Returns:
         pd.DataFrame: Body force coefficients data
     """
-    body_data["fx"] = body_data["cp"] * body_data["Ax"]
-    body_data["fy"] = body_data["cp"] * body_data["Ay"]
-    body_data["fz"] = body_data["cp"] * body_data["Az"]
+
+    def sum_positive_values(series):
+        # TODO: Refactor representative area method
+        return series[series > 0].sum()
+
+    body_data["fx"] = -(body_data["cp"] * body_data["Ax"])
+    body_data["fy"] = -(body_data["cp"] * body_data["Ay"])
+    body_data["fz"] = -(body_data["cp"] * body_data["Az"])
 
     body_cf = (
         body_data.groupby(["region_idx", "time_step"])  # type: ignore
@@ -131,39 +136,15 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),
             Fz=pd.NamedAgg(column="fz", aggfunc="sum"),
+            ATx=pd.NamedAgg(column="Ax", aggfunc=sum_positive_values),
+            ATy=pd.NamedAgg(column="Ay", aggfunc=sum_positive_values),
+            ATz=pd.NamedAgg(column="Az", aggfunc=sum_positive_values),
         )
         .reset_index()
     )
 
-    Ax, Ay, Az = get_representative_areas(body_geom)
-
-    body_cf["Cfx"] = body_cf["Fx"] / Ax
-    body_cf["Cfy"] = body_cf["Fy"] / Ay
-    body_cf["Cfz"] = body_cf["Fz"] / Az
+    body_cf["Cfx"] = body_cf["Fx"] / body_cf["ATx"]
+    body_cf["Cfy"] = body_cf["Fy"] / body_cf["ATy"]
+    body_cf["Cfz"] = body_cf["Fz"] / body_cf["ATz"]
 
     return body_cf
-
-
-def get_representative_areas(input_mesh: LnasGeometry) -> tuple[float, float, float]:
-    """Calculates the representative areas from the bounding box of a given mesh
-
-    Args:
-        input_mesh (LnasGeometry): Input LNAS mesh
-
-    Returns:
-        tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
-    """
-    geom_verts = input_mesh.triangle_vertices.reshape(-1, 3)
-    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
-    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
-    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
-
-    Lx = x_max - x_min
-    Ly = y_max - y_min
-    Lz = z_max - z_min
-
-    Ax = Ly * Lz
-    Ay = Lx * Lz
-    Az = Lx * Ly
-
-    return Ax, Ay, Az
