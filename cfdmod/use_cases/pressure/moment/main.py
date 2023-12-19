@@ -93,7 +93,13 @@ def main(*args):
         body_cfg = post_proc_cfg.bodies[body_label]
         logger.info(f"Processing body {body_label} ...")
 
-        processed_body = process_body(mesh=mesh, body_cfg=body_cfg, cp_data=cp_data, cfg=cfg)
+        processed_body = process_body(
+            mesh=mesh,
+            body_cfg=body_cfg,
+            cp_data=cp_data,
+            cfg=cfg,
+            extreme_params=post_proc_cfg.extreme_values,
+        )
 
         sfc_list = [
             sfc

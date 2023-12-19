@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-__all__ = ["CpConfig"]
+__all__ = ["CpConfig", "CpCaseConfig"]
 
 import pathlib
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
-
-__all__ = ["CpConfig", "CpCaseConfig"]
 
 
 class CpConfig(HashableConfig):
@@ -45,11 +44,24 @@ class CpConfig(HashableConfig):
 
 
 class CpCaseConfig(BaseModel):
-    pressure_coefficient: CpConfig = Field(
+    pressure_coefficient: dict[str, CpConfig] = Field(
         ...,
-        title="Cp configuration",
-        description="Configuration with pressure coefficient post processing configs",
+        title="Pressure Coefficient configs",
+        description="Dictionary with Pressure Coefficient configuration",
     )
+    extreme_values: Optional[ExtremeValuesParameters] = Field(
+        None,
+        title="Extreme values parameter",
+        description="Parameters for performing extreme value analysis",
+    )
+
+    @model_validator(mode="after")
+    def check_extreme_values_params(self) -> CpCaseConfig:
+        full_stats = [s for v in self.pressure_coefficient.values() for s in v.statistics]
+        if any(stats in full_stats for stats in ["xtr_min", "xtr_max"]):
+            if self.extreme_values is None:
+                raise ValueError("Extreme values parameters must be specified!")
+        return self
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:

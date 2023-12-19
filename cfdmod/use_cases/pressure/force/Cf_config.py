@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+__all__ = ["CfConfig", "CfCaseConfig"]
+
 import pathlib
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import ForceVariables
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import read_yaml
-
-__all__ = ["CfConfig", "CfCaseConfig"]
 
 
 class CfConfig(HashableConfig):
@@ -52,6 +54,19 @@ class CfCaseConfig(BaseModel):
         title="Force Coefficient configs",
         description="Dictionary with Force Coefficient configuration",
     )
+    extreme_values: Optional[ExtremeValuesParameters] = Field(
+        None,
+        title="Extreme values parameter",
+        description="Parameters for performing extreme value analysis",
+    )
+
+    @model_validator(mode="after")
+    def check_extreme_values_params(self) -> CfCaseConfig:
+        full_stats = [s for v in self.force_coefficient.values() for s in v.statistics]
+        if any(stats in full_stats for stats in ["xtr_min", "xtr_max"]):
+            if self.extreme_values is None:
+                raise ValueError("Extreme values parameters must be specified!")
+        return self
 
     @model_validator(mode="after")
     def valdate_body_list(self):

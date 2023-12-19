@@ -14,6 +14,8 @@ class PathManagerBase(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
+
+class PathManagerBody(PathManagerBase):
     def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
         return (
             self.output_path / cfg_label / self._FOLDERNAME / "surfaces" / "excluded_surfaces.stl"
@@ -37,15 +39,15 @@ class PathManagerBase(BaseModel):
         )
 
 
-class CmPathManager(PathManagerBase):
+class CmPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cm"
 
 
-class CfPathManager(PathManagerBase):
+class CfPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cf"
 
 
-class CePathManager(PathManagerBase):
+class CePathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Ce"
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
@@ -58,25 +60,26 @@ class CePathManager(PathManagerBase):
         )
 
     def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / "Ce" / "regions" / f"regions.{sfc_label}.hdf"
+        return (
+            self.output_path
+            / cfg_label
+            / self._FOLDERNAME
+            / "regions"
+            / f"regions.{sfc_label}.hdf"
+        )
 
 
-class CpPathManager(BaseModel):
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
+class CpPathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "cp"
 
-    @property
-    def cp_stats_path(self):
-        return self.output_path / "cp_stats.hdf"
+    def get_cp_stats_path(self, cfg_label: str) -> pathlib.Path:
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.hdf"
 
-    @property
-    def cp_t_path(self):
-        return self.output_path / "cp_t.hdf"
+    def get_cp_t_path(self, cfg_label: str) -> pathlib.Path:
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_t.hdf"
 
-    @property
-    def vtp_path(self):
-        return self.output_path / "cp_stats.vtp"
+    def get_vtp_path(self, cfg_label: str) -> pathlib.Path:
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.vtp"
 
 
 def copy_input_artifacts(

@@ -1,5 +1,5 @@
-import pathlib
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,7 @@ from vtk import vtkPolyData
 from cfdmod.api.geometry.region_meshing import create_regions_mesh
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
@@ -139,6 +140,7 @@ def process_surface(
     cfg: CeConfig,
     cp_data: pd.DataFrame,
     n_timesteps: int,
+    extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> ProcessedSurfaceData:
     """Filters a surface from the body and processes it
 
@@ -147,6 +149,7 @@ def process_surface(
         cfg (CeConfig): Post processing configuration
         cp_data (pd.DataFrame): Pressure coefficients DataFrame
         n_timesteps (int): Number of timesteps to be processed
+        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
         ProcessedSurfaceData: Processed Surface Data object
@@ -166,7 +169,10 @@ def process_surface(
     )
 
     surface_ce_stats = calculate_statistics(
-        surface_ce, statistics_to_apply=cfg.statistics, variables=["Ce"]
+        surface_ce,
+        statistics_to_apply=cfg.statistics,
+        variables=["Ce"],
+        extreme_params=extreme_params,
     )
 
     regions_mesh = create_regions_mesh(

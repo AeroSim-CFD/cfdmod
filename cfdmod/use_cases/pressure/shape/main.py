@@ -101,6 +101,7 @@ def main(*args):
                 cfg=cfg,
                 cp_data=cp_data_to_use,
                 n_timesteps=n_timesteps,
+                extreme_params=post_proc_cfg.extreme_values,
             )
             processed_surface.save_outputs(
                 sfc_label=sfc_lbl, cfg_label=cfg_label, path_manager=path_manager
