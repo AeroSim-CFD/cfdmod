@@ -131,7 +131,7 @@ The definition of the first mode of peak wind load is:
     \hat{P} = \hat{c_p} . \bar{q} = \hat{c_p}  \frac{1}{2}  \rho \bar{V_0}^2
 
 However, the peak value for the coefficient needs to be scaled according to the characteristic event duration.
-This correction is performed using the values for the statistical factors from the NBR 6123.
+This correction is performed using the values for the statistical factors from the :footcite:t:`nbr19886123` 6123.
 The correction factor is defined as:
 
 .. math::
