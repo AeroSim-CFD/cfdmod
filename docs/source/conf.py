@@ -13,7 +13,7 @@ author = "Waine Oliveira Jr, Pablo Penas"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["nbsphinx"]
+extensions = ["nbsphinx", "sphinxcontrib.bibtex"]
 
 templates_path = ["_templates"]
 exclude_patterns = [
@@ -28,6 +28,7 @@ exclude_patterns = [
 ]
 
 source_suffix = [".rst", ".md"]
+bibtex_bibfiles = ["_refs/refs.bib"]
 
 # Include TODOs (check https://www.sphinx-doc.org/en/master/usage/extensions/todo.html)
 todo_include_todos = True

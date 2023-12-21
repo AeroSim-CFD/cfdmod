@@ -46,6 +46,21 @@ The analysis involves fitting extreme value distributions to the data and extrap
 
 The Gumbel model is a widely used statistical model in extreme value theory for predicting the probability distribution of extreme values.
 
+To determine the extreme values of a coefficient time series, the sample obtained by the simulation is subdivided according to a **characteristic design interval**.
+This interval is related to the duration of the events that are **relevant for the structure design**.
+
+Then the peak values of each subdivided sample are computed, and ordered progressively, for the positive peak values, and regressively, for the negative peak values.
+The last step is to fit the **Gumbel PDF** to the ordered data, and compute the extreme value for the reduced variable related to a probability of exceeding the peak value.
+
+The method consists of the following steps:
+
+- Subdivide the coefficient time series into samples
+- Compute the extreme values for each sample and order them
+- Fit Gumbel PDF model to the data
+- Calculate the extreme value of the time series with a probability of exceeding this value
+
+.. note:: 
+    For more information about extreme values for structure design, check out Chapter 13 (:footcite:t:`wyatt1990designer`)
 
 Mean Quasi static
 =================
@@ -60,3 +75,6 @@ For example, the mean quasi static value of a pressure coefficient signal is def
     cp_{mean-qs} &= max(cp_{mean}, f cp_{xtr-max})   \text{   if  } cp_{mean} > 0
 
     cp_{mean-qs} &= min(cp_{mean}, f cp_{xtr-min})   \text{   if  } cp_{mean} < 0
+
+
+.. footbibliography::

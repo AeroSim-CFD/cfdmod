@@ -663,13 +663,13 @@ files = [
 
 [[package]]
 name = "docutils"
-version = "0.19"
+version = "0.20.1"
 description = "Docutils -- Python Documentation Utilities"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "docutils-0.19-py3-none-any.whl", hash = "sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc"},
-    {file = "docutils-0.19.tar.gz", hash = "sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6"},
+    {file = "docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6"},
+    {file = "docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b"},
 ]
 
 [[package]]
@@ -1407,6 +1407,20 @@ files = [
     {file = "kiwisolver-1.4.5-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:11d011a7574eb3b82bcc9c1a1d35c1d7075677fdd15de527d91b46bd35e935ee"},
     {file = "kiwisolver-1.4.5.tar.gz", hash = "sha256:e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec"},
 ]
+
+[[package]]
+name = "latexcodec"
+version = "2.0.1"
+description = "A lexer and codec to work with LaTeX code in Python."
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "latexcodec-2.0.1-py2.py3-none-any.whl", hash = "sha256:c277a193638dc7683c4c30f6684e3db728a06efb0dc9cf346db8bd0aa6c5d271"},
+    {file = "latexcodec-2.0.1.tar.gz", hash = "sha256:2aa2551c373261cefe2ad3a8953a6d6533e68238d180eb4bb91d7964adb3fe9a"},
+]
+
+[package.dependencies]
+six = ">=1.4.1"
 
 [[package]]
 name = "livereload"
@@ -2306,6 +2320,40 @@ files = [
 ]
 
 [[package]]
+name = "pybtex"
+version = "0.24.0"
+description = "A BibTeX-compatible bibliography processor in Python"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*"
+files = [
+    {file = "pybtex-0.24.0-py2.py3-none-any.whl", hash = "sha256:e1e0c8c69998452fea90e9179aa2a98ab103f3eed894405b7264e517cc2fcc0f"},
+    {file = "pybtex-0.24.0.tar.gz", hash = "sha256:818eae35b61733e5c007c3fcd2cfb75ed1bc8b4173c1f70b56cc4c0802d34755"},
+]
+
+[package.dependencies]
+latexcodec = ">=1.0.4"
+PyYAML = ">=3.01"
+six = "*"
+
+[package.extras]
+test = ["pytest"]
+
+[[package]]
+name = "pybtex-docutils"
+version = "1.0.3"
+description = "A docutils backend for pybtex."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pybtex-docutils-1.0.3.tar.gz", hash = "sha256:3a7ebdf92b593e00e8c1c538aa9a20bca5d92d84231124715acc964d51d93c6b"},
+    {file = "pybtex_docutils-1.0.3-py3-none-any.whl", hash = "sha256:8fd290d2ae48e32fcb54d86b0efb8d573198653c7e2447d5bec5847095f430b9"},
+]
+
+[package.dependencies]
+docutils = ">=0.14"
+pybtex = ">=0.16"
+
+[[package]]
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
@@ -3192,24 +3240,24 @@ files = [
 
 [[package]]
 name = "sphinx"
-version = "6.2.1"
+version = "7.2.6"
 description = "Python documentation generator"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "Sphinx-6.2.1.tar.gz", hash = "sha256:6d56a34697bb749ffa0152feafc4b19836c755d90a7c59b72bc7dfd371b9cc6b"},
-    {file = "sphinx-6.2.1-py3-none-any.whl", hash = "sha256:97787ff1fa3256a3eef9eda523a63dbf299f7b47e053cfcf684a1c2a8380c912"},
+    {file = "sphinx-7.2.6-py3-none-any.whl", hash = "sha256:1e09160a40b956dc623c910118fa636da93bd3ca0b9876a7b3df90f07d691560"},
+    {file = "sphinx-7.2.6.tar.gz", hash = "sha256:9a5160e1ea90688d5963ba09a2dcd8bdd526620edbb65c328728f1b2228d5ab5"},
 ]
 
 [package.dependencies]
 alabaster = ">=0.7,<0.8"
 babel = ">=2.9"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
-docutils = ">=0.18.1,<0.20"
+docutils = ">=0.18.1,<0.21"
 imagesize = ">=1.3"
 Jinja2 = ">=3.0"
 packaging = ">=21.0"
-Pygments = ">=2.13"
+Pygments = ">=2.14"
 requests = ">=2.25.0"
 snowballstemmer = ">=2.0"
 sphinxcontrib-applehelp = "*"
@@ -3217,12 +3265,12 @@ sphinxcontrib-devhelp = "*"
 sphinxcontrib-htmlhelp = ">=2.0.0"
 sphinxcontrib-jsmath = "*"
 sphinxcontrib-qthelp = "*"
-sphinxcontrib-serializinghtml = ">=1.1.5"
+sphinxcontrib-serializinghtml = ">=1.1.9"
 
 [package.extras]
 docs = ["sphinxcontrib-websupport"]
 lint = ["docutils-stubs", "flake8 (>=3.5.0)", "flake8-simplify", "isort", "mypy (>=0.990)", "ruff", "sphinx-lint", "types-requests"]
-test = ["cython", "filelock", "html5lib", "pytest (>=4.6)"]
+test = ["cython (>=3.0)", "filelock", "html5lib", "pytest (>=4.6)", "setuptools (>=67.0)"]
 
 [[package]]
 name = "sphinx-autobuild"
@@ -3245,22 +3293,22 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "sphinx-book-theme"
-version = "1.0.1"
+version = "1.1.0"
 description = "A clean book theme for scientific explanations and documentation with Sphinx"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 files = [
-    {file = "sphinx_book_theme-1.0.1-py3-none-any.whl", hash = "sha256:d15f8248b3718a9a6be0ba617a32d1591f9fa39c614469bface777ba06a73b75"},
-    {file = "sphinx_book_theme-1.0.1.tar.gz", hash = "sha256:927b399a6906be067e49c11ef1a87472f1b1964075c9eea30fb82c64b20aedee"},
+    {file = "sphinx_book_theme-1.1.0-py3-none-any.whl", hash = "sha256:088bc69d65fab8446adb8691ed61687f71bf7504c9740af68bc78cf936a26112"},
+    {file = "sphinx_book_theme-1.1.0.tar.gz", hash = "sha256:ad4f92998e53e24751ecd0978d3eb79fdaa59692f005b1b286ecdd6146ebc9c1"},
 ]
 
 [package.dependencies]
-pydata-sphinx-theme = ">=0.13.3"
-sphinx = ">=4,<7"
+pydata-sphinx-theme = ">=0.14"
+sphinx = ">=5"
 
 [package.extras]
 code-style = ["pre-commit"]
-doc = ["ablog", "docutils (==0.17.1)", "folium", "ipywidgets", "matplotlib", "myst-nb", "nbclient", "numpy", "numpydoc", "pandas", "plotly", "sphinx-copybutton", "sphinx-design", "sphinx-examples", "sphinx-tabs (<=3.4.0)", "sphinx-thebe", "sphinx-togglebutton", "sphinxcontrib-bibtex", "sphinxcontrib-youtube", "sphinxext-opengraph"]
+doc = ["ablog", "folium", "ipywidgets", "matplotlib", "myst-nb", "nbclient", "numpy", "numpydoc", "pandas", "plotly", "sphinx-copybutton", "sphinx-design", "sphinx-examples", "sphinx-tabs", "sphinx-thebe", "sphinx-togglebutton", "sphinxcontrib-bibtex", "sphinxcontrib-youtube", "sphinxext-opengraph"]
 test = ["beautifulsoup4", "coverage", "myst-nb", "pytest", "pytest-cov", "pytest-regressions", "sphinx_thebe"]
 
 [[package]]
@@ -3280,6 +3328,23 @@ Sphinx = ">=5"
 [package.extras]
 lint = ["docutils-stubs", "flake8", "mypy"]
 test = ["pytest"]
+
+[[package]]
+name = "sphinxcontrib-bibtex"
+version = "2.6.1"
+description = "Sphinx extension for BibTeX style citations."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "sphinxcontrib-bibtex-2.6.1.tar.gz", hash = "sha256:046b49f070ae5276af34c1b8ddb9bc9562ef6de2f7a52d37a91cb8e53f54b863"},
+    {file = "sphinxcontrib_bibtex-2.6.1-py3-none-any.whl", hash = "sha256:094c772098fe6b030cda8618c45722b2957cad0c04f328ba2b154aa08dfe720a"},
+]
+
+[package.dependencies]
+docutils = ">=0.8,<0.18.dev0 || >=0.20.dev0"
+pybtex = ">=0.24"
+pybtex-docutils = ">=1.0.0"
+Sphinx = ">=3.5"
 
 [[package]]
 name = "sphinxcontrib-devhelp"
@@ -3709,4 +3774,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.13"
-content-hash = "ac0be69a2ef25ac30326d3d87591387e051a3150c0c7b6a7174de242edfa0b00"
+content-hash = "ff7e48941019dc37463e06ac400a7c7d4d641366ea619137a7fa8054f912d05e"
