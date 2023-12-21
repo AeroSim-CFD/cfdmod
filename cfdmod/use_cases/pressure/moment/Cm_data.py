@@ -90,7 +90,12 @@ def process_body(
     )
     body_data = pd.merge(body_data, position_df, on="point_idx", how="left")
 
-    body_cf = transform_to_Cm(body_data=body_data, body_geom=body_geom)
+    body_cf = transform_to_Cm(
+        # body_data=body_data, sub_body_idx_df=sub_body_idx, body_geom=body_geom
+        body_data=body_data,
+        sub_body_idx_df=sub_body_idx,
+        body_geom=mesh.geometry,
+    )
 
     body_cf_stats = calculate_statistics(
         body_cf,
@@ -116,13 +121,16 @@ def process_body(
     )
 
 
-def transform_to_Cm(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.DataFrame:
+def transform_to_Cm(
+    body_data: pd.DataFrame, sub_body_idx_df: pd.DataFrame, body_geom: LnasGeometry
+) -> pd.DataFrame:
     """Converts pressure coefficient data for a body into force coefficients
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
         body_data (pd.DataFrame): Pressure coefficient data for the body
+        sub_body_idx_df (pd.DataFrame): Dataframe grouping point index for each region index
         body_geom (LnasGeometry): LNAS mesh for the body geometry
 
     Returns:
@@ -152,11 +160,23 @@ def transform_to_Cm(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
         .reset_index()
     )
 
-    V_rep = get_representative_volume(body_geom)
+    region_group_by = sub_body_idx_df.groupby(["region_idx"])
+    representative_volume = {}
 
-    body_cm["Cmx"] = body_cm["Mx"] / V_rep
-    body_cm["Cmy"] = body_cm["My"] / V_rep
-    body_cm["Cmz"] = body_cm["Mz"] / V_rep
+    for region_idx, region_points in region_group_by:
+        region_points_idx = region_points.point_idx.to_numpy()
+        V_rep = get_representative_volume(input_mesh=body_geom, point_idx=region_points_idx)
+
+        representative_volume[region_idx[0]] = {}
+        representative_volume[region_idx[0]]["V_rep"] = V_rep
+
+    rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
+    rep_df = rep_df.rename(columns={"index": "region_idx"})
+    body_cm = pd.merge(body_cm, rep_df, on="region_idx")
+
+    body_cm["Cmx"] = body_cm["Mx"] / body_cm["V_rep"]
+    body_cm["Cmy"] = body_cm["My"] / body_cm["V_rep"]
+    body_cm["Cmz"] = body_cm["Mz"] / body_cm["V_rep"]
 
     return body_cm
 
@@ -183,16 +203,17 @@ def get_lever_relative_position_df(
     return position_df
 
 
-def get_representative_volume(input_mesh: LnasGeometry) -> float:
+def get_representative_volume(input_mesh: LnasGeometry, point_idx: np.ndarray) -> float:
     """Calculates the representative volume from the bounding box of a given mesh
 
     Args:
         input_mesh (LnasGeometry): Input LNAS mesh
+        point_idx (np.ndarray): Array of triangle indices of each sub region
 
     Returns:
         float: Representative volume value
     """
-    geom_verts = input_mesh.triangle_vertices.reshape(-1, 3)
+    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
     x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
     y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
     z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
