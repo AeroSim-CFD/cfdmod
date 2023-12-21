@@ -49,8 +49,59 @@ The Gumbel model is a widely used statistical model in extreme value theory for 
 To determine the extreme values of a coefficient time series, the sample obtained by the simulation is subdivided according to a **characteristic design interval**.
 This interval is related to the duration of the events that are **relevant for the structure design**.
 
+.. image:: /_static/pressure/samples.png
+    :width: 60 %
+    :align: center
+
 Then the peak values of each subdivided sample are computed, and ordered progressively, for the positive peak values, and regressively, for the negative peak values.
+
+
 The last step is to fit the **Gumbel PDF** to the ordered data, and compute the extreme value for the reduced variable related to a probability of exceeding the peak value.
+Firstly the extreme values for the samples are tabulated as follows:
+
+.. list-table:: Sample extremes
+   :widths: 25 25 25 25
+   :header-rows: 1
+
+   * - Sample number (i)
+     - min (cp)
+     - max (cp)
+     - Reduced variable (y)
+   * - 1
+     - -0.3
+     - 0.4
+     - y(1)
+   * - 2
+     - -0.4
+     - 0.38
+     - y(2)
+   * - 3
+     - -0.28
+     - 0.41
+     - y(3)
+   * - 4
+     - -0.31
+     - 0.43
+     - y(4)
+   * - 5
+     - -0.2
+     - 0.45
+     - y(5)
+
+Where the reduced variable :math:`y` is defined as:
+
+.. math::
+    y(i) &= -ln(-ln(P_i))
+
+    P_i &= \frac{i}{N + 1}
+
+Then the values are ordered, and the Gumbel model is fit by:
+
+.. math::
+    y = \frac{1}{\beta}(x - \mu)
+
+Where :math:`\beta` and :math:`\mu` are parameters of the fit. 
+The value for reduced variable :math:`y` commonly used is 1.4, resulting in 78% of non-exceeding extreme values.
 
 The method consists of the following steps:
 
@@ -65,13 +116,31 @@ The method consists of the following steps:
 Mean Quasi static
 =================
 
-For composing Mean Quasi Static, it is taken into account the statistical factors from the NBR 6123, and the calculated extreme events peaks.
+There are two ways of composing the wind load from coefficient data.
+The first one is to use mean pressure distribution, and the dymanic pressure, **which is based on the peak base wind velocity**.
+The definition of the first mode of peak wind load is:
 
+.. math:: 
+    \hat{P} = \bar{c_p} . \hat{q} = \bar{c_p}  \frac{1}{2}  \rho \hat{V_0}^2
+
+For structure design purposes, the mean value of the coefficient time series can be misleading.
+Thus the peak wind load can be composed by the peak value for the coefficient and the dynamic pressure, **which is based on the mean base wind velocity**.
+The definition of the first mode of peak wind load is:
+
+.. math:: 
+    \hat{P} = \hat{c_p} . \bar{q} = \hat{c_p}  \frac{1}{2}  \rho \bar{V_0}^2
+
+However, the peak value for the coefficient needs to be scaled according to the characteristic event duration.
+This correction is performed using the values for the statistical factors from the NBR 6123.
+The correction factor is defined as:
+
+.. math::
+    f = \left(\frac{S_{2,600s}}{S_{2,3s}} \right) ^ 2
+
+The mean quasi static value is the worst case between the mean value and the extreme value scaled by the statistical factors.
 For example, the mean quasi static value of a pressure coefficient signal is defined as:
 
 .. math::
-    f &= (\frac{S_{2,600s}}{S_{2,3s}}) ^ 2
-
     cp_{mean-qs} &= max(cp_{mean}, f cp_{xtr-max})   \text{   if  } cp_{mean} > 0
 
     cp_{mean-qs} &= min(cp_{mean}, f cp_{xtr-min})   \text{   if  } cp_{mean} < 0
