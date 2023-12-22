@@ -24,6 +24,8 @@ For example, the mean value of a pressure coefficient signal is:
 .. math::
     cp_{mean} = \frac{\int cp(t) dt}{T}
 
+Where :math:`t` is temporal variable, and :math:`T` is the sample total time.
+
 Root Mean Square value
 ======================
 
@@ -35,6 +37,7 @@ For example, the RMS value of a pressure coefficient signal is:
 .. math::
     cp_{rms} = \frac{\sqrt{\sum{(cp(t) - cp_{mean})^2}}}{N}
 
+Where :math:`N` is the number of time step samples.
 
 Extreme values
 ==============
@@ -88,12 +91,14 @@ Firstly the extreme values for the samples are tabulated as follows:
      - 0.45
      - y(5)
 
-Where the reduced variable :math:`y` is defined as:
+The reduced variable :math:`y` is defined as:
 
 .. math::
     y(i) &= -ln(-ln(P_i))
 
     P_i &= \frac{i}{N + 1}
+
+Where :math:`i` indicates the subdivided sample index, :math:`N` is the number of subdivided samples, and :math:`P(i)` is a weighting value for the sample.
 
 Then the values are ordered, and the Gumbel model is fit by:
 
@@ -123,6 +128,8 @@ The definition of the first mode of peak wind load is:
 .. math:: 
     \hat{P} = \bar{c_p} . \hat{q} = \bar{c_p}  \frac{1}{2}  \rho \hat{V_0}^2
 
+Where :math:`\hat{P}` is the design peak load, :math:`\hat{q}` is the peak dynamic pressure, :math:`\rho` is the fluid density and :math:`\hat{V_0}` is the peak wind velocity.
+
 For structure design purposes, the mean value of the coefficient time series can be misleading.
 Thus the peak wind load can be composed by the peak value for the coefficient and the dynamic pressure, **which is based on the mean base wind velocity**.
 The definition of the second mode of peak wind load is:
@@ -130,8 +137,10 @@ The definition of the second mode of peak wind load is:
 .. math:: 
     \hat{P} = \hat{c_p} . \bar{q} = \hat{c_p}  \frac{1}{2}  \rho \bar{V_0}^2
 
+Where :math:`\bar{q}` is the average dynamic pressure, :math:`\rho` is the fluid density and :math:`\bar{V_0}` is the average wind velocity.
+
 However, the peak value for the coefficient needs to be scaled according to the characteristic event duration.
-This correction is performed using the values for the statistical factors from the :footcite:t:`nbr19886123` 6123.
+This correction is performed using the values for the statistical factors (:math:`S`) from the :footcite:t:`nbr19886123` 6123.
 The correction factor is defined as:
 
 .. math::
