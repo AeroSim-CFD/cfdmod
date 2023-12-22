@@ -125,7 +125,7 @@ The definition of the first mode of peak wind load is:
 
 For structure design purposes, the mean value of the coefficient time series can be misleading.
 Thus the peak wind load can be composed by the peak value for the coefficient and the dynamic pressure, **which is based on the mean base wind velocity**.
-The definition of the first mode of peak wind load is:
+The definition of the second mode of peak wind load is:
 
 .. math:: 
     \hat{P} = \hat{c_p} . \bar{q} = \hat{c_p}  \frac{1}{2}  \rho \bar{V_0}^2
