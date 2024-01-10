@@ -69,6 +69,12 @@ optional = true
 [tool.poetry.group.vtk.dependencies]
 vtk = "^9.2.6"
 
+[tool.poetry.group.snapshot]
+optional = true
+
+[tool.poetry.group.snapshot.dependencies]
+pyvista = "^0.43.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
