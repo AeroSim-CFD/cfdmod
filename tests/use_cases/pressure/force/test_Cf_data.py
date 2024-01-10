@@ -26,5 +26,8 @@ class TestCfData(unittest.TestCase):
         self.body_geom = LnasGeometry(vertices, triangles)
 
     def test_transform_to_Cf(self):
-        transformed_data = transform_to_Cf(self.body_data, self.body_geom)
+        sub_body_idx = pd.DataFrame(
+            {"point_idx": np.array([0, 1]), "region_idx": np.array([0, 0])}
+        )
+        transformed_data = transform_to_Cf(self.body_data, sub_body_idx, self.body_geom)
         self.assertIsNotNone(transformed_data)
