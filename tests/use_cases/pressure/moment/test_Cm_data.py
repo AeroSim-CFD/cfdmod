@@ -31,16 +31,20 @@ class TestCmData(unittest.TestCase):
         self.body_geom = LnasGeometry(vertices, triangles)
 
     def test_transform_to_Cm(self):
+        sub_body_idx = pd.DataFrame(
+            {"point_idx": np.array([0, 1]), "region_idx": np.array([0, 0])}
+        )
+
         centroids = np.mean(self.body_geom.triangle_vertices, axis=1)
         position_df = get_lever_relative_position_df(
             centroids=centroids, lever_origin=(0, 0, 0), geometry_idx=np.array([0, 1])
         )
         body_data = pd.merge(self.body_data, position_df, on="point_idx", how="left")
-        transformed_data = transform_to_Cm(body_data, self.body_geom)
+        transformed_data = transform_to_Cm(body_data, sub_body_idx, self.body_geom)
         self.assertIsNotNone(transformed_data)
-        # Add more assertions to check the actual data
 
     def test_get_representative_volume(self):
-        V_rep = get_representative_volume(self.body_geom)
+        V_rep = get_representative_volume(
+            self.body_geom, np.arange(0, len(self.body_geom.triangles))
+        )
         self.assertIsNotNone(V_rep)
-        # Add more assertions to check the actual data
