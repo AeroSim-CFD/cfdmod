@@ -10,6 +10,7 @@ from vtk import (
     vtkIdList,
     vtkPoints,
     vtkPolyData,
+    vtkXMLPolyDataReader,
     vtkXMLPolyDataWriter,
 )
 
@@ -87,6 +88,24 @@ def merge_polydata(polydata_list: Sequence[vtkPolyData | vtkAppendPolyData]) -> 
 
     append_poly_data.Update()
     return append_poly_data
+
+
+def read_polydata(file_path: pathlib.Path) -> vtkPolyData:
+    """Reads polydata from file
+
+    Args:
+        file_path (pathlib.Path): File path
+
+    Returns:
+        vtkPolyData: Read polydata
+    """
+    reader = vtkXMLPolyDataReader()
+    reader.SetFileName(file_path)
+    reader.Update()
+
+    polydata = reader.GetOutput()
+
+    return polydata
 
 
 def write_polydata(output_filename: pathlib.Path, poly_data: vtkPolyData | vtkAppendPolyData):

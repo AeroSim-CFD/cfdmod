@@ -52,6 +52,7 @@ sphinx-book-theme = "^1.0.1"
 myst-parser = "^2.0.0"
 sphinx-autobuild = "^2021.3.14"
 nbsphinx = "^0.9.3"
+sphinxcontrib-bibtex = "^2.6.1"
 
 
 [tool.poetry.group.notebook]

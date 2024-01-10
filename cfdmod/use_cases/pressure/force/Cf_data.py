@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 from vtk import vtkAppendPolyData, vtkPolyData
@@ -83,7 +84,9 @@ def process_body(
     body_data = cp_data[mask].copy()
     body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
 
-    body_cf = transform_to_Cf(body_data=body_data, body_geom=body_geom)
+    body_cf = transform_to_Cf(
+        body_data=body_data, sub_body_idx_df=sub_body_idx, body_geom=mesh.geometry
+    )
 
     body_cf_stats = calculate_statistics(
         body_cf,
@@ -109,13 +112,16 @@ def process_body(
     )
 
 
-def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.DataFrame:
+def transform_to_Cf(
+    body_data: pd.DataFrame, sub_body_idx_df: pd.DataFrame, body_geom: LnasGeometry
+) -> pd.DataFrame:
     """Converts pressure coefficient data for a body into force coefficients
     The pressure coefficient must already contain the areas of each triangle.
     It must be added before calling this function
 
     Args:
         body_data (pd.DataFrame): Pressure coefficient data for the body
+        sub_body_idx_df (pd.DataFrame): Dataframe grouping point index for each region index
         body_geom (LnasGeometry): LNAS mesh for the body geometry
 
     Returns:
@@ -136,15 +142,56 @@ def transform_to_Cf(body_data: pd.DataFrame, body_geom: LnasGeometry) -> pd.Data
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),
             Fz=pd.NamedAgg(column="fz", aggfunc="sum"),
-            ATx=pd.NamedAgg(column="Ax", aggfunc=sum_positive_values),
-            ATy=pd.NamedAgg(column="Ay", aggfunc=sum_positive_values),
-            ATz=pd.NamedAgg(column="Az", aggfunc=sum_positive_values),
         )
         .reset_index()
     )
+
+    region_group_by = sub_body_idx_df.groupby(["region_idx"])
+    representative_areas = {}
+
+    for region_idx, region_points in region_group_by:
+        region_points_idx = region_points.point_idx.to_numpy()
+        Ax, Ay, Az = get_representative_areas(input_mesh=body_geom, point_idx=region_points_idx)
+
+        representative_areas[region_idx[0]] = {}
+        representative_areas[region_idx[0]]["ATx"] = Ax
+        representative_areas[region_idx[0]]["ATy"] = Ay
+        representative_areas[region_idx[0]]["ATz"] = Az
+
+    rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
+    rep_df = rep_df.rename(columns={"index": "region_idx"})
+    body_cf = pd.merge(body_cf, rep_df, on="region_idx")
 
     body_cf["Cfx"] = body_cf["Fx"] / body_cf["ATx"]
     body_cf["Cfy"] = body_cf["Fy"] / body_cf["ATy"]
     body_cf["Cfz"] = body_cf["Fz"] / body_cf["ATz"]
 
     return body_cf
+
+
+def get_representative_areas(
+    input_mesh: LnasGeometry, point_idx: np.ndarray
+) -> tuple[float, float, float]:
+    """Calculates the representative areas from the bounding box of a given mesh
+
+    Args:
+        input_mesh (LnasGeometry): Input LNAS mesh
+        point_idx (np.ndarray): Array of triangle indices of each sub region
+
+    Returns:
+        tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
+    """
+    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
+
+    Lx = x_max - x_min
+    Ly = y_max - y_min
+    Lz = z_max - z_min
+
+    Ax = Ly * Lz
+    Ay = Lx * Lz
+    Az = Lx * Ly
+
+    return Ax, Ay, Az
