@@ -36,9 +36,7 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
         triangles_region = np.array([0])
         n_timesteps = 3
 
-        result = transform_to_Ce(
-            self.surface_mesh, self.cp_data, sfc_triangles_idxs, triangles_region, n_timesteps
-        )
+        result = transform_to_Ce(self.surface_mesh, self.cp_data, triangles_region)
 
         self.assertEqual(len(result), n_timesteps)  # Three timesteps x 1 triangle
         self.assertTrue("Ce" in result.columns)

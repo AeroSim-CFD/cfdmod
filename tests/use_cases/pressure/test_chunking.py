@@ -2,16 +2,18 @@ import math
 import pathlib
 import unittest
 
+import numpy as np
 import pandas as pd
 
-from cfdmod.use_cases.pressure.chunking import split_into_chunks
+from cfdmod.use_cases.pressure.chunking import join_chunks_for_points, split_into_chunks
 
 
 class TestChunking(unittest.TestCase):
     def setUp(self):
         time_series_data = {
-            "time_step": range(100),
+            "time_step": np.repeat(range(10), 10),
             "value": range(100),
+            "point_idx": np.tile(range(10), 10),
         }
         self.sample_time_series_df = pd.DataFrame(time_series_data)
         self.number_of_chunks = 3
@@ -44,6 +46,14 @@ class TestChunking(unittest.TestCase):
             self.assertListEqual(list(store.keys()), expected_keys)
 
         self.output_path.unlink()
+
+    def test_join_chunks_for_points(self):
+        filtered_idx = np.array(range(5))
+
+        split_into_chunks(self.sample_time_series_df, self.number_of_chunks, self.output_path)
+        result_df = join_chunks_for_points(self.output_path, point_idxs=filtered_idx)
+
+        self.assertTrue(all(filtered_idx == result_df.point_idx.unique()))
 
 
 if __name__ == "__main__":
