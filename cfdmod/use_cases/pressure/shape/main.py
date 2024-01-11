@@ -7,6 +7,7 @@ from lnas import LnasFormat
 
 from cfdmod.api.vtk.write_vtk import merge_polydata, vtkPolyData, write_polydata
 from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.chunking import join_chunks_for_points
 from cfdmod.use_cases.pressure.geometry import create_NaN_polydata, get_excluded_surfaces
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
@@ -76,14 +77,6 @@ def main(*args):
     mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
-    logger.info("Preparing to read pressure coefficients data...")
-    cp_data = pd.read_hdf(cp_path)
-
-    cp_data_to_use = cp_data.to_frame() if isinstance(cp_data, pd.Series) else cp_data
-    logger.info("Read pressure coefficient data successfully!")
-
-    n_timesteps = cp_data_to_use["time_step"].unique().shape[0]
-
     for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
         processed_polydata: list[vtkPolyData] = []
         logger.info(f"Processing {cfg_label} ...")
@@ -96,11 +89,16 @@ def main(*args):
         for sfc_lbl, raw_surface in surfaces_to_process.items():
             logger.info(f"Processing surface {sfc_lbl}")
 
+            logger.info("Fetching pressure coefficients data...")
+            cp_data = join_chunks_for_points(
+                time_series_path=cp_path, point_idxs=raw_surface.sfc_triangles_idxs
+            )
+            logger.info("Fetched pressure coefficients data!")
+
             processed_surface = process_surface(
                 raw_surface=raw_surface,
                 cfg=cfg,
-                cp_data=cp_data_to_use,
-                n_timesteps=n_timesteps,
+                cp_data=cp_data,
                 extreme_params=post_proc_cfg.extreme_values,
             )
             processed_surface.save_outputs(

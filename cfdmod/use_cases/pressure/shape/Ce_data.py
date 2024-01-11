@@ -139,7 +139,6 @@ def process_surface(
     raw_surface: RawSurfaceData,
     cfg: CeConfig,
     cp_data: pd.DataFrame,
-    n_timesteps: int,
     extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> ProcessedSurfaceData:
     """Filters a surface from the body and processes it
@@ -148,7 +147,6 @@ def process_surface(
         raw_surface (RawSurfaceData): Raw surface to process
         cfg (CeConfig): Post processing configuration
         cp_data (pd.DataFrame): Pressure coefficients DataFrame
-        n_timesteps (int): Number of timesteps to be processed
         extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
 
     Returns:
@@ -163,9 +161,7 @@ def process_surface(
     surface_ce = transform_to_Ce(
         surface_mesh=raw_surface.sfc_mesh,
         cp_data=cp_data,
-        sfc_triangles_idxs=raw_surface.sfc_triangles_idxs,
         triangles_region=triangles_region,
-        n_timesteps=n_timesteps,
     )
 
     surface_ce_stats = calculate_statistics(
@@ -235,26 +231,22 @@ def get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> Zoning
 def transform_to_Ce(
     surface_mesh: LnasGeometry,
     cp_data: pd.DataFrame,
-    sfc_triangles_idxs: np.ndarray,
     triangles_region: np.ndarray,
-    n_timesteps: int,
 ) -> pd.DataFrame:
     """Transforms pressure coefficient for surface to shape coefficient
 
     Args:
         surface_mesh (LnasGeometry): Surface mesh
         cp_data (pd.DataFrame): Body pressure coefficient data
-        sfc_triangles_idxs (np.ndarray): Surface triangles index from body mesh
         triangles_region (np.ndarray): Surface triangles region indexing
-        n_timesteps (int): Number of timesteps in data
 
     Returns:
         pd.DataFrame: Shape coefficient for surface
     """
-
+    n_timesteps = cp_data["time_step"].nunique()
     triangles_areas = surface_mesh.areas.copy()
 
-    surface_cp = cp_data[cp_data["point_idx"].isin(sfc_triangles_idxs)].copy()
+    surface_cp = cp_data.copy()
 
     surface_cp["region_idx"] = np.tile(triangles_region, n_timesteps)
     surface_cp["tri_area"] = np.tile(triangles_areas, n_timesteps)
