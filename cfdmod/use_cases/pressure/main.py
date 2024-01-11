@@ -45,13 +45,13 @@ def get_args_process(args: list[str]) -> ArgsModel:
     ap.add_argument(
         "--p",
         required=True,
-        help="Path to body pressure series .hdf",
+        help="Path to body pressure series .h5",
         type=str,
     )
     ap.add_argument(
         "--s",
         required=True,
-        help="Path to static pressure series .hdf",
+        help="Path to static pressure series .h5",
         type=str,
     )
     ap.add_argument(
