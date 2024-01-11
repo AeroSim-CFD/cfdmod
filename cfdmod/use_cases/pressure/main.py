@@ -7,6 +7,7 @@ from lnas import LnasFormat
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.chunking import split_into_chunks
 from cfdmod.use_cases.pressure.cp_config import CpCaseConfig
 from cfdmod.use_cases.pressure.cp_data import filter_pressure_data, transform_to_cp
 from cfdmod.use_cases.pressure.path_manager import CpPathManager, copy_input_artifacts
@@ -113,9 +114,15 @@ def main(*args):
             correction_factor=cfg.U_H_correction_factor,
         )
         logger.info("Transformed pressure into coefficients")
+
         timeseries_path = path_manager.get_cp_t_path(cfg_label=cfg_lbl)
         create_folders_for_file(timeseries_path)
-        cp_data.to_hdf(timeseries_path, key="cp_t", mode="w", index=False)
+
+        split_into_chunks(
+            time_series_df=cp_data,
+            number_of_chunks=cfg.number_of_chunks,
+            output_path=timeseries_path,
+        )
         logger.info("Exported coefficients")
 
         # OUTPUT 2: cp_stats
@@ -128,7 +135,7 @@ def main(*args):
         )
         stats_path = path_manager.get_cp_stats_path(cfg_label=cfg_lbl)
         create_folders_for_file(stats_path)
-        cp_stats.to_hdf(stats_path, key="cp_t", mode="w", index=False)
+        cp_stats.to_hdf(stats_path, key="cp_stats", mode="w", index=False)
         logger.info("Exported statistics")
 
         polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)

@@ -30,13 +30,11 @@ class PathManagerBody(PathManagerBase):
             / cfg_label
             / self._FOLDERNAME
             / "time_series"
-            / f"{body_label}.time_series.hdf"
+            / f"{body_label}.time_series.h5"
         )
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.hdf"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.h5"
 
 
 class CmPathManager(PathManagerBody):
@@ -61,11 +59,7 @@ class CePathManager(PathManagerBody):
 
     def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
         return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "regions"
-            / f"regions.{sfc_label}.hdf"
+            self.output_path / cfg_label / self._FOLDERNAME / "regions" / f"regions.{sfc_label}.h5"
         )
 
 
@@ -73,10 +67,10 @@ class CpPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "cp"
 
     def get_cp_stats_path(self, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.hdf"
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.h5"
 
     def get_cp_t_path(self, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / "cp_t.hdf"
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_t.h5"
 
     def get_vtp_path(self, cfg_label: str) -> pathlib.Path:
         return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.vtp"
