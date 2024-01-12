@@ -35,7 +35,7 @@ The RMS value is a way to represent the **"effective" or "equivalent" value of a
 For example, the RMS value of a pressure coefficient signal is:
 
 .. math::
-    cp_{rms} = \frac{\sqrt{\sum{(cp(t) - cp_{mean})^2}}}{N}
+    cp_{rms} = \sqrt{\frac{\sum{(cp(t) - cp_{mean})^2}}{N}}
 
 Where :math:`N` is the number of time step samples.
 
