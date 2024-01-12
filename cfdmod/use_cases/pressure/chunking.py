@@ -1,7 +1,6 @@
 import math
 import pathlib
 
-import numpy as np
 import pandas as pd
 
 
@@ -43,30 +42,3 @@ def split_into_chunks(
         range_lbl = f"range_{int(time_range[0])}_{int(time_range[1])}"
 
         df.to_hdf(output_path, key=range_lbl, mode="a", index=False, format="t")
-
-
-def join_chunks_for_points(time_series_path: pathlib.Path, point_idxs: np.ndarray) -> pd.DataFrame:
-    """Join chunks of timesteps filtering based on a array of indices
-
-    Args:
-        time_series_path (pathlib.Path): Path of the chunked time series
-        point_idxs (np.ndarray): Array of indices
-
-    Returns:
-        pd.DataFrame: Joined time series
-    """
-    # target_idxs = np.array2string(point_idxs, separator=",")
-    # print(target_idxs)
-    dfs = []
-
-    with pd.HDFStore(time_series_path, mode="r") as chunk_store:
-        for data_lbl in chunk_store.keys():
-            # df_restored = chunk_store.select(key=data_lbl, where=f"point_idx={target_idxs}")
-            # dfs.append(df_restored)
-            df_restored = chunk_store.get(key=data_lbl)
-            filtered_df = df_restored[df_restored["point_idx"].isin(point_idxs)].copy()
-            dfs.append(filtered_df)
-
-    joined_df = pd.concat(dfs).sort_values(by=["time_step", "point_idx"])
-
-    return joined_df
