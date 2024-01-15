@@ -42,6 +42,18 @@ Thus to compose the global average (:math:`\mu`) from each subdivision average, 
 .. math::
     \mu = \frac{\sum{\bar{x_n} N_n}}{\sum{N_n}} 
 
+Ensemble Average
+================
+
+The ensemble average of signal fluctuations is a statistical measure that involves **averaging the values of a signal** across multiple instances or repetitions of an experiment or observation.
+
+The ensemble average :math:`\langle x'(t) \rangle` of the **fluctuation of a signal** :math:`x(t)` is calculated by averaging the corresponding values across different trials or instances, for a m-th order moment:
+
+.. math::
+    \langle x'(t) ^ m \rangle = \langle (x(t) - \mu) ^ m \rangle = \frac{\sum{[x(t) - \mu] ^ m}}{N}
+
+The following statistical operations use higher order moments.
+
 Root Mean Square value
 ======================
 
@@ -54,6 +66,11 @@ For example, the RMS value of a generic signal (:math:`x`) is:
     \tilde{x} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}
 
 Where :math:`\mu` is the **global average** and :math:`N` is the number of time step samples.
+
+It can also be defined based on the **ensemble average** of the signal fluctuation (:math:`x'`):
+
+.. math::
+    \tilde{x} = \sqrt{\langle x' ^ 2 \rangle} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}
 
 The global RMS value for subdivided samples is computed **cumulating the second-order moment**.
 
@@ -76,7 +93,7 @@ A positive skewness indicates a longer tail on the right side of the distributio
 For example, the skewness value of a generic signal (:math:`x`) is:
 
 .. math::
-    Skew[x] = \frac{\sum{(x_i - \mu)^3}}{(\sum{(x_i - \mu)^3}) ^ {3 / 2}}
+    Skew[x] = \frac{\langle x' ^ 3 \rangle}{\langle x' ^ 2 \rangle ^ {3/2}} = \frac{\sum{(x_i - \mu)^3}}{(\sum{(x_i - \mu)^2}) ^ {3 / 2}} \sqrt {N}
 
 Where :math:`\mu` is the **global average**. 
 
@@ -102,7 +119,7 @@ In the other hand, low kurtosis indicates lighter tails and a flatter distributi
 For example, the kurtosis value of a generic signal (:math:`x`) is:
 
 .. math::
-    Kurt[x] = \frac{\sum{(x_i - \mu)^4}}{(\sum{(x_i - \mu)^2}) ^ {2}}
+    Kurt[x] = \frac{\langle x' ^ 4 \rangle}{\langle x' ^ 2 \rangle ^ 2} = \frac{\sum{(x_i - \mu)^4}}{(\sum{(x_i - \mu)^2}) ^ {2}} N
 
 Where :math:`\mu` is the **global average**. 
 
