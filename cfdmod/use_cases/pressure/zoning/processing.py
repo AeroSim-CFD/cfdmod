@@ -75,7 +75,7 @@ def perform_extreme_value_analysis(
             return max(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_max"])
 
     group_by_point = historical_data.groupby(group_by_key)
-    timestep = pd.unique(historical_data.time_step)
+    timestep = historical_data.time_step.unique()
     xtr_stats = (
         group_by_point[var_name]
         .apply(
