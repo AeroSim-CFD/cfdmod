@@ -112,3 +112,26 @@ def get_region_indexing(
     triangles_region_idx = get_indexing_mask(mesh=transformed_geometry, df_regions=df_regions)
 
     return triangles_region_idx
+
+
+def combine_geometries(geometries_list: list[LnasGeometry]) -> LnasGeometry:
+    """Combine a list of LnasGeometry into a single LnasGeometry
+
+    Args:
+        geometries_list (list[LnasGeometry]): List of LnasGeometry to be combined
+
+    Returns:
+        LnasGeometry: Result of the combination of a list of LnasGeometry
+    """
+    result_geometry = LnasGeometry(
+        vertices=np.empty((0, 3), dtype=np.uint32), triangles=np.empty((0, 3), dtype=np.uint32)
+    )
+
+    for geometry in geometries_list:
+        geometry.triangles += len(result_geometry.vertices)
+        result_geometry.vertices = np.vstack((result_geometry.vertices, geometry.vertices))
+        result_geometry.triangles = np.vstack((result_geometry.triangles, geometry.triangles))
+
+    result_geometry._full_update()
+
+    return result_geometry

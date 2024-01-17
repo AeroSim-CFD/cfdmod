@@ -25,16 +25,10 @@ class PathManagerBody(PathManagerBase):
         return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.vtp"
 
     def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "time_series"
-            / f"{body_label}.time_series.h5"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.time_series.h5"
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.h5"
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.h5"
 
 
 class CmPathManager(PathManagerBody):
@@ -49,18 +43,10 @@ class CePathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Ce"
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "surfaces"
-            / f"{sfc_label}.regions.stl"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{sfc_label}.regions.stl"
 
     def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "regions" / f"regions.{sfc_label}.h5"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{sfc_label}.regions.h5"
 
 
 class CpPathManager(PathManagerBase):

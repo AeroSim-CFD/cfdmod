@@ -18,6 +18,7 @@ from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
+    combine_geometries,
     create_NaN_polydata,
     filter_geometry_from_list,
     get_excluded_surfaces,
@@ -40,34 +41,43 @@ class ProcessedSurface:
     polydata: vtkPolyData
 
 
-# @dataclass
-# class ProcessedSurfaceData:
-#     df_regions: pd.DataFrame
-#     surface_ce: pd.DataFrame
-#     surface_ce_stats: pd.DataFrame
-#     regions_mesh: LnasGeometry
-#     polydata: vtkPolyData
+@dataclass
+class CeOutputs:
+    processed_surfaces: list[ProcessedSurface]
+    excluded_surfaces: list[ProcessedSurface]
+    Ce_data: pd.DataFrame
+    Ce_stats: pd.DataFrame
+    Ce_regions: pd.DataFrame
 
-#     def save_outputs(self, sfc_label: str, cfg_label: str, path_manager: CePathManager):
-#         # Output 1: Ce_regions
-#         regions_path = path_manager.get_regions_df_path(sfc_label, cfg_label)
-#         create_folders_for_file(regions_path)
-#         self.df_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
+    def save_outputs(self, mesh_name: str, cfg_label: str, path_manager: CePathManager):
+        # Output 1: Ce_regions
+        regions_path = path_manager.get_regions_df_path(mesh_name, cfg_label)
+        create_folders_for_file(regions_path)
+        self.Ce_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
 
-#         # Output 2: Ce(t)
-#         timeseries_path = path_manager.get_timeseries_df_path(sfc_label, cfg_label)
-#         create_folders_for_file(timeseries_path)
-#         self.surface_ce.to_hdf(timeseries_path, key="Ce_t", mode="w", index=False)
+        # Output 2: Ce(t)
+        timeseries_path = path_manager.get_timeseries_df_path(mesh_name, cfg_label)
+        self.Ce_data.to_hdf(timeseries_path, key="Ce_t", mode="w", index=False)
 
-#         # Output 3: Ce_stats
-#         stats_path = path_manager.get_stats_df_path(sfc_label, cfg_label)
-#         create_folders_for_file(stats_path)
-#         self.surface_ce_stats.to_hdf(stats_path, key="Ce_stats", mode="w", index=False)
+        # Output 3: Ce_stats
+        stats_path = path_manager.get_stats_df_path(mesh_name, cfg_label)
+        self.Ce_stats.to_hdf(stats_path, key="Ce_stats", mode="w", index=False)
 
-#         # Output 4: Regions Mesh
-#         mesh_path = path_manager.get_surface_path(sfc_label=sfc_label, cfg_label=cfg_label)
-#         create_folders_for_file(mesh_path)
-#         self.regions_mesh.export_stl(mesh_path)
+        # Output 4: Regions Mesh
+        mesh_path = path_manager.get_surface_path(mesh_name, cfg_label)
+        regions_mesh = combine_geometries([sfc.regions_mesh for sfc in self.processed_surfaces])
+        regions_mesh.export_stl(mesh_path)
+
+        # Output 4 (Optional): Excluded Mesh
+        if len(self.excluded_surfaces) != 0:
+            excluded_mesh_path = path_manager.get_surface_path("excluded_surfaces", cfg_label)
+            excluded_mesh = combine_geometries([s.regions_mesh for s in self.excluded_surfaces])
+            excluded_mesh.export_stl(excluded_mesh_path)
+
+        # Output 5: VTK polydata
+        all_surfaces = self.processed_surfaces + self.excluded_surfaces
+        merged_polydata = merge_polydata([surface_data.polydata for surface_data in all_surfaces])
+        write_polydata(path_manager.get_vtp_path(mesh_name, cfg_label), merged_polydata)
 
 
 def get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> ZoningModel:
@@ -262,6 +272,16 @@ def combine_mesh_with_stats(
 def process_surfaces(
     geometry_dict: dict[str, GeometryData], cfg: CeConfig, ce_stats: pd.DataFrame
 ) -> list[ProcessedSurface]:
+    """Generates a Processed surface for each of the body's surfaces
+
+    Args:
+        geometry_dict (dict[str, GeometryData]): Geometry data dictionary, keyed by surface label
+        cfg (CeConfig): Shape coefficient configuration
+        ce_stats (pd.DataFrame): Statistical values for each region of each surface
+
+    Returns:
+        list[ProcessedSurface]: List of processed surface. One for each of the values inside geometry_dict
+    """
     processed_surfaces: list[ProcessedSurface] = []
 
     for sfc_lbl, geom_data in geometry_dict.items():
@@ -287,9 +307,20 @@ def process_Ce(
     cfg: CeConfig,
     cp_path: pathlib.Path,
     extreme_params: ExtremeValuesParameters,
-    path_manager: CePathManager,
-    cfg_label: str,
-):
+) -> CeOutputs:
+    """Executes the shape coefficient processing routine
+
+    Args:
+        mesh (LnasFormat): Input mesh
+        cfg (CeConfig): Shape coefficient configuration
+        cp_path (pathlib.Path): Path for pressure coefficient time series
+        extreme_params (ExtremeValuesParameters): Parameters for extreme values analysis
+        path_manager (CePathManager): Path manager
+        cfg_label (str): Label of the current shape coefficient configuration
+
+    Returns:
+        CeOutputs: Compiled outputs for shape coefficient use case
+    """
     mesh_areas = mesh.geometry.areas
     mesh_normals = mesh.geometry.normals
 
@@ -318,16 +349,31 @@ def process_Ce(
     excluded_surfaces = get_excluded_surfaces_data(
         cfg=cfg, mesh=mesh, data_columns=Ce_stats.columns
     )
-    merged_polydata = merge_polydata(
-        [surface_data.polydata for surface_data in processed_surfaces + excluded_surfaces]
+
+    ce_output = CeOutputs(
+        processed_surfaces=processed_surfaces,
+        excluded_surfaces=excluded_surfaces,
+        Ce_data=Ce_data,
+        Ce_stats=Ce_stats,
+        Ce_regions=geometry_df,
     )
 
-    write_polydata(path_manager.get_vtp_path(mesh.name, cfg_label), merged_polydata)
+    return ce_output
 
 
 def get_excluded_surfaces_data(
     cfg: CeConfig, mesh: LnasFormat, data_columns: list[str]
 ) -> list[ProcessedSurface]:
+    """Generates a Processed surface for the excluded surfaces
+
+    Args:
+        cfg (CeConfig): Shape coefficient configuration
+        mesh (LnasFormat): Original input mesh
+        data_columns (list[str]): Name of the data columns to be spawned as NaN
+
+    Returns:
+        list[ProcessedSurface]: List of processed excluded surfaces. Empty if there is not a excluded surface
+    """
     sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
     sfc_list += [
         sfc
