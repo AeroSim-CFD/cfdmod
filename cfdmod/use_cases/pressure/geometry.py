@@ -1,10 +1,21 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
+from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask
+
+
+@dataclass
+class GeometryData:
+    mesh: LnasGeometry
+    zoning_to_use: ZoningModel
+    triangles_idxs: np.ndarray
 
 
 def get_excluded_surfaces(mesh: LnasFormat, sfc_list: list[str]) -> LnasGeometry:
@@ -52,37 +63,52 @@ def create_NaN_polydata(mesh: LnasGeometry, column_labels: list[str]) -> vtkPoly
     return polydata
 
 
-def get_geometry_from_mesh(
-    body_cfg: BodyConfig, mesh: LnasFormat
+def filter_geometry_from_list(
+    mesh: LnasFormat, sfc_list: list[str]
 ) -> tuple[LnasGeometry, np.ndarray]:
-    """Filters the mesh from the list of surfaces that define the body in config
+    """Filters the mesh from a list of surfaces
 
     Args:
-        body_cfg (BodyConfig): Body configuration
-        mesh (LnasFormat): LNAS mesh
-
-    Raises:
-        Exception: Surface specified is not defined in LNAS
+        mesh (LnasFormat): LNAS mesh with every surface available
+        sfc_list (list[str]): List of surfaces to be filtered
 
     Returns:
-        tuple[LnasGeometry, np.ndarray]: Tuple containing the body geometry and the filtered triangle indexes
+        tuple[LnasGeometry, np.ndarray]: Tuple with filtered LNAS mesh geometry
+        and the filtered triangle indices
     """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-    else:
-        # Filter mesh for all surfaces
-        geometry_idx = np.array([], dtype=np.int32)
-        for sfc in body_cfg.surfaces:
-            if sfc not in mesh.surfaces.keys():
-                raise Exception(
-                    f"Surface {sfc} defined in body is not separated in the LNAS file."
-                )
-            geometry_idx = np.concatenate((geometry_idx, mesh.surfaces[sfc]))
+    geom_mesh = LnasGeometry(
+        vertices=mesh.geometry.vertices, triangles=np.empty((0, 3), dtype=np.uint32)
+    )
+    geom_triangles_idxs = np.array([], dtype=np.uint32)
 
-    geometry_idx = np.unique(geometry_idx)
-    boolean_array = np.full(len(mesh.geometry.triangles), False, dtype=bool)
-    boolean_array[geometry_idx] = True
-    filtered_format = mesh.filter_triangles(boolean_array)
+    for sfc in sfc_list:
+        m = mesh.geometry_from_surface(sfc)
+        geom_mesh.triangles = np.vstack((geom_mesh.triangles, m.triangles))
+        geom_triangles_idxs = np.hstack((geom_triangles_idxs, mesh.surfaces[sfc].copy()))
 
-    return filtered_format.geometry, geometry_idx
+    geom_mesh._full_update()
+
+    return geom_mesh, geom_triangles_idxs
+
+
+def get_region_indexing(
+    geom_data: GeometryData,
+    transformation: TransformationConfig,
+) -> np.ndarray:
+    """Index each triangle from the geometry after applying transformation
+
+    Args:
+        geom_data (GeometryData): Geometry data
+        transformation (TransformationConfig): Transformation configuration
+
+    Returns:
+        np.ndarray: Triangle indexing. Each triangle of the geometry has a corresponding region index
+    """
+    df_regions = geom_data.zoning_to_use.get_regions_df()
+
+    transformed_geometry = geom_data.mesh.copy()
+    transformed_geometry.apply_transformation(transformation.get_geometry_transformation())
+
+    triangles_region_idx = get_indexing_mask(mesh=transformed_geometry, df_regions=df_regions)
+
+    return triangles_region_idx

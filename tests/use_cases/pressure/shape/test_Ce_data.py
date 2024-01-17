@@ -32,11 +32,10 @@ class TestTransformToCeAndCalculateStatistics(unittest.TestCase):
         ]
 
     def test_transform_to_Ce(self):
-        sfc_triangles_idxs = np.array([0])
-        triangles_region = np.array([0])
+        triangles_in_region = np.array([0])
         n_timesteps = 3
 
-        result = transform_to_Ce(self.surface_mesh, self.cp_data, triangles_region)
+        result = transform_to_Ce(self.surface_mesh, self.cp_data, triangles_in_region)
 
         self.assertEqual(len(result), n_timesteps)  # Three timesteps x 1 triangle
         self.assertTrue("Ce" in result.columns)
