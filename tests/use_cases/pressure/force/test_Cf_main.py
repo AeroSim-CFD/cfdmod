@@ -7,7 +7,7 @@ from cfdmod.use_cases.pressure.force.main import main
 class TestCfMain(unittest.TestCase):
     def test_main(self):
         output = "./output/pressure"
-        cp = "./fixtures/tests/pressure/data/cp_t.resampled.hdf"
+        cp = "./fixtures/tests/pressure/data/cp_t.resampled.h5"
         config = "./fixtures/tests/pressure/Cf_params.yaml"
         mesh = "./fixtures/tests/pressure/galpao/galpao.normalized.lnas"
 
