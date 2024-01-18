@@ -25,7 +25,7 @@ from cfdmod.use_cases.pressure.geometry import (
     get_region_indexing,
 )
 from cfdmod.use_cases.pressure.path_manager import CePathManager
-from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
+from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig, TransformationConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
@@ -138,7 +138,7 @@ def tabulate_geometry_data(
     geom_dict: dict[str, GeometryData],
     mesh_areas: np.ndarray,
     mesh_normals: np.ndarray,
-    cfg: CeConfig,
+    transformation: TransformationConfig,
 ) -> pd.DataFrame:
     """Converts a dictionary of GeometryData into a DataFrame with geometric properties
 
@@ -146,7 +146,7 @@ def tabulate_geometry_data(
         geom_dict (dict[str, GeometryData]): Geometry data dictionary
         mesh_areas (np.ndarray): Parent mesh areas
         mesh_normals (np.ndarray): Parent mesh normals
-        cfg (CeConfig): Shape coefficient configuration
+        transformation (TransformationConfig): Transformation configuration
 
     Returns:
         pd.DataFrame: Geometry data tabulated into a DataFrame
@@ -156,18 +156,16 @@ def tabulate_geometry_data(
     for sfc_id, geom_data in geom_dict.items():
         df = pd.DataFrame()
         region_idx_per_tri = get_region_indexing(
-            geom_data=geom_data, transformation=cfg.transformation
+            geom_data=geom_data, transformation=transformation
         )
         df["region_idx"] = np.core.defchararray.add(region_idx_per_tri.astype(str), "-" + sfc_id)
-        # df["region_idx"] = np.array(map(lambda x: (x, sfc_id), region_idx_per_tri))
-        # Compose keys
         # df["region_idx"] = region_idx_per_tri
+        # df["sfc_idx"] = sfc_id
         df["point_idx"] = geom_data.triangles_idxs
         df["area"] = mesh_areas[geom_data.triangles_idxs].copy()
         df["n_x"] = mesh_normals[geom_data.triangles_idxs, 0].copy()
         df["n_y"] = mesh_normals[geom_data.triangles_idxs, 1].copy()
         df["n_z"] = mesh_normals[geom_data.triangles_idxs, 2].copy()
-        # df["sfc_idx"] = sfc_id
         dfs.append(df)
 
     geometry_df = pd.concat(dfs)
@@ -202,9 +200,7 @@ def transform_Ce(
     )
 
     Ce_data["Ce"] = Ce_data["total_force"] / Ce_data["total_area"]
-    # Ce_data["region_idx"] = Ce_data["region_idx"].astype(str) + "-" + Ce_data["sfc_idx"]
     Ce_data.drop(columns=["total_area", "total_force"], inplace=True)
-    # Ce_data.drop(columns=["total_area", "total_force", "sfc_idx"], inplace=True)
 
     return Ce_data
 
@@ -332,7 +328,7 @@ def process_Ce(
         geom_dict=geometry_dict,
         mesh_areas=mesh_areas,
         mesh_normals=mesh_normals,
-        cfg=cfg,
+        transformation=cfg.transformation,
     )
     Ce_data = process_timestep_groups(
         data_path=cp_path, geometry_df=geometry_df, processing_function=transform_Ce
