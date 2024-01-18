@@ -22,7 +22,7 @@ from cfdmod.use_cases.pressure.geometry import (
     create_NaN_polydata,
     filter_geometry_from_list,
     get_excluded_surfaces,
-    get_region_indexing,
+    tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig, TransformationConfig
@@ -132,45 +132,6 @@ def get_geometry_data(
         )
         raw_surfaces[sfc_lbl] = raw_surface
     return raw_surfaces
-
-
-def tabulate_geometry_data(
-    geom_dict: dict[str, GeometryData],
-    mesh_areas: np.ndarray,
-    mesh_normals: np.ndarray,
-    transformation: TransformationConfig,
-) -> pd.DataFrame:
-    """Converts a dictionary of GeometryData into a DataFrame with geometric properties
-
-    Args:
-        geom_dict (dict[str, GeometryData]): Geometry data dictionary
-        mesh_areas (np.ndarray): Parent mesh areas
-        mesh_normals (np.ndarray): Parent mesh normals
-        transformation (TransformationConfig): Transformation configuration
-
-    Returns:
-        pd.DataFrame: Geometry data tabulated into a DataFrame
-    """
-    dfs = []
-
-    for sfc_id, geom_data in geom_dict.items():
-        df = pd.DataFrame()
-        region_idx_per_tri = get_region_indexing(
-            geom_data=geom_data, transformation=transformation
-        )
-        df["region_idx"] = np.core.defchararray.add(region_idx_per_tri.astype(str), "-" + sfc_id)
-        # df["region_idx"] = region_idx_per_tri
-        # df["sfc_idx"] = sfc_id
-        df["point_idx"] = geom_data.triangles_idxs
-        df["area"] = mesh_areas[geom_data.triangles_idxs].copy()
-        df["n_x"] = mesh_normals[geom_data.triangles_idxs, 0].copy()
-        df["n_y"] = mesh_normals[geom_data.triangles_idxs, 1].copy()
-        df["n_z"] = mesh_normals[geom_data.triangles_idxs, 2].copy()
-        dfs.append(df)
-
-    geometry_df = pd.concat(dfs)
-
-    return geometry_df
 
 
 def transform_Ce(

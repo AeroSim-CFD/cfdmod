@@ -47,14 +47,14 @@ def split_into_chunks(
 def process_timestep_groups(
     data_path: pathlib.Path,
     geometry_df: pd.DataFrame,
-    processing_function: Callable[[pd.DataFrame], pd.DataFrame],
+    processing_function: Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame],
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
     Args:
         data_path (pathlib.Path): Path for pressure coefficient data
         geometry_df (pd.DataFrame): Geometric properties dataframe
-        processing_function (Callable[[pd.DataFrame], pd.DataFrame]): Coefficient processing function
+        processing_function (Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]): Coefficient processing function
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series

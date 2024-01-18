@@ -45,23 +45,6 @@ class TestCeData(unittest.TestCase):
             "kurtosis",
         ]
 
-    def test_tabulate_geometry(self):
-        geom_dict = {
-            "sfc1": GeometryData(
-                mesh=self.mesh, zoning_to_use=self.zoning, triangles_idxs=np.array([0, 1])
-            )
-        }
-        transformation = TransformationConfig()
-        geometry_df = tabulate_geometry_data(
-            geom_dict,
-            mesh_areas=self.mesh.areas,
-            mesh_normals=self.mesh.normals,
-            transformation=transformation,
-        )
-
-        expected_columns = ["region_idx", "point_idx", "area", "n_x", "n_y", "n_z"]
-        self.assertTrue(all([prop in geometry_df.columns for prop in expected_columns]))
-
     def test_transform_Ce(self):
         geom_dict = {
             "sfc1": GeometryData(

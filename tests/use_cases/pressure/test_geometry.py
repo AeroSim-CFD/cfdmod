@@ -5,11 +5,15 @@ from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
 from cfdmod.use_cases.pressure.geometry import (
+    GeometryData,
     combine_geometries,
     create_NaN_polydata,
     filter_geometry_from_list,
     get_excluded_surfaces,
 )
+from cfdmod.use_cases.pressure.shape.Ce_config import TransformationConfig
+from cfdmod.use_cases.pressure.shape.Ce_data import tabulate_geometry_data
+from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
 class TestGeometry(unittest.TestCase):
@@ -84,6 +88,26 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(result_geometry, LnasGeometry)
         self.assertTrue((result_geometry.triangles == np.array([[0, 1, 2], [3, 4, 5]])).all())
         self.assertTrue(len(result_geometry.vertices) == 6)
+
+    def test_tabulate_geometry(self):
+        zoning = ZoningModel(x_intervals=[0, 5, 10])
+        zoning.offset_limits(0.1)
+
+        geom_dict = {
+            "sfc1": GeometryData(
+                mesh=self.mesh.geometry, zoning_to_use=zoning, triangles_idxs=np.array([0, 1])
+            )
+        }
+        transformation = TransformationConfig()
+        geometry_df = tabulate_geometry_data(
+            geom_dict,
+            mesh_areas=self.mesh.geometry.areas,
+            mesh_normals=self.mesh.geometry.normals,
+            transformation=transformation,
+        )
+
+        expected_columns = ["region_idx", "point_idx", "area", "n_x", "n_y", "n_z"]
+        self.assertTrue(all([prop in geometry_df.columns for prop in expected_columns]))
 
 
 if __name__ == "__main__":
