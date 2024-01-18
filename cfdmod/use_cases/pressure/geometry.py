@@ -18,6 +18,32 @@ class GeometryData:
     triangles_idxs: np.ndarray
 
 
+@dataclass
+class ProcessedEntity:
+    mesh: LnasGeometry
+    polydata: vtkPolyData
+
+
+def get_excluded_entities(
+    excluded_sfc_list: list[str], mesh: LnasFormat, data_columns: list[str]
+) -> list[ProcessedEntity]:
+    """Generates a Processed entity for the excluded surfaces
+
+    Args:
+        excluded_sfc_list (list[str]): List of excluded surfaces
+        mesh (LnasFormat): Original input mesh
+        data_columns (list[str]): Name of the data columns to be spawned as NaN
+
+    Returns:
+        ProcessedEntity: Processed entity for excluded surfaces
+    """
+    excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=excluded_sfc_list)
+    columns = [col for col in data_columns if col not in ["point_idx", "region_idx"]]
+    excluded_polydata = create_NaN_polydata(mesh=excluded_sfcs, column_labels=columns)
+
+    return ProcessedEntity(mesh=excluded_sfcs, polydata=excluded_polydata)
+
+
 def get_excluded_surfaces(mesh: LnasFormat, sfc_list: list[str]) -> LnasGeometry:
     """Filters the surfaces that were excluded in processing
 
