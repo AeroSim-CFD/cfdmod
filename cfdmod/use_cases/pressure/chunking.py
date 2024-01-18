@@ -3,6 +3,7 @@ import pathlib
 from typing import Callable
 
 import pandas as pd
+from lnas import LnasGeometry
 
 
 def split_into_chunks(
@@ -47,14 +48,17 @@ def split_into_chunks(
 def process_timestep_groups(
     data_path: pathlib.Path,
     geometry_df: pd.DataFrame,
-    processing_function: Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame],
+    geometry: LnasGeometry,
+    processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
     Args:
         data_path (pathlib.Path): Path for pressure coefficient data
         geometry_df (pd.DataFrame): Geometric properties dataframe
-        processing_function (Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]): Coefficient processing function
+        geometry (LnasGeometry): Geometry to be processed. Needed for evaluating representative area and volume
+        processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
+            Coefficient processing function
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
@@ -65,7 +69,7 @@ def process_timestep_groups(
 
         for store_group in store_groups:
             sample = df_store.get(store_group)
-            coefficient_data = processing_function(sample, geometry_df)
+            coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
