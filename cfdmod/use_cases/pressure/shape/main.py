@@ -81,3 +81,5 @@ def main(*args):
         )
 
         Ce_output.save_outputs(mesh_name=mesh.name, cfg_label=cfg_label, path_manager=path_manager)
+
+        logger.info(f"Processed {cfg_label}!")

@@ -302,7 +302,7 @@ def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
     cp_path: pathlib.Path,
-    extreme_params: ExtremeValuesParameters,
+    extreme_params: ExtremeValuesParameters | None,
 ) -> CeOutputs:
     """Executes the shape coefficient processing routine
 
@@ -310,7 +310,7 @@ def process_Ce(
         mesh (LnasFormat): Input mesh
         cfg (CeConfig): Shape coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
-        extreme_params (ExtremeValuesParameters): Parameters for extreme values analysis
+        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
         path_manager (CePathManager): Path manager
         cfg_label (str): Label of the current shape coefficient configuration
 
