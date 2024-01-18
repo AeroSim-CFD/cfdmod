@@ -4,13 +4,9 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.geometry import GeometryData
-from cfdmod.use_cases.pressure.shape.Ce_config import TransformationConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import (
-    calculate_statistics,
-    tabulate_geometry_data,
-    transform_Ce,
-)
+from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
+from cfdmod.use_cases.pressure.shape.Ce_data import calculate_statistics, transform_Ce
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
@@ -51,14 +47,13 @@ class TestCeData(unittest.TestCase):
                 mesh=self.mesh, zoning_to_use=self.zoning, triangles_idxs=np.array([0, 1])
             )
         }
-        transformation = TransformationConfig()
         geometry_df = tabulate_geometry_data(
             geom_dict,
             mesh_areas=self.mesh.areas,
             mesh_normals=self.mesh.normals,
-            transformation=transformation,
+            transformation=TransformationConfig(),
         )
-        ce_data = transform_Ce(self.cp_data, geometry_df)
+        ce_data = transform_Ce(self.cp_data, geometry_df, self.mesh)
 
         self.assertEqual(
             len(ce_data), self.cp_data.time_step.nunique() * self.cp_data.point_idx.nunique()

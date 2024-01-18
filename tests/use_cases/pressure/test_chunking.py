@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups, split_into_chunks
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.use_cases.pressure.shape.Ce_config import TransformationConfig
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
@@ -52,7 +52,9 @@ class TestChunking(unittest.TestCase):
         self.output_path.unlink()
 
     def test_process_timestep_groups(self):
-        def mock_processing_function(cp_df: pd.DataFrame, geom_df: pd.DataFrame) -> pd.DataFrame:
+        def mock_processing_function(
+            cp_df: pd.DataFrame, _geom_df: pd.DataFrame, _geom: LnasGeometry
+        ) -> pd.DataFrame:
             cp_df["value"] *= 2
             return cp_df
 
@@ -78,7 +80,7 @@ class TestChunking(unittest.TestCase):
         )
 
         result_df = process_timestep_groups(
-            self.output_path, geometry_df, mock_processing_function
+            self.output_path, geometry_df, geometry, mock_processing_function
         )
 
         self.assertTrue((result_df.value.to_numpy() == self.sample_df.value.to_numpy() * 2).all())

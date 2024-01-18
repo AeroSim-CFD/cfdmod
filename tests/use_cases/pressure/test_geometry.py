@@ -4,15 +4,15 @@ import numpy as np
 from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     combine_geometries,
     create_NaN_polydata,
     filter_geometry_from_list,
     get_excluded_surfaces,
+    tabulate_geometry_data,
 )
-from cfdmod.use_cases.pressure.shape.Ce_config import TransformationConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import tabulate_geometry_data
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
