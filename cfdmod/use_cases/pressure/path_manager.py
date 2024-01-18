@@ -30,6 +30,9 @@ class PathManagerBody(PathManagerBase):
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
         return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.h5"
 
+    def get_regions_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.regions.h5"
+
 
 class CmPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cm"
@@ -44,9 +47,6 @@ class CePathManager(PathManagerBody):
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
         return self.output_path / cfg_label / self._FOLDERNAME / f"{sfc_label}.regions.stl"
-
-    def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / f"{sfc_label}.regions.h5"
 
 
 class CpPathManager(PathManagerBase):
