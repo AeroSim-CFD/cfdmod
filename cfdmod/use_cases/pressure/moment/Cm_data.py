@@ -281,4 +281,9 @@ def get_representative_volume(input_mesh: LnasGeometry, point_idx: np.ndarray) -
     Ly = y_max - y_min
     Lz = z_max - z_min
 
+    # Threshold to avoid big coefficients
+    Lx = 1 if Lx < 1 else Lx
+    Ly = 1 if Ly < 1 else Ly
+    Lz = 1 if Lz < 1 else Lz
+
     return Lx * Ly * Lz
