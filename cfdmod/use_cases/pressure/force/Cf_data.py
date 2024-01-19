@@ -96,15 +96,12 @@ def process_Cf(
     Returns:
         CfOutputs: Compiled outputs for force coefficient use case
     """
-    mesh_areas = mesh.geometry.areas
-    mesh_normals = mesh.geometry.normals
-
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
     geometry_dict = {cfg.body: geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
-        mesh_areas=mesh_areas,
-        mesh_normals=mesh_normals,
+        mesh_areas=mesh.geometry.areas,
+        mesh_normals=mesh.geometry.normals,
         transformation=cfg.transformation,
     )
     Cf_data = process_timestep_groups(
