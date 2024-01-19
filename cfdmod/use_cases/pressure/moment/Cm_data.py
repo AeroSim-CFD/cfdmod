@@ -1,157 +1,214 @@
+import pathlib
 from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
-from vtk import vtkAppendPolyData, vtkPolyData
 
-from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
+from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
-from cfdmod.use_cases.pressure.geometry import get_geometry_from_mesh
+from cfdmod.use_cases.pressure.geometry import (
+    GeometryData,
+    ProcessedEntity,
+    filter_geometry_from_list,
+    get_excluded_entities,
+    tabulate_geometry_data,
+)
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
-    get_indexing_mask,
 )
 from cfdmod.utils import create_folders_for_file
 
 
 @dataclass
-class ProcessedBodyData:
-    df_regions: pd.DataFrame
-    body_cm: pd.DataFrame
-    body_cm_stats: pd.DataFrame
-    body_geom: LnasGeometry
-    body_data_df: pd.DataFrame
-    polydata: vtkPolyData | vtkAppendPolyData
+class CmOutputs:
+    Cm_data: pd.DataFrame
+    Cm_stats: pd.DataFrame
+    Cm_regions: pd.DataFrame
+    data_entity: ProcessedEntity
+    excluded_entity: Optional[ProcessedEntity]
 
     def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
-        # Output 1: Cm(t)
-        timeseries_path = path_manager.get_timeseries_df_path(
-            body_label=body_label, cfg_label=cfg_label
-        )
-        create_folders_for_file(timeseries_path)
-        self.body_cm.to_hdf(timeseries_path, key="Cm_t", mode="w", index=False)
+        # Output 1: Cm_regions
+        regions_path = path_manager.get_regions_df_path(body_label, cfg_label)
+        create_folders_for_file(regions_path)
+        self.Cm_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
 
-        # Output 2: Cm_stats
-        stats_path = path_manager.get_stats_df_path(body_label=body_label, cfg_label=cfg_label)
-        create_folders_for_file(stats_path)
-        self.body_cm_stats.to_hdf(stats_path, key="Cm_stats", mode="w", index=False)
+        # Output 2: Cm(t)
+        timeseries_path = path_manager.get_timeseries_df_path(body_label, cfg_label)
+        self.Cm_data.to_hdf(timeseries_path, key="Cm_t", mode="w", index=False)
 
-        # Output 3: VTK
-        vtp_path = path_manager.get_vtp_path(body_label=body_label, cfg_label=cfg_label)
-        create_folders_for_file(vtp_path)
-        write_polydata(output_filename=vtp_path, poly_data=self.polydata)
+        # Output 3: Cm_stats
+        stats_path = path_manager.get_stats_df_path(body_label, cfg_label)
+        self.Cm_stats.to_hdf(stats_path, key="Cm_stats", mode="w", index=False)
+
+        # Output 4: VTK polydata
+        all_entities = [self.data_entity]
+        all_entities += [self.excluded_entity] if self.excluded_entity is not None else []
+        merged_polydata = merge_polydata([entity.polydata for entity in all_entities])
+        write_polydata(path_manager.get_vtp_path(body_label, cfg_label), merged_polydata)
 
 
-def process_body(
-    mesh: LnasFormat,
-    body_cfg: BodyConfig,
-    cp_data: pd.DataFrame,
-    cfg: CmConfig,
-    extreme_params: Optional[ExtremeValuesParameters] = None,
-) -> ProcessedBodyData:
-    """Processes a sub body from separating the surfaces of the original mesh
-    The pressure coefficient must already contain the areas of each triangle.
-    It must be added before calling this function
+def get_geometry_data(body_cfg: BodyConfig, cfg: CmConfig, mesh: LnasFormat) -> GeometryData:
+    """Builds a GeometryData from the mesh and the configurations
 
     Args:
-        mesh (LnasFormat): LNAS mesh
-        body_cfg (BodyConfig): Body processing configuration
-        cp_data (pd.DataFrame): Pressure coefficients data
-        cfg (CmConfig): Post processing configuration
-        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
+        body_cfg (BodyConfig): Body configuration with surface list
+        cfg (CfConfig): Force coefficient configuration
+        mesh (LnasFormat): Input mesh
 
     Returns:
-        ProcessedBodyData: Processed body object
+        GeometryData: Filtered GeometryData
     """
-    body_geom, geometry_idx = get_geometry_from_mesh(body_cfg=body_cfg, mesh=mesh)
+    if len(body_cfg.surfaces) == 0:
+        # Include all surfaces
+        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
+        geom = mesh.geometry
+    else:
+        # Filter mesh for all surfaces
+        geom, geometry_idx = filter_geometry_from_list(mesh=mesh, sfc_list=body_cfg.surfaces)
 
-    zoning_to_use = cfg.sub_bodies.offset_limits(0.1)
-    df_regions = zoning_to_use.get_regions_df()
+    return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
-    transformed_body = body_geom.copy()
-    transformed_body.apply_transformation(cfg.transformation.get_geometry_transformation())
 
-    sub_body_idx_array = get_indexing_mask(transformed_body, df_regions)
-    sub_body_idx = pd.DataFrame({"point_idx": geometry_idx, "region_idx": sub_body_idx_array})
+def process_Cm(
+    mesh: LnasFormat,
+    body_cfg: BodyConfig,
+    cfg: CmConfig,
+    cp_path: pathlib.Path,
+    extreme_params: ExtremeValuesParameters | None,
+) -> CmOutputs:
+    """Executes the moment coefficient processing routine
 
-    body_data = cp_data[cp_data["point_idx"].isin(geometry_idx)].copy()
-    body_data = pd.merge(body_data, sub_body_idx, on="point_idx", how="left")
+    Args:
+        mesh (LnasFormat): Input mesh
+        body_cfg (BodyConfig): Body configuration
+        cfg (CmConfig): Moment coefficient configuration
+        cp_path (pathlib.Path): Path for pressure coefficient time series
+        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
 
-    centroids = np.mean(transformed_body.triangle_vertices, axis=1)
-
-    position_df = get_lever_relative_position_df(
-        centroids=centroids, lever_origin=cfg.lever_origin, geometry_idx=geometry_idx
+    Returns:
+        CmOutputs: Compiled outputs for moment coefficient use case
+    """
+    geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
+    geometry_dict = {cfg.body: geom_data}
+    geometry_df = tabulate_geometry_data(
+        geom_dict=geometry_dict,
+        mesh_areas=mesh.geometry.areas,
+        mesh_normals=mesh.geometry.normals,
+        transformation=cfg.transformation,
     )
-    body_data = pd.merge(body_data, position_df, on="point_idx", how="left")
-
-    body_cf = transform_to_Cm(
-        # body_data=body_data, sub_body_idx_df=sub_body_idx, body_geom=body_geom
-        body_data=body_data,
-        sub_body_idx_df=sub_body_idx,
-        body_geom=mesh.geometry,
+    geometry_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=cfg.transformation,
+        lever_origin=cfg.lever_origin,
+        geometry_df=geometry_df,
+    )
+    Cm_data = process_timestep_groups(
+        data_path=cp_path,
+        geometry_df=geometry_df,
+        geometry=mesh.geometry,
+        processing_function=transform_Cm,
     )
 
-    body_cf_stats = calculate_statistics(
-        body_cf,
-        cfg.statistics,
+    Cm_stats = calculate_statistics(
+        historical_data=Cm_data,
+        statistics_to_apply=cfg.statistics,
         variables=cfg.variables,
         group_by_key="region_idx",
         extreme_params=extreme_params,
     )
 
     body_data_df = combine_stats_data_with_mesh(
-        mesh=body_geom, region_idx_array=sub_body_idx_array, data_stats=body_cf_stats
+        mesh=geom_data.mesh,
+        region_idx_array=geometry_df.region_idx.to_numpy(),
+        data_stats=Cm_stats,
     )
 
-    polydata = create_polydata_for_cell_data(body_data_df, body_geom)
+    polydata = create_polydata_for_cell_data(body_data_df, geom_data.mesh)
 
-    return ProcessedBodyData(
-        df_regions=df_regions,
-        body_cm=body_cf,
-        body_cm_stats=body_cf_stats,
-        body_geom=body_geom,
-        body_data_df=body_data_df,
-        polydata=polydata,
+    excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in body_cfg.surfaces]
+
+    if len(excluded_sfc_list) != 0 and len(body_cfg.surfaces) != 0:
+        excluded_entity = get_excluded_entities(
+            excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=Cm_stats.columns
+        )
+    else:
+        excluded_entity = None
+
+    data_entity = ProcessedEntity(mesh=geom_data.mesh, polydata=polydata)
+
+    cm_output = CmOutputs(
+        Cm_data=Cm_data,
+        Cm_stats=Cm_stats,
+        Cm_regions=geometry_df,
+        data_entity=data_entity,
+        excluded_entity=excluded_entity,
     )
 
+    return cm_output
 
-def transform_to_Cm(
-    body_data: pd.DataFrame, sub_body_idx_df: pd.DataFrame, body_geom: LnasGeometry
+
+def add_lever_arm_to_geometry_df(
+    geom_data: GeometryData,
+    transformation: TransformationConfig,
+    lever_origin: tuple[float, float, float],
+    geometry_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Converts pressure coefficient data for a body into force coefficients
-    The pressure coefficient must already contain the areas of each triangle.
-    It must be added before calling this function
+    """Adds a value for the lever arm for each point for moment calculations
 
     Args:
-        body_data (pd.DataFrame): Pressure coefficient data for the body
-        sub_body_idx_df (pd.DataFrame): Dataframe grouping point index for each region index
-        body_geom (LnasGeometry): LNAS mesh for the body geometry
+        geom_data (GeometryData): Geometry data object
+        transformation (TransformationConfig): Transformation config to apply to the geometry
+        lever_origin (tuple[float, float, float]): Origin of the lever after the geometry is transformed
+        geometry_df (pd.DataFrame): Dataframe with geometric properties
 
     Returns:
-        pd.DataFrame: Body force coefficients data
+        pd.DataFrame: Merged geometry_df with lever arm lengths
     """
-    body_data["fx"] = body_data["cp"] * body_data["Ax"]
-    body_data["fy"] = body_data["cp"] * body_data["Ay"]
-    body_data["fz"] = body_data["cp"] * body_data["Az"]
+    transformed_body = geom_data.mesh.copy()
+    transformed_body.apply_transformation(transformation.get_geometry_transformation())
+    centroids = np.mean(transformed_body.triangle_vertices, axis=1)
 
-    body_data["mx"] = (
-        body_data["ry"] * body_data["fz"] - body_data["rz"] * body_data["fy"]
-    )  # y Fz - z Fy
-    body_data["my"] = (
-        body_data["rz"] * body_data["fx"] - body_data["rx"] * body_data["fz"]
-    )  # z Fx - x Fz
-    body_data["mz"] = (
-        body_data["rx"] * body_data["fy"] - body_data["ry"] * body_data["fx"]
-    )  # x Fy - y Fx
+    position_df = get_lever_relative_position_df(
+        centroids=centroids, lever_origin=lever_origin, geometry_idx=geom_data.triangles_idxs
+    )
+    result = pd.merge(geometry_df, position_df, on="point_idx", how="left")
 
-    body_cm = (
-        body_data.groupby(["region_idx", "time_step"])  # type: ignore
+    return result
+
+
+def transform_Cm(
+    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+) -> pd.DataFrame:
+    """Transforms pressure coefficient into moment coefficient
+
+    Args:
+        raw_cp (pd.DataFrame): Body pressure coefficient data
+        geometry_df (pd.DataFrame): Dataframe with geometric properties and triangle indexing
+        geometry (LnasGeometry): Mesh geometry for bounding box definition
+
+    Returns:
+        pd.DataFrame: Moment coefficient dataframe
+    """
+    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
+    cp_data["fx"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_x"])
+    cp_data["fy"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_y"])
+    cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
+
+    cp_data["mx"] = cp_data["ry"] * cp_data["fz"] - cp_data["rz"] * cp_data["fy"]  # y Fz - z Fy
+    cp_data["my"] = cp_data["rz"] * cp_data["fx"] - cp_data["rx"] * cp_data["fz"]  # z Fx - x Fz
+    cp_data["mz"] = cp_data["rx"] * cp_data["fy"] - cp_data["ry"] * cp_data["fx"]  # x Fy - y Fx
+
+    Cm_data = (
+        cp_data.groupby(["region_idx", "time_step"])  # type: ignore
         .agg(
             Mx=pd.NamedAgg(column="mx", aggfunc="sum"),
             My=pd.NamedAgg(column="my", aggfunc="sum"),
@@ -160,25 +217,27 @@ def transform_to_Cm(
         .reset_index()
     )
 
-    region_group_by = sub_body_idx_df.groupby(["region_idx"])
+    region_group_by = geometry_df.groupby(["region_idx"])
     representative_volume = {}
 
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
-        V_rep = get_representative_volume(input_mesh=body_geom, point_idx=region_points_idx)
+        V_rep = get_representative_volume(input_mesh=geometry, point_idx=region_points_idx)
 
         representative_volume[region_idx[0]] = {}
         representative_volume[region_idx[0]]["V_rep"] = V_rep
 
     rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})
-    body_cm = pd.merge(body_cm, rep_df, on="region_idx")
+    Cm_data = pd.merge(Cm_data, rep_df, on="region_idx")
 
-    body_cm["Cmx"] = body_cm["Mx"] / body_cm["V_rep"]
-    body_cm["Cmy"] = body_cm["My"] / body_cm["V_rep"]
-    body_cm["Cmz"] = body_cm["Mz"] / body_cm["V_rep"]
+    Cm_data["Cmx"] = Cm_data["Mx"] / Cm_data["V_rep"]
+    Cm_data["Cmy"] = Cm_data["My"] / Cm_data["V_rep"]
+    Cm_data["Cmz"] = Cm_data["Mz"] / Cm_data["V_rep"]
 
-    return body_cm
+    Cm_data.drop(columns=["Mx", "My", "Mz", "V_rep"], inplace=True)
+
+    return Cm_data
 
 
 def get_lever_relative_position_df(
@@ -189,7 +248,7 @@ def get_lever_relative_position_df(
     Args:
         centroids (np.ndarray): Array of triangle centroids
         lever_origin (tuple[float, float, float]): Coordinate of the lever origin
-        geometry_idx (np.ndarray): Indexes of the triangles of the vody
+        geometry_idx (np.ndarray): Indexes of the triangles of the body
 
     Returns:
         pd.DataFrame: Relative position dataframe
