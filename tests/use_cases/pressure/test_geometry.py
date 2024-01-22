@@ -23,8 +23,6 @@ class TestGeometry(unittest.TestCase):
         geometry = LnasGeometry(vertices=vertices, triangles=triangles)
         self.mesh = LnasFormat(
             version="",
-            name="mock mesh",
-            normalization=None,
             geometry=geometry,
             surfaces={"sfc1": np.array([0]), "sfc2": np.array([1])},
         )
