@@ -26,7 +26,7 @@ class ProcessedEntity:
 
 def get_excluded_entities(
     excluded_sfc_list: list[str], mesh: LnasFormat, data_columns: list[str]
-) -> list[ProcessedEntity]:
+) -> ProcessedEntity:
     """Generates a Processed entity for the excluded surfaces
 
     Args:
@@ -56,7 +56,7 @@ def get_excluded_surfaces(mesh: LnasFormat, sfc_list: list[str]) -> LnasGeometry
     """
     excluded_ids = np.array([], dtype=np.uint32)
     for excluded_sfc in sfc_list:
-        if not excluded_sfc in mesh.surfaces.keys():
+        if excluded_sfc not in mesh.surfaces.keys():
             raise Exception("Surface is not defined in LNAS.")
         ids = mesh.surfaces[excluded_sfc].copy()
         excluded_ids = np.concatenate((excluded_ids, ids))

@@ -295,6 +295,8 @@ def process_Ce(
         extreme_params=extreme_params,
     )
 
+    processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+
     excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
     excluded_sfc_list += [
         sfc
@@ -302,9 +304,6 @@ def process_Ce(
         for sfc in sfc_set
         if set_lbl in cfg.zoning.exclude  # type: ignore
     ]
-
-    processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
-
     if len(excluded_sfc_list) != 0:
         excluded_surfaces = get_excluded_entities(
             excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=Ce_stats.columns
