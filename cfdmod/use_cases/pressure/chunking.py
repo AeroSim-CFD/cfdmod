@@ -30,17 +30,14 @@ def split_into_chunks(
         output_path.unlink()  # Overwrite existing file
 
     for i in range(number_of_chunks):
-        if (i + 1) * step - 1 > len(time_arr) - 1:
-            time_range = [time_arr[i * step], time_arr[-1]]
-        else:
-            time_range = [time_arr[i * step], time_arr[(i + 1) * step - 1]]
+        min_step, max_step = i * step, min((i+1) * step - 1, len(time_arr)-1)
 
         df: pd.DataFrame = time_series_df.loc[
-            (time_series_df.time_step >= time_range[0])
-            & (time_series_df.time_step <= time_range[1])
+            (time_series_df.time_step >= min_step)
+            & (time_series_df.time_step <= max_step)
         ].copy()
 
-        range_lbl = f"range_{int(time_range[0])}_{int(time_range[1])}"
+        range_lbl = f"range_{int(min_step)}_{int(max_step)}"
 
         df.to_hdf(output_path, key=range_lbl, mode="a", index=False, format="t")
 
@@ -63,6 +60,7 @@ def process_timestep_groups(
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
     """
+
     processed_samples: list[pd.DataFrame] = []
     with pd.HDFStore(data_path, mode="r") as df_store:
         store_groups = df_store.keys()
