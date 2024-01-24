@@ -36,7 +36,7 @@ def split_into_chunks(
             (time_series_df.time_step >= time_arr[min_step]) & (time_series_df.time_step <= time_arr[max_step])
         ].copy()
 
-        range_lbl = f"range_{int(min_step)}_{int(max_step)}"
+        range_lbl = f"range_{int(time_arr[min_step])}_{int(time_arr[max_step])}"
         
         df.to_hdf(output_path, key=range_lbl, mode="a", index=False, format="t")
 
