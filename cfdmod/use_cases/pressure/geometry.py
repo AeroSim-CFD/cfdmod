@@ -188,8 +188,6 @@ def tabulate_geometry_data(
             geom_data=geom_data, transformation=transformation
         )
         df["region_idx"] = np.core.defchararray.add(region_idx_per_tri.astype(str), "-" + sfc_id)
-        # df["region_idx"] = region_idx_per_tri
-        # df["sfc_idx"] = sfc_id
         df["point_idx"] = geom_data.triangles_idxs
         df["area"] = mesh_areas[geom_data.triangles_idxs].copy()
         df["n_x"] = mesh_normals[geom_data.triangles_idxs, 0].copy()

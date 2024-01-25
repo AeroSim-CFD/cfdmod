@@ -98,11 +98,14 @@ def process_Cm(
         CmOutputs: Compiled outputs for moment coefficient use case
     """
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
+    geometry_to_use = mesh.geometry.copy()
+    geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
+
     geometry_dict = {cfg.body: geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
-        mesh_areas=mesh.geometry.areas,
-        mesh_normals=mesh.geometry.normals,
+        mesh_areas=geometry_to_use.areas,
+        mesh_normals=geometry_to_use.normals,
         transformation=cfg.transformation,
     )
     geometry_df = add_lever_arm_to_geometry_df(
@@ -114,7 +117,7 @@ def process_Cm(
     Cm_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
-        geometry=mesh.geometry,
+        geometry=geometry_to_use,
         processing_function=transform_Cm,
     )
 
