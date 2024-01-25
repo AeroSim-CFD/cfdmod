@@ -69,11 +69,11 @@ def get_geometry_data(body_cfg: BodyConfig, cfg: CfConfig, mesh: LnasFormat) -> 
     if len(body_cfg.surfaces) == 0:
         # Include all surfaces
         geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-        geom = mesh.geometry
+        geom = mesh.geometry.copy()
     else:
         # Filter mesh for all surfaces
         geom, geometry_idx = filter_geometry_from_list(mesh=mesh, sfc_list=body_cfg.surfaces)
-
+        
     return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
 
@@ -97,17 +97,20 @@ def process_Cf(
         CfOutputs: Compiled outputs for force coefficient use case
     """
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
+    geometry_to_use = mesh.geometry.copy()
+    geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
+    
     geometry_dict = {cfg.body: geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
-        mesh_areas=mesh.geometry.areas,
-        mesh_normals=mesh.geometry.normals,
+        mesh_areas=geometry_to_use.areas,
+        mesh_normals=geometry_to_use.normals,
         transformation=cfg.transformation,
     )
     Cf_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
-        geometry=mesh.geometry,
+        geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
 
@@ -231,5 +234,9 @@ def get_representative_areas(
     Ax = Ly * Lz
     Ay = Lx * Lz
     Az = Lx * Ly
+    
+    print("Areas: ", Ax, Ay, Az)
+    print("Sizes: ", Lx, Ly, Lz)
+    print("Bound x: ", x_min, x_max)
 
     return Ax, Ay, Az
