@@ -24,6 +24,10 @@ class CpOutputs:
         # Output 1: cp(t)
         timeseries_path = path_manager.get_cp_t_path(cfg_label=cfg_label)
         create_folders_for_file(timeseries_path)
+
+        if timeseries_path.exists():
+            timeseries_path.unlink()  # Overwrite existing file
+
         split_into_chunks(
             time_series_df=self.cp_data,
             number_of_chunks=cfg.number_of_chunks,
