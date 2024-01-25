@@ -73,7 +73,7 @@ def get_geometry_data(body_cfg: BodyConfig, cfg: CfConfig, mesh: LnasFormat) -> 
     else:
         # Filter mesh for all surfaces
         geom, geometry_idx = filter_geometry_from_list(mesh=mesh, sfc_list=body_cfg.surfaces)
-        
+
     return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
 
@@ -99,7 +99,7 @@ def process_Cf(
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
     geometry_to_use = mesh.geometry.copy()
     geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
-    
+
     geometry_dict = {cfg.body: geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
@@ -234,9 +234,5 @@ def get_representative_areas(
     Ax = Ly * Lz
     Ay = Lx * Lz
     Az = Lx * Ly
-    
-    print("Areas: ", Ax, Ay, Az)
-    print("Sizes: ", Lx, Ly, Lz)
-    print("Bound x: ", x_min, x_max)
 
     return Ax, Ay, Az

@@ -82,6 +82,7 @@ class TestChunking(unittest.TestCase):
         result_df = process_timestep_groups(
             self.output_path, geometry_df, geometry, mock_processing_function
         )
+        self.sample_df.sort_values(by=["time_step"], inplace=True)
 
         self.assertTrue((result_df.value.to_numpy() == self.sample_df.value.to_numpy() * 2).all())
         self.assertTrue(result_df.time_step.nunique() == self.sample_df.time_step.nunique())

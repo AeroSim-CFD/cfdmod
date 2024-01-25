@@ -39,22 +39,22 @@ class CeOutputs:
     Ce_stats: pd.DataFrame
     Ce_regions: pd.DataFrame
 
-    def save_outputs(self, mesh_name: str, cfg_label: str, path_manager: CePathManager):
+    def save_outputs(self, file_lbl: str, cfg_label: str, path_manager: CePathManager):
         # Output 1: Ce_regions
-        regions_path = path_manager.get_regions_df_path(mesh_name, cfg_label)
+        regions_path = path_manager.get_regions_df_path(file_lbl, cfg_label)
         create_folders_for_file(regions_path)
         self.Ce_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
 
         # Output 2: Ce(t)
-        timeseries_path = path_manager.get_timeseries_df_path(mesh_name, cfg_label)
+        timeseries_path = path_manager.get_timeseries_df_path(file_lbl, cfg_label)
         self.Ce_data.to_hdf(timeseries_path, key="Ce_t", mode="w", index=False)
 
         # Output 3: Ce_stats
-        stats_path = path_manager.get_stats_df_path(mesh_name, cfg_label)
+        stats_path = path_manager.get_stats_df_path(file_lbl, cfg_label)
         self.Ce_stats.to_hdf(stats_path, key="Ce_stats", mode="w", index=False)
 
         # Output 4: Regions Mesh
-        mesh_path = path_manager.get_surface_path(mesh_name, cfg_label)
+        mesh_path = path_manager.get_surface_path(file_lbl, cfg_label)
         regions_mesh = combine_geometries([sfc.mesh for sfc in self.processed_surfaces])
         regions_mesh.export_stl(mesh_path)
 
@@ -67,7 +67,7 @@ class CeOutputs:
         all_surfaces = self.processed_surfaces
         all_surfaces += [self.excluded_surfaces] if self.excluded_surfaces is not None else []
         merged_polydata = merge_polydata([surface_data.polydata for surface_data in all_surfaces])
-        write_polydata(path_manager.get_vtp_path(mesh_name, cfg_label), merged_polydata)
+        write_polydata(path_manager.get_vtp_path(file_lbl, cfg_label), merged_polydata)
 
 
 def get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> ZoningModel:

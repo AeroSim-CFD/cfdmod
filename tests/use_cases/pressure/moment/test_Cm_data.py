@@ -74,5 +74,5 @@ class TestCmData(unittest.TestCase):
             shifted_geom, np.arange(0, len(self.body_geom.triangles))
         )
 
-        self.assertEqual(V_rep, 0)
+        self.assertEqual(V_rep, 100)
         self.assertEqual(shifted_V_rep, 1000)

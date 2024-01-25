@@ -33,11 +33,12 @@ def split_into_chunks(
         min_step, max_step = i * step, min((i + 1) * step - 1, len(time_arr) - 1)
 
         df: pd.DataFrame = time_series_df.loc[
-            (time_series_df.time_step >= time_arr[min_step]) & (time_series_df.time_step <= time_arr[max_step])
+            (time_series_df.time_step >= time_arr[min_step])
+            & (time_series_df.time_step <= time_arr[max_step])
         ].copy()
 
         range_lbl = f"range_{int(time_arr[min_step])}_{int(time_arr[max_step])}"
-        
+
         df.to_hdf(output_path, key=range_lbl, mode="a", index=False, format="t")
 
 
@@ -71,6 +72,10 @@ def process_timestep_groups(
 
     merged_samples = pd.concat(processed_samples)
 
-    merged_samples.sort_values(by=["time_step", "region_idx"], inplace=True)
+    sort_columns = [col for col in ["time_step", "region_idx"] if col in merged_samples.columns]
+    if "time_step" in sort_columns:
+        merged_samples.sort_values(by=sort_columns, inplace=True)
+    else:
+        raise KeyError("Missing time_step column in data stored")
 
     return merged_samples
