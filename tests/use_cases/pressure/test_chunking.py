@@ -15,8 +15,10 @@ from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 def _mock_processing_function(
     cp_df: pd.DataFrame, _geom_df: pd.DataFrame, _geom: LnasGeometry
 ) -> pd.DataFrame:
-    cp_df["value"] *= 2
-    return cp_df
+    result = cp_df.copy()
+    result["value"] *= 2
+
+    return result
 
 
 class TestChunking(unittest.TestCase):
@@ -91,7 +93,8 @@ class TestChunking(unittest.TestCase):
         result_df = process_timestep_groups(
             self.output_path, geometry_df, self.geometry, _mock_processing_function
         )
-        self.sample_df.sort_values(by=["time_step"], inplace=True)
+        self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
+        result_df.sort_values(by=["time_step", "point_idx"], inplace=True)
 
         self.assertTrue((result_df.value.to_numpy() == self.sample_df.value.to_numpy() * 2).all())
         self.assertTrue(result_df.time_step.nunique() == self.sample_df.time_step.nunique())
@@ -110,6 +113,7 @@ class TestChunking(unittest.TestCase):
             mesh_normals=self.geometry.normals,
             transformation=TransformationConfig(),
         )
+        self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
 
         split_into_chunks(self.sample_df, self.number_of_chunks, self.output_path)
         first_df = process_timestep_groups(
@@ -118,6 +122,9 @@ class TestChunking(unittest.TestCase):
         avg = first_df.value.mean()
         std = first_df.value.std()
         min_val, max_val = first_df.value.min(), first_df.value.max()
+
+        self.output_path.unlink()
+        self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
 
         split_into_chunks(self.sample_df, self.number_of_chunks + 2, self.output_path)
         second_df = process_timestep_groups(
