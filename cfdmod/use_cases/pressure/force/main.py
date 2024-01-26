@@ -7,6 +7,7 @@ from lnas import LnasFormat
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.use_cases.pressure.force.Cf_data import process_Cf
+from cfdmod.use_cases.pressure.geometry import get_excluded_entities
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
 
@@ -75,6 +76,8 @@ def main(*args):
     logger.info("Mesh description loaded successfully!")
 
     for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
+        full_processed_entities = []
+        included_sfcs = []
         for body_lbl in cfg.bodies:
             logger.info(f"Processing body {body_lbl} ...")
 
@@ -86,8 +89,17 @@ def main(*args):
                 extreme_params=post_proc_cfg.extreme_values,
             )
 
-            cf_output.save_outputs(
-                file_lbl=body_lbl, cfg_label=cfg_label, path_manager=path_manager
-            )
-
+            full_processed_entities += cf_output.processed_entities
+            included_sfcs += post_proc_cfg.bodies[body_lbl].surfaces
             logger.info(f"Processed body {body_lbl}!")
+
+        excluded_sfcs = [k for k in mesh.surfaces.keys() if k not in included_sfcs]
+        col = full_processed_entities[0].stats_df.columns
+        excluded_entity = get_excluded_entities(
+            excluded_sfc_list=excluded_sfcs, mesh=mesh, data_columns=col
+        )
+        full_processed_entities += [excluded_entity]
+
+        # cf_output.save_outputs(
+        #     file_lbl=body_lbl, cfg_label=cfg_label, path_manager=path_manager
+        # )
