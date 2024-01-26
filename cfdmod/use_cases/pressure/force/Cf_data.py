@@ -2,7 +2,6 @@ import pathlib
 from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
@@ -10,8 +9,8 @@ from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polyda
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
+from cfdmod.use_cases.pressure.force.Cf_geom import get_geometry_data, get_representative_areas
 from cfdmod.use_cases.pressure.geometry import (
-    GeometryData,
     ProcessedEntity,
     get_excluded_entities,
     tabulate_geometry_data,
@@ -37,37 +36,21 @@ class CfOutputs:
         # Output 1: Cf_regions
         regions_path = path_manager.get_regions_df_path(body_label, cfg_label)
         create_folders_for_file(regions_path)
-        self.Cf_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
+        self.Cf_regions.to_hdf(path_or_buf=regions_path, key="Regions", mode="w", index=False)
 
         # Output 2: Cf(t)
         timeseries_path = path_manager.get_timeseries_df_path(body_label, cfg_label)
-        self.Cf_data.to_hdf(timeseries_path, key="Cf_t", mode="w", index=False)
+        self.Cf_data.to_hdf(path_or_buf=timeseries_path, key="Cf_t", mode="w", index=False)
 
         # Output 3: Cf_stats
         stats_path = path_manager.get_stats_df_path(body_label, cfg_label)
-        self.Cf_stats.to_hdf(stats_path, key="Cf_stats", mode="w", index=False)
+        self.Cf_stats.to_hdf(path_or_buf=stats_path, key="Cf_stats", mode="w", index=False)
 
         # Output 4: VTK polydata
         all_entities = [self.data_entity]
         all_entities += [self.excluded_entity] if self.excluded_entity is not None else []
         merged_polydata = merge_polydata([entity.polydata for entity in all_entities])
         write_polydata(path_manager.get_vtp_path(body_label, cfg_label), merged_polydata)
-
-
-def get_geometry_data(body_cfg: BodyConfig, cfg: CfConfig, mesh: LnasFormat) -> GeometryData:
-    """Builds a GeometryData from the mesh and the configurations
-
-    Args:
-        body_cfg (BodyConfig): Body configuration with surface list
-        cfg (CfConfig): Force coefficient configuration
-        mesh (LnasFormat): Input mesh
-
-    Returns:
-        GeometryData: Filtered GeometryData
-    """
-    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=body_cfg.surfaces)
-
-    return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
 
 def process_Cf(
@@ -196,36 +179,3 @@ def transform_Cf(
     Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
 
     return Cf_data
-
-
-def get_representative_areas(
-    input_mesh: LnasGeometry, point_idx: np.ndarray
-) -> tuple[float, float, float]:
-    """Calculates the representative areas from the bounding box of a given mesh
-
-    Args:
-        input_mesh (LnasGeometry): Input LNAS mesh
-        point_idx (np.ndarray): Array of triangle indices of each sub region
-
-    Returns:
-        tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
-    """
-    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
-    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
-    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
-    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
-
-    Lx = x_max - x_min
-    Ly = y_max - y_min
-    Lz = z_max - z_min
-
-    # Threshold to avoid big coefficients
-    Lx = 1 if Lx < 1 else Lx
-    Ly = 1 if Ly < 1 else Ly
-    Lz = 1 if Lz < 1 else Lz
-
-    Ax = Ly * Lz
-    Ay = Lx * Lz
-    Az = Lx * Ly
-
-    return Ax, Ay, Az

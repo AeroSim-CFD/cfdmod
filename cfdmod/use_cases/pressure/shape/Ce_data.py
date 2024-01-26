@@ -1,13 +1,11 @@
 import pathlib
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
-from cfdmod.api.geometry.region_meshing import create_regions_mesh
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
@@ -20,11 +18,10 @@ from cfdmod.use_cases.pressure.geometry import (
 )
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig
-from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
+from cfdmod.use_cases.pressure.shape.Ce_geom import generate_regions_mesh, get_geometry_data
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
-    get_indexing_mask,
 )
 from cfdmod.utils import create_folders_for_file
 
@@ -41,15 +38,15 @@ class CeOutputs:
         # Output 1: Ce_regions
         regions_path = path_manager.get_regions_df_path(file_lbl, cfg_label)
         create_folders_for_file(regions_path)
-        self.Ce_regions.to_hdf(regions_path, key="Regions", mode="w", index=False)
+        self.Ce_regions.to_hdf(path_or_buf=regions_path, key="Regions", mode="w", index=False)
 
         # Output 2: Ce(t)
         timeseries_path = path_manager.get_timeseries_df_path(file_lbl, cfg_label)
-        self.Ce_data.to_hdf(timeseries_path, key="Ce_t", mode="w", index=False)
+        self.Ce_data.to_hdf(path_or_buf=timeseries_path, key="Ce_t", mode="w", index=False)
 
         # Output 3: Ce_stats
         stats_path = path_manager.get_stats_df_path(file_lbl, cfg_label)
-        self.Ce_stats.to_hdf(stats_path, key="Ce_stats", mode="w", index=False)
+        self.Ce_stats.to_hdf(path_or_buf=stats_path, key="Ce_stats", mode="w", index=False)
 
         # Output 4: Regions Mesh
         mesh_path = path_manager.get_surface_path(file_lbl, cfg_label)
@@ -66,62 +63,6 @@ class CeOutputs:
         all_surfaces = self.processed_surfaces + self.excluded_surfaces
         merged_polydata = merge_polydata([surface_data.polydata for surface_data in all_surfaces])
         write_polydata(path_manager.get_vtp_path(file_lbl, cfg_label), merged_polydata)
-
-
-def get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> ZoningModel:
-    """Get the surface respective zoning configuration
-
-    Args:
-        mesh (LnasGeometry): Surface LNAS mesh
-        sfc (str): Surface label
-        config (CeConfig): Post process configuration
-
-    Returns:
-        ZoningModel: Zoning configuration
-    """
-    if sfc in config.zoning.no_zoning:  # type: ignore
-        zoning = ZoningModel(**{})
-    elif sfc in config.zoning.surfaces_in_exception:  # type: ignore
-        zoning = [cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces][0]  # type: ignore
-    else:
-        zoning = config.zoning.global_zoning  # type: ignore
-        if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
-            ignore_axis = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
-            zoning = zoning.ignore_axis(ignore_axis)
-
-    return zoning.offset_limits(0.1)
-
-
-def get_geometry_data(
-    surface_dict: dict[str, list[str]], cfg: CeConfig, mesh: LnasFormat
-) -> dict[str, GeometryData]:
-    """Get surfaces geometry data from mesh
-
-    Args:
-        surface_dict (dict[str, list[str]]): Dictionary with surface list keyed by surface label
-        cfg (CeConfig): Post processing configuration
-        mesh (LnasFormat): LNAS mesh
-
-    Returns:
-        dict[str, GeometryData]: Dictionary with geometry data keyed by surface label
-    """
-    geom_dict: dict[str, GeometryData] = {}
-    for sfc_lbl, sfc_list in surface_dict.items():
-        if sfc_lbl in cfg.zoning.exclude:  # type: ignore (already validated in class)
-            logger.info(f"Surface {sfc_lbl} ignored!")  # Ignore surface
-            continue
-        surface_geom, sfc_triangles_idxs = mesh.geometry_from_list_surfaces(
-            surfaces_names=sfc_list
-        )
-        zoning_to_use = get_surface_zoning(mesh=surface_geom, sfc=sfc_lbl, config=cfg)
-
-        geom_data = GeometryData(
-            mesh=surface_geom,
-            zoning_to_use=zoning_to_use,
-            triangles_idxs=sfc_triangles_idxs,
-        )
-        geom_dict[sfc_lbl] = geom_data
-    return geom_dict
 
 
 def transform_Ce(
@@ -154,40 +95,6 @@ def transform_Ce(
     Ce_data.drop(columns=["total_area", "total_force"], inplace=True)
 
     return Ce_data
-
-
-def generate_regions_mesh(
-    geom_data: GeometryData, cfg: CeConfig
-) -> tuple[LnasGeometry, np.ndarray]:
-    """Generates a new mesh intersecting the input mesh with the regions definition
-
-    Args:
-        geom_data (GeometryData): Geometry data with surface mesh and regions information
-        cfg (CeConfig): Shape coefficient configuration
-
-    Returns:
-        tuple[LnasGeometry, np.ndarray]: Tuple with region mesh and region mesh triangle indexing
-    """
-    transformed_surface = geom_data.mesh.copy()
-    transformed_surface.apply_transformation(cfg.transformation.get_geometry_transformation())
-
-    regions_mesh = create_regions_mesh(
-        transformed_surface,
-        (
-            geom_data.zoning_to_use.x_intervals,
-            geom_data.zoning_to_use.y_intervals,
-            geom_data.zoning_to_use.z_intervals,
-        ),
-    )
-
-    df_regions = geom_data.zoning_to_use.get_regions_df()
-    regions_mesh_triangles_indexing = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
-
-    regions_mesh.apply_transformation(
-        cfg.transformation.get_geometry_transformation(), invert_transf=True
-    )
-
-    return regions_mesh, regions_mesh_triangles_indexing
 
 
 def combine_mesh_with_stats(
