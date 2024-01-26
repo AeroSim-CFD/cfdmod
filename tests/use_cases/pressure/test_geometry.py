@@ -5,12 +5,9 @@ from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.geometry import (
+from cfdmod.use_cases.pressure.geometry import (  # combine_geometries,; filter_geometry_from_list,; get_excluded_surfaces,
     GeometryData,
-    combine_geometries,
     create_NaN_polydata,
-    filter_geometry_from_list,
-    get_excluded_surfaces,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
@@ -29,24 +26,18 @@ class TestGeometry(unittest.TestCase):
 
     def test_no_excluded_surfaces(self):
         sfc_list = []
-        with self.assertRaises(Exception) as context:
-            get_excluded_surfaces(self.mesh, sfc_list)
-        self.assertEqual(
-            str(context.exception), "No geometry could be filtered from the list of surfaces."
-        )
+        geom, idx = self.mesh.geometry_from_list_surfaces(surfaces_names=sfc_list)
+
+        self.assertEqual(len(geom.triangles), 0)
+        self.assertEqual(len(idx), 0)
 
     def test_some_excluded_surfaces(self):
         sfc_list = ["sfc2"]
-        geometry = get_excluded_surfaces(self.mesh, sfc_list)
-        self.assertIsInstance(geometry, LnasGeometry)  # Expecting a LnasGeometry object
+        geometry, idx = self.mesh.geometry_from_list_surfaces(surfaces_names=sfc_list)
         surface_use = self.mesh.geometry_from_surface(sfc_list[0])
-        np.testing.assert_equal(geometry.triangle_vertices, surface_use.triangle_vertices)
 
-    def test_excluded_surface_not_in_mesh(self):
-        sfc_list = ["sfc3"]
-        with self.assertRaises(Exception) as context:
-            get_excluded_surfaces(self.mesh, sfc_list)
-        self.assertEqual(str(context.exception), "Surface is not defined in LNAS.")
+        self.assertIsInstance(geometry, LnasGeometry)  # Expecting a LnasGeometry object
+        np.testing.assert_equal(geometry.triangle_vertices, surface_use.triangle_vertices)
 
     def test_create_NaN_polydata(self):
         column_labels = ["col1", "col2"]
@@ -62,7 +53,9 @@ class TestGeometry(unittest.TestCase):
     def test_filter_geometry_from_list(self):
         surface_list = ["sfc1"]
 
-        result_geometry, result_triangle_idxs = filter_geometry_from_list(self.mesh, surface_list)
+        result_geometry, result_triangle_idxs = self.mesh.geometry_from_list_surfaces(
+            surfaces_names=surface_list
+        )
 
         self.assertIsInstance(result_geometry, LnasGeometry)
         self.assertIsInstance(result_triangle_idxs, np.ndarray)
@@ -81,7 +74,8 @@ class TestGeometry(unittest.TestCase):
             ),
         ]
 
-        result_geometry = combine_geometries(geometry_list)
+        result_geometry = geometry_list[0].copy()
+        result_geometry.join(geometries_list=geometry_list[1:])
 
         self.assertIsInstance(result_geometry, LnasGeometry)
         self.assertTrue((result_geometry.triangles == np.array([[0, 1, 2], [3, 4, 5]])).all())

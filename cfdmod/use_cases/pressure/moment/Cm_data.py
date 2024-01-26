@@ -13,7 +13,6 @@ from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
-    filter_geometry_from_list,
     get_excluded_entities,
     tabulate_geometry_data,
 )
@@ -67,13 +66,8 @@ def get_geometry_data(body_cfg: BodyConfig, cfg: CmConfig, mesh: LnasFormat) -> 
     Returns:
         GeometryData: Filtered GeometryData
     """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-        geom = mesh.geometry
-    else:
-        # Filter mesh for all surfaces
-        geom, geometry_idx = filter_geometry_from_list(mesh=mesh, sfc_list=body_cfg.surfaces)
+    sfcs = body_cfg.surfaces if len(body_cfg.surfaces) != 0 else [k for k in mesh.surfaces.keys()]
+    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=sfcs)
 
     return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
@@ -232,6 +226,7 @@ def transform_Cm(
 
     rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})
+
     Cm_data = pd.merge(Cm_data, rep_df, on="region_idx")
 
     Cm_data["Cmx"] = Cm_data["Mx"] / Cm_data["V_rep"]

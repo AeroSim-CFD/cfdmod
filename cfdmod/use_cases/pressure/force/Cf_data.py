@@ -13,7 +13,6 @@ from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
-    filter_geometry_from_list,
     get_excluded_entities,
     tabulate_geometry_data,
 )
@@ -66,13 +65,7 @@ def get_geometry_data(body_cfg: BodyConfig, cfg: CfConfig, mesh: LnasFormat) -> 
     Returns:
         GeometryData: Filtered GeometryData
     """
-    if len(body_cfg.surfaces) == 0:
-        # Include all surfaces
-        geometry_idx = np.arange(0, len(mesh.geometry.triangles))
-        geom = mesh.geometry.copy()
-    else:
-        # Filter mesh for all surfaces
-        geom, geometry_idx = filter_geometry_from_list(mesh=mesh, sfc_list=body_cfg.surfaces)
+    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=body_cfg.surfaces)
 
     return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 

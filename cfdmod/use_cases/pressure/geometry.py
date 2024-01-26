@@ -37,38 +37,11 @@ def get_excluded_entities(
     Returns:
         ProcessedEntity: Processed entity for excluded surfaces
     """
-    excluded_sfcs = get_excluded_surfaces(mesh=mesh, sfc_list=excluded_sfc_list)
+    excluded_sfcs, _ = mesh.geometry_from_list_surfaces(surfaces_names=excluded_sfc_list)
     columns = [col for col in data_columns if col not in ["point_idx", "region_idx"]]
     excluded_polydata = create_NaN_polydata(mesh=excluded_sfcs, column_labels=columns)
 
     return ProcessedEntity(mesh=excluded_sfcs, polydata=excluded_polydata)
-
-
-def get_excluded_surfaces(mesh: LnasFormat, sfc_list: list[str]) -> LnasGeometry:
-    """Filters the surfaces that were excluded in processing
-
-    Args:
-        mesh (LnasFormat): LNAS body mesh
-        sfc_list (list[str]): List of excluded surfaces
-
-    Returns:
-        LnasGeometry: Returns a LnasGeometry if any surface was excluded
-    """
-    excluded_ids = np.array([], dtype=np.uint32)
-    for excluded_sfc in sfc_list:
-        if excluded_sfc not in mesh.surfaces.keys():
-            raise Exception("Surface is not defined in LNAS.")
-        ids = mesh.surfaces[excluded_sfc].copy()
-        excluded_ids = np.concatenate((excluded_ids, ids))
-
-    if excluded_ids.size != 0:
-        excluded_geom = LnasGeometry(
-            vertices=mesh.geometry.vertices.copy(),
-            triangles=mesh.geometry.triangles[excluded_ids].copy(),
-        )
-        return excluded_geom
-    else:
-        raise Exception("No geometry could be filtered from the list of surfaces.")
 
 
 def create_NaN_polydata(mesh: LnasGeometry, column_labels: list[str]) -> vtkPolyData:
@@ -87,34 +60,6 @@ def create_NaN_polydata(mesh: LnasGeometry, column_labels: list[str]) -> vtkPoly
     polydata = create_polydata_for_cell_data(data=mock_df, mesh=mesh)
 
     return polydata
-
-
-def filter_geometry_from_list(
-    mesh: LnasFormat, sfc_list: list[str]
-) -> tuple[LnasGeometry, np.ndarray]:
-    """Filters the mesh from a list of surfaces
-
-    Args:
-        mesh (LnasFormat): LNAS mesh with every surface available
-        sfc_list (list[str]): List of surfaces to be filtered
-
-    Returns:
-        tuple[LnasGeometry, np.ndarray]: Tuple with filtered LNAS mesh geometry
-        and the filtered triangle indices
-    """
-    geom_mesh = LnasGeometry(
-        vertices=mesh.geometry.vertices, triangles=np.empty((0, 3), dtype=np.uint32)
-    )
-    geom_triangles_idxs = np.array([], dtype=np.uint32)
-
-    for sfc in sfc_list:
-        m = mesh.geometry_from_surface(sfc)
-        geom_mesh.triangles = np.vstack((geom_mesh.triangles, m.triangles))
-        geom_triangles_idxs = np.hstack((geom_triangles_idxs, mesh.surfaces[sfc].copy()))
-
-    geom_mesh._full_update()
-
-    return geom_mesh, geom_triangles_idxs
 
 
 def get_region_indexing(
@@ -138,29 +83,6 @@ def get_region_indexing(
     triangles_region_idx = get_indexing_mask(mesh=transformed_geometry, df_regions=df_regions)
 
     return triangles_region_idx
-
-
-def combine_geometries(geometries_list: list[LnasGeometry]) -> LnasGeometry:
-    """Combine a list of LnasGeometry into a single LnasGeometry
-
-    Args:
-        geometries_list (list[LnasGeometry]): List of LnasGeometry to be combined
-
-    Returns:
-        LnasGeometry: Result of the combination of a list of LnasGeometry
-    """
-    result_geometry = LnasGeometry(
-        vertices=np.empty((0, 3), dtype=np.uint32), triangles=np.empty((0, 3), dtype=np.uint32)
-    )
-
-    for geometry in geometries_list:
-        geometry.triangles += len(result_geometry.vertices)
-        result_geometry.vertices = np.vstack((result_geometry.vertices, geometry.vertices))
-        result_geometry.triangles = np.vstack((result_geometry.triangles, geometry.triangles))
-
-    result_geometry._full_update()
-
-    return result_geometry
 
 
 def tabulate_geometry_data(

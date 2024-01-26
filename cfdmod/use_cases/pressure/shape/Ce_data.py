@@ -15,8 +15,6 @@ from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
-    combine_geometries,
-    filter_geometry_from_list,
     get_excluded_entities,
     tabulate_geometry_data,
 )
@@ -34,7 +32,7 @@ from cfdmod.utils import create_folders_for_file
 @dataclass
 class CeOutputs:
     processed_surfaces: list[ProcessedEntity]
-    excluded_surfaces: Optional[ProcessedEntity]
+    excluded_surfaces: list[ProcessedEntity]
     Ce_data: pd.DataFrame
     Ce_stats: pd.DataFrame
     Ce_regions: pd.DataFrame
@@ -55,17 +53,17 @@ class CeOutputs:
 
         # Output 4: Regions Mesh
         mesh_path = path_manager.get_surface_path(file_lbl, cfg_label)
-        regions_mesh = combine_geometries([sfc.mesh for sfc in self.processed_surfaces])
+        regions_mesh = self.processed_surfaces[0].mesh.copy()
+        regions_mesh.join([sfc.mesh.copy() for sfc in self.processed_surfaces[1:]])
         regions_mesh.export_stl(mesh_path)
 
         # Output 4 (Optional): Excluded Mesh
-        if self.excluded_surfaces is not None:
+        if len(self.excluded_surfaces) != 0:
             excluded_mesh_path = path_manager.get_surface_path("excluded_surfaces", cfg_label)
-            self.excluded_surfaces.mesh.export_stl(excluded_mesh_path)
+            self.excluded_surfaces[0].mesh.export_stl(excluded_mesh_path)
 
         # Output 5: VTK polydata
-        all_surfaces = self.processed_surfaces
-        all_surfaces += [self.excluded_surfaces] if self.excluded_surfaces is not None else []
+        all_surfaces = self.processed_surfaces + self.excluded_surfaces
         merged_polydata = merge_polydata([surface_data.polydata for surface_data in all_surfaces])
         write_polydata(path_manager.get_vtp_path(file_lbl, cfg_label), merged_polydata)
 
@@ -112,7 +110,9 @@ def get_geometry_data(
         if sfc_lbl in cfg.zoning.exclude:  # type: ignore (already validated in class)
             logger.info(f"Surface {sfc_lbl} ignored!")  # Ignore surface
             continue
-        surface_geom, sfc_triangles_idxs = filter_geometry_from_list(mesh=mesh, sfc_list=sfc_list)
+        surface_geom, sfc_triangles_idxs = mesh.geometry_from_list_surfaces(
+            surfaces_names=sfc_list
+        )
         zoning_to_use = get_surface_zoning(mesh=surface_geom, sfc=sfc_lbl, config=cfg)
 
         geom_data = GeometryData(
@@ -305,11 +305,12 @@ def process_Ce(
         if set_lbl in cfg.zoning.exclude  # type: ignore
     ]
     if len(excluded_sfc_list) != 0:
-        excluded_surfaces = get_excluded_entities(
-            excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=Ce_stats.columns
-        )
+        col = Ce_stats.columns
+        excluded_surfaces = [
+            get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
+        ]
     else:
-        excluded_surfaces = None
+        excluded_surfaces = []
 
     ce_output = CeOutputs(
         processed_surfaces=processed_surfaces,
