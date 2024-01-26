@@ -1,11 +1,9 @@
 import pathlib
-from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
-from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
@@ -15,42 +13,12 @@ from cfdmod.use_cases.pressure.geometry import (
     get_excluded_entities,
     tabulate_geometry_data,
 )
-from cfdmod.use_cases.pressure.path_manager import CfPathManager
+from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
 )
-from cfdmod.utils import create_folders_for_file
-
-
-@dataclass
-class CfOutputs:
-    Cf_data: pd.DataFrame
-    Cf_stats: pd.DataFrame
-    Cf_regions: pd.DataFrame
-    data_entity: ProcessedEntity
-    excluded_entity: Optional[ProcessedEntity]
-
-    def save_outputs(self, body_label: str, cfg_label: str, path_manager: CfPathManager):
-        # Output 1: Cf_regions
-        regions_path = path_manager.get_regions_df_path(body_label, cfg_label)
-        create_folders_for_file(regions_path)
-        self.Cf_regions.to_hdf(path_or_buf=regions_path, key="Regions", mode="w", index=False)
-
-        # Output 2: Cf(t)
-        timeseries_path = path_manager.get_timeseries_df_path(body_label, cfg_label)
-        self.Cf_data.to_hdf(path_or_buf=timeseries_path, key="Cf_t", mode="w", index=False)
-
-        # Output 3: Cf_stats
-        stats_path = path_manager.get_stats_df_path(body_label, cfg_label)
-        self.Cf_stats.to_hdf(path_or_buf=stats_path, key="Cf_stats", mode="w", index=False)
-
-        # Output 4: VTK polydata
-        all_entities = [self.data_entity]
-        all_entities += [self.excluded_entity] if self.excluded_entity is not None else []
-        merged_polydata = merge_polydata([entity.polydata for entity in all_entities])
-        write_polydata(path_manager.get_vtp_path(body_label, cfg_label), merged_polydata)
 
 
 def process_Cf(
@@ -59,7 +27,7 @@ def process_Cf(
     cfg: CfConfig,
     cp_path: pathlib.Path,
     extreme_params: ExtremeValuesParameters | None,
-) -> CfOutputs:
+) -> CommonOutput:
     """Executes the force coefficient processing routine
 
     Args:
@@ -70,7 +38,7 @@ def process_Cf(
         extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
 
     Returns:
-        CfOutputs: Compiled outputs for force coefficient use case
+        CommonOutput: Compiled outputs for force coefficient use case
     """
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
     geometry_to_use = mesh.geometry.copy()
@@ -109,20 +77,21 @@ def process_Cf(
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in body_cfg.surfaces]
 
     if len(excluded_sfc_list) != 0:
-        excluded_entity = get_excluded_entities(
-            excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=Cf_stats.columns
-        )
+        col = Cf_stats.columns
+        excluded_entity = [
+            get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
+        ]
     else:
-        excluded_entity = None
+        excluded_entity = []
 
     data_entity = ProcessedEntity(mesh=geom_data.mesh, polydata=polydata)
 
-    cf_output = CfOutputs(
-        Cf_data=Cf_data,
-        Cf_stats=Cf_stats,
-        Cf_regions=geometry_df,
-        data_entity=data_entity,
-        excluded_entity=excluded_entity,
+    cf_output = CommonOutput(
+        data_df=Cf_data,
+        stats_df=Cf_stats,
+        regions_df=geometry_df,
+        processed_entities=[data_entity],
+        excluded_entities=excluded_entity,
     )
 
     return cf_output

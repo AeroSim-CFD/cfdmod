@@ -6,7 +6,8 @@ from lnas import LnasFormat
 
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.moment.Cm_config import CmCaseConfig
-from cfdmod.use_cases.pressure.moment.Cm_data import CmOutputs, process_Cm
+from cfdmod.use_cases.pressure.moment.Cm_data import process_Cm
+from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
 
 
@@ -76,7 +77,7 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.moment_coefficient.items():
         logger.info(f"Processing body {cfg.body} ...")
 
-        cm_output: CmOutputs = process_Cm(
+        cm_output: CommonOutput = process_Cm(
             mesh=mesh,
             body_cfg=post_proc_cfg.bodies[cfg.body],
             cfg=cfg,
@@ -84,6 +85,6 @@ def main(*args):
             extreme_params=post_proc_cfg.extreme_values,
         )
 
-        cm_output.save_outputs(body_label=cfg.body, cfg_label=cfg_label, path_manager=path_manager)
+        cm_output.save_outputs(file_lbl=cfg.body, cfg_label=cfg_label, path_manager=path_manager)
 
         logger.info(f"Processed body {cfg.body}!")

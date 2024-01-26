@@ -7,7 +7,7 @@ from lnas import LnasFormat
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import CeOutputs, process_Ce
+from cfdmod.use_cases.pressure.shape.Ce_data import CeOutput, process_Ce
 
 
 @dataclass
@@ -76,10 +76,11 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
         logger.info(f"Processing {cfg_label} ...")
 
-        Ce_output: CeOutputs = process_Ce(
+        Ce_output: CeOutput = process_Ce(
             mesh=mesh, cfg=cfg, cp_path=cp_path, extreme_params=post_proc_cfg.extreme_values
         )
 
         Ce_output.save_outputs(file_lbl="Ce", cfg_label=cfg_label, path_manager=path_manager)
+        Ce_output.export_mesh(file_lbl="Ce", cfg_label=cfg_label, path_manager=path_manager)
 
         logger.info(f"Processed {cfg_label}!")

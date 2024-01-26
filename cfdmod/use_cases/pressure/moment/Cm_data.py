@@ -1,11 +1,9 @@
 import pathlib
-from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
-from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, merge_polydata, write_polydata
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
@@ -19,42 +17,12 @@ from cfdmod.use_cases.pressure.moment.Cm_geom import (
     get_geometry_data,
     get_representative_volume,
 )
-from cfdmod.use_cases.pressure.path_manager import CmPathManager
+from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
 )
-from cfdmod.utils import create_folders_for_file
-
-
-@dataclass
-class CmOutputs:
-    Cm_data: pd.DataFrame
-    Cm_stats: pd.DataFrame
-    Cm_regions: pd.DataFrame
-    data_entity: ProcessedEntity
-    excluded_entity: Optional[ProcessedEntity]
-
-    def save_outputs(self, body_label: str, cfg_label: str, path_manager: CmPathManager):
-        # Output 1: Cm_regions
-        regions_path = path_manager.get_regions_df_path(body_label, cfg_label)
-        create_folders_for_file(regions_path)
-        self.Cm_regions.to_hdf(path_or_buf=regions_path, key="Regions", mode="w", index=False)
-
-        # Output 2: Cm(t)
-        timeseries_path = path_manager.get_timeseries_df_path(body_label, cfg_label)
-        self.Cm_data.to_hdf(path_or_buf=timeseries_path, key="Cm_t", mode="w", index=False)
-
-        # Output 3: Cm_stats
-        stats_path = path_manager.get_stats_df_path(body_label, cfg_label)
-        self.Cm_stats.to_hdf(path_or_buf=stats_path, key="Cm_stats", mode="w", index=False)
-
-        # Output 4: VTK polydata
-        all_entities = [self.data_entity]
-        all_entities += [self.excluded_entity] if self.excluded_entity is not None else []
-        merged_polydata = merge_polydata([entity.polydata for entity in all_entities])
-        write_polydata(path_manager.get_vtp_path(body_label, cfg_label), merged_polydata)
 
 
 def process_Cm(
@@ -63,7 +31,7 @@ def process_Cm(
     cfg: CmConfig,
     cp_path: pathlib.Path,
     extreme_params: ExtremeValuesParameters | None,
-) -> CmOutputs:
+) -> CommonOutput:
     """Executes the moment coefficient processing routine
 
     Args:
@@ -74,7 +42,7 @@ def process_Cm(
         extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
 
     Returns:
-        CmOutputs: Compiled outputs for moment coefficient use case
+        CommonOutput: Compiled outputs for moment coefficient use case
     """
     geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
     geometry_to_use = mesh.geometry.copy()
@@ -119,20 +87,21 @@ def process_Cm(
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in body_cfg.surfaces]
 
     if len(excluded_sfc_list) != 0 and len(body_cfg.surfaces) != 0:
-        excluded_entity = get_excluded_entities(
-            excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=Cm_stats.columns
-        )
+        col = Cm_stats.columns
+        excluded_entity = [
+            get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
+        ]
     else:
-        excluded_entity = None
+        excluded_entity = []
 
     data_entity = ProcessedEntity(mesh=geom_data.mesh, polydata=polydata)
 
-    cm_output = CmOutputs(
-        Cm_data=Cm_data,
-        Cm_stats=Cm_stats,
-        Cm_regions=geometry_df,
-        data_entity=data_entity,
-        excluded_entity=excluded_entity,
+    cm_output = CommonOutput(
+        data_df=Cm_data,
+        stats_df=Cm_stats,
+        regions_df=geometry_df,
+        processed_entities=[data_entity],
+        excluded_entities=excluded_entity,
     )
 
     return cm_output
