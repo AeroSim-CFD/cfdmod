@@ -18,7 +18,10 @@ from cfdmod.utils import read_yaml
 
 
 class CfConfig(HashableConfig):
-    body: str = Field(..., title="Body label", description="Define which body should be processed")
+    # body: str = Field(..., title="Body label", description="Define which body should be processed")
+    bodies: list[str] = Field(
+        ..., title="Body label", description="Define which body should be processed"
+    )
     sub_bodies: ZoningModel = Field(
         ZoningModel(
             x_intervals=[float("-inf"), float("inf")],
