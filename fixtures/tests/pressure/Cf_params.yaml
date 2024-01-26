@@ -9,7 +9,7 @@ bodies:
     surfaces: ["p1_xp", "p2_xp", "p3_ym", "p4_ym", "p5_ym", "p6c_yp", "p7_xm", "p8_yp", "p9_yp", "t1_ym", "t2_yp"] 
 force_coefficient:
   measurement_1:
-    body: "building2"
+    bodies: ["building2"]
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
     sub_bodies: # Optional, default is the whole body
@@ -17,7 +17,7 @@ force_coefficient:
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
-    body: marquise
+    bodies: ["marquise", "lanternim"]
     variables: ["Cfx", "Cfy", "Cfz"]
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
     transformation:

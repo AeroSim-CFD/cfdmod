@@ -45,7 +45,7 @@ def process_Cf(
     geometry_to_use = mesh.geometry.copy()
     geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
 
-    geometry_dict = {cfg.body: geom_data}
+    geometry_dict = {"body": geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
         mesh_areas=geometry_to_use.areas,

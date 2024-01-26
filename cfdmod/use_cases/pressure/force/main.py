@@ -75,16 +75,19 @@ def main(*args):
     logger.info("Mesh description loaded successfully!")
 
     for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
-        logger.info(f"Processing body {cfg.body} ...")
+        for body_lbl in cfg.bodies:
+            logger.info(f"Processing body {body_lbl} ...")
 
-        cf_output: CommonOutput = process_Cf(
-            mesh=mesh,
-            body_cfg=post_proc_cfg.bodies[cfg.body],
-            cfg=cfg,
-            cp_path=cp_path,
-            extreme_params=post_proc_cfg.extreme_values,
-        )
+            cf_output: CommonOutput = process_Cf(
+                mesh=mesh,
+                body_cfg=post_proc_cfg.bodies[body_lbl],
+                cfg=cfg,
+                cp_path=cp_path,
+                extreme_params=post_proc_cfg.extreme_values,
+            )
 
-        cf_output.save_outputs(file_lbl=cfg.body, cfg_label=cfg_label, path_manager=path_manager)
+            cf_output.save_outputs(
+                file_lbl=body_lbl, cfg_label=cfg_label, path_manager=path_manager
+            )
 
-        logger.info(f"Processed body {cfg.body}!")
+            logger.info(f"Processed body {body_lbl}!")

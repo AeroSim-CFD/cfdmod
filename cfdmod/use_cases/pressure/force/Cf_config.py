@@ -73,7 +73,7 @@ class CfCaseConfig(BaseModel):
 
     @model_validator(mode="after")
     def valdate_body_list(self):
-        for body_label in [cfg.body for cfg in self.force_coefficient.values()]:
+        for body_label in [b for cfg in self.force_coefficient.values() for b in cfg.bodies]:
             if body_label not in self.bodies.keys():
                 raise Exception(f"Body {body_label} is not defined in the configuration file")
         return self
