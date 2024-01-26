@@ -1,28 +1,9 @@
 import numpy as np
 import pandas as pd
-from lnas import LnasFormat, LnasGeometry
+from lnas import LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.geometry import GeometryData
-from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
-
-
-def get_geometry_data(body_cfg: BodyConfig, cfg: CmConfig, mesh: LnasFormat) -> GeometryData:
-    """Builds a GeometryData from the mesh and the configurations
-
-    Args:
-        body_cfg (BodyConfig): Body configuration with surface list
-        cfg (CfConfig): Force coefficient configuration
-        mesh (LnasFormat): Input mesh
-
-    Returns:
-        GeometryData: Filtered GeometryData
-    """
-    sfcs = body_cfg.surfaces if len(body_cfg.surfaces) != 0 else [k for k in mesh.surfaces.keys()]
-    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=sfcs)
-
-    return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
 
 
 def add_lever_arm_to_geometry_df(

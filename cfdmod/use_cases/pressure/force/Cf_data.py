@@ -7,10 +7,11 @@ from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.force.Cf_geom import get_geometry_data, get_representative_areas
+from cfdmod.use_cases.pressure.force.Cf_geom import get_representative_areas
 from cfdmod.use_cases.pressure.geometry import (
     ProcessedEntity,
     get_excluded_entities,
+    get_geometry_data,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput

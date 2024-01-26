@@ -9,12 +9,12 @@ from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
     ProcessedEntity,
     get_excluded_entities,
+    get_geometry_data,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.moment.Cm_geom import (
     add_lever_arm_to_geometry_df,
-    get_geometry_data,
     get_representative_volume,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput

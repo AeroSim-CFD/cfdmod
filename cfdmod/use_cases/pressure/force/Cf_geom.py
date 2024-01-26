@@ -1,25 +1,5 @@
 import numpy as np
-from lnas import LnasFormat, LnasGeometry
-
-from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.geometry import GeometryData
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
-
-
-def get_geometry_data(body_cfg: BodyConfig, cfg: CfConfig, mesh: LnasFormat) -> GeometryData:
-    """Builds a GeometryData from the mesh and the configurations
-
-    Args:
-        body_cfg (BodyConfig): Body configuration with surface list
-        cfg (CfConfig): Force coefficient configuration
-        mesh (LnasFormat): Input mesh
-
-    Returns:
-        GeometryData: Filtered GeometryData
-    """
-    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=body_cfg.surfaces)
-
-    return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
+from lnas import LnasGeometry
 
 
 def get_representative_areas(
