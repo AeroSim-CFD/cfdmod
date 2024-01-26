@@ -38,7 +38,7 @@ def split_into_chunks(
 
         range_lbl = f"range_{int(time_arr[min_step])}_{int(time_arr[max_step])}"
 
-        df.to_hdf(output_path, key=range_lbl, mode="a", index=False, format="t")
+        df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="t")
 
 
 def process_timestep_groups(

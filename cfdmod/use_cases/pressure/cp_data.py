@@ -37,7 +37,7 @@ class CpOutputs:
         # Output 2: cp stats
         stats_path = path_manager.get_cp_stats_path(cfg_label=cfg_label)
         create_folders_for_file(stats_path)
-        self.cp_stats.to_hdf(stats_path, key="cp_stats", mode="w", index=False)
+        self.cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
 
         # Output 3: VTK cp_stats
         vtp_path = path_manager.get_vtp_path(cfg_label=cfg_label)
