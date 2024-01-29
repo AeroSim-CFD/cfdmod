@@ -94,13 +94,19 @@ def main(*args):
         (data["time_step"] >= args_use.start_time) & (data["time_step"] <= args_use.end_time)
     ]
 
+    if(len(data.point_idx.nunique()) != len(mesh.geometry.triangles)):
+        raise ValueError("Number of points is different than number of triangles")
+
     stats = calculate_statistics(
         historical_data=data,
         statistics_to_apply=["max", "min", "std", "mean"],
         variables=variables,
         group_by_key="point_idx",
     )
+
     polydata = create_polydata_for_cell_data(data=stats, mesh=mesh.geometry)
+    if not output_path.name.endswith(".vtp"):
+        output_path = pathlib.Path(output_path.as_posix() + ".vtp")
 
     write_polydata(output_filename=output_path, poly_data=polydata)
 
