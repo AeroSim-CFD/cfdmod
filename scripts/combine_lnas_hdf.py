@@ -102,8 +102,6 @@ def main(*args):
     )
     polydata = create_polydata_for_cell_data(data=stats, mesh=mesh.geometry)
 
-    print(args_use)
-
     write_polydata(output_filename=output_path, poly_data=polydata)
 
 
