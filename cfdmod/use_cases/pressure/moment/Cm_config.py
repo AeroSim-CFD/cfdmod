@@ -11,22 +11,18 @@ from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
+from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import MomentVariables
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import read_yaml
 
 
 class CmConfig(HashableConfig):
-    body: str = Field(..., title="Body label", description="Define which body should be processed")
-    sub_bodies: ZoningModel = Field(
-        ZoningModel(
-            x_intervals=[float("-inf"), float("inf")],
-            y_intervals=[float("-inf"), float("inf")],
-            z_intervals=[float("-inf"), float("inf")],
-        ),
-        title="Sub body intervals",
-        description="Definition of the intervals that will section the body into sub-bodies",
+    bodies: list[BodyConfig] = Field(
+        ...,
+        title="Bodies configuration",
+        description="Define which bodies should be processed separated and then joined"
+        + "and assign to each a zoning config",
     )
     variables: list[MomentVariables]
     lever_origin: tuple[float, float, float] = Field(
@@ -47,7 +43,7 @@ class CmConfig(HashableConfig):
 
 
 class CmCaseConfig(BaseModel):
-    bodies: dict[str, BodyConfig] = Field(
+    bodies: dict[str, BodyDefinition] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )
     moment_coefficient: dict[str, CmConfig] = Field(
