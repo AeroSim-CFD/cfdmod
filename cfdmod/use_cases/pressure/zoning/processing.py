@@ -75,7 +75,7 @@ def perform_extreme_value_analysis(
             return max(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_max"])
 
     group_by_point = historical_data.groupby(group_by_key)
-    timestep = pd.unique(historical_data.time_step)
+    timestep = historical_data.time_step.unique()
     xtr_stats = (
         group_by_point[var_name]
         .apply(
@@ -85,6 +85,7 @@ def perform_extreme_value_analysis(
         )
         .reset_index(name="xtr_val")
     )
+
     statistics_data[[f"{var_name}_xtr_min", f"{var_name}_xtr_max"]] = xtr_stats["xtr_val"].apply(
         lambda x: pd.Series(x)
     )
@@ -125,6 +126,24 @@ def calculate_statistics(
     """
     group_by_point = historical_data.groupby(group_by_key)
     statistics_data = pd.DataFrame({group_by_key: historical_data[group_by_key].unique()})
+
+    # pandas_func = {
+    #     "mean": "mean",
+    #     "min": "min",
+    #     "max": "max",
+    #     "std": "std",
+    #     "skewness": ("skewness", lambda x: x.skew()),
+    #     "kurtosis": ("kurtosis", lambda x: x.kurt()),
+    # }
+
+    # pandas_stats = [
+    #     stat for stat in statistics_to_apply if stat not in ["mean_qs", "xtr_min", "xtr_max"]
+    # ]
+    # if "mean_qs" in statistics_to_apply and "mean" not in statistics_to_apply:
+    #     pandas_stats.append("mean")
+
+    # for var_name in variables:
+    #     statistics_data = group_by_point.agg({"cp": stats_to_apply})
 
     for var_name in variables:
         if "mean" in statistics_to_apply or "mean_qs" in statistics_to_apply:

@@ -14,6 +14,12 @@ from cfdmod.utils import read_yaml
 
 
 class CpConfig(HashableConfig):
+    number_of_chunks: int = Field(
+        1,
+        title="Number of chunks",
+        description="How many chunks the output time series will be split into",
+        ge=1,
+    )
     timestep_range: tuple[float, float] = Field(
         ...,
         title="Timestep Range",

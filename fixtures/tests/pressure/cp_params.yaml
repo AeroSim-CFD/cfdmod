@@ -1,5 +1,7 @@
 pressure_coefficient:
   default:
+    # Define how many chunks the output time series will be split into. Optional, defaults to 1
+    number_of_chunks: 10
     # Select the time interval to filter the signal and calculate statistics
     timestep_range: [10000, 20000]
     # Define how to consider the effect of static reference pressure

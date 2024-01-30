@@ -8,23 +8,51 @@ Minimum and maximum values
 ==========================
 
 Finding the minimum and maximum values is pretty straightforward.
-For example, the minimum and maximum values of a pressure coefficient signal is:
+For example, the minimum and maximum values of a generic signal (:math:`x`) is:
 
 .. math::
-    cp_{min} = min(cp(t))
+    \check{x} = min(x)
 
-    cp_{max} = max(cp(t))
+    \widehat{x} = max(x)
+
+Sometimes it may be necessary to divide the time series in order to make it **memory efficient**.
+
+Thus the minimum and maximum values are computed **for each subdivision** (:math:`n`), and the global minimum and maximum values are defined as:
+
+.. math::
+    \check{x} = min(\check{x_n})
+
+    \widehat{x} = max(\widehat{x_n})
 
 Average value
 =============
 
 The mean value is obtained by a sum over the signal, divided by how many samples there are.
-For example, the mean value of a pressure coefficient signal is:
+For example, the mean value of a generic signal (:math:`x`) is:
 
 .. math::
-    cp_{mean} = \frac{\int cp(t) dt}{T}
+    \bar{x} = \mu = \frac{\int x(t) dt}{T} = \frac{1}{N} \sum{x_i}
 
 Where :math:`t` is temporal variable, and :math:`T` is the sample total time.
+For discrete signal :math:`N` is the size of the sample.
+
+As mentioned before, the sample can be subdivided in :math:`n` subsamples.
+Thus to compose the global average (:math:`\mu`) from each subdivision average, a weighted average must be performed based on each subdivision size :math:`N_n`:
+
+.. math::
+    \mu = \frac{\sum{\bar{x_n} N_n}}{\sum{N_n}} 
+
+Ensemble Average
+================
+
+The ensemble average of signal fluctuations is a statistical measure that involves **averaging the values of a signal** across multiple instances or repetitions of an experiment or observation.
+
+The ensemble average :math:`\langle x'(t) \rangle` of the **fluctuation of a signal** :math:`x(t)` is calculated by averaging the corresponding values across different trials or instances, for a m-th order moment:
+
+.. math::
+    \langle x'(t) ^ m \rangle = \langle (x(t) - \mu) ^ m \rangle = \frac{\sum{[x(t) - \mu] ^ m}}{N}
+
+The following statistical operations use higher order moments.
 
 Root Mean Square value
 ======================
@@ -32,12 +60,80 @@ Root Mean Square value
 The next statistic value is the Root Mean Square (RMS) value of a coefficient signal.
 It measures the magnitude of a varying quantity. 
 The RMS value is a way to represent the **"effective" or "equivalent" value of a varying quantity**.
-For example, the RMS value of a pressure coefficient signal is:
+For example, the RMS value of a generic signal (:math:`x`) is:
 
 .. math::
-    cp_{rms} = \frac{\sqrt{\sum{(cp(t) - cp_{mean})^2}}}{N}
+    \tilde{x} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}
 
-Where :math:`N` is the number of time step samples.
+Where :math:`\mu` is the **global average** and :math:`N` is the number of time step samples.
+
+It can also be defined based on the **ensemble average** of the signal fluctuation (:math:`x'`):
+
+.. math::
+    \tilde{x} = \sqrt{\langle x' ^ 2 \rangle} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}
+
+The global RMS value for subdivided samples is computed **cumulating the second-order moment**.
+
+For each subdivision, the second-order moment is calculated as:
+
+.. math::
+    \mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}
+
+Then the global RMS value is defined as:
+
+.. math::
+    \tilde{x} = \sqrt{\frac{\sum_{n} \mu_2}{N}}
+
+Skewness
+========
+
+Skewness, a third-order statistical moment, characterizes the **asymmetry of the signal's probability distribution**.
+A positive skewness indicates a longer tail on the right side of the distribution, while negative skewness suggests a longer left tail.
+
+For example, the skewness value of a generic signal (:math:`x`) is:
+
+.. math::
+    Skew[x] = \frac{\langle x' ^ 3 \rangle}{\langle x' ^ 2 \rangle ^ {3/2}} = \frac{\sum{(x_i - \mu)^3}}{(\sum{(x_i - \mu)^2}) ^ {3 / 2}} \sqrt {N}
+
+Where :math:`\mu` is the **global average**. 
+
+The global skewness value for subdivided samples is computed **cumulating the second and third-order moment**.
+
+.. math::
+    \mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}
+
+    \mu_3 = \sum_{i=1}^{N_n}{(x_i - \mu)^3}
+
+Then the global skewness value is defined as:
+
+.. math::
+    Skew[x] = \frac{\sum_{n} \mu_3}{(\sum_{n} \mu_2) ^ {3 / 2}} \sqrt {N}
+
+Kurtosis
+========
+
+Kurtosis, a fourth-order moment, measures the **"tailedness" of the signal's distribution**.
+A high kurtosis indicates heavy tails and a more peaked distribution, suggesting the presence of outliers or extreme values.
+In the other hand, low kurtosis indicates lighter tails and a flatter distribution.
+
+For example, the kurtosis value of a generic signal (:math:`x`) is:
+
+.. math::
+    Kurt[x] = \frac{\langle x' ^ 4 \rangle}{\langle x' ^ 2 \rangle ^ 2} = \frac{\sum{(x_i - \mu)^4}}{(\sum{(x_i - \mu)^2}) ^ {2}} N
+
+Where :math:`\mu` is the **global average**. 
+
+The global kurtosis value for subdivided samples is computed **cumulating the second and fourth-order moment**.
+
+.. math::
+    \mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}
+
+    \mu_4 = \sum_{i=1}^{N_n}{(x_i - \mu)^4}
+
+Then the global kurtosis value is defined as:
+
+.. math::
+    Kurt[x] = \frac{\sum_{n} \mu_4}{(\sum_{n} \mu_2) ^ {2}} N
 
 Extreme values
 ==============
@@ -140,7 +236,7 @@ The definition of the second mode of peak wind load is:
 Where :math:`\bar{q}` is the average dynamic pressure, :math:`\rho` is the fluid density and :math:`\bar{V_0}` is the average wind velocity.
 
 However, the peak value for the coefficient needs to be scaled according to the characteristic event duration.
-This correction is performed using the values for the statistical factors (:math:`S`) from the :footcite:t:`nbr19886123` 6123.
+This correction is performed using the values for the statistical factors (:math:`S_2`) from the :footcite:t:`nbr19886123` 6123.
 The correction factor is defined as:
 
 .. math::

@@ -25,18 +25,13 @@ class PathManagerBody(PathManagerBase):
         return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.vtp"
 
     def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "time_series"
-            / f"{body_label}.time_series.hdf"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.time_series.h5"
 
     def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.hdf"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.h5"
+
+    def get_regions_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.regions.h5"
 
 
 class CmPathManager(PathManagerBody):
@@ -51,32 +46,17 @@ class CePathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Ce"
 
     def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "surfaces"
-            / f"{sfc_label}.regions.stl"
-        )
-
-    def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "regions"
-            / f"regions.{sfc_label}.hdf"
-        )
+        return self.output_path / cfg_label / self._FOLDERNAME / f"{sfc_label}.regions.stl"
 
 
 class CpPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "cp"
 
     def get_cp_stats_path(self, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.hdf"
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.h5"
 
     def get_cp_t_path(self, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / "cp_t.hdf"
+        return self.output_path / cfg_label / self._FOLDERNAME / "cp_t.h5"
 
     def get_vtp_path(self, cfg_label: str) -> pathlib.Path:
         return self.output_path / cfg_label / self._FOLDERNAME / "cp_stats.vtp"
