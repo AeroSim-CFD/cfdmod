@@ -34,3 +34,11 @@ class BodyConfig(BaseModel):
         title="Sub body intervals",
         description="Definition of the intervals that will section the body into sub-bodies",
     )
+
+
+class MomentBodyConfig(BodyConfig):
+    lever_origin: tuple[float, float, float] = Field(
+        ...,
+        title="Lever origin",
+        description="Coordinate of the reference point to evaluate the lever for moment calculations",
+    )
