@@ -84,6 +84,6 @@ def main(*args):
             bodies_definition=post_proc_cfg.bodies,
             extreme_params=post_proc_cfg.extreme_values,
         )
-        cf_output.save_outputs(file_lbl="body", cfg_label=cfg_label, path_manager=path_manager)
+        cf_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
 
         logger.info(f"Processed Cf config {cfg_label}!")

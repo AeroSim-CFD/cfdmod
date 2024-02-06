@@ -85,6 +85,6 @@ def main(*args):
             extreme_params=post_proc_cfg.extreme_values,
         )
 
-        cm_output.save_outputs(file_lbl="body", cfg_label=cfg_label, path_manager=path_manager)
+        cm_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
 
         logger.info(f"Processed Cm config {cfg_label}!")
