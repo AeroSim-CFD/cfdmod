@@ -75,16 +75,16 @@ def main(*args):
     logger.info("Mesh description loaded successfully!")
 
     for cfg_label, cfg in post_proc_cfg.moment_coefficient.items():
-        logger.info(f"Processing body {cfg.body} ...")
+        logger.info(f"Processing Cm config {cfg_label} ...")
 
         cm_output: CommonOutput = process_Cm(
             mesh=mesh,
-            body_cfg=post_proc_cfg.bodies[cfg.body],
             cfg=cfg,
             cp_path=cp_path,
+            bodies_definition=post_proc_cfg.bodies,
             extreme_params=post_proc_cfg.extreme_values,
         )
 
-        cm_output.save_outputs(file_lbl=cfg.body, cfg_label=cfg_label, path_manager=path_manager)
+        cm_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
 
-        logger.info(f"Processed body {cfg.body}!")
+        logger.info(f"Processed Cm config {cfg_label}!")

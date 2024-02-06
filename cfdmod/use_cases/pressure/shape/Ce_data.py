@@ -28,9 +28,12 @@ from cfdmod.utils import create_folders_for_file
 
 @dataclass
 class CeOutput(CommonOutput):
-    def export_mesh(self, file_lbl: str, cfg_label: str, path_manager: CePathManager):
+    def export_mesh(self, cfg_label: str, cfg: CeConfig, path_manager: CePathManager):
         # Regions Mesh
-        mesh_path = path_manager.get_surface_path(file_lbl, cfg_label)
+        cfg_hash = cfg.sha256()
+        mesh_path = path_manager.get_surface_path(
+            cfg_lbl=cfg_label, cfg_hash=cfg_hash, sfc_lbl="body"
+        )
         create_folders_for_file(mesh_path)
         regions_mesh = self.processed_entities[0].mesh.copy()
         regions_mesh.join([sfc.mesh.copy() for sfc in self.processed_entities[1:]])
@@ -38,7 +41,9 @@ class CeOutput(CommonOutput):
 
         # (Optional) Excluded Mesh
         if len(self.excluded_entities) != 0:
-            excluded_mesh_path = path_manager.get_surface_path("excluded_surfaces", cfg_label)
+            excluded_mesh_path = path_manager.get_surface_path(
+                cfg_lbl=cfg_label, cfg_hash=cfg_hash, sfc_lbl="excluded_surfaces"
+            )
             self.excluded_entities[0].mesh.export_stl(excluded_mesh_path)
 
 

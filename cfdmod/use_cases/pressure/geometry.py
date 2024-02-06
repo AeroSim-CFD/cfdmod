@@ -125,20 +125,18 @@ def tabulate_geometry_data(
     return geometry_df
 
 
-def get_geometry_data(
-    body_cfg: BodyConfig, cfg: CfConfig | CmConfig, mesh: LnasFormat
-) -> GeometryData:
+def get_geometry_data(body_cfg: BodyConfig, sfc_list: list[str], mesh: LnasFormat) -> GeometryData:
     """Builds a GeometryData from the mesh and the configurations
 
     Args:
-        body_cfg (BodyConfig): Body configuration with surface list
-        cfg (CfConfig): Force coefficient configuration
+        body_cfg (BodyConfig): Body configuration with zoning parameters
+        sfc_list (list[str]): List of surfaces that compose the body
         mesh (LnasFormat): Input mesh
 
     Returns:
         GeometryData: Filtered GeometryData
     """
-    sfcs = body_cfg.surfaces if len(body_cfg.surfaces) != 0 else [k for k in mesh.surfaces.keys()]
+    sfcs = sfc_list if len(sfc_list) != 0 else [k for k in mesh.surfaces.keys()]
     geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=sfcs)
 
-    return GeometryData(mesh=geom, zoning_to_use=cfg.sub_bodies, triangles_idxs=geometry_idx)
+    return GeometryData(mesh=geom, zoning_to_use=body_cfg.sub_bodies, triangles_idxs=geometry_idx)

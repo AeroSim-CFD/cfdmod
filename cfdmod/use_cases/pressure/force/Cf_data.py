@@ -9,13 +9,14 @@ from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
 from cfdmod.use_cases.pressure.force.Cf_geom import get_representative_areas
 from cfdmod.use_cases.pressure.geometry import (
+    GeometryData,
     ProcessedEntity,
     get_excluded_entities,
     get_geometry_data,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
+from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
@@ -24,28 +25,32 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 
 def process_Cf(
     mesh: LnasFormat,
-    body_cfg: BodyConfig,
     cfg: CfConfig,
     cp_path: pathlib.Path,
+    bodies_definition: dict[str, BodyDefinition],
     extreme_params: ExtremeValuesParameters | None,
 ) -> CommonOutput:
     """Executes the force coefficient processing routine
 
     Args:
         mesh (LnasFormat): Input mesh
-        body_cfg (BodyConfig): Body configuration
         cfg (CfConfig): Force coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
+        bodies_definition (dict[str, BodyDefinition]): Dictionary of bodies definition
         extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
 
     Returns:
         CommonOutput: Compiled outputs for force coefficient use case
     """
-    geom_data = get_geometry_data(body_cfg=body_cfg, cfg=cfg, mesh=mesh)
+    geometry_dict: dict[str, GeometryData] = {}
+    for body_cfg in cfg.bodies:
+        geom_data = get_geometry_data(
+            body_cfg=body_cfg, sfc_list=bodies_definition[body_cfg.name].surfaces, mesh=mesh
+        )
+        geometry_dict[body_cfg.name] = geom_data
+
     geometry_to_use = mesh.geometry.copy()
     geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
-
-    geometry_dict = {cfg.body: geom_data}
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
         mesh_areas=geometry_to_use.areas,
@@ -58,7 +63,6 @@ def process_Cf(
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-
     Cf_stats = calculate_statistics(
         historical_data=Cf_data,
         statistics_to_apply=cfg.statistics,
@@ -67,15 +71,27 @@ def process_Cf(
         extreme_params=extreme_params,
     )
 
-    body_data_df = combine_stats_data_with_mesh(
-        mesh=geom_data.mesh,
-        region_idx_array=geometry_df.region_idx.to_numpy(),
-        data_stats=Cf_stats,
-    )
+    processed_entities: list[ProcessedEntity] = []
+    for body_cfg in cfg.bodies:
+        body_data = geometry_dict[body_cfg.name]
+        region_idx_arr = geometry_df.loc[
+            geometry_df.region_idx.str.contains(body_cfg.name)
+        ].region_idx.to_numpy()
 
-    polydata = create_polydata_for_cell_data(body_data_df, geom_data.mesh)
+        body_data_df = combine_stats_data_with_mesh(
+            mesh=body_data.mesh,
+            region_idx_array=region_idx_arr,
+            data_stats=Cf_stats,
+        )
 
-    excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in body_cfg.surfaces]
+        polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
+        data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
+        processed_entities.append(data_entity)
+
+    included_sfc_list = [
+        sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
+    ]
+    excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
     if len(excluded_sfc_list) != 0:
         col = Cf_stats.columns
@@ -85,13 +101,11 @@ def process_Cf(
     else:
         excluded_entity = []
 
-    data_entity = ProcessedEntity(mesh=geom_data.mesh, polydata=polydata)
-
     cf_output = CommonOutput(
         data_df=Cf_data,
         stats_df=Cf_stats,
         regions_df=geometry_df,
-        processed_entities=[data_entity],
+        processed_entities=processed_entities,
         excluded_entities=excluded_entity,
     )
 
