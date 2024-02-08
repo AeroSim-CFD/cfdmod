@@ -5,6 +5,7 @@ shape_coefficient:
       yaml: "./zoning_params.yaml" 
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     # Apply transformations before indexing the regions
+    variables: ["Ce"]
     transformation:
       translation: [0, 0, 0]
       rotation: [0, 0, 0]
