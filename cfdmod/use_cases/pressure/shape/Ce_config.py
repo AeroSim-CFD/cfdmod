@@ -12,6 +12,7 @@ from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.zoning.processing import ShapeVariables
 from cfdmod.utils import read_yaml
 
 
@@ -35,6 +36,11 @@ class CeConfig(HashableConfig):
         ...,
         title="Zoning configuration",
         description="Zoning configuration with intervals information",
+    )
+    variables: list[ShapeVariables] = Field(
+        ...,
+        title="List of variables",
+        description="Define which variables will be calculated",
     )
     statistics: list[Statistics] = Field(
         ...,
