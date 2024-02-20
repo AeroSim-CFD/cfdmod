@@ -1,0 +1,19 @@
+vtp_path: "./example.vtp"
+images:
+  - scalar_label: ""
+    file_label: ""
+projection:
+  offset: 15
+  axis: ["x_plus", "x_minus", "y_plus", "y_minus"]
+  rotation: [0, 0, 0]
+colormap:
+  n_divs: 10
+  target_step: 0.1 # n_divs auto
+camera:
+  zoom: float
+  offset_position: [0, 0, 0]
+  view_up: [0, 0, 0]
+  window_size: [0, 0]
+  crop:
+    width_ratio: 0.8
+    height_ratio: 0.8
