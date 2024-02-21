@@ -86,17 +86,18 @@ def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeom
     Returns:
         LnasGeometry: Sliced LNAS surface mesh
     """
-    new_triangles = np.zeros((0, 3, 3))
+    triangles_list = []
 
     for tri_verts, tri_normal in zip(surface.triangle_vertices, surface.normals):
         # If triangle normal is the same of plane normal, not slice it
         if np.abs(tri_normal).max() == np.abs(tri_normal)[axis]:
-            new_triangles = np.concatenate((new_triangles, [tri_verts]), axis=0)
+            triangles_list.extend([tri_verts])
             continue
         sliced_triangles = slice_triangle(tri_verts, axis, interval)
-        new_triangles = np.concatenate((new_triangles, sliced_triangles), axis=0)
+        triangles_list.extend(sliced_triangles)
 
-    full_verts = new_triangles.reshape(len(new_triangles) * 3, 3)
+    new_triangles = np.array(triangles_list, dtype=np.float32)
+    full_verts = new_triangles.reshape(len(triangles_list) * 3, 3)
     verts, triangles = np.unique(full_verts, axis=0, return_inverse=True)
 
     return LnasGeometry(verts, triangles.reshape(-1, 3))
