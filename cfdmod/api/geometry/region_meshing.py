@@ -91,16 +91,18 @@ def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeom
     for tri_verts, tri_normal in zip(surface.triangle_vertices, surface.normals):
         # If triangle normal is the same of plane normal, not slice it
         if np.abs(tri_normal).max() == np.abs(tri_normal)[axis]:
-            triangles_list.extend([tri_verts])
+            triangles_list.extend([tri_verts.tolist()])
             continue
         sliced_triangles = slice_triangle(tri_verts, axis, interval)
-        triangles_list.extend(sliced_triangles)
+        triangles_list.extend(sliced_triangles.tolist())
 
     new_triangles = np.array(triangles_list, dtype=np.float32)
     full_verts = new_triangles.reshape(len(triangles_list) * 3, 3)
     verts, triangles = np.unique(full_verts, axis=0, return_inverse=True)
 
-    return LnasGeometry(verts, triangles.reshape(-1, 3))
+    geom = LnasGeometry(verts, triangles.reshape(-1, 3))
+    geom._full_update()
+    return geom
 
 
 def get_mesh_bounds(input_mesh: LnasGeometry) -> tuple[tuple[float, float], ...]:
