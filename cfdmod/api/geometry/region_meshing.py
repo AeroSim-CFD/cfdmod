@@ -96,7 +96,9 @@ def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeom
         sliced_triangles = slice_triangle(tri_verts, axis, interval)
         triangles_list.extend(sliced_triangles.tolist())
 
-    new_triangles = np.array(triangles_list, dtype=np.float32)
+    # new_triangles = np.array(triangles_list, dtype=np.float32)
+    new_triangles = np.array(triangles_list, dtype=np.float64)
+
     full_verts = new_triangles.reshape(len(triangles_list) * 3, 3)
     verts, triangles = np.unique(full_verts, axis=0, return_inverse=True)
 

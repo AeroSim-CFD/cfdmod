@@ -143,11 +143,6 @@ def process_Ce(
     logger.info("Getting geometry data...")
     geometry_dict = get_geometry_data(surface_dict=sfc_dict, cfg=cfg, mesh=mesh)
 
-    for sfc_lbl, geom_data in geometry_dict.items():
-        regions_mesh, regions_mesh_triangles_indexing = generate_regions_mesh(
-            geom_data=geom_data, cfg=cfg
-        )
-
     logger.info("Tabulating geometry data...")
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
@@ -172,7 +167,8 @@ def process_Ce(
     )
     logger.info("Processing surfaces...")
     processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
-    
+    logger.info("Processed surfaces!")
+
     excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
     excluded_sfc_list += [
         sfc
