@@ -2,9 +2,9 @@ import argparse
 import pathlib
 from dataclasses import dataclass
 
-from cfdmod.use_cases.pressure.snapshot.camera import take_snapshot
-from cfdmod.use_cases.pressure.snapshot.config import SnapshotConfig
-from cfdmod.use_cases.pressure.snapshot.process_image import process_image
+from cfdmod.use_cases.snapshot.camera import take_snapshot
+from cfdmod.use_cases.snapshot.config import SnapshotConfig
+from cfdmod.use_cases.snapshot.process_image import process_image
 
 
 @dataclass
@@ -64,7 +64,7 @@ def main(*args):
             file_path=vtp_path,
             output_path=output_path / f"{image_cfg.image_label}.png",
             colormap_params=cfg.colormap,
-            project_params=cfg.projection,
+            projection_params=cfg.projection,
             camera_params=cfg.camera,
         )
         process_image(

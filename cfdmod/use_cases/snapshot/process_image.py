@@ -2,7 +2,7 @@ import pathlib
 
 from PIL import Image
 
-from cfdmod.use_cases.pressure.snapshot.config import CropConfig
+from cfdmod.use_cases.snapshot.config import CropConfig
 
 
 def crop_image_center(original_image: Image, width_ratio: float, height_ratio: float) -> Image:

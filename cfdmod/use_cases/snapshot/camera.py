@@ -3,8 +3,8 @@ import pathlib
 import numpy as np
 import pyvista as pv
 
-from cfdmod.use_cases.pressure.snapshot.colormap import ColormapFactory
-from cfdmod.use_cases.pressure.snapshot.config import (
+from cfdmod.use_cases.snapshot.colormap import ColormapFactory
+from cfdmod.use_cases.snapshot.config import (
     CameraConfig,
     ColormapConfig,
     ProjectionConfig,
