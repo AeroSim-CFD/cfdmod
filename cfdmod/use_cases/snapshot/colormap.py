@@ -15,11 +15,9 @@ class ColormapFactory:
     def hex_to_rgb(cls, hex_code: str) -> tuple[float, float, float]:
         return tuple(int(hex_code.lstrip("#")[i : i + 2], 16) / 255 for i in (0, 2, 4))
 
-    def _build_colormap(
-        self, hex_color_list: list[str], range: tuple[float, float], n_divs: int
-    ) -> LinearSegmentedColormap:
+    def _build_colormap(self, hex_color_list: list[str]) -> LinearSegmentedColormap:
         N = len(hex_color_list)
-        scalar_range = np.array(range)
+        scalar_range = np.array(self.scalar_range)
 
         if np.all(scalar_range <= 0):
             hex_colors = hex_color_list[: int(N / 2) - 1]
@@ -40,7 +38,9 @@ class ColormapFactory:
 
         rgb_colors = [self.hex_to_rgb(color) for color in hex_colors]
 
-        custom_cmap = LinearSegmentedColormap.from_list("custom_colormap", rgb_colors, N=n_divs)
+        custom_cmap = LinearSegmentedColormap.from_list(
+            "custom_colormap", rgb_colors, N=self.n_divs
+        )
 
         return custom_cmap
 
