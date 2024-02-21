@@ -80,6 +80,7 @@ def take_snapshot(
     scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
     scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
     colormap_divs = colormap_params.get_colormap_divs(scalar_range)
+    colormap_divs = 15 if colormap_divs > 15 else 3 if colormap_divs < 3 else colormap_divs
 
     sargs = dict(
         title=f"{scalar_name}\n",

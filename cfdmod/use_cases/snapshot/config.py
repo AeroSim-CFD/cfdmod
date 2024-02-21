@@ -64,7 +64,9 @@ class ImageConfig(BaseModel):
 
 
 class ColormapConfig(BaseModel):
-    n_divs: int = Field(None, title="Number of divisions", description="Colormap divisions", gt=0)
+    n_divs: int = Field(
+        None, title="Number of divisions", description="Colormap divisions", ge=3, le=15
+    )
     target_step: float = Field(None, title="Target step", description="Colormap target step", gt=0)
 
     def get_colormap_divs(self, scalar_range: tuple[float, float]) -> int:
