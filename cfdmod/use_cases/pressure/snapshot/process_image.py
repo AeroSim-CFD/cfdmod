@@ -24,3 +24,6 @@ def crop_image_center(original_image: Image, width_ratio: float, height_ratio: f
     cropped_image = original_image.crop((left, top, right, bottom))
 
     return cropped_image
+
+def paste_watermark():
+    

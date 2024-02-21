@@ -8,7 +8,52 @@ from cfdmod.use_cases.pressure.snapshot.config import (
     CameraConfig,
     ColormapConfig,
     ProjectionConfig,
+    Projections,
 )
+
+
+def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
+    """Calculates mesh center
+
+    Args:
+        mesh_bounds (list[float]): Mesh bounds (x_min, x_max, y_min, y_max, z_min, z_max)
+
+    Returns:
+        tuple[float, float, float]: Mesh center (x, y, z)
+    """
+    centerX = (mesh_bounds[1] + mesh_bounds[0]) / 2
+    centerY = (mesh_bounds[3] + mesh_bounds[2]) / 2
+    centerZ = (mesh_bounds[5] + mesh_bounds[4]) / 2
+
+    return (centerX, centerY, centerZ)
+
+
+def get_translation(
+    bounds: list[float], for_projection: Projections, offset_val: float
+) -> tuple[float, float, float]:
+    """Calculates projection translation
+
+    Args:
+        bounds (list[float]): Mesh bounds (x_min, x_max, y_min, y_max, z_min, z_max)
+        for_projection (Projections): Which projection to calculate translation
+        offset_val (float): Value for offsetting projection from the center projection
+
+    Returns:
+        tuple[float, float, float]: Translation value (x, y, z)
+    """
+    x_translate = (bounds[1] - bounds[0]) / 2 + (bounds[5] - bounds[4]) / 2
+    y_translate = (bounds[3] - bounds[2]) / 2 + (bounds[5] - bounds[4]) / 2
+
+    if for_projection == Projections.x_plus:
+        return (x_translate + offset_val, 0, x_translate)
+    elif for_projection == Projections.x_minus:
+        return (-(x_translate + offset_val), 0, x_translate)
+    elif for_projection == Projections.y_plus:
+        return (0, -(y_translate + offset_val), y_translate)
+    elif for_projection == Projections.y_minus:
+        return (0, y_translate + offset_val, y_translate)
+    else:
+        raise ValueError(f"Projection {for_projection} is not supported")
 
 
 def take_snapshot(
@@ -16,19 +61,25 @@ def take_snapshot(
     file_path: pathlib.Path,
     output_path: pathlib.Path,
     colormap_params: ColormapConfig,
-    project_params: ProjectionConfig,
+    projection_params: ProjectionConfig,
     camera_params: CameraConfig,
 ):
-    def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
-        centerX = (mesh_bounds[1] + mesh_bounds[0]) / 2
-        centerY = (mesh_bounds[3] + mesh_bounds[2]) / 2
-        centerZ = (mesh_bounds[5] + mesh_bounds[4]) / 2
+    """Use pyvista renderer to take a snapshot
 
-        return (centerX, centerY, centerZ)
-    
+    Args:
+        scalar_name (str): Variable name
+        file_path (pathlib.Path): Input polydata file path
+        output_path (pathlib.Path): Output path for saving images
+        colormap_params (ColormapConfig): Parameters for colormap
+        projection_params (ProjectionConfig): Parameters for projection
+        camera_params (CameraConfig): Parameters for camera
+    """
     original_mesh = pv.read(file_path)
     original_mesh.set_active_scalars(scalar_name)
-    colormap_divs = 
+
+    scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
+    scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
+    colormap_divs = colormap_params.get_colormap_divs(scalar_range)
 
     sargs = dict(
         title=f"{scalar_name}\n",
@@ -48,12 +99,9 @@ def take_snapshot(
     original_bounds = original_mesh.bounds
     original_center = get_mesh_center(original_bounds)
 
-    original_mesh.rotate_x(project_params.rotation[0], point=original_center, inplace=True)
-    original_mesh.rotate_y(project_params.rotation[1], point=original_center, inplace=True)
-    original_mesh.rotate_z(project_params.rotation[2], point=original_center, inplace=True)
-
-    scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
-    scalar_range = (scalar_arr.min(), scalar_arr.max())
+    original_mesh.rotate_x(projection_params.rotation[0], point=original_center, inplace=True)
+    original_mesh.rotate_y(projection_params.rotation[1], point=original_center, inplace=True)
+    original_mesh.rotate_z(projection_params.rotation[2], point=original_center, inplace=True)
 
     plotting_cmap = ColormapFactory(
         scalar_range=scalar_range, n_divs=colormap_divs
@@ -61,55 +109,17 @@ def take_snapshot(
 
     plotter.add_mesh(original_mesh, lighting=False, cmap=plotting_cmap, scalar_bar_args=sargs)
 
-    for projection in Projections:
+    for projection in [p for p in Projections if p.value[0] in projection_params.axis]:
         axes = pv.Axes()
         duplicated_mesh = original_mesh.copy()
 
         axes.origin = original_center
-        duplicated_mesh.rotate_x(projection.value[0], point=axes.origin, inplace=True)
-        duplicated_mesh.rotate_y(projection.value[1], point=axes.origin, inplace=True)
+        duplicated_mesh.rotate_x(projection.value[1][0], point=axes.origin, inplace=True)
+        duplicated_mesh.rotate_y(projection.value[1][1], point=axes.origin, inplace=True)
 
-        translation = [0, 0, 0]
-        if projection == Projections.x_plus:
-            translation[0] += (
-                (original_bounds[1] - original_bounds[0]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-                + offset_value
-            )
-            translation[2] += (
-                -(original_bounds[1] - original_bounds[0]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-            )
-        elif projection == Projections.x_minus:
-            translation[0] -= (
-                (original_bounds[1] - original_bounds[0]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-                + offset_value
-            )
-            translation[2] += (
-                -(original_bounds[1] - original_bounds[0]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-            )
-        elif projection == Projections.y_plus:
-            translation[1] -= (
-                (original_bounds[3] - original_bounds[2]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-                + offset_value
-            )
-            translation[2] += (
-                -(original_bounds[3] - original_bounds[2]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-            )
-        elif projection == Projections.y_minus:
-            translation[1] += (
-                (original_bounds[3] - original_bounds[2]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-                + offset_value
-            )
-            translation[2] += (
-                -(original_bounds[3] - original_bounds[2]) / 2
-                + (original_bounds[5] - original_bounds[4]) / 2
-            )
+        translation = get_translation(
+            bounds=original_bounds, for_projection=projection, offset_val=projection_params.offset
+        )
 
         duplicated_mesh = duplicated_mesh.translate(translation, inplace=True)
         plotter.add_mesh(

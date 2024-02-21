@@ -69,6 +69,13 @@ class ColormapConfig(BaseModel):
     n_divs: int = Field(None, title="Number of divisions", description="Colormap divisions", gt=0)
     target_step: float = Field(None, title="Target step", description="Colormap target step", gt=0)
 
+    def get_colormap_divs(self, scalar_range: tuple[float, float]) -> int:
+        if self.n_divs != None:
+            return self.n_divs
+        else:
+            divs = round((scalar_range[1] - scalar_range[0]) / self.target_step)
+            return divs
+
     @model_validator(mode="after")
     def exclusive_props(self) -> ColormapConfig:
         if self.n_divs != None and self.target_step != None:

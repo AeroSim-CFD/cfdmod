@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from cfdmod.use_cases.pressure.snapshot.camera import take_snapshot
 from cfdmod.use_cases.pressure.snapshot.config import SnapshotConfig
+from cfdmod.use_cases.pressure.snapshot.process_image import crop_image_center
 
 
 @dataclass
