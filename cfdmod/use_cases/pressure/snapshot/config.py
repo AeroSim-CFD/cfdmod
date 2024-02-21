@@ -17,11 +17,6 @@ class Projections(Enum):
     y_plus = ("y_plus", (-90, 0, 0))
     y_minus = ("y_minus", (90, 0, 0))
 
-    # x_plus = (0, -90, 0)
-    # x_minus = (0, 90, 0)
-    # y_plus = (-90, 0, 0)
-    # y_minus = (90, 0, 0)
-
 
 class CropConfig(BaseModel):
     width_ratio: float = Field(

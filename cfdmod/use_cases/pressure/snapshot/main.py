@@ -68,5 +68,7 @@ def main(*args):
             camera_params=cfg.camera,
         )
         process_image(
-            image_path=output_path / f"{image_cfg.image_label}.png", crop_cfg=cfg.camera.crop
+            image_path=output_path / f"{image_cfg.image_label}.png",
+            output_path=output_path / f"{image_cfg.image_label}.png",
+            crop_cfg=cfg.camera.crop,
         )

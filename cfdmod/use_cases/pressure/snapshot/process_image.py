@@ -47,7 +47,7 @@ def paste_watermark(main_image: Image, watermark_image: Image):
     )
 
 
-def process_image(image_path: pathlib.Path, crop_cfg: CropConfig) -> Image:
+def process_image(image_path: pathlib.Path, output_path: pathlib.Path, crop_cfg: CropConfig):
     """Processes the generated image
 
     Args:
@@ -66,3 +66,5 @@ def process_image(image_path: pathlib.Path, crop_cfg: CropConfig) -> Image:
         result_image = paste_watermark(main_image=cropped_image, watermark_image=watermark)
     else:
         result_image = cropped_image
+
+    result_image.save(output_path)
