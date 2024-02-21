@@ -131,8 +131,8 @@ def take_snapshot(
     plotter.camera.SetParallelProjection(True)
 
     camera = plotter.camera
-    camera.SetFocalPoint(camera.GetFocalPoint() + camera_params.offset_position)
-    camera.SetPosition(camera.GetPosition() + camera_params.offset_position)
+    camera.SetFocalPoint(camera.GetFocalPoint() + np.array(camera_params.offset_position))
+    camera.SetPosition(camera.GetPosition() + np.array(camera_params.offset_position))
 
     plotter.camera.up = camera_params.view_up
     plotter.camera.zoom(camera_params.zoom)

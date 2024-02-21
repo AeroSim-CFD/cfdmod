@@ -21,9 +21,9 @@ def crop_image_center(original_image: Image, width_ratio: float, height_ratio: f
     crop_height = original_height * height_ratio
 
     left = (original_width - crop_width) / 2
-    top = (original_height - crop_height) / 2
     right = (original_width + crop_width) / 2
-    bottom = (original_height + crop_height) / 2
+    top = original_height - crop_height
+    bottom = original_height
 
     cropped_image = original_image.crop((left, top, right, bottom))
 
