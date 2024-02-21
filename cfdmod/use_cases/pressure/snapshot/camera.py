@@ -1,23 +1,7 @@
-from enum import Enum
-
 import numpy as np
 import pyvista as pv
 
 from cfdmod.use_cases.pressure.snapshot.colormap import ColormapFactory
-
-
-class Projections(Enum):
-    x_plus = (0, -90, 0)
-    x_minus = (0, 90, 0)
-    y_plus = (-90, 0, 0)
-    y_minus = (90, 0, 0)
-
-
-class CameraParameters:
-    zoom: float
-    offset_position: tuple[float, float, float]
-    view_up: tuple[float, float, float]
-    window_size: tuple[int, int]
 
 
 def take_snapshot(
@@ -56,7 +40,6 @@ def take_snapshot(
     original_center = get_mesh_center(original_bounds)
     original_mesh.set_active_scalars(scalar_name)
 
-    # G100 rotation
     original_mesh.rotate_x(rotation[0], point=original_center, inplace=True)
     original_mesh.rotate_y(rotation[1], point=original_center, inplace=True)
     original_mesh.rotate_z(rotation[2], point=original_center, inplace=True)

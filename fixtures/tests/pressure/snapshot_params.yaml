@@ -1,7 +1,6 @@
-vtp_path: "./example.vtp"
 images:
   - scalar_label: ""
-    file_label: ""
+    image_label: ""
 projection:
   offset: 15
   axis: ["x_plus", "x_minus", "y_plus", "y_minus"]
