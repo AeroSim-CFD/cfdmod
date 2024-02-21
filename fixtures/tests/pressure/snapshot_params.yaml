@@ -16,3 +16,4 @@ camera:
   crop:
     width_ratio: 0.8
     height_ratio: 0.8
+    watermark_path: "./fixtures/watermark.png"

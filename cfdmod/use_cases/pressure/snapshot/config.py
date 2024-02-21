@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from enum import Enum
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -37,6 +37,9 @@ class CropConfig(BaseModel):
         description="Ratio for cropping the rendered image",
         gt=0,
         le=1,
+    )
+    watermark_path: Optional[str] = Field(
+        None, title="Watermark path", description="Path for the image to be used as watermark"
     )
 
 

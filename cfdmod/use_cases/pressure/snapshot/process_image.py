@@ -1,4 +1,8 @@
+import pathlib
+
 from PIL import Image
+
+from cfdmod.use_cases.pressure.snapshot.config import CropConfig
 
 
 def crop_image_center(original_image: Image, width_ratio: float, height_ratio: float) -> Image:
@@ -27,12 +31,38 @@ def crop_image_center(original_image: Image, width_ratio: float, height_ratio: f
 
 
 def paste_watermark(main_image: Image, watermark_image: Image):
-    watermark = Image.open("./output/snapshot/axis_icon.png")
+    """Adds a watermark to the main image
+
+    Args:
+        main_image (Image): Main Image
+        watermark_image (Image): Watermark image
+    """
     main_image.paste(
-        watermark,
+        watermark_image,
         (
-            int((main_image.width - watermark.width) / 2),
-            int((main_image.height - 2 * watermark.height) / 2),
+            int((main_image.width - watermark_image.width) / 2),
+            int((main_image.height - 2 * watermark_image.height) / 2),
         ),
-        watermark,
+        watermark_image,
     )
+
+
+def process_image(image_path: pathlib.Path, crop_cfg: CropConfig) -> Image:
+    """Processes the generated image
+
+    Args:
+        image_path (pathlib.Path): Path of the generated image
+        crop_cfg (CropConfig): Image post processing parameters
+
+    Returns:
+        Image: Processed image
+    """
+    image = Image.open(image_path)
+    cropped_image = crop_image_center(
+        original_image=image, width_ratio=crop_cfg.width_ratio, height_ratio=crop_cfg.height_ratio
+    )
+    if crop_cfg.watermark_path != None:
+        watermark = Image.open(crop_cfg.watermark_path)
+        result_image = paste_watermark(main_image=cropped_image, watermark_image=watermark)
+    else:
+        result_image = cropped_image

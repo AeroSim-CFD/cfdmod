@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from cfdmod.use_cases.pressure.snapshot.camera import take_snapshot
 from cfdmod.use_cases.pressure.snapshot.config import SnapshotConfig
-from cfdmod.use_cases.pressure.snapshot.process_image import crop_image_center
+from cfdmod.use_cases.pressure.snapshot.process_image import process_image
 
 
 @dataclass
@@ -66,4 +66,7 @@ def main(*args):
             colormap_params=cfg.colormap,
             project_params=cfg.projection,
             camera_params=cfg.camera,
+        )
+        process_image(
+            image_path=output_path / f"{image_cfg.image_label}.png", crop_cfg=cfg.camera.crop
         )
