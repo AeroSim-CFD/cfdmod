@@ -25,5 +25,14 @@ def crop_image_center(original_image: Image, width_ratio: float, height_ratio: f
 
     return cropped_image
 
-def paste_watermark():
-    
+
+def paste_watermark(main_image: Image, watermark_image: Image):
+    watermark = Image.open("./output/snapshot/axis_icon.png")
+    main_image.paste(
+        watermark,
+        (
+            int((main_image.width - watermark.width) / 2),
+            int((main_image.height - 2 * watermark.height) / 2),
+        ),
+        watermark,
+    )
