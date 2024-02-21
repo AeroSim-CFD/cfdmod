@@ -1,5 +1,9 @@
 import argparse
+import pathlib
 from dataclasses import dataclass
+
+from cfdmod.use_cases.pressure.snapshot.camera import take_snapshot
+from cfdmod.use_cases.pressure.snapshot.config import SnapshotConfig
 
 
 @dataclass
@@ -46,12 +50,19 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    projections = {
-        "x_plus": [0, -90, 0],
-        "x_minus": [0, 90, 0],
-        "y_plus": [-90, 0, 0],
-        "y_minus": [90, 0, 0],
-    }
 
-    COLORMAP_N_DIVS = 10
-    OFFSET_VALUE = 15
+    cfg_path = pathlib.Path(args_use.config)
+    cfg = SnapshotConfig.from_file(cfg_path)
+
+    output_path = pathlib.Path(args_use.output)
+    vtp_path = pathlib.Path(args_use.vtp)
+
+    for image_cfg in cfg.images:
+        take_snapshot(
+            scalar_name=image_cfg.scalar_label,
+            file_path=vtp_path,
+            output_path=output_path / f"{image_cfg.image_label}.png",
+            colormap_params=cfg.colormap,
+            project_params=cfg.projection,
+            camera_params=cfg.camera,
+        )

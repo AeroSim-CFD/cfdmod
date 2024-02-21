@@ -3,13 +3,13 @@ images:
     image_label: ""
 projection:
   offset: 15
-  axis: ["x_plus", "x_minus", "y_plus", "y_minus"]
+  axis: [x_plus, x_minus, y_plus, y_minus]
   rotation: [0, 0, 0]
 colormap:
   n_divs: 10
-  target_step: 0.1 # n_divs auto
+  # target_step: 0.1 # n_divs auto
 camera:
-  zoom: float
+  zoom: 1
   offset_position: [0, 0, 0]
   view_up: [0, 0, 0]
   window_size: [0, 0]

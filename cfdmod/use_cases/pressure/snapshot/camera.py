@@ -1,17 +1,23 @@
+import pathlib
+
 import numpy as np
 import pyvista as pv
 
 from cfdmod.use_cases.pressure.snapshot.colormap import ColormapFactory
+from cfdmod.use_cases.pressure.snapshot.config import (
+    CameraConfig,
+    ColormapConfig,
+    ProjectionConfig,
+)
 
 
 def take_snapshot(
     scalar_name: str,
-    file_path: str,
-    output_path: str,
-    colormap_divs: int,
-    rotation: tuple[float, float, float],
-    offset_value: float,
-    camera_params: CameraParameters,
+    file_path: pathlib.Path,
+    output_path: pathlib.Path,
+    colormap_params: ColormapConfig,
+    project_params: ProjectionConfig,
+    camera_params: CameraConfig,
 ):
     def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
         centerX = (mesh_bounds[1] + mesh_bounds[0]) / 2
@@ -19,6 +25,10 @@ def take_snapshot(
         centerZ = (mesh_bounds[5] + mesh_bounds[4]) / 2
 
         return (centerX, centerY, centerZ)
+    
+    original_mesh = pv.read(file_path)
+    original_mesh.set_active_scalars(scalar_name)
+    colormap_divs = 
 
     sargs = dict(
         title=f"{scalar_name}\n",
@@ -34,15 +44,13 @@ def take_snapshot(
     )
     plotter = pv.Plotter(window_size=camera_params.window_size)
     plotter.enable_parallel_projection()
-    original_mesh = pv.read(file_path)
 
     original_bounds = original_mesh.bounds
     original_center = get_mesh_center(original_bounds)
-    original_mesh.set_active_scalars(scalar_name)
 
-    original_mesh.rotate_x(rotation[0], point=original_center, inplace=True)
-    original_mesh.rotate_y(rotation[1], point=original_center, inplace=True)
-    original_mesh.rotate_z(rotation[2], point=original_center, inplace=True)
+    original_mesh.rotate_x(project_params.rotation[0], point=original_center, inplace=True)
+    original_mesh.rotate_y(project_params.rotation[1], point=original_center, inplace=True)
+    original_mesh.rotate_z(project_params.rotation[2], point=original_center, inplace=True)
 
     scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
     scalar_range = (scalar_arr.min(), scalar_arr.max())
