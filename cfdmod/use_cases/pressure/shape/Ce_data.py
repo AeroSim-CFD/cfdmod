@@ -140,19 +140,24 @@ def process_Ce(
     sfc_dict = {set_lbl: sfc_list for set_lbl, sfc_list in cfg.sets.items()}
     sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
 
+    logger.info("Getting geometry data...")
     geometry_dict = get_geometry_data(surface_dict=sfc_dict, cfg=cfg, mesh=mesh)
+
+    logger.info("Tabulating geometry data...")
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
         mesh_areas=mesh_areas,
         mesh_normals=mesh_normals,
         transformation=cfg.transformation,
     )
+    logger.info("Processing timesteps groups...")
     Ce_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
         geometry=mesh.geometry,
         processing_function=transform_Ce,
     )
+    logger.info("Calculating statistics...")
     Ce_stats = calculate_statistics(
         Ce_data,
         statistics_to_apply=cfg.statistics,
@@ -160,8 +165,9 @@ def process_Ce(
         group_by_key="region_idx",
         extreme_params=extreme_params,
     )
-
+    logger.info("Processing surfaces...")
     processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+    logger.info("Processed surfaces!")
 
     excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
     excluded_sfc_list += [

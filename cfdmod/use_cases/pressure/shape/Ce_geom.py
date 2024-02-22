@@ -49,7 +49,7 @@ def get_geometry_data(
     geom_dict: dict[str, GeometryData] = {}
     for sfc_lbl, sfc_list in surface_dict.items():
         if sfc_lbl in cfg.zoning.exclude:  # type: ignore (already validated in class)
-            logger.info(f"Surface {sfc_lbl} ignored!")  # Ignore surface
+            logger.debug(f"Surface {sfc_lbl} ignored!")
             continue
         surface_geom, sfc_triangles_idxs = mesh.geometry_from_list_surfaces(
             surfaces_names=sfc_list
