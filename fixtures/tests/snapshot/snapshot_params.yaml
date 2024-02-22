@@ -1,6 +1,7 @@
 images:
-  - scalar_label: ""
+  - scalar_label: "" # Label of the scalar field
     image_label: ""
+    file_path: ""
 projection:
   offset: 15
   axis: [x_plus, x_minus, y_plus, y_minus]
@@ -16,4 +17,4 @@ camera:
   crop:
     width_ratio: 0.8
     height_ratio: 0.8
-    watermark_path: "./fixtures/watermark.png"
+    watermark_path: "./fixtures/snapshot/axis.png"
