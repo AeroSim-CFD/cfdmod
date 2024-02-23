@@ -4,14 +4,13 @@ from typing import Literal
 
 import pandas as pd
 from lnas import LnasGeometry
-from vtk import vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.chunking import (
+    HDFGroupInterface,
     calculate_statistics_for_groups,
     divide_timeseries_in_groups,
-    split_into_chunks,
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
@@ -92,14 +91,6 @@ def process_raw_groups(
     Raises:
         Exception: If the keys for body and static pressure data do not match
     """
-
-    def filter_groups(group_keys: list[str], timestep_range: tuple[float, float]) -> list[int]:
-        steps = [int(key.split("step")[1]) for key in group_keys]
-        lower_values = [x for x in steps if x <= timestep_range[0]]
-        initial_step = max(lower_values)
-
-        return [step for step in steps if initial_step <= step <= timestep_range[1]]
-
     with pd.HDFStore(body_pressure_path, mode="r") as body_store:
         with pd.HDFStore(static_pressure_path, mode="r") as static_store:
             static_groups = static_store.keys()
@@ -108,14 +99,18 @@ def process_raw_groups(
             if static_groups != body_groups:
                 raise Exception(f"Keys for body and static pressure don't match!")
 
-            only_one_group = len(body_groups) > 1
-            if only_one_group:
-                steps_to_include = filter_groups(body_groups, cp_config.timestep_range)
+            more_than_one_group = len(body_groups) > 1
+
+            keys_to_include: list[str] = []
+
+            if more_than_one_group:
+                keys_to_include = HDFGroupInterface.filter_groups(
+                    body_groups, cp_config.timestep_range
+                )
 
             for store_group in body_groups:
-                if only_one_group:
-                    current_step = int(store_group.split("step")[1])
-                    if current_step not in steps_to_include:
+                if more_than_one_group:
+                    if store_group not in keys_to_include:
                         continue
 
                 static_df = static_store.get(store_group)
