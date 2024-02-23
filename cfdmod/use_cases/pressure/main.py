@@ -2,7 +2,6 @@ import argparse
 import pathlib
 from dataclasses import dataclass
 
-import pandas as pd
 from lnas import LnasFormat
 
 from cfdmod.logger import logger
@@ -76,35 +75,30 @@ def main(*args):
     static_data_path = pathlib.Path(args_use.s)
     body_data_path = pathlib.Path(args_use.p)
 
-    copy_input_artifacts(
-        cfg_path=cfg_path,
-        mesh_path=mesh_path,
-        static_data_path=static_data_path,
-        body_data_path=body_data_path,
-        path_manager=path_manager,
-    )
-
     post_proc_cfg = CpCaseConfig.from_file(cfg_path)
-
     logger.info("Reading mesh description...")
     mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
-    logger.info("Preparing to read pressure data...")
-    pressure_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
-    logger.info("Read pressure data successfully!")
-
     for cfg_lbl, cfg in post_proc_cfg.pressure_coefficient.items():
         logger.info(f"Processing pressure coefficients for config {cfg_lbl} ...")
-
-        cp_output = process_cp(
-            pressure_data=pressure_data,
-            body_data=body_data,
+        process_cp(
+            pressure_data_path=static_data_path,
+            body_data_path=body_data_path,
+            cfg_label=cfg_lbl,
             cfg=cfg,
             mesh=mesh.geometry,
+            path_manager=path_manager,
             extreme_params=post_proc_cfg.extreme_values,
         )
-        cp_output.save_outputs(cfg=cfg, cfg_label=cfg_lbl, path_manager=path_manager)
+
+        logger.info("Copying input artifacts")
+        copy_input_artifacts(
+            cfg_path=cfg_path,
+            mesh_path=mesh_path,
+            static_data_path=static_data_path,
+            body_data_path=body_data_path,
+            path_manager=path_manager,
+        )
 
         logger.info(f"Processed pressure coefficients for config {cfg_lbl}!")

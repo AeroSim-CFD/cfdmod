@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import pathlib
+import warnings
 from typing import Literal
 
 import pandas as pd
@@ -6,73 +7,16 @@ from lnas import LnasGeometry
 from vtk import vtkPolyData
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
-from cfdmod.use_cases.pressure.chunking import split_into_chunks
+from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.chunking import (
+    calculate_statistics_for_groups,
+    divide_timeseries_in_groups,
+    split_into_chunks,
+)
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
-from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 from cfdmod.utils import create_folders_for_file
-
-
-@dataclass
-class CpOutputs:
-    cp_data: pd.DataFrame
-    cp_stats: pd.DataFrame
-    polydata: vtkPolyData
-
-    def save_outputs(self, cfg: CpConfig, cfg_label: str, path_manager: CpPathManager):
-        # Output 1: cp(t)
-        cfg_hash = cfg.sha256()
-        timeseries_path = path_manager.get_cp_t_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-        create_folders_for_file(timeseries_path)
-
-        if timeseries_path.exists():
-            timeseries_path.unlink()  # Overwrite existing file
-
-        split_into_chunks(
-            time_series_df=self.cp_data,
-            number_of_chunks=cfg.number_of_chunks,
-            output_path=timeseries_path,
-        )
-
-        # Output 2: cp stats
-        stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-        create_folders_for_file(stats_path)
-        self.cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
-
-        # Output 3: VTK cp_stats
-        vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-        create_folders_for_file(vtp_path)
-        write_polydata(vtp_path, self.polydata)
-
-
-def filter_pressure_data(
-    press_data: pd.DataFrame,
-    body_data: pd.DataFrame,
-    timestep_range: tuple[float, float],
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Filter slice data
-
-    Args:
-        press_data (pd.DataFrame): Pressure dataframe
-        body_data (pd.DataFrame): Path for body pressure data
-        timestep_range (tuple[float, float]): Range of timestep to slice data
-
-    Returns:
-        tuple[pd.DataFrame, pd.DataFrame]: Tuple with static pressure data and body pressure data sliced
-    """
-
-    filtered_press_data = press_data[
-        (press_data["time_step"] >= timestep_range[0])
-        & (press_data["time_step"] <= timestep_range[1])
-    ].copy()
-
-    filtered_body_data = body_data[
-        (body_data["time_step"] >= timestep_range[0])
-        & (body_data["time_step"] <= timestep_range[1])
-    ].copy()
-
-    return filtered_press_data, filtered_body_data
 
 
 def transform_to_cp(
@@ -113,45 +57,150 @@ def transform_to_cp(
     return df_body
 
 
+def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.DataFrame:
+    """Filter data in between timestep range
+
+    Args:
+        data (pd.DataFrame): Dataframe to be filtered
+        timestep_range (tuple[float, float]): Range of timestep to filter data
+
+    Returns:
+        pd.DataFrame: Data filtered
+    """
+
+    filtered_data = data[
+        (data["time_step"] >= timestep_range[0]) & (data["time_step"] <= timestep_range[1])
+    ].copy()
+
+    return filtered_data
+
+
+def process_raw_groups(
+    static_pressure_path: pathlib.Path,
+    body_pressure_path: pathlib.Path,
+    output_path: pathlib.Path,
+    cp_config: CpConfig,
+):
+    """Saves transformed data (pressure coefficient) into time series and a grouped data.
+
+    Args:
+        static_pressure_path (pathlib.Path): Path of the static pressure time series
+        body_pressure_path (pathlib.Path): Path of the body pressure time series
+        output_path (pathlib.Path): Output path of the timeseries
+        cp_config (CpConfig): Pressure coefficient configuration
+
+    Raises:
+        Exception: If the keys for body and static pressure data do not match
+    """
+
+    def filter_groups(group_keys: list[str], timestep_range: tuple[float, float]) -> list[int]:
+        steps = [int(key.split("step")[1]) for key in group_keys]
+        lower_values = [x for x in steps if x <= timestep_range[0]]
+        initial_step = max(lower_values)
+
+        return [step for step in steps if initial_step <= step <= timestep_range[1]]
+
+    with pd.HDFStore(body_pressure_path, mode="r") as body_store:
+        with pd.HDFStore(static_pressure_path, mode="r") as static_store:
+            static_groups = static_store.keys()
+            body_groups = body_store.keys()
+
+            if static_groups != body_groups:
+                raise Exception(f"Keys for body and static pressure don't match!")
+
+            only_one_group = len(body_groups) > 1
+            if only_one_group:
+                steps_to_include = filter_groups(body_groups, cp_config.timestep_range)
+
+            for store_group in body_groups:
+                if only_one_group:
+                    current_step = int(store_group.split("step")[1])
+                    if current_step not in steps_to_include:
+                        continue
+
+                static_df = static_store.get(store_group)
+                static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
+                body_df = body_store.get(store_group)
+                body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
+
+                if (static_df.time_step.unique() != body_df.time_step.unique()).all():
+                    raise Exception(f"Timesteps for key {store_group} do not match!")
+
+                coefficient_data = transform_to_cp(
+                    press_data=static_df,
+                    body_data=body_df,
+                    reference_vel=cp_config.U_H,
+                    ref_press_mode=cp_config.reference_pressure,
+                    correction_factor=cp_config.U_H_correction_factor,
+                )
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a")
+
+
 def process_cp(
-    pressure_data: pd.DataFrame,
-    body_data: pd.DataFrame,
+    pressure_data_path: pathlib.Path,
+    body_data_path: pathlib.Path,
+    cfg_label: str,
     cfg: CpConfig,
     mesh: LnasGeometry,
+    path_manager: CpPathManager,
     extreme_params: ExtremeValuesParameters | None,
-) -> CpOutputs:
+):
     """Executes the pressure coefficient processing routine
 
     Args:
-        pressure_data (pd.DataFrame): Static reference pressure time series
-        body_data (pd.DataFrame): Body pressure time series
+        pressure_data_path (pathlib.Path): Path for static reference pressure time series
+        body_data_path (pathlib.Path): Path for body pressure time series
+        cfg_label (str): Label of the configuration
         cfg (CpConfig): Pressure coefficient configuration
-        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
         mesh (LnasGeometry): Geometry of the body
-
-    Returns:
-        CpOutputs: Compiled outputs for pressure coefficient use case
+        path_manager (CpPathManager): Object to handle paths
+        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
     """
-    press_data, body_data = filter_pressure_data(pressure_data, body_data, cfg.timestep_range)
+    cfg_hash = cfg.sha256()
+    timeseries_path = path_manager.get_cp_t_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    create_folders_for_file(timeseries_path)
 
-    cp_data = transform_to_cp(
-        press_data,
-        body_data,
-        reference_vel=cfg.U_H,
-        ref_press_mode=cfg.reference_pressure,
-        correction_factor=cfg.U_H_correction_factor,
+    if timeseries_path.exists():
+        warnings.warn(
+            f"Path for time series already exists {timeseries_path}. Deleted old file",
+            RuntimeWarning,
+        )
+        timeseries_path.unlink()
+
+    logger.info("Transforming into pressure coefficient")
+    process_raw_groups(
+        static_pressure_path=pressure_data_path,
+        body_pressure_path=body_data_path,
+        output_path=timeseries_path,
+        cp_config=cfg,
     )
 
-    cp_stats = calculate_statistics(
-        cp_data,
-        statistics_to_apply=cfg.statistics,
-        variables=["cp"],
-        group_by_key="point_idx",
+    grouped_data_path = path_manager.get_grouped_cp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+
+    if grouped_data_path.exists():
+        warnings.warn(
+            f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
+            RuntimeWarning,
+        )
+        grouped_data_path.unlink()
+
+    logger.info("Dividing into point groups")
+    divide_timeseries_in_groups(
+        n_groups=cfg.number_of_chunks,
+        timeseries_path=timeseries_path,
+        output_path=grouped_data_path,
+    )
+
+    logger.info("Calculating statistics")
+    cp_stats = calculate_statistics_for_groups(
+        grouped_data_path=grouped_data_path,
+        statistics=cfg.statistics,
         extreme_params=extreme_params,
     )
 
+    stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
+
+    vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
-
-    cp_output = CpOutputs(cp_data=cp_data, cp_stats=cp_stats, polydata=polydata)
-
-    return cp_output
+    write_polydata(vtp_path, polydata)
