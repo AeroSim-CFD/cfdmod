@@ -23,6 +23,7 @@ A brief list of the modules available can be found in the `Release notes <releas
    S1 <use_cases/s1/index.rst>
    Roughness Elements <use_cases/roughness_gen/index.rst>
    Pressure <use_cases/pressure/index.rst>
+   Snapshot <use_cases/snapshot/index.rst>
 
 
 
