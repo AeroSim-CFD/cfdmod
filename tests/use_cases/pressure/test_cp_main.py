@@ -1,10 +1,11 @@
+import pathlib
 import unittest
 
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.main import main
 
 
-class TestCeMain(unittest.TestCase):
+class TestCpMain(unittest.TestCase):
     def test_main(self):
         output = "./output/pressure"
         p = "./fixtures/tests/pressure/data/bodies.galpao.data.resampled.h5"
