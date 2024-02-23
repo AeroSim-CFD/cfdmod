@@ -35,7 +35,7 @@ class HDFGroupInterface:
         lower_values = [x for x in steps if x <= timestep_range[0]]
         initial_step = max(lower_values)
 
-        return [f"step_{step}" for step in steps if initial_step <= step <= timestep_range[1]]
+        return [f"/step{step:07}" for step in steps if initial_step <= step <= timestep_range[1]]
 
 
 def split_into_chunks(

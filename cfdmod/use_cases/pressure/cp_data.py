@@ -107,7 +107,6 @@ def process_raw_groups(
                 keys_to_include = HDFGroupInterface.filter_groups(
                     body_groups, cp_config.timestep_range
                 )
-
             for store_group in body_groups:
                 if more_than_one_group:
                     if store_group not in keys_to_include:
