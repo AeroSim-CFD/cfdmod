@@ -12,10 +12,10 @@ colormap:
   # target_step: 0.1 # n_divs auto
 camera:
   zoom: 1.2
-  offset_position: [-20, 0, 0]
+  offset_position: [0, -20, 0]
   view_up: [0, 1, 0]
   window_size: [800, 800]
   crop:
     width_ratio: 0.8
-    height_ratio: 0.8
-    watermark_path: "./fixtures/snapshot/axis.png"
+    height_ratio: 1
+    watermark_path: "./fixtures/tests/snapshot/axis_icon.png"
