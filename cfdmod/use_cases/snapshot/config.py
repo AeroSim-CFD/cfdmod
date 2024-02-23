@@ -63,6 +63,17 @@ class ImageConfig(BaseModel):
     image_label: str = Field(..., title="Image label", description="Label of the output image")
 
 
+class PolydataConfig(BaseModel):
+    file_path: str = Field(
+        ..., title="Polydata file path", description="Path to the polydata file"
+    )
+    images: list[ImageConfig] = Field(
+        ...,
+        title="Image list parameters",
+        description="Parameters for generating images for polydata",
+    )
+
+
 class ColormapConfig(BaseModel):
     n_divs: int = Field(
         None, title="Number of divisions", description="Colormap divisions", ge=3, le=15
@@ -104,8 +115,10 @@ class ProjectionConfig(BaseModel):
 
 
 class SnapshotConfig(BaseModel):
-    images: list[ImageConfig] = Field(
-        ..., title="Image list", description="List of images to generate snapshots"
+    polydata: list[PolydataConfig] = Field(
+        ...,
+        title="List of polydata configuration",
+        description="Parameters for polydata used in the snapshot",
     )
     projection: ProjectionConfig = Field(
         ..., title="Projection configuration", description="Parameters for the projections"

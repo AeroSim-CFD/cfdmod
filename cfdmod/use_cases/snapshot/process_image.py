@@ -63,8 +63,6 @@ def process_image(image_path: pathlib.Path, output_path: pathlib.Path, crop_cfg:
     )
     if crop_cfg.watermark_path != None:
         watermark = Image.open(crop_cfg.watermark_path)
-        result_image = paste_watermark(main_image=cropped_image, watermark_image=watermark)
-    else:
-        result_image = cropped_image
+        paste_watermark(main_image=cropped_image, watermark_image=watermark)
 
-    result_image.save(output_path)
+    cropped_image.save(output_path)

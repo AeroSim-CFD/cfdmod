@@ -137,6 +137,6 @@ def take_snapshot(
     plotter.camera.up = camera_params.view_up
     plotter.camera.zoom(camera_params.zoom)
 
-    plotter.show()
+    plotter.show(jupyter_backend="static")
     plotter.screenshot(output_path)
     plotter.close()
