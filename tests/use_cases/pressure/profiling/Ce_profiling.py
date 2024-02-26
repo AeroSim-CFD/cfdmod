@@ -1,9 +1,6 @@
-from memory_profiler import profile
-
 from cfdmod.use_cases.pressure.shape.main import main as main_Ce
 
 
-@profile
 def main_Ce_profiling():
     output = "./output/profiling"
     cp = "./fixtures/tests/pressure/data/cp_t.grouped.h5"

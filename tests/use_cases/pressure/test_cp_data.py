@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from cfdmod.use_cases.pressure.cp_data import filter_pressure_data, transform_to_cp
+from cfdmod.use_cases.pressure.cp_data import filter_data, transform_to_cp
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 
 
@@ -11,7 +11,8 @@ class TestCpData(unittest.TestCase):
         press_data = pd.DataFrame({"time_step": [1, 2, 3, 4, 5], "rho": [1, 1, 1, 1, 1]})
         body_data = pd.DataFrame({"time_step": [1, 2, 3, 4, 5], "rho": [1.1, 1.2, 1.3, 1.4, 1.5]})
 
-        press_data, body_data = filter_pressure_data(press_data, body_data, (2, 4))
+        press_data = filter_data(press_data, (2, 4))
+        body_data = filter_data(body_data, (2, 4))
 
         self.assertEqual(press_data["time_step"].tolist(), [2, 3, 4])
         self.assertEqual(body_data["time_step"].tolist(), [2, 3, 4])

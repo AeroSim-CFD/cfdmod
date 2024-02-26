@@ -13,20 +13,24 @@ Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" t
 
 ## Memory usage profiling
 
-In order to check memory usage, *memory_profiler* library is used.
-
-To profile a function the python decorator @profile must be added to it.
-
-Then, to run the profiling use the following command:
+In order to check memory usage, *memory-profiler* library is used.
+First, install memory-profiler:
 
 ```bash
-poetry run mprof run file_with_function.py
+pip install -U memory-profiler
 ```
 
-This librar also provides a command to plot the memory usage:
+And activate the poetry virtual environment:
 
 ```bash
-poetry run mprof plot
+poetry shell
+```
+
+Then, run:
+
+```bash
+mprof run python path_to_script.py
+mprof plot
 ```
 
 That will plot the latest profiling data.

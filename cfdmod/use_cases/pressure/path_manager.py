@@ -56,6 +56,9 @@ class CpPathManager(PathManagerBase):
     def get_cp_t_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "time_series.h5"
 
+    def get_grouped_cp_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "time_series.grouped.h5"
+
     def get_vtp_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "stats.vtp"
 
@@ -71,16 +74,7 @@ def copy_input_artifacts(
     create_folder_path(path_manager.output_path / "input_cp" / "data")
 
     shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
-    mesh_output = path_manager.output_path / "input_cp" / mesh_path.parent.name
-    if mesh_output.is_dir():
-        # Overwrite the files in the output folder
-        for file in mesh_path.parent.iterdir():
-            shutil.copy(
-                file,
-                mesh_output / file.name,
-            )
-    else:
-        shutil.copytree(mesh_path.parent, mesh_output)
+    shutil.copy(mesh_path, path_manager.output_path / "input_cp" / mesh_path.name)
     shutil.copy(
         static_data_path, path_manager.output_path / "input_cp" / "data" / static_data_path.name
     )
