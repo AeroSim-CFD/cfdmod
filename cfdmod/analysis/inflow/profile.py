@@ -146,7 +146,7 @@ class InflowData:
         return autocorrelation
 
     @classmethod
-    def from_folder(cls, folder_path: pathlib.Path) -> InflowData:
-        data = pd.read_csv(folder_path / "hist_series.csv")
-        points = pd.read_csv(folder_path / "points.csv")
+    def from_folder(cls, probe_name: str, folder_path: pathlib.Path) -> InflowData:
+        data = pd.read_csv(folder_path / f"{probe_name}.data.h5")
+        points = pd.read_csv(folder_path / f"{probe_name}.points.csv")
         return InflowData(data=data, points=points)
