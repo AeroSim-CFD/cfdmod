@@ -2,17 +2,11 @@ import argparse
 import pathlib
 from dataclasses import dataclass
 
-import pandas as pd
 from lnas import LnasFormat
 
-from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.cp_config import CpCaseConfig
-from cfdmod.use_cases.pressure.cp_data import (
-    calculate_statistics,
-    filter_pressure_data,
-    transform_to_cp,
-)
+from cfdmod.use_cases.pressure.cp_data import process_cp
 from cfdmod.use_cases.pressure.path_manager import CpPathManager, copy_input_artifacts
 
 
@@ -46,13 +40,13 @@ def get_args_process(args: list[str]) -> ArgsModel:
     ap.add_argument(
         "--p",
         required=True,
-        help="Path to body pressure series .hdf",
+        help="Path to body pressure series .h5",
         type=str,
     )
     ap.add_argument(
         "--s",
         required=True,
-        help="Path to static pressure series .hdf",
+        help="Path to static pressure series .h5",
         type=str,
     )
     ap.add_argument(
@@ -81,46 +75,30 @@ def main(*args):
     static_data_path = pathlib.Path(args_use.s)
     body_data_path = pathlib.Path(args_use.p)
 
-    copy_input_artifacts(
-        cfg_path=cfg_path,
-        mesh_path=mesh_path,
-        static_data_path=static_data_path,
-        body_data_path=body_data_path,
-        path_manager=path_manager,
-    )
-
     post_proc_cfg = CpCaseConfig.from_file(cfg_path)
-    cfg = post_proc_cfg.pressure_coefficient
-
     logger.info("Reading mesh description...")
     mesh = LnasFormat.from_file(mesh_path)
     logger.info("Mesh description loaded successfully!")
 
-    logger.info("Preparing to read pressure data...")
-    press_data: pd.DataFrame = pd.read_hdf(static_data_path)  # type: ignore
-    body_data: pd.DataFrame = pd.read_hdf(body_data_path)  # type: ignore
-    press_data, body_data = filter_pressure_data(press_data, body_data, cfg.timestep_range)
-    logger.info("Read pressure data successfully!")
+    for cfg_lbl, cfg in post_proc_cfg.pressure_coefficient.items():
+        logger.info(f"Processing pressure coefficients for config {cfg_lbl} ...")
+        process_cp(
+            pressure_data_path=static_data_path,
+            body_data_path=body_data_path,
+            cfg_label=cfg_lbl,
+            cfg=cfg,
+            mesh=mesh.geometry,
+            path_manager=path_manager,
+            extreme_params=post_proc_cfg.extreme_values,
+        )
 
-    # OUTPUT 1: cp(t)
-    cp_data = transform_to_cp(
-        press_data,
-        body_data,
-        reference_vel=cfg.U_H,
-        ref_press_mode=cfg.reference_pressure,
-        correction_factor=cfg.U_H_correction_factor,
-    )
-    logger.info("Transformed pressure into coefficients")
-    cp_data.to_hdf(path_manager.cp_t_path, key="cp_t", mode="w", index=False)
-    logger.info("Exported coefficients")
+        logger.info("Copying input artifacts")
+        copy_input_artifacts(
+            cfg_path=cfg_path,
+            mesh_path=mesh_path,
+            static_data_path=static_data_path,
+            body_data_path=body_data_path,
+            path_manager=path_manager,
+        )
 
-    # OUTPUT 2: cp_stats
-    cp_stats = calculate_statistics(cp_data, statistics_to_apply=cfg.statistics)
-    cp_stats.to_hdf(path_manager.cp_stats_path, key="cp_t", mode="w", index=False)
-    logger.info("Exported statistics")
-
-    polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh.geometry)
-
-    # OUTPUT 3: VTK cp_stats
-    write_polydata(path_manager.vtp_path, polydata)
-    logger.info("Exported VTK file")
+        logger.info(f"Processed pressure coefficients for config {cfg_lbl}!")

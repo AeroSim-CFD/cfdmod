@@ -7,9 +7,10 @@ bodies:
     surfaces: [building]
 moment_coefficient:
   measurement_1:
-    body: marquise
+    bodies:
+    - name: marquise
+      lever_origin: [0, 10, 10]
     variables: ["Cmx", "Cmy", "Cmz"]
-    lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     # Apply transformations before indexing the regions
     transformation:
@@ -17,11 +18,12 @@ moment_coefficient:
       rotation: [0, 0, 0]
       fixed_point: [0, 0, 0]
   measurement_2:
-    body: building
-    sub_bodies: # Optional, default is the whole body
-      z_intervals: [0,10,20]
+    bodies:
+    - name: building
+      lever_origin: [0, 10, 10]
+      sub_bodies: # Optional, default is the whole body
+        z_intervals: [0,10,20]
     variables: ["Cmx", "Cmy", "Cmz"]
-    lever_origin: [0, 10, 10]
     statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
     # Apply transformations before indexing the regions
     transformation:

@@ -1,0 +1,9 @@
+---
+stl:
+  files:
+    loft: examples/stl/upwind_loft.stl
+  folders: []
+name: loft
+normalization: ~
+output:
+  folder: output/loft

@@ -1,9 +1,20 @@
 pressure_coefficient:
-  # Select the time interval to filter the signal and calculate statistics
-  timestep_range: [10000, 20000]
-  # Define how to consider the effect of static reference pressure
-  reference_pressure: "average" # or "instantaneous"
-  # Velocity at the building interest height
-  U_H: 0.05
-  # Define which statistics will be calculated
-  statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+  default:
+    # Define how many chunks the output time series will be split into. Optional, defaults to 1
+    number_of_chunks: 10
+    # Select the time interval to filter the signal and calculate statistics
+    timestep_range: [10000, 20000]
+    # Define how to consider the effect of static reference pressure
+    reference_pressure: "average" # or "instantaneous"
+    # Velocity at the building interest height
+    U_H: 0.05
+    # Define which statistics will be calculated
+    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
+
+extreme_values:
+  CST_real: 0.56
+  CST_sim: 16.89
+  t:  0.3  # (s) duracao do evento extremo
+  T0: 6  # (s) actual observation period
+  T1: 60  # (s) target observation period
+  yR: 1.4
