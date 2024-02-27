@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import pathlib
 
 import pandas as pd
 
+
+@dataclass
+class NormalizationParameters:
+    reference_velocity: float
+    characteristic_length: float
 
 class InflowData:
     def __init__(self, data: pd.DataFrame, points: pd.DataFrame):

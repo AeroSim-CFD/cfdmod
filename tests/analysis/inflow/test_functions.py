@@ -10,8 +10,7 @@ from cfdmod.analysis.inflow.functions import (
     calculate_turbulence_intensity,
     spectral_density_function,
 )
-from cfdmod.analysis.inflow.normalization import NormalizationParameters
-from cfdmod.analysis.inflow.profile import InflowData
+from cfdmod.analysis.inflow.profile import InflowData, NormalizationParameters
 
 
 class TestInflowFunctions(unittest.TestCase):

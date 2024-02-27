@@ -5,8 +5,7 @@ import pandas as pd
 import scipy
 from scipy.ndimage.filters import gaussian_filter
 
-from cfdmod.analysis.inflow.normalization import NormalizationParameters
-from cfdmod.analysis.inflow.profile import InflowData
+from cfdmod.analysis.inflow.profile import InflowData, NormalizationParameters
 
 VelocityComponents = Literal["ux", "uy", "uz"]
 
