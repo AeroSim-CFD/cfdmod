@@ -22,7 +22,7 @@ class InflowData:
         self.data = data
         self.points = points
 
-    def calculate_mean_velocity(self, for_components: list[VelocityComponents]):
+    def calculate_mean_velocity(self, for_components: list[VelocityComponents]) -> pd.DataFrame:
         """Calculates the turbulence intensity for each component given
 
         Args:
