@@ -24,12 +24,13 @@ class InflowData:
 
     def calculate_mean_velocity(self, for_components: list[VelocityComponents]) -> pd.DataFrame:
         """Calculates the turbulence intensity for each component given
+        The inflow data dataframe must contain the columns selected by for_components (ux, uy, uz)
 
         Args:
             for_components (list[VelocityComponents]): List of components to calculate mean velocity from
 
         Returns:
-            pd.DataFrame: Mean Velocity dataframe
+            pd.DataFrame: Mean Velocity dataframe with columns for each for_components suffixed by *_mean
         """
         if not all(
             [component in self.data.columns for component in for_components + ["point_idx"]]
@@ -50,12 +51,13 @@ class InflowData:
         self, for_components: list[VelocityComponents]
     ) -> pd.DataFrame:
         """Calculates the turbulence intensity for each component given
+        The inflow data dataframe must contain the columns selected by for_components (ux, uy, uz)
 
         Args:
             for_components (list[VelocityComponents]): List of components to calculate turbulence intensity from
 
         Returns:
-            pd.DataFrame: Turbulence intensity dataframe
+            pd.DataFrame: Turbulence intensity dataframe with columns for each for_components preffixed by I_*
         """
         if not all(
             [component in self.data.columns for component in for_components + ["point_idx"]]
@@ -86,6 +88,7 @@ class InflowData:
         normalization_params: NormalizationParameters,
     ) -> pd.DataFrame:
         """Calculates the spectral density for a given target point index
+        The inflow data dataframe must contain the columns selected by for_components (ux, uy, uz)
 
         Args:
             target_index (int): Index of the target point
@@ -93,7 +96,7 @@ class InflowData:
             normalization_params (NormalizationParameters): Parameters for spectral density normalization
 
         Returns:
-            pd.DataFrame: Spectral density data
+            pd.DataFrame: Spectral density data with columns S (*) and f (*) for each for_components
         """
         spectral_data = pd.DataFrame()
         for component in for_components:
@@ -122,7 +125,7 @@ class InflowData:
             for_components (list[VelocityComponents]): List of components to calculate turbulence intensity from
 
         Returns:
-            pd.DataFrame: Autocorrelation data
+            pd.DataFrame: Autocorrelation data with columns for each for_components preffixed by coef_*
         """
         anchor_data = self.data.loc[self.data["point_idx"] == anchor_point_idx].copy()
         anchor_data = anchor_data[for_components + ["point_idx", "time_step"]]
@@ -149,6 +152,18 @@ class InflowData:
 
     @classmethod
     def from_files(cls, hist_series_path: pathlib.Path, points_path: pathlib.Path) -> InflowData:
+        """Reads data from file and builds a InflowData
+        The inflow data dataframe must contain the columns (ux, uy, uz)
+        If any are missing, it won't be able to perform calculations over the components that are missing,
+        but will be able to perform calculations over the components that are present
+
+        Args:
+            hist_series_path (pathlib.Path): Path of the historic series (point_idx, ux, uy, uz velocities)
+            points_path (pathlib.Path): Path of the points information (idx, x, y, z coordinates)
+
+        Returns:
+            InflowData: Inflow data object
+        """
         hist_series_format = hist_series_path.name.split(".")[-1]
         if hist_series_format == "csv":
             data = pd.read_csv(hist_series_path)
