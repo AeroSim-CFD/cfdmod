@@ -75,7 +75,9 @@ class InflowData:
                 turbulence_data[f"{component}_std"] / turbulence_data[f"{component}_mean"]
             )
 
-        return turbulence_data[["point_idx"] + [f"I_{component}" for component in for_components]]
+        return turbulence_data[
+            ["point_idx"] + [f"I_{component}" for component in for_components]
+        ].copy()
 
     def calculate_spectral_density(
         self,
