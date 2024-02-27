@@ -1,0 +1,3 @@
+case_foam_path: /home/ubuntu/Documentos/Repositories/insight/Docker/local/openfoam/028-Lyon_000/case.foam
+start_coordinate: [0, 0, 0]
+end_coordinate: [0, 0, 0]
