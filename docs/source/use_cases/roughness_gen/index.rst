@@ -61,7 +61,7 @@ Parameters file must also be an input, such as the following example:
 .. literalinclude:: /_static/roughness_gen/position_params.yaml
     :language: yaml
 
-Currently the only way to run this use case is via `notebook <./position_roughness_elements.ipynb>`_.
+Currently the only way to run this use case is via `notebook for positioning elements <./position_roughness_elements.ipynb>`_.
 
 Output
 ^^^^^^
