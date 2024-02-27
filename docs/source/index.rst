@@ -25,6 +25,12 @@ A brief list of the modules available can be found in the `Release notes <releas
    Pressure <use_cases/pressure/index.rst>
    Snapshot <use_cases/snapshot/index.rst>
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Analysis
+   :hidden:
+
+   Inflow <analysis/inflow/index.rst>
 
 
 .. toctree::
