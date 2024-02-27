@@ -1,2 +1,5 @@
-*.stl                binary
-*.csv binary
+*.stl -diff -merge -text
+*.vtp -diff -merge -text
+*.vti -diff -merge -text
+*.vtk -diff -merge -text
+*.vtm -diff -merge -text

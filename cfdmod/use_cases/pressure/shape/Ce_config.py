@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-import pathlib
+__all__ = ["CeConfig", "CeCaseConfig"]
 
-from pydantic import BaseModel, Field, field_validator
+import pathlib
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.zoning.processing import ShapeVariables
 from cfdmod.utils import read_yaml
-
-__all__ = ["CeConfig", "CeCaseConfig"]
 
 
 class ZoningBuilder(BaseModel):
@@ -33,6 +36,11 @@ class CeConfig(HashableConfig):
         ...,
         title="Zoning configuration",
         description="Zoning configuration with intervals information",
+    )
+    variables: list[ShapeVariables] = Field(
+        ...,
+        title="List of variables",
+        description="Define which variables will be calculated",
     )
     statistics: list[Statistics] = Field(
         ...,
@@ -76,6 +84,19 @@ class CeCaseConfig(BaseModel):
         title="Shape Coefficient configs",
         description="Dictionary of shape coefficient configurations",
     )
+    extreme_values: Optional[ExtremeValuesParameters] = Field(
+        None,
+        title="Extreme values parameter",
+        description="Parameters for performing extreme value analysis",
+    )
+
+    @model_validator(mode="after")
+    def check_extreme_values_params(self) -> CeCaseConfig:
+        full_stats = [s for v in self.shape_coefficient.values() for s in v.statistics]
+        if any(stats in full_stats for stats in ["xtr_min", "xtr_max"]):
+            if self.extreme_values is None:
+                raise ValueError("Extreme values parameters must be specified!")
+        return self
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CeCaseConfig:

@@ -63,12 +63,21 @@ class ZoningModel(BaseModel):
             offset_value (float): Offset value to add or subtract from the limits
         """
         offsetted_zoning = self.model_copy()
-        offsetted_zoning.x_intervals[0] -= offset_value
-        offsetted_zoning.x_intervals[-1] += offset_value
-        offsetted_zoning.y_intervals[0] -= offset_value
-        offsetted_zoning.y_intervals[-1] += offset_value
-        offsetted_zoning.z_intervals[0] -= offset_value
-        offsetted_zoning.z_intervals[-1] += offset_value
+
+        x_int = self.x_intervals[:]
+        y_int = self.y_intervals[:]
+        z_int = self.z_intervals[:]
+
+        x_int[0] -= offset_value
+        x_int[-1] += offset_value
+        y_int[0] -= offset_value
+        y_int[-1] += offset_value
+        z_int[0] -= offset_value
+        z_int[-1] += offset_value
+
+        offsetted_zoning.x_intervals = x_int[:]
+        offsetted_zoning.y_intervals = y_int[:]
+        offsetted_zoning.z_intervals = z_int[:]
 
         return offsetted_zoning
 

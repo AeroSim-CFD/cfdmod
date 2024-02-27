@@ -1,0 +1,12 @@
+reference_direction: [-1, 0, 0] # Optional. Default to [-1, 0, 0]
+cases:
+  default:
+    loft_length: 1200 # Minimal distance between loft end and the terrain
+    mesh_element_size: 25.0 # Target element size after remeshing the surfaces
+    wind_source_angles: [0, 45, 135, 90] # Rotation angle of the reference direction around z axis
+    upwind_elevation: 780 # Value for the z coordinate of the loft
+  longer_loft:
+    loft_length: 1500 # Minimal distance between loft end and the terrain
+    mesh_element_size: 25.0 # Target element size after remeshing the surfaces
+    wind_source_angles: [180, 270, 225] # Rotation angle of the reference direction around z axis
+    upwind_elevation: 780 # Value for the z coordinate of the loft

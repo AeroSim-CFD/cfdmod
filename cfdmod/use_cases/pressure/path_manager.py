@@ -14,69 +14,53 @@ class PathManagerBase(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
-    def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "surfaces" / "excluded_surfaces.stl"
-        )
 
-    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.vtp"
+class PathManagerBody(PathManagerBase):
+    def get_excluded_surface_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "excluded_surfaces.stl"
 
-    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "time_series"
-            / f"{body_label}.time_series.hdf"
-        )
+    def get_vtp_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "stats.vtp"
 
-    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.hdf"
-        )
+    def get_timeseries_df_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "time_series.h5"
+
+    def get_stats_df_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "stats_df.h5"
+
+    def get_regions_df_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "regions.h5"
 
 
-class CmPathManager(PathManagerBase):
+class CmPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cm"
 
 
-class CfPathManager(PathManagerBase):
+class CfPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cf"
 
 
-class CePathManager(PathManagerBase):
+class CePathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Ce"
 
-    def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "surfaces"
-            / f"{sfc_label}.regions.stl"
-        )
-
-    def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / "Ce" / "regions" / f"regions.{sfc_label}.hdf"
+    def get_surface_path(self, cfg_lbl: str, cfg_hash: str, sfc_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / f"{sfc_lbl}.regions.stl"
 
 
-class CpPathManager(BaseModel):
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
+class CpPathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "cp"
 
-    @property
-    def cp_stats_path(self):
-        return self.output_path / "cp_stats.hdf"
+    def get_cp_stats_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "stats_df.h5"
 
-    @property
-    def cp_t_path(self):
-        return self.output_path / "cp_t.hdf"
+    def get_cp_t_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "time_series.h5"
 
-    @property
-    def vtp_path(self):
-        return self.output_path / "cp_stats.vtp"
+    def get_grouped_cp_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "time_series.grouped.h5"
+
+    def get_vtp_path(self, cfg_lbl: str, cfg_hash: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / cfg_hash / "stats.vtp"
 
 
 def copy_input_artifacts(
@@ -90,16 +74,7 @@ def copy_input_artifacts(
     create_folder_path(path_manager.output_path / "input_cp" / "data")
 
     shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
-    mesh_output = path_manager.output_path / "input_cp" / mesh_path.parent.name
-    if mesh_output.is_dir():
-        # Overwrite the files in the output folder
-        for file in mesh_path.parent.iterdir():
-            shutil.copy(
-                file,
-                mesh_output / file.name,
-            )
-    else:
-        shutil.copytree(mesh_path.parent, mesh_output)
+    shutil.copy(mesh_path, path_manager.output_path / "input_cp" / mesh_path.name)
     shutil.copy(
         static_data_path, path_manager.output_path / "input_cp" / "data" / static_data_path.name
     )

@@ -13,6 +13,9 @@ pandas = "^2.1.0"
 pydantic = "^2.3"
 ruamel-yaml = "^0.18.5"
 tables = "^3.9.1"
+colorama = "^0.4.6"
+matplotlib = "^3.7.3"
+pyarrow = "^15.0.0"
 
 [tool.poetry.group.lnas]
 optional = true
@@ -20,23 +23,12 @@ optional = true
 [tool.poetry.group.lnas.dependencies]
 lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
 
-[tool.poetry.group.plotting]
+[tool.poetry.group.geometry]
 optional = true
-
-[tool.poetry.group.plotting.dependencies]
-matplotlib = "^3.7.3"
-
-[tool.poetry.group.altimetry]
-optional = true
-
-[tool.poetry.group.altimetry.dependencies]
-trimesh = "^3.23.5"
 
 [tool.poetry.group.geometry.dependencies]
 pymeshlab = "^2022.2.post4"
-
-[tool.poetry.group.geometry]
-optional = true
+trimesh = "^3.23.5"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
@@ -51,7 +43,7 @@ sphinx-book-theme = "^1.0.1"
 myst-parser = "^2.0.0"
 sphinx-autobuild = "^2021.3.14"
 nbsphinx = "^0.9.3"
-
+sphinxcontrib-bibtex = "^2.6.1"
 
 [tool.poetry.group.notebook]
 optional = true
@@ -66,6 +58,8 @@ optional = true
 
 [tool.poetry.group.vtk.dependencies]
 vtk = "^9.2.6"
+pyvista = "^0.43.1"
+
 
 [build-system]
 requires = ["poetry-core"]

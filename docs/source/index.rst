@@ -19,9 +19,11 @@ A brief list of the modules available can be found in the `Release notes <releas
    :hidden:
 
    Altimetry <use_cases/altimetry/index.rst>
+   Loft <use_cases/loft/index.rst>
    S1 <use_cases/s1/index.rst>
    Roughness Elements <use_cases/roughness_gen/index.rst>
    Pressure <use_cases/pressure/index.rst>
+   Snapshot <use_cases/snapshot/index.rst>
 
 .. toctree::
    :maxdepth: 1

@@ -4,11 +4,14 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
+from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.use_cases.pressure.moment.Cm_data import (
-    get_lever_relative_position_df,
+    add_lever_arm_to_geometry_df,
     get_representative_volume,
-    transform_to_Cm,
+    transform_Cm,
 )
+from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
 class TestCmData(unittest.TestCase):
@@ -16,10 +19,6 @@ class TestCmData(unittest.TestCase):
         self.body_data = pd.DataFrame(
             {
                 "cp": [0.1, 0.2, 0.3, 0.4],
-                "Ax": [1, 1, 1, 1],
-                "Ay": [2, 2, 2, 2],
-                "Az": [3, 3, 3, 3],
-                "region_idx": [0, 0, 0, 0],
                 "time_step": [0, 0, 1, 1],
                 "point_idx": [0, 1, 0, 1],
             }
@@ -29,18 +28,51 @@ class TestCmData(unittest.TestCase):
         triangles = np.array([[0, 1, 2], [1, 3, 2]])
 
         self.body_geom = LnasGeometry(vertices, triangles)
-
-    def test_transform_to_Cm(self):
-        centroids = np.mean(self.body_geom.triangle_vertices, axis=1)
-        position_df = get_lever_relative_position_df(
-            centroids=centroids, lever_origin=(0, 0, 0), geometry_idx=np.array([0, 1])
+        self.geom_data = GeometryData(
+            mesh=self.body_geom, zoning_to_use=ZoningModel(), triangles_idxs=np.array([0, 1])
         )
-        body_data = pd.merge(self.body_data, position_df, on="point_idx", how="left")
-        transformed_data = transform_to_Cm(body_data, self.body_geom)
-        self.assertIsNotNone(transformed_data)
-        # Add more assertions to check the actual data
+        geometry_dict = {"body": self.geom_data}
+        self.geometry_df = tabulate_geometry_data(
+            geom_dict=geometry_dict,
+            mesh_areas=self.body_geom.areas,
+            mesh_normals=self.body_geom.normals,
+            transformation=TransformationConfig(),
+        )
+
+    def test_add_lever_arm(self):
+        geometry_df = add_lever_arm_to_geometry_df(
+            geom_data=self.geom_data,
+            transformation=TransformationConfig(),
+            lever_origin=[0, 0, 10],
+            geometry_df=self.geometry_df,
+        )
+
+        self.assertTrue(all([f"r{dir}" in geometry_df.columns for dir in ["x", "y", "z"]]))
+
+    def test_transform_Cm(self):
+        geometry_df = add_lever_arm_to_geometry_df(
+            geom_data=self.geom_data,
+            transformation=TransformationConfig(),
+            lever_origin=[0, 0, 10],
+            geometry_df=self.geometry_df,
+        )
+        Cm_data = transform_Cm(
+            raw_cp=self.body_data, geometry_df=geometry_df, geometry=self.body_geom
+        )
+
+        self.assertIsNotNone(Cm_data)
+        self.assertTrue(all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]]))
 
     def test_get_representative_volume(self):
-        V_rep = get_representative_volume(self.body_geom)
-        self.assertIsNotNone(V_rep)
-        # Add more assertions to check the actual data
+        V_rep = get_representative_volume(
+            self.body_geom, np.arange(0, len(self.body_geom.triangles))
+        )
+        shifted_geom = self.body_geom.copy()
+        shifted_geom.vertices[-1][2] = 10  # Shifted z coord for the last vertex
+        shifted_geom._full_update()
+        shifted_V_rep = get_representative_volume(
+            shifted_geom, np.arange(0, len(self.body_geom.triangles))
+        )
+
+        self.assertEqual(V_rep, 100)
+        self.assertEqual(shifted_V_rep, 1000)

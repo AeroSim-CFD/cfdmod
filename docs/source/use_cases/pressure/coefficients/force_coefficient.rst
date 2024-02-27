@@ -36,26 +36,25 @@ It can also be defined for each axis direction:
 .. math::
    C_{fz} = \frac{\sum Fz_{res}}{q A_{z}} = \frac{Fz_{green} + Fz_{red}}{q A_{z}} = \frac{\sum{c_{pi} A_{iz}} + \sum{c_{pj} A_{jz}}}{A_{z}}
 
-The representative area is defined as a **projection of the bounding box** for the body composed by the selected surfaces, for each direction.
-For example, the following image shows a generic building, and its bounding box's dimensions:
 
-.. image:: /_static/pressure/shed.png
-    :width: 90 %
-    :align: center
+The representative area is defined as a **projection of the surface area** for the body composed by the selected surfaces, for each direction.
 
-To define the representative areas for each direction of the resulting force:
+To define the representative areas for each direction of the resulting force, we can sum the **projected area of each of one of the surfaces triangles**:
 
 .. math::
-   A_x = b h
+   A_x = \sum Ax_{i}
 
-   A_y = h l
+   A_y = \sum Ay_{i}
 
-   A_z = b l
+   A_z = \sum Az_{i}
 
 One can also define the representative area as a vector:
 
 .. math::
    A_{rep} = [A_x, A_y, A_z]
+
+.. important::
+  This method is valid for bodies composed by **parallel surfaces that have the same surface area**. For more complex geometries, the method has to account for the different representative areas for each surface, **not implemented yet**.
 
 Use Case
 ========
