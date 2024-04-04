@@ -58,8 +58,8 @@ df_save["x"] = arr_points[:, 0]
 df_save["y"] = arr_points[:, 1]
 df_save["z"] = arr_points[:, 2]
 df_save["nx"] = normals[:, 0]
-df_save["ny"] = normals[:, 0]
-df_save["nz"] = normals[:, 0]
+df_save["ny"] = normals[:, 1]
+df_save["nz"] = normals[:, 2]
 
 
 df_save.to_csv("output/maroco_real_points.csv", index=False)
