@@ -41,9 +41,9 @@ for idx, p in enumerate(arr_points):
     mesh_use = mesh_up
     if(p[2] == 10):
         mesh_use = mesh_down
-        normals.append([0, 0, 1])
-    else:
         normals.append([0, 0, -1])
+    else:
+        normals.append([0, 0, 1])
     ray_origin = [p[0], p[1], 0]
     ray_direction = [0, 0, 1]
 
