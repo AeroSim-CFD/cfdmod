@@ -33,7 +33,7 @@ class ExtremeValuesParameters(BaseModel):
         description="Reduced parameter corresponding to 78 percent of non exceeding phenomenon",
     )
     time_scale_correction_factor: float = Field(
-        0.48,
+        0.61,
         title="Time scale factor",
         description="Correction factor for time scaling extreme events values",
     )

@@ -1,32 +1,65 @@
 shape_coefficient:
   measurement_1:
-    zoning: 
+    zoning:
       yaml: "./zoning_params.yaml"
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
+    statistics:
+      [
+        "min",
+        "max",
+        "std",
+        "mean",
+        "skewness",
+        "kurtosis",
+        "xtr_min",
+        "xtr_max",
+        "mean_eq",
+      ]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     variables: ["Ce"]
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
-    zoning: 
+    zoning:
       global_zoning:
         x_intervals: [0, 250]
         y_intervals: [0, 200]
         z_intervals: [0, 20]
       no_zoning: ["t2_yp"]
       exclude: ["lanternim", "t1_ym"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
+    statistics:
+      [
+        "min",
+        "max",
+        "std",
+        "mean",
+        "skewness",
+        "kurtosis",
+        "xtr_min",
+        "xtr_max",
+        "mean_eq",
+      ]
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     variables: ["Ce"]
     transformation:
       rotation: [0, 0, 0]
   measurement_3:
-    zoning: 
+    zoning:
       global_zoning:
         x_intervals: [0, 125, 250]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
+    statistics:
+      [
+        "min",
+        "max",
+        "std",
+        "mean",
+        "skewness",
+        "kurtosis",
+        "xtr_min",
+        "xtr_max",
+        "mean_eq",
+      ]
     variables: ["Ce"]
     transformation:
       rotation: [0, 0, 0]
@@ -34,7 +67,7 @@ shape_coefficient:
 extreme_values:
   CST_real: 0.56
   CST_sim: 16.89
-  t:  0.3  # (s) duracao do evento extremo
-  T0: 6  # (s) actual observation period
-  T1: 60  # (s) target observation period
+  t: 0.3 # (s) duracao do evento extremo
+  T0: 6 # (s) actual observation period
+  T1: 60 # (s) target observation period
   yR: 1.4

@@ -21,7 +21,7 @@ class TestProcessingFunctions(unittest.TestCase):
             "min",
             "std",
             "mean",
-            "mean_qs",
+            "mean_eq",
             "skewness",
             "kurtosis",
             "xtr_min",
