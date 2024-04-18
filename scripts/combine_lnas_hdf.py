@@ -94,7 +94,7 @@ def main(*args):
         (data["time_step"] >= args_use.start_time) & (data["time_step"] <= args_use.end_time)
     ]
 
-    if(data.point_idx.nunique() != len(mesh.geometry.triangles)):
+    if data.point_idx.nunique() != len(mesh.geometry.triangles):
         raise ValueError("Number of points is different than number of triangles")
 
     stats = calculate_statistics(
