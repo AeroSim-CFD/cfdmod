@@ -5,7 +5,7 @@ import numpy as np
 from cfdmod.use_cases.pressure.extreme_values import (
     ExtremeValuesParameters,
     fit_gumbel_model,
-    gumbell_extreme_values,
+    gumbel_extreme_values,
     moving_average_extreme_values,
 )
 
@@ -31,8 +31,8 @@ class TestExtremeValuesCalculation(unittest.TestCase):
         result = fit_gumbel_model(self.hist_series, self.gumbell_params)
         self.assertEqual(round(result, ndigits=3), 0.527)
 
-    def test_calculate_gumbell_extreme_values(self):
-        result = gumbell_extreme_values(self.gumbell_params, self.timestep_arr, self.hist_series)
+    def test_calculate_gumbel_extreme_values(self):
+        result = gumbel_extreme_values(self.gumbell_params, self.timestep_arr, self.hist_series)
 
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)

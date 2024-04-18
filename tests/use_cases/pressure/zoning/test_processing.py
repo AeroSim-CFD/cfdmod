@@ -37,7 +37,7 @@ class TestProcessingFunctions(unittest.TestCase):
         self.params = ExtremeValuesParameters(
             CST_real=1,
             CST_sim=1,
-            extreme_model="Gumbell",
+            extreme_model="Gumbel",
             parameters={"t": 2, "T0": 10, "T1": 100, "yR": 1.4},
         )
         time_values = np.array([i / 2.0 for i in range(1, 201)])

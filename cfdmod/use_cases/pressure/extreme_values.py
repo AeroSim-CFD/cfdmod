@@ -9,7 +9,7 @@ from typing import Literal
 import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
-EXTREME_MODEL = Literal["Gumbell", "Moving average"]
+EXTREME_MODEL = Literal["Gumbel", "Moving average"]
 
 
 class ExtremeValuesParameters(BaseModel):
@@ -39,7 +39,7 @@ class ExtremeValuesParameters(BaseModel):
 
     @model_validator(mode="after")
     def validate_params(self):
-        if self.extreme_model == "Gumbell":
+        if self.extreme_model == "Gumbel":
             for expected_param in ["t", "T0", "T1", "yR"]:
                 if expected_param not in self.parameters.keys():
                     raise KeyError(
@@ -76,7 +76,7 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeValuesParameters) -> float
     return extreme_val
 
 
-def gumbell_extreme_values(
+def gumbel_extreme_values(
     params: ExtremeValuesParameters, timestep_arr: np.ndarray, hist_series: np.ndarray
 ) -> tuple[float, float]:
     """Apply extreme values analysis to coefficient historic series

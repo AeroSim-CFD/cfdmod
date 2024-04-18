@@ -6,7 +6,7 @@ from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.extreme_values import (
     ExtremeValuesParameters,
-    gumbell_extreme_values,
+    gumbel_extreme_values,
     moving_average_extreme_values,
 )
 from cfdmod.use_cases.pressure.statistics import Statistics
@@ -92,11 +92,11 @@ def perform_extreme_value_analysis(
             .apply(lambda x: moving_average_extreme_values(params=extreme_params, hist_series=x))
             .reset_index(name="xtr_val")
         )
-    elif extreme_params.extreme_model == "Gumbell":
+    elif extreme_params.extreme_model == "Gumbel":
         xtr_stats = (
             group_by_point[var_name]
             .apply(
-                lambda x: gumbell_extreme_values(
+                lambda x: gumbel_extreme_values(
                     params=extreme_params, timestep_arr=timestep, hist_series=x
                 )
             )

@@ -68,7 +68,7 @@ force_coefficient:
 extreme_values:
   CST_real: 0.56
   CST_sim: 16.89
-  extreme_model: Gumbell
+  extreme_model: Gumbel
   parameters:
     t: 0.3 # (s) duracao do evento extremo
     T0: 6 # (s) actual observation period
