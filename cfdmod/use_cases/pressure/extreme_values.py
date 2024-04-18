@@ -4,12 +4,12 @@ __all__ = ["ExtremeValuesParameters", "calculate_extreme_values"]
 
 
 import math
-from typing import Literal
+from typing import Literal, Type
 
 import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
-EXTREME_MODEL = Literal["Gumbel", "Moving average"]
+ExtremeModelOptions = Literal["Gumbel", "Moving average"]
 
 
 class ExtremeValuesParameters(BaseModel):
@@ -19,7 +19,7 @@ class ExtremeValuesParameters(BaseModel):
     CST_sim: float = Field(
         ..., title="CST simulated", description="Value for simulation scale Convective Scale Time"
     )
-    extreme_model: EXTREME_MODEL = Field(
+    extreme_model: ExtremeModelOptions = Field(
         ...,
         title="Extreme values model",
         description="Model to use for extreme values calculation",
@@ -39,20 +39,21 @@ class ExtremeValuesParameters(BaseModel):
 
     @model_validator(mode="after")
     def validate_params(self):
+        expected_params: list[tuple[str, Type]] = []
         if self.extreme_model == "Gumbel":
-            for expected_param in ["t", "T0", "T1", "yR"]:
-                if expected_param not in self.parameters.keys():
-                    raise KeyError(
-                        f"Extreme value model {self.extreme_model} requires {expected_param} as parameter"
-                    )
+            expected_params = [("t", float), ("T0", float), ("T1", float), ("yR", float)]
         elif self.extreme_model == "Moving average":
-            for expected_param in ["window_size_real"]:
-                if expected_param not in self.parameters.keys():
-                    raise KeyError(
-                        f"Extreme value model {self.extreme_model} requires {expected_param} as parameter"
-                    )
+            expected_params = [("window_size_real", float)]
         else:
             raise Exception(f"Invalid model type {self.extreme_model} for extreme values")
+        for expected_param, param_type in expected_params:
+            if expected_param not in self.parameters.keys():
+                raise KeyError(
+                    f"Extreme value model {self.extreme_model} requires {expected_params} as parameters. Make sure to pass all these values"
+                )
+            val = self.parameters.keys()
+            if isinstance(val, param_type):
+                raise ValueError(f"Value must be {param_type.__name__}. Key {expected_param}={val} is neither.")
         return self
 
 
