@@ -37,9 +37,8 @@ class TestProcessingFunctions(unittest.TestCase):
         self.params = ExtremeValuesParameters(
             CST_real=1,
             CST_sim=1,
-            t=2,
-            T0=10,
-            T1=100,
+            extreme_model="Gumbell",
+            parameters={"t": 2, "T0": 10, "T1": 100, "yR": 1.4},
         )
         time_values = np.array([i / 2.0 for i in range(1, 201)])
         region_idx_values = np.array(

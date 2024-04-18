@@ -67,7 +67,9 @@ shape_coefficient:
 extreme_values:
   CST_real: 0.56
   CST_sim: 16.89
-  t: 0.3 # (s) duracao do evento extremo
-  T0: 6 # (s) actual observation period
-  T1: 60 # (s) target observation period
-  yR: 1.4
+  extreme_model: Gumbell
+  parameters:
+    t: 0.3 # (s) duracao do evento extremo
+    T0: 6 # (s) actual observation period
+    T1: 60 # (s) target observation period
+    yR: 1.4
