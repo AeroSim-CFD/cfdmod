@@ -17,7 +17,7 @@ class TestExtremeValuesCalculation(unittest.TestCase):
         self.gumbell_params = ExtremeValuesParameters(
             CST_real=1,
             CST_sim=1,
-            extreme_model="Gumbell",
+            extreme_model="Gumbel",
             parameters={"t": 1, "T0": 1, "T1": 2, "yR": 1.4},
         )
         self.moving_avg_params = ExtremeValuesParameters(
