@@ -9,12 +9,35 @@ pressure_coefficient:
     # Velocity at the building interest height
     U_H: 0.05
     # Define which statistics will be calculated
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
+    statistics:
+      [
+        "min",
+        "max",
+        "std",
+        "mean",
+        "skewness",
+        "kurtosis",
+        "xtr_min",
+        "xtr_max",
+        "mean_eq",
+      ]
 
 extreme_values:
   CST_real: 0.56
   CST_sim: 16.89
-  t:  0.3  # (s) duracao do evento extremo
-  T0: 6  # (s) actual observation period
-  T1: 60  # (s) target observation period
-  yR: 1.4
+  extreme_model: Moving average
+  parameters:
+    window_size_real: 3 # s
+  # extreme_model: Gumbell
+  # parameters:
+  #   t: 0.3 # (s) duracao do evento extremo
+  #   T0: 6 # (s) actual observation period
+  #   T1: 60 # (s) target observation period
+  #   yR: 1.4
+
+  # Peak:
+  #   factor: 3
+  # Moving average:
+  #   window_size_real: 3 # s
+  # Gumbell:
+# window_size_amostras = math.floor(janela_real * (CST_sim / CST_real))

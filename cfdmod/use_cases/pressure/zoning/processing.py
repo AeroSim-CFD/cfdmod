@@ -6,7 +6,8 @@ from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.extreme_values import (
     ExtremeValuesParameters,
-    calculate_extreme_values,
+    gumbel_extreme_values,
+    moving_average_extreme_values,
 )
 from cfdmod.use_cases.pressure.statistics import Statistics
 
@@ -69,31 +70,49 @@ def perform_extreme_value_analysis(
 
     def _get_mean_peak_value(row: pd.Series, variable: str) -> float:
         factor = extreme_params.time_scale_correction_factor
-        if row[f"{variable}_mean"] < 0:
-            return min(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_min"])
+        possible_values = [
+            row[f"{variable}_mean"],
+            factor * row[f"{variable}_xtr_max"],
+            factor * row[f"{variable}_xtr_min"],
+        ]
+        max_abs_value = max(possible_values, key=abs)
+        max_abs_index = possible_values.index(max_abs_value)
+
+        if max_abs_value == 0:
+            return 0
         else:
-            return max(row[f"{variable}_mean"], factor * row[f"{variable}_xtr_max"])
+            return max_abs_value * possible_values[max_abs_index] / max_abs_value
 
     group_by_point = historical_data.groupby(group_by_key)
     timestep = historical_data.time_step.unique()
-    xtr_stats = (
-        group_by_point[var_name]
-        .apply(
-            lambda x: calculate_extreme_values(
-                params=extreme_params, timestep_arr=timestep, hist_series=x
-            )
+
+    if extreme_params.extreme_model == "Moving average":
+        xtr_stats = (
+            group_by_point[var_name]
+            .apply(lambda x: moving_average_extreme_values(params=extreme_params, hist_series=x))
+            .reset_index(name="xtr_val")
         )
-        .reset_index(name="xtr_val")
-    )
+    elif extreme_params.extreme_model == "Gumbel":
+        xtr_stats = (
+            group_by_point[var_name]
+            .apply(
+                lambda x: gumbel_extreme_values(
+                    params=extreme_params, timestep_arr=timestep, hist_series=x
+                )
+            )
+            .reset_index(name="xtr_val")
+        )
+    else:
+        raise Exception(f"Unknown extreme values model {extreme_params.extreme_model}")
 
     statistics_data[[f"{var_name}_xtr_min", f"{var_name}_xtr_max"]] = xtr_stats["xtr_val"].apply(
         lambda x: pd.Series(x)
     )
-    if "mean_qs" in statistics_to_apply:
-        mean_qs = statistics_data.apply(
+    if "mean_eq" in statistics_to_apply:
+        mean_eq = statistics_data.apply(
             lambda x: _get_mean_peak_value(x, var_name), axis=1
-        ).reset_index(name="mean_qs")
-        statistics_data[f"{var_name}_mean_qs"] = mean_qs["mean_qs"]
+        ).reset_index(name="mean_eq")
+        statistics_data[f"{var_name}_mean_eq"] = mean_eq["mean_eq"]
         if "mean" not in statistics_to_apply:
             statistics_data = statistics_data.drop(f"{var_name}_mean", axis=1)
     if "xtr_min" not in statistics_to_apply:
@@ -105,10 +124,12 @@ def perform_extreme_value_analysis(
 def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
-    variables: list[ShapeVariables]
-    | list[ForceVariables]
-    | list[MomentVariables]
-    | list[PressureVariables],
+    variables: (
+        list[ShapeVariables]
+        | list[ForceVariables]
+        | list[MomentVariables]
+        | list[PressureVariables]
+    ),
     group_by_key: str,
     extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> pd.DataFrame:
@@ -127,26 +148,8 @@ def calculate_statistics(
     group_by_point = historical_data.groupby(group_by_key)
     statistics_data = pd.DataFrame({group_by_key: historical_data[group_by_key].unique()})
 
-    # pandas_func = {
-    #     "mean": "mean",
-    #     "min": "min",
-    #     "max": "max",
-    #     "std": "std",
-    #     "skewness": ("skewness", lambda x: x.skew()),
-    #     "kurtosis": ("kurtosis", lambda x: x.kurt()),
-    # }
-
-    # pandas_stats = [
-    #     stat for stat in statistics_to_apply if stat not in ["mean_qs", "xtr_min", "xtr_max"]
-    # ]
-    # if "mean_qs" in statistics_to_apply and "mean" not in statistics_to_apply:
-    #     pandas_stats.append("mean")
-
-    # for var_name in variables:
-    #     statistics_data = group_by_point.agg({"cp": stats_to_apply})
-
     for var_name in variables:
-        if "mean" in statistics_to_apply or "mean_qs" in statistics_to_apply:
+        if "mean" in statistics_to_apply or "mean_eq" in statistics_to_apply:
             average = group_by_point[var_name].apply(lambda x: x.mean()).reset_index(name="mean")
             statistics_data[f"{var_name}_mean"] = average["mean"]
         if "min" in statistics_to_apply:
@@ -174,7 +177,7 @@ def calculate_statistics(
         # Extreme values analysis
         if (
             any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]])
-            or "mean_qs" in statistics_to_apply
+            or "mean_eq" in statistics_to_apply
         ):
             if extreme_params is None:
                 raise ValueError("Missing extreme values parameters!")
