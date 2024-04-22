@@ -53,7 +53,9 @@ class ExtremeValuesParameters(BaseModel):
                 )
             val = self.parameters.keys()
             if isinstance(val, param_type):
-                raise ValueError(f"Value must be {param_type.__name__}. Key {expected_param}={val} is neither.")
+                raise ValueError(
+                    f"Value must be {param_type.__name__}. Key {expected_param}={val} is neither."
+                )
         return self
 
 
@@ -126,7 +128,7 @@ def moving_average_extreme_values(
     window_size = math.floor(params.parameters["window_size_real"] / params.time_scale)
 
     kernel = np.ones(window_size) / window_size
-    smoothed_signal = np.convolve(hist_series, kernel, mode="same")
+    smoothed_signal = np.convolve(hist_series, kernel, mode="valid")
 
     min_extreme_val = smoothed_signal.min()
     max_extreme_val = smoothed_signal.max()
