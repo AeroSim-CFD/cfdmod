@@ -51,10 +51,10 @@ class Profile:
         """Removes duplicate values from the profile.
         Duplicate values are a result of probing a vtm with more resolution than the multiblock data.
         """
-        dup_indices = np.where(self.values[:-1] == self.values[1:])[0]
+        dup_indices = np.where(self.values[:-1] == self.values[1:])[0] +1
 
         x = self.heights.copy()
-        x[dup_indices + 1] = (self.heights[dup_indices] + self.heights[dup_indices + 1]) / 2
+        x[dup_indices - 1] = (self.heights[dup_indices] + self.heights[dup_indices - 1]) / 2
         x = np.delete(x, dup_indices)
 
         y = np.delete(self.values, dup_indices)
