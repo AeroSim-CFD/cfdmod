@@ -9,62 +9,28 @@ from typing import Literal, Type
 import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
-ExtremeModelOptions = Literal["Gumbel", "Moving average"]
+from cfdmod.use_cases.pressure.statistics import ExtremeGumbelParamsModel
 
 
-class ExtremeValuesParameters(BaseModel):
+class TimeScaleParameters(BaseModel):
     CST_real: float = Field(
         ..., title="CST real", description="Value for real scale Convective Scale Time"
     )
     CST_sim: float = Field(
         ..., title="CST simulated", description="Value for simulation scale Convective Scale Time"
     )
-    extreme_model: ExtremeModelOptions = Field(
-        ...,
-        title="Extreme values model",
-        description="Model to use for extreme values calculation",
-    )
-    parameters: dict = Field(
-        ..., title="Extreme values parameters", description="Parameters for extreme values models"
-    )
-    time_scale_correction_factor: float = Field(
-        0.61,
-        title="Time scale factor",
-        description="Correction factor for time scaling extreme events values",
-    )
 
     @property
     def time_scale(self) -> float:
         return self.CST_real / self.CST_sim
 
-    @model_validator(mode="after")
-    def validate_params(self):
-        expected_params: list[tuple[str, Type]] = []
-        if self.extreme_model == "Gumbel":
-            expected_params = [("t", float), ("T0", float), ("T1", float), ("yR", float)]
-        elif self.extreme_model == "Moving average":
-            expected_params = [("window_size_real", float)]
-        else:
-            raise Exception(f"Invalid model type {self.extreme_model} for extreme values")
-        for expected_param, param_type in expected_params:
-            if expected_param not in self.parameters.keys():
-                raise KeyError(
-                    f"Extreme value model {self.extreme_model} requires {expected_params} as parameters. Make sure to pass all these values"
-                )
-            val = self.parameters.keys()
-            if isinstance(val, param_type):
-                raise ValueError(
-                    f"Value must be {param_type.__name__}. Key {expected_param}={val} is neither."
-                )
-        return self
 
-
-def fit_gumbel_model(data: np.ndarray, params: ExtremeValuesParameters) -> float:
+def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> float:
     """Fits the Gumbel model to predict extreme events
 
     Args:
         data (np.ndarray): Historic series
-        params (ExtremeValuesParameters): Parameters for Gumbel model analysis
+        params (ExtremeGumbelParamsModel): Parameters for Gumbel model analysis
 
     Returns:
         float: Gumbel value for data
@@ -80,12 +46,12 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeValuesParameters) -> float
 
 
 def gumbel_extreme_values(
-    params: ExtremeValuesParameters, timestep_arr: np.ndarray, hist_series: np.ndarray
+    params: ExtremeGumbelParamsModel, timestep_arr: np.ndarray, hist_series: np.ndarray
 ) -> tuple[float, float]:
     """Apply extreme values analysis to coefficient historic series
 
     Args:
-        params (ExtremeValuesParameters): Parameters for extreme values calculation
+        params (ExtremeGumbelParamsModel): Parameters for extreme values calculation
         timestep_arr (np.ndarray): Array of simulated timesteps
         hist_series (np.ndarray): Coefficient historic series
 
@@ -94,7 +60,7 @@ def gumbel_extreme_values(
     """
     time = (timestep_arr - timestep_arr[0]) * params.time_scale
 
-    window_size = int(params.parameters["t"] / (time[1] - time[0]))
+    window_size = int(params.peak_duration / (time[1] - time[0]))
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
 
     new_time = time[window_size // 2 - 2 : -window_size // 2 - 1]

@@ -5,11 +5,11 @@ __all__ = ["CpConfig", "CpCaseConfig"]
 import pathlib
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.extreme_values import TimeScaleParameters
+from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.utils import read_yaml
 
 
@@ -42,11 +42,21 @@ class CpConfig(HashableConfig):
         title="Reference Flow Velocity correction factor",
         description="Value for reference Flow Velocity correction factor multiplier",
     )
-    statistics: list[Statistics] = Field(
+    statistics: list[BasicStatisticModel | ParameterizedStatisticModel] = Field(
         ...,
         title="List of statistics",
         description="List of statistics to calculate from pressure coefficient signal",
     )
+
+    @field_validator("statistics", mode="before")
+    def validate_statistics(cls, v):
+        validated_list = []
+        for statistic in v:
+            if "params" in statistic.keys():
+                validated_list.append(ParameterizedStatisticModel(**statistic))
+            else:
+                validated_list.append(BasicStatisticModel(**statistic))
+        return validated_list
 
 
 class CpCaseConfig(BaseModel):
@@ -55,18 +65,26 @@ class CpCaseConfig(BaseModel):
         title="Pressure Coefficient configs",
         description="Dictionary with Pressure Coefficient configuration",
     )
-    extreme_values: Optional[ExtremeValuesParameters] = Field(
+    time_scale_conversion: Optional[TimeScaleParameters] = Field(
         None,
-        title="Extreme values parameter",
-        description="Parameters for performing extreme value analysis",
+        title="Time scale conversion parameters",
+        description="Parameters for converting time scale",
     )
 
     @model_validator(mode="after")
     def check_extreme_values_params(self) -> CpCaseConfig:
-        full_stats = [s for v in self.pressure_coefficient.values() for s in v.statistics]
-        if any(stats in full_stats for stats in ["xtr_min", "xtr_max"]):
-            if self.extreme_values is None:
-                raise ValueError("Extreme values parameters must be specified!")
+        parameterized_stats = [
+            s
+            for v in self.pressure_coefficient.values()
+            for s in v.statistics
+            if s.stats in ["min", "max"]
+        ]
+        if any(
+            stats.params.method_type in ["Moving Average", "Gumbel"]
+            for stats in parameterized_stats
+        ):
+            if self.time_scale_conversion is None:
+                raise ValueError("Time scale conversion parameters must be specified!")
         return self
 
     @classmethod
