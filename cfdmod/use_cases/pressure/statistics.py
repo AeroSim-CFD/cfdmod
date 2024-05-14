@@ -2,6 +2,7 @@ __all__ = ["Statistics"]
 
 from typing import Literal
 
+import numpy as np
 from pydantic import BaseModel, Field, field_validator
 
 Statistics = Literal["max", "min", "rms", "mean", "mean_eq", "skewness", "kurtosis"]
@@ -15,8 +16,14 @@ class ExtremeGumbelParamsModel(BaseModel):
     method_type: Literal["Gumbel"] = "Gumbel"
     peak_duration: float
     event_duration: float
-    n_subdivisions: int
-    non_exceedance_probability: float
+    n_subdivisions: int = 10
+    non_exceedance_probability: float = Field(0.78, gt=0, lt=1)
+
+    @property
+    def yR(self):
+        if not hasattr(self, "_yR"):
+            self._yR = -np.log(-np.log(self.non_exceedance_probability))
+        return self._yR
 
 
 class ExtremePeakParamsModel(BaseModel):

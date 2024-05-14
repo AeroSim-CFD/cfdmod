@@ -79,7 +79,8 @@ def convert_dataframe_into_matrix(
         columns=column_data_label,
         values=value_data_label,
     )
-    matrix[row_data_label] = matrix.index
+    matrix.reset_index(inplace=True)
+
     return matrix
 
 

@@ -13,7 +13,8 @@ from cfdmod.use_cases.pressure.chunking import (
     divide_timeseries_in_groups,
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
+
+# from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
 from cfdmod.utils import create_folders_for_file
 
@@ -137,7 +138,7 @@ def process_cp(
     cfg: CpConfig,
     mesh: LnasGeometry,
     path_manager: CpPathManager,
-    extreme_params: ExtremeValuesParameters | None,
+    time_scale_factor: float,
 ):
     """Executes the pressure coefficient processing routine
 
@@ -148,10 +149,9 @@ def process_cp(
         cfg (CpConfig): Pressure coefficient configuration
         mesh (LnasGeometry): Geometry of the body
         path_manager (CpPathManager): Object to handle paths
-        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
+        time_scale_factor (float): Factor for converting time scales from CST values
     """
-    cfg_hash = cfg.sha256()
-    timeseries_path = path_manager.get_cp_t_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
     create_folders_for_file(timeseries_path)
 
     if timeseries_path.exists():
@@ -169,32 +169,32 @@ def process_cp(
         cp_config=cfg,
     )
 
-    grouped_data_path = path_manager.get_grouped_cp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    # grouped_data_path = path_manager.get_grouped_cp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
 
-    if grouped_data_path.exists():
-        warnings.warn(
-            f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
-            RuntimeWarning,
-        )
-        grouped_data_path.unlink()
+    # if grouped_data_path.exists():
+    #     warnings.warn(
+    #         f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
+    #         RuntimeWarning,
+    #     )
+    #     grouped_data_path.unlink()
 
-    logger.info("Dividing into point groups")
-    divide_timeseries_in_groups(
-        n_groups=cfg.number_of_chunks,
-        timeseries_path=timeseries_path,
-        output_path=grouped_data_path,
-    )
+    # logger.info("Dividing into point groups")
+    # divide_timeseries_in_groups(
+    #     n_groups=cfg.number_of_chunks,
+    #     timeseries_path=timeseries_path,
+    #     output_path=grouped_data_path,
+    # )
 
-    logger.info("Calculating statistics")
-    cp_stats = calculate_statistics_for_groups(
-        grouped_data_path=grouped_data_path,
-        statistics=cfg.statistics,
-        extreme_params=extreme_params,
-    )
+    # logger.info("Calculating statistics")
+    # cp_stats = calculate_statistics_for_groups(
+    #     grouped_data_path=grouped_data_path,
+    #     statistics=cfg.statistics,
+    #     extreme_params=extreme_params,
+    # )
 
-    stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-    cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
+    # stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    # cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
 
-    vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-    polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
-    write_polydata(vtp_path, polydata)
+    # vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    # polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
+    # write_polydata(vtp_path, polydata)

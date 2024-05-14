@@ -4,12 +4,15 @@ __all__ = ["ExtremeValuesParameters", "calculate_extreme_values"]
 
 
 import math
-from typing import Literal, Type
 
 import numpy as np
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
-from cfdmod.use_cases.pressure.statistics import ExtremeGumbelParamsModel
+from cfdmod.use_cases.pressure.statistics import (
+    ExtremeGumbelParamsModel,
+    ExtremeMovingAverageParamsModel,
+    ExtremePeakParamsModel,
+)
 
 
 class TimeScaleParameters(BaseModel):
@@ -39,32 +42,43 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> floa
     y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
     A = np.vstack([y, np.ones(len(y))]).T
     a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * math.log(params.parameters["T1"] / params.parameters["T0"])
-    extreme_val = a_inv * params.parameters["yR"] + U_T1  # This is the design value
+    # U_T1 = U_T0 + a_inv * math.log(params.parameters["T1"] / params.parameters["T0"])
+    U_T1 = U_T0 + a_inv * math.log(params.n_subdivisions)
+    # extreme_val = a_inv * params.parameters["yR"] + U_T1  # This is the design value
+    extreme_val = a_inv * params.yR + U_T1  # This is the design value
 
     return extreme_val
 
 
 def gumbel_extreme_values(
-    params: ExtremeGumbelParamsModel, timestep_arr: np.ndarray, hist_series: np.ndarray
+    params: ExtremeGumbelParamsModel,
+    time_scale_factor: float,
+    timestep_arr: np.ndarray,
+    hist_series: np.ndarray,
 ) -> tuple[float, float]:
     """Apply extreme values analysis to coefficient historic series
 
     Args:
         params (ExtremeGumbelParamsModel): Parameters for extreme values calculation
+        time_scale_factor (float): Value for converting time scales
         timestep_arr (np.ndarray): Array of simulated timesteps
         hist_series (np.ndarray): Coefficient historic series
 
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    time = (timestep_arr - timestep_arr[0]) * params.time_scale
+    # time = (timestep_arr - timestep_arr[0]) * params.time_scale
+    time = (timestep_arr - timestep_arr[0]) * time_scale_factor
 
+    # window_size = int(params.parameters["t"] / (time[1] - time[0]))
     window_size = int(params.peak_duration / (time[1] - time[0]))
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
 
     new_time = time[window_size // 2 - 2 : -window_size // 2 - 1]
-    N = int(round((new_time[-1] - new_time[0]) / params.parameters["T0"]))  # num_divisions
+    # N = int(round((new_time[-1] - new_time[0]) / params.parameters["T0"]))  # num_divisions
+    N = int(
+        round((new_time[-1] - new_time[0]) / (params.event_duration / params.n_subdivisions))
+    )  # num_divisions
     sub_arrays = np.array_split(smooth_parent_cp, N)
 
     cp_max = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
@@ -80,23 +94,46 @@ def gumbel_extreme_values(
 
 
 def moving_average_extreme_values(
-    params: ExtremeValuesParameters, hist_series: np.ndarray
+    params: ExtremeMovingAverageParamsModel, time_scale_factor: float, hist_series: np.ndarray
 ) -> tuple[float, float]:
     """Apply extreme values analysis to coefficient historic series using moving average model
 
     Args:
-        params (ExtremeValuesParameters): Parameters for extreme values calculation
+        params (ExtremeMovingAverageParamsModel): Parameters for extreme values calculation
+        time_scale_factor (float): Value for converting time scales
         hist_series (np.ndarray): Coefficient historic series
 
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    window_size = math.floor(params.parameters["window_size_real"] / params.time_scale)
+    # window_size = math.floor(params.parameters["window_size_real"] / params.time_scale)
+    window_size = math.floor(params.window_size_real_scale / time_scale_factor)
 
     kernel = np.ones(window_size) / window_size
     smoothed_signal = np.convolve(hist_series, kernel, mode="valid")
 
     min_extreme_val = smoothed_signal.min()
     max_extreme_val = smoothed_signal.max()
+
+    return min_extreme_val, max_extreme_val
+
+
+def peak_extreme_values(
+    params: ExtremePeakParamsModel, hist_series: np.ndarray
+) -> tuple[float, float]:
+    """Apply extreme values analysis to coefficient historic series using peak factor model
+
+    Args:
+        params (ExtremePeakParamsModel): Parameters for extreme values calculation
+        hist_series (np.ndarray): Coefficient historic series
+
+    Returns:
+        tuple[float, float]: Tuple with (min, max) extreme values
+    """
+    average_val = hist_series.mean()
+    std_val = hist_series.std()
+
+    min_extreme_val = average_val - params.peak_factor * std_val
+    max_extreme_val = average_val + params.peak_factor * std_val
 
     return min_extreme_val, max_extreme_val

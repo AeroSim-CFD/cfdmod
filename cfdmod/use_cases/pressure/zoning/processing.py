@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.extreme_values import (
-    ExtremeValuesParameters,
+from cfdmod.use_cases.pressure.extreme_values import (  # ExtremeValuesParameters,
     gumbel_extreme_values,
     moving_average_extreme_values,
 )
@@ -52,7 +51,7 @@ def perform_extreme_value_analysis(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[Statistics],
     var_name: ShapeVariables | ForceVariables | MomentVariables | PressureVariables,
-    extreme_params: ExtremeValuesParameters,
+    # extreme_params: ExtremeValuesParameters,
     statistics_data: pd.DataFrame,
     group_by_key: str,
 ):
@@ -131,7 +130,7 @@ def calculate_statistics(
         | list[PressureVariables]
     ),
     group_by_key: str,
-    extreme_params: Optional[ExtremeValuesParameters] = None,
+    # extreme_params: Optional[ExtremeValuesParameters] = None,
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
 

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
+# from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 
@@ -14,6 +14,9 @@ from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 class HDFGroupInterface:
     # HDF keys follow the convention step_{formatted initial_step}_group_{formatted group_idx}
     # Step information comes from simulation results
+    @classmethod
+    def get_time_range_key(cls, min_time: float, max_time: float) -> str:
+        return f"t_{int(min_time):07}"
 
     @classmethod
     def get_point_group_key(cls, timestep_group_lbl: str, group_idx: int) -> str:
@@ -68,7 +71,9 @@ def split_into_chunks(
             & (time_series_df.time_step <= time_arr[max_step])
         ].copy()
 
-        range_lbl = f"range_{int(time_arr[min_step])}_{int(time_arr[max_step])}"
+        range_lbl = HDFGroupInterface.get_time_range_key(
+            min_time=time_arr[min_step], max_time=time_arr[max_step]
+        )
 
         df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="t")
 
@@ -76,7 +81,7 @@ def split_into_chunks(
 def calculate_statistics_for_groups(
     grouped_data_path: pathlib.Path,
     statistics: list[Statistics],
-    extreme_params: ExtremeValuesParameters | None,
+    # extreme_params: ExtremeValuesParameters | None,
 ) -> pd.DataFrame:
     """Calculates statistics for groups of points
 
