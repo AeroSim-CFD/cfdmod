@@ -1,6 +1,6 @@
 import math
 import pathlib
-from typing import Callable
+from typing import Callable, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -12,33 +12,36 @@ from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 
 
 class HDFGroupInterface:
-    # HDF keys follow the convention step_{formatted initial_step}_group_{formatted group_idx}
+    # HDF keys follow the convention t_{formatted initial_step}_g_{formatted group_idx}
     # Step information comes from simulation results
+    TEMPORAL_PREFIX: ClassVar[str] = "/step"
+    GROUP_PREFIX: ClassVar[str] = "group"
+
     @classmethod
-    def get_time_range_key(cls, min_time: float, max_time: float) -> str:
-        return f"t_{int(min_time):07}"
+    def time_key(cls, initial_time: float) -> str:
+        return f"{cls.TEMPORAL_PREFIX}{int(initial_time):07}"
 
     @classmethod
     def get_point_group_key(cls, timestep_group_lbl: str, group_idx: int) -> str:
-        return timestep_group_lbl + f"_group_{group_idx:03}"
+        return "_".join([timestep_group_lbl, cls.GROUP_PREFIX + f"{group_idx:04}"])
 
     @classmethod
     def get_available_point_groups(cls, hdf_keys: list[str]) -> set[str]:
-        return set(["group" + k.split("group")[1] for k in hdf_keys])
+        return set([cls.GROUP_PREFIX + k.split(cls.GROUP_PREFIX)[1] for k in hdf_keys])
 
     @classmethod
     def get_timestep_keys_for_group(cls, hdf_keys: list[str], group_key: str) -> list[str]:
-        return [k for k in hdf_keys if k.split("group")[1] in group_key]
+        return [k for k in hdf_keys if k.split(cls.GROUP_PREFIX)[1] in group_key]
 
     @classmethod
     def filter_groups(
         cls, group_keys: list[str], timestep_range: tuple[float, float]
     ) -> list[str]:
-        steps = [int(key.split("step")[1]) for key in group_keys]
+        steps = [int(key.replace(cls.TEMPORAL_PREFIX, "")) for key in group_keys]
         lower_values = [x for x in steps if x <= timestep_range[0]]
         initial_step = max(lower_values)
 
-        return [f"/step{step:07}" for step in steps if initial_step <= step <= timestep_range[1]]
+        return [cls.time_key(step) for step in steps if initial_step <= step <= timestep_range[1]]
 
 
 def split_into_chunks(
@@ -65,15 +68,13 @@ def split_into_chunks(
         raise ValueError("There must be at least two steps in each chunk")
 
     for i in range(number_of_chunks):
-        min_step, max_step = i * step, min((i + 1) * step - 1, len(time_arr) - 1)
+        initial_step, end_step = i * step, min((i + 1) * step - 1, len(time_arr) - 1)
         df: pd.DataFrame = time_series_df.loc[
-            (time_series_df.time_step >= time_arr[min_step])
-            & (time_series_df.time_step <= time_arr[max_step])
+            (time_series_df.time_step >= time_arr[initial_step])
+            & (time_series_df.time_step <= time_arr[end_step])
         ].copy()
 
-        range_lbl = HDFGroupInterface.get_time_range_key(
-            min_time=time_arr[min_step], max_time=time_arr[max_step]
-        )
+        range_lbl = HDFGroupInterface.time_key(initial_time=time_arr[initial_step])
 
         df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="t")
 

@@ -23,6 +23,9 @@ class PathManagerBase(BaseModel):
     def get_vtp_path(self, cfg_lbl: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / "stats.vtp"
 
+    def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / "config.yaml"
+
 
 class PathManagerBody(PathManagerBase):
     def get_excluded_surface_path(self, cfg_lbl: str) -> pathlib.Path:

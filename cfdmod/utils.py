@@ -80,6 +80,7 @@ def convert_dataframe_into_matrix(
         values=value_data_label,
     )
     matrix.reset_index(inplace=True)
+    matrix.index.name = f"{row_data_label}_idx"
 
     return matrix
 

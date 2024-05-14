@@ -16,7 +16,7 @@ from cfdmod.use_cases.pressure.cp_config import CpConfig
 
 # from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
-from cfdmod.utils import create_folders_for_file
+from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
 
 
 def transform_to_cp(
@@ -38,23 +38,19 @@ def transform_to_cp(
     Returns:
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
-    average_static_pressure = press_data["rho"].to_numpy().mean()
+    static_pressure_array = press_data[0].to_numpy()
+    average_static_pressure = static_pressure_array.mean()
     dynamic_pressure = 0.5 * average_static_pressure * (reference_vel * correction_factor) ** 2
     cs_square = 1 / 3
     multiplier = cs_square / dynamic_pressure
 
-    df_pressure = press_data.set_index("time_step")
-    df_body = body_data.set_index("time_step")
+    press = static_pressure_array if ref_press_mode == "instantaneous" else average_static_pressure
+    convert_to_cp = lambda col: multiplier * (col - press)
+    df_cp = body_data.apply(
+        lambda col: col if col.name == "time_step" else col.apply(convert_to_cp)
+    )
 
-    if ref_press_mode == "instantaneous":
-        df_body["cp"] = multiplier * (df_body["rho"] - df_body.index.map(df_pressure["rho"]))
-    elif ref_press_mode == "average":
-        df_body["cp"] = multiplier * (df_body["rho"] - average_static_pressure)
-
-    df_body.reset_index(inplace=True)
-    df_body.drop(columns=["rho"], inplace=True)
-
-    return df_body
+    return df_cp
 
 
 def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.DataFrame:
@@ -117,6 +113,11 @@ def process_raw_groups(
                 static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
                 body_df = body_store.get(store_group)
                 body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
+
+                if "point_idx" in body_df.columns:
+                    body_df = convert_dataframe_into_matrix(body_df)
+                if "point_idx" in static_df.columns:
+                    static_df = convert_dataframe_into_matrix(static_df)
 
                 if (static_df.time_step.unique() != body_df.time_step.unique()).all():
                     raise Exception(f"Timesteps for key {store_group} do not match!")
