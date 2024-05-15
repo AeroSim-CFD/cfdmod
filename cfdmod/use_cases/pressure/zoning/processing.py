@@ -7,7 +7,7 @@ from lnas import LnasGeometry
 from cfdmod.use_cases.pressure.extreme_values import (
     gumbel_extreme_values,
     moving_average_extreme_values,
-    peak_extreme_values
+    peak_extreme_values,
 )
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 
@@ -142,7 +142,7 @@ def calculate_statistics(
         [s.params.method_type == "Peak" for s in statistics_to_apply if s.stats in ["min", "max"]]
     )
     point_data_df = historical_data.drop(columns=["time_step"])
-    if "mean" in statistics_list or "mean_eq" in statistics_list:
+    if "mean" in statistics_list:
         mean_df = point_data_df.mean()
         stats_df_dict["mean"] = mean_df
     if "rms" in statistics_list or peak_factor_model_enabled:
@@ -154,17 +154,39 @@ def calculate_statistics(
     if "kurtosis" in statistics_list:
         kurtosis_df = point_data_df.kurt()
         stats_df_dict["kurtosis"] = kurtosis_df
-    if "min" in statistics_list or "mean_eq" in statistics_list:
+    if "min" in statistics_list:
         min_stat = [s for s in statistics_to_apply if s.stats == "min"][0]
         if min_stat.params.method_type == "Absolute":
             min_df = point_data_df.min()
             stats_df_dict["min"] = min_df
         elif min_stat.params.method_type == "Gumbel":
-            min_df = point_data_df.apply(lambda x: gumbel_extreme_values())
+            timestep_arr = historical_data.time_step.to_numpy()
+            min_df = point_data_df.apply(
+                lambda x: gumbel_extreme_values(
+                    params=min_stat.params,
+                    time_scale_factor=time_scale_factor,
+                    timestep_arr=timestep_arr,
+                    hist_series=x,
+                )
+            )
             stats_df_dict["min"] = min_df
         elif min_stat.params.method_type == "Peak":
+            min_df = point_data_df.apply(
+                lambda x: peak_extreme_values(
+                    params=min_stat.params,
+                    hist_series=x,
+                )
+            )
+            stats_df_dict["min"] = min_df
         elif min_stat.params.method_type == "Moving Average":
-            
+            min_df = point_data_df.apply(
+                lambda x: moving_average_extreme_values(
+                    params=min_stat.params,
+                    time_scale_factor=time_scale_factor,
+                    hist_series=x,
+                )
+            )
+            stats_df_dict["min"] = min_df
 
     for var_name in variables:
         if "mean" in statistics_to_apply or "mean_eq" in statistics_to_apply:

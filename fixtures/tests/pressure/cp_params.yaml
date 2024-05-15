@@ -14,30 +14,30 @@ pressure_coefficient:
       - stats: "rms"
       - stats: "skewness"
       - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          time_scale_factor: 0.61
       - stats: "min"
         params:
           method_type: "Absolute"
       - stats: "max"
         params:
           method_type: "Absolute"
-      - stats: "max"
-        params:
-          method_type: "Gumbel"
-          peak_duration: 3 # in seconds
-          event_duration: 600 # in seconds. Period of extreme event
-          n_subdivisions: 10 # Number of subdivisions
-          non_exceedance_probability: 0.9 # Confidence parameter in %
-      - stats: "max"
-        params:
-          method_type: "Peak"
-          peak_factor: 3 # xtr = avg +- factor * rms
-      - stats: "max"
-        params:
-          method_type: "Moving Average"
-          window_size_real_scale: 3 # s
-      - stats: "mean_eq"
-        params:
-          time_scale_factor: 0.61
+      # - stats: "max"
+      #   params:
+      #     method_type: "Gumbel"
+      #     peak_duration: 3 # in seconds
+      #     event_duration: 600 # in seconds. Period of extreme event
+      #     n_subdivisions: 10 # Number of subdivisions
+      #     non_exceedance_probability: 0.9 # Confidence parameter in %
+      # - stats: "max"
+      #   params:
+      #     method_type: "Peak"
+      #     peak_factor: 3 # xtr = avg +- factor * rms
+      # - stats: "max"
+      #   params:
+      #     method_type: "Moving Average"
+      #     window_size_real_scale: 3 # s
 
 time_scale_conversion:
   CST_real: 0.56

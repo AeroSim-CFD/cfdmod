@@ -50,6 +50,12 @@ class CpConfig(HashableConfig):
 
     @field_validator("statistics", mode="before")
     def validate_statistics(cls, v):
+        stats_types = [s["stats"] for s in v]
+        if len(set(stats_types)) != len(stats_types):
+            raise Exception("Duplicated statistics! I can only have one statistic of each type")
+        if "mean_eq" in stats_types:
+            if any(expected_s not in stats_types for expected_s in ["mean", "min", "max"]):
+                raise Exception("Equivalent mean (mean_eq) requires mean, min and max statistics")
         validated_list = []
         for statistic in v:
             if "params" in statistic.keys():
