@@ -2,6 +2,19 @@
 Release Notes
 *************
 
+*****************************
+v1.0.0 (released in May 2024)
+*****************************
+
+First production stable release.
+It features all consulting use cases:
+
+- Loft, Altimetry, Pressure, Roughness Generation, S1 and Snapshots modules
+
+It also includes an API for handling geometry and vtk objects (Probe from VTM).
+All use cases have good testing code coverage, all passing.
+
+
 
 ******
 v0.1.0
