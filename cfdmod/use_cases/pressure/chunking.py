@@ -105,7 +105,6 @@ def calculate_statistics_for_groups(
             for key in keys_for_group:
                 df = groups_store.get(key)
                 group_dfs.append(df)
-
             cp_data = pd.concat(group_dfs).sort_values(by=["time_step"])
             cp_stats = calculate_statistics(
                 cp_data,
@@ -115,11 +114,11 @@ def calculate_statistics_for_groups(
             del cp_data
             stats_df.append(cp_stats)
 
-    full_stats = pd.concat(stats_df)
+    full_stats = pd.concat(stats_df).T
+    full_stats.reset_index(inplace=True)
+    full_stats.rename(columns={"index": "scalar"}, inplace=True)
 
-    return full_stats[
-        ["time_step"] + sorted([col for col in full_stats.columns if col != "time_step"])
-    ]
+    return full_stats[["scalar"] + sorted([col for col in full_stats.columns if col != "scalar"])]
 
 
 def divide_timeseries_in_groups(
@@ -147,6 +146,7 @@ def divide_timeseries_in_groups(
 
             for i, points_in_group in enumerate(pt_groups):
                 group_data = coefficient_data[points_in_group].copy()
+                group_data["time_step"] = coefficient_data["time_step"]
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
                 group_data.to_hdf(output_path, key=group_key, mode="a", format="table")
 

@@ -16,20 +16,20 @@ pressure_coefficient:
       - stats: "kurtosis"
       - stats: "mean_eq"
         params:
-          time_scale_factor: 0.61
+          scale_factor: 0.61
       - stats: "min"
-        params:
-          method_type: "Absolute"
-      - stats: "max"
         params:
           method_type: "Absolute"
       # - stats: "max"
       #   params:
-      #     method_type: "Gumbel"
-      #     peak_duration: 3 # in seconds
-      #     event_duration: 600 # in seconds. Period of extreme event
-      #     n_subdivisions: 10 # Number of subdivisions
-      #     non_exceedance_probability: 0.9 # Confidence parameter in %
+      #     method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Gumbel"
+          peak_duration: 3 # in seconds
+          event_duration: 600 # in seconds. Period of extreme event
+          n_subdivisions: 10 # Number of subdivisions
+          non_exceedance_probability: 0.9 # Confidence parameter in %
       # - stats: "max"
       #   params:
       #     method_type: "Peak"

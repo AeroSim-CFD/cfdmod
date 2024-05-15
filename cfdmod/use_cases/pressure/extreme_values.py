@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-__all__ = ["ExtremeValuesParameters", "calculate_extreme_values"]
+__all__ = [
+    "TimeScaleParameters",
+    "gumbel_extreme_values",
+    "moving_average_extreme_values",
+    "peak_extreme_values",
+]
 
 
 import math
@@ -79,6 +84,7 @@ def gumbel_extreme_values(
     N = int(
         round((new_time[-1] - new_time[0]) / (params.event_duration / params.n_subdivisions))
     )  # num_divisions
+    N = 1 if N < 1 else N
     sub_arrays = np.array_split(smooth_parent_cp, N)
 
     cp_max = np.array([np.max(sub_arr) for sub_arr in sub_arrays])

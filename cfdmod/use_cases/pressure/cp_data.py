@@ -13,8 +13,6 @@ from cfdmod.use_cases.pressure.chunking import (
     divide_timeseries_in_groups,
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
-
-# from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
 from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
 
@@ -208,10 +206,9 @@ def process_cp(
         statistics=cfg.statistics,
         time_scale_factor=time_scale_factor,
     )
+    stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
+    cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="table")
 
-    # stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-    # cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
-
-    # vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
-    # polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
-    # write_polydata(vtp_path, polydata)
+    vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
+    polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
+    write_polydata(vtp_path, polydata)

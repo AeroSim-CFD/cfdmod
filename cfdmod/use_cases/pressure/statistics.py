@@ -1,11 +1,12 @@
 __all__ = ["Statistics"]
 
-from typing import Literal
+from typing import Literal, get_args
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator
 
 Statistics = Literal["max", "min", "rms", "mean", "mean_eq", "skewness", "kurtosis"]
+ExtremeMethods = Literal["Gumbel", "Peak", "Absolute", "Moving Average"]
 
 
 class ExtremeAbsoluteParamsModel(BaseModel):
@@ -37,21 +38,24 @@ class ExtremeMovingAverageParamsModel(BaseModel):
 
 
 class MeanEquivalentParamsModel(BaseModel):
-    time_scale_factor: float = Field(default=0.61, gt=0, le=1)
+    scale_factor: float = Field(default=0.61, gt=0, le=1)
 
 
 class BasicStatisticModel(BaseModel):
     stats: Statistics
 
 
+StatisticsParamsModel = (
+    MeanEquivalentParamsModel
+    | ExtremeGumbelParamsModel
+    | ExtremePeakParamsModel
+    | ExtremeAbsoluteParamsModel
+    | ExtremeMovingAverageParamsModel
+)
+
+
 class ParameterizedStatisticModel(BasicStatisticModel):
-    params: (
-        MeanEquivalentParamsModel
-        | ExtremeGumbelParamsModel
-        | ExtremePeakParamsModel
-        | ExtremeAbsoluteParamsModel
-        | ExtremeMovingAverageParamsModel
-    )
+    params: StatisticsParamsModel
 
     @field_validator("params", mode="before")
     def validate_params(cls, v):
@@ -66,7 +70,7 @@ class ParameterizedStatisticModel(BasicStatisticModel):
             elif v["method_type"] == "Moving Average":
                 validated_params = ExtremeMovingAverageParamsModel(**v)
             else:
-                available_methods = ["Gumbel", "Peak", "Absolute", "Moving Average"]
+                available_methods = get_args(ExtremeMethods)
                 raise ValueError(
                     f"Unknown method {v['method_type']}, available methods are {available_methods}"
                 )

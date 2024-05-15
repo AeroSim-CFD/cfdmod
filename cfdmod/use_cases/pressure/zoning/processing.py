@@ -9,7 +9,12 @@ from cfdmod.use_cases.pressure.extreme_values import (
     moving_average_extreme_values,
     peak_extreme_values,
 )
-from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
+from cfdmod.use_cases.pressure.statistics import (
+    BasicStatisticModel,
+    ExtremeMethods,
+    ParameterizedStatisticModel,
+    StatisticsParamsModel,
+)
 
 ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
 MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
@@ -48,77 +53,113 @@ def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarra
     return triangles_region
 
 
-def perform_extreme_value_analysis(
-    historical_data: pd.DataFrame,
-    statistics_to_apply: list[Statistics],
-    var_name: ShapeVariables | ForceVariables | MomentVariables | PressureVariables,
-    # extreme_params: ExtremeValuesParameters,
-    statistics_data: pd.DataFrame,
-    group_by_key: str,
+# def perform_extreme_value_analysis(
+#     historical_data: pd.DataFrame,
+#     statistics_to_apply: list[Statistics],
+#     var_name: ShapeVariables | ForceVariables | MomentVariables | PressureVariables,
+#     # extreme_params: ExtremeValuesParameters,
+#     statistics_data: pd.DataFrame,
+#     group_by_key: str,
+# ):
+#     """Perform extreme values analysis to historical data and add to statistics data
+
+#     Args:
+#         historical_data (pd.DataFrame): Time series data
+#         statistics_to_apply (list[Statistics]): List of statistics to apply
+#         var_name (ShapeVariables | ForceVariables | MomentVariables | PressureVariables): Current
+#             variable being processed
+#         extreme_params (ExtremeValuesParameters): Parameters for extreme value analysis
+#         statistics_data (pd.DataFrame): Compiled statistics data
+#         group_by_key (str): Key to identify a parameter for grouping
+#     """
+
+#     def _get_mean_peak_value(row: pd.Series, variable: str) -> float:
+#         factor = extreme_params.time_scale_correction_factor
+#         possible_values = [
+#             row[f"{variable}_mean"],
+#             factor * row[f"{variable}_xtr_max"],
+#             factor * row[f"{variable}_xtr_min"],
+#         ]
+#         max_abs_value = max(possible_values, key=abs)
+#         max_abs_index = possible_values.index(max_abs_value)
+
+#         if max_abs_value == 0:
+#             return 0
+#         else:
+#             return max_abs_value * possible_values[max_abs_index] / max_abs_value
+
+#     group_by_point = historical_data.groupby(group_by_key)
+#     timestep = historical_data.time_step.unique()
+
+#     if extreme_params.extreme_model == "Moving average":
+#         xtr_stats = (
+#             group_by_point[var_name]
+#             .apply(lambda x: moving_average_extreme_values(params=extreme_params, hist_series=x))
+#             .reset_index(name="xtr_val")
+#         )
+#     elif extreme_params.extreme_model == "Gumbel":
+#         xtr_stats = (
+#             group_by_point[var_name]
+#             .apply(
+#                 lambda x: gumbel_extreme_values(
+#                     params=extreme_params, timestep_arr=timestep, hist_series=x
+#                 )
+#             )
+#             .reset_index(name="xtr_val")
+#         )
+#     else:
+#         raise Exception(f"Unknown extreme values model {extreme_params.extreme_model}")
+
+#     statistics_data[[f"{var_name}_xtr_min", f"{var_name}_xtr_max"]] = xtr_stats["xtr_val"].apply(
+#         lambda x: pd.Series(x)
+#     )
+#     if "mean_eq" in statistics_to_apply:
+#         mean_eq = statistics_data.apply(
+#             lambda x: _get_mean_peak_value(x, var_name), axis=1
+#         ).reset_index(name="mean_eq")
+#         statistics_data[f"{var_name}_mean_eq"] = mean_eq["mean_eq"]
+#         if "mean" not in statistics_to_apply:
+#             statistics_data = statistics_data.drop(f"{var_name}_mean", axis=1)
+#     if "xtr_min" not in statistics_to_apply:
+#         statistics_data = statistics_data.drop(f"{var_name}_xtr_min", axis=1)
+#     if "xtr_max" not in statistics_to_apply:
+#         statistics_data = statistics_data.drop(f"{var_name}_xtr_max", axis=1)
+
+
+def extreme_values_analysis(
+    params: StatisticsParamsModel,
+    data_df: pd.DataFrame,
+    timestep_arr: np.ndarray = None,
+    time_scale_factor: float = 1,
 ):
-    """Perform extreme values analysis to historical data and add to statistics data
-
-    Args:
-        historical_data (pd.DataFrame): Time series data
-        statistics_to_apply (list[Statistics]): List of statistics to apply
-        var_name (ShapeVariables | ForceVariables | MomentVariables | PressureVariables): Current
-            variable being processed
-        extreme_params (ExtremeValuesParameters): Parameters for extreme value analysis
-        statistics_data (pd.DataFrame): Compiled statistics data
-        group_by_key (str): Key to identify a parameter for grouping
-    """
-
-    def _get_mean_peak_value(row: pd.Series, variable: str) -> float:
-        factor = extreme_params.time_scale_correction_factor
-        possible_values = [
-            row[f"{variable}_mean"],
-            factor * row[f"{variable}_xtr_max"],
-            factor * row[f"{variable}_xtr_min"],
-        ]
-        max_abs_value = max(possible_values, key=abs)
-        max_abs_index = possible_values.index(max_abs_value)
-
-        if max_abs_value == 0:
-            return 0
-        else:
-            return max_abs_value * possible_values[max_abs_index] / max_abs_value
-
-    group_by_point = historical_data.groupby(group_by_key)
-    timestep = historical_data.time_step.unique()
-
-    if extreme_params.extreme_model == "Moving average":
-        xtr_stats = (
-            group_by_point[var_name]
-            .apply(lambda x: moving_average_extreme_values(params=extreme_params, hist_series=x))
-            .reset_index(name="xtr_val")
-        )
-    elif extreme_params.extreme_model == "Gumbel":
-        xtr_stats = (
-            group_by_point[var_name]
-            .apply(
-                lambda x: gumbel_extreme_values(
-                    params=extreme_params, timestep_arr=timestep, hist_series=x
-                )
+    stat_df = pd.DataFrame()
+    if params.method_type == "Absolute":
+        stat_df = data_df.apply(lambda x: (x.min(), x.max()))
+    elif params.method_type == "Gumbel":
+        stat_df = data_df.apply(
+            lambda x: gumbel_extreme_values(
+                params=params,
+                time_scale_factor=time_scale_factor,
+                timestep_arr=timestep_arr,
+                hist_series=x,
             )
-            .reset_index(name="xtr_val")
         )
-    else:
-        raise Exception(f"Unknown extreme values model {extreme_params.extreme_model}")
-
-    statistics_data[[f"{var_name}_xtr_min", f"{var_name}_xtr_max"]] = xtr_stats["xtr_val"].apply(
-        lambda x: pd.Series(x)
-    )
-    if "mean_eq" in statistics_to_apply:
-        mean_eq = statistics_data.apply(
-            lambda x: _get_mean_peak_value(x, var_name), axis=1
-        ).reset_index(name="mean_eq")
-        statistics_data[f"{var_name}_mean_eq"] = mean_eq["mean_eq"]
-        if "mean" not in statistics_to_apply:
-            statistics_data = statistics_data.drop(f"{var_name}_mean", axis=1)
-    if "xtr_min" not in statistics_to_apply:
-        statistics_data = statistics_data.drop(f"{var_name}_xtr_min", axis=1)
-    if "xtr_max" not in statistics_to_apply:
-        statistics_data = statistics_data.drop(f"{var_name}_xtr_max", axis=1)
+    elif params.method_type == "Peak":
+        stat_df = data_df.apply(
+            lambda x: peak_extreme_values(
+                params=params,
+                hist_series=x,
+            )
+        )
+    elif params.method_type == "Moving Average":
+        stat_df = data_df.apply(
+            lambda x: moving_average_extreme_values(
+                params=params,
+                time_scale_factor=time_scale_factor,
+                hist_series=x,
+            )
+        )
+    return stat_df
 
 
 def calculate_statistics(
@@ -138,99 +179,57 @@ def calculate_statistics(
     """
     stats_df_dict: dict[str, pd.DataFrame] = {}
     statistics_list = [s.stats for s in statistics_to_apply]
-    peak_factor_model_enabled = any(
-        [s.params.method_type == "Peak" for s in statistics_to_apply if s.stats in ["min", "max"]]
-    )
-    point_data_df = historical_data.drop(columns=["time_step"])
+    data_df = historical_data.drop(columns=["time_step"])
+
     if "mean" in statistics_list:
-        mean_df = point_data_df.mean()
+        mean_df = data_df.mean()
         stats_df_dict["mean"] = mean_df
-    if "rms" in statistics_list or peak_factor_model_enabled:
-        rms_df = point_data_df.std()
+    if "rms" in statistics_list:
+        rms_df = data_df.std()
         stats_df_dict["rms"] = rms_df
     if "skewness" in statistics_list:
-        skewness_df = point_data_df.skew()
+        skewness_df = data_df.skew()
         stats_df_dict["skewness"] = skewness_df
     if "kurtosis" in statistics_list:
-        kurtosis_df = point_data_df.kurt()
+        kurtosis_df = data_df.kurt()
         stats_df_dict["kurtosis"] = kurtosis_df
-    if "min" in statistics_list:
-        min_stat = [s for s in statistics_to_apply if s.stats == "min"][0]
-        if min_stat.params.method_type == "Absolute":
-            min_df = point_data_df.min()
-            stats_df_dict["min"] = min_df
-        elif min_stat.params.method_type == "Gumbel":
-            timestep_arr = historical_data.time_step.to_numpy()
-            min_df = point_data_df.apply(
-                lambda x: gumbel_extreme_values(
-                    params=min_stat.params,
-                    time_scale_factor=time_scale_factor,
-                    timestep_arr=timestep_arr,
-                    hist_series=x,
-                )
-            )
-            stats_df_dict["min"] = min_df
-        elif min_stat.params.method_type == "Peak":
-            min_df = point_data_df.apply(
-                lambda x: peak_extreme_values(
-                    params=min_stat.params,
-                    hist_series=x,
-                )
-            )
-            stats_df_dict["min"] = min_df
-        elif min_stat.params.method_type == "Moving Average":
-            min_df = point_data_df.apply(
-                lambda x: moving_average_extreme_values(
-                    params=min_stat.params,
-                    time_scale_factor=time_scale_factor,
-                    hist_series=x,
-                )
-            )
-            stats_df_dict["min"] = min_df
-
-    for var_name in variables:
-        if "mean" in statistics_to_apply or "mean_eq" in statistics_to_apply:
-            average = group_by_point[var_name].apply(lambda x: x.mean()).reset_index(name="mean")
-            statistics_data[f"{var_name}_mean"] = average["mean"]
-        if "min" in statistics_to_apply:
-            minimum = group_by_point[var_name].apply(lambda x: x.min()).reset_index(name="min")
-            statistics_data[f"{var_name}_min"] = minimum["min"]
-        if "max" in statistics_to_apply:
-            maximum = group_by_point[var_name].apply(lambda x: x.max()).reset_index(name="max")
-            statistics_data[f"{var_name}_max"] = maximum["max"]
-        if "std" in statistics_to_apply:
-            std = group_by_point[var_name].apply(lambda x: x.std()).reset_index(name="std")
-            statistics_data[f"{var_name}_std"] = std["std"]
-
-        # Calculate skewness and kurtosis using apply
-        if "skewness" in statistics_to_apply:
-            skewness = (
-                group_by_point[var_name].apply(lambda x: x.skew()).reset_index(name="skewness")
-            )
-            statistics_data[f"{var_name}_skewness"] = skewness["skewness"]
-        if "kurtosis" in statistics_to_apply:
-            kurtosis = (
-                group_by_point[var_name].apply(lambda x: x.kurt()).reset_index(name="kurtosis")
-            )
-            statistics_data[f"{var_name}_kurtosis"] = kurtosis["kurtosis"]
-
-        # Extreme values analysis
+    if "min" in statistics_list or "max" in statistics_list:
+        stats = [s for s in statistics_to_apply if s.stats in ["min", "max"]]
         if (
-            any([v in statistics_to_apply for v in ["xtr_min", "xtr_max"]])
-            or "mean_eq" in statistics_to_apply
+            len(set([s.stats for s in stats])) == len(stats) == 2
+            and len(set([s.params.method_type for s in stats])) == 1
         ):
-            if extreme_params is None:
-                raise ValueError("Missing extreme values parameters!")
-            perform_extreme_value_analysis(
-                historical_data=historical_data,
-                statistics_to_apply=statistics_to_apply,
-                var_name=var_name,
-                extreme_params=extreme_params,
-                statistics_data=statistics_data,
-                group_by_key=group_by_key,
+            method_type = stats[0].params.method_type
+            timestep_arr, scale_factor = None, None
+            if method_type in ["Gumbel", "Moving Average"]:
+                scale_factor = time_scale_factor
+                if method_type in ["Gumbel"]:
+                    timestep_arr = historical_data.time_step.to_numpy()
+            extremes_df = extreme_values_analysis(
+                params=stats[0].params,
+                data_df=data_df,
+                timestep_arr=timestep_arr,
+                time_scale_factor=scale_factor,
             )
+            stats_df_dict["min"] = extremes_df.iloc[0]
+            stats_df_dict["max"] = extremes_df.iloc[1]
+        else:
+            for stat in stats:
+                timestep_arr, scale_factor = None, None
+                if stat.params.method_type in ["Gumbel", "Moving Average"]:
+                    scale_factor = time_scale_factor
+                    if stat.params.method_type in ["Gumbel"]:
+                        timestep_arr = historical_data.time_step.to_numpy()
+                extremes_df = extreme_values_analysis(
+                    params=stat.params,
+                    data_df=data_df,
+                    timestep_arr=timestep_arr,
+                    time_scale_factor=scale_factor,
+                )
+                target_index = 0 if stat.stats == "min" else 1
+                stats_df_dict[stat.stats] = extremes_df.iloc[target_index]
 
-    return statistics_data
+    return pd.DataFrame(stats_df_dict)
 
 
 def combine_stats_data_with_mesh(
