@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.extreme_values import (  # ExtremeValuesParameters,
+from cfdmod.use_cases.pressure.extreme_values import (
     gumbel_extreme_values,
     moving_average_extreme_values,
+    peak_extreme_values
 )
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 
 ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
 MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
@@ -122,30 +123,48 @@ def perform_extreme_value_analysis(
 
 def calculate_statistics(
     historical_data: pd.DataFrame,
-    statistics_to_apply: list[Statistics],
-    variables: (
-        list[ShapeVariables]
-        | list[ForceVariables]
-        | list[MomentVariables]
-        | list[PressureVariables]
-    ),
-    group_by_key: str,
-    # extreme_params: Optional[ExtremeValuesParameters] = None,
+    statistics_to_apply: list[BasicStatisticModel | ParameterizedStatisticModel],
+    time_scale_factor: float,
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
 
     Args:
         historical_data (pd.DataFrame): Dataframe of the data coefficients historical series
-        statistics_to_apply (list[Statistics]): List of statistical functions to apply
-        variables (list[str]): List of variables to apply statistical analysis
-        group_by_key (str): Key to identify a parameter for grouping
-        extreme_params (Optional[ExtremeValuesParameters]): Parameters for extreme values analysis. Defaults to None.
+        statistics_to_apply (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistical functions to apply
+        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         pd.DataFrame: Statistics for the given coefficient
     """
-    group_by_point = historical_data.groupby(group_by_key)
-    statistics_data = pd.DataFrame({group_by_key: historical_data[group_by_key].unique()})
+    stats_df_dict: dict[str, pd.DataFrame] = {}
+    statistics_list = [s.stats for s in statistics_to_apply]
+    peak_factor_model_enabled = any(
+        [s.params.method_type == "Peak" for s in statistics_to_apply if s.stats in ["min", "max"]]
+    )
+    point_data_df = historical_data.drop(columns=["time_step"])
+    if "mean" in statistics_list or "mean_eq" in statistics_list:
+        mean_df = point_data_df.mean()
+        stats_df_dict["mean"] = mean_df
+    if "rms" in statistics_list or peak_factor_model_enabled:
+        rms_df = point_data_df.std()
+        stats_df_dict["rms"] = rms_df
+    if "skewness" in statistics_list:
+        skewness_df = point_data_df.skew()
+        stats_df_dict["skewness"] = skewness_df
+    if "kurtosis" in statistics_list:
+        kurtosis_df = point_data_df.kurt()
+        stats_df_dict["kurtosis"] = kurtosis_df
+    if "min" in statistics_list or "mean_eq" in statistics_list:
+        min_stat = [s for s in statistics_to_apply if s.stats == "min"][0]
+        if min_stat.params.method_type == "Absolute":
+            min_df = point_data_df.min()
+            stats_df_dict["min"] = min_df
+        elif min_stat.params.method_type == "Gumbel":
+            min_df = point_data_df.apply(lambda x: gumbel_extreme_values())
+            stats_df_dict["min"] = min_df
+        elif min_stat.params.method_type == "Peak":
+        elif min_stat.params.method_type == "Moving Average":
+            
 
     for var_name in variables:
         if "mean" in statistics_to_apply or "mean_eq" in statistics_to_apply:

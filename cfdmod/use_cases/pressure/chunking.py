@@ -6,13 +6,12 @@ import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-# from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 
 
 class HDFGroupInterface:
-    # HDF keys follow the convention t_{formatted initial_step}_g_{formatted group_idx}
+    # HDF keys follow the convention /step_{formatted initial_step}_group_{formatted group_idx}
     # Step information comes from simulation results
     TEMPORAL_PREFIX: ClassVar[str] = "/step"
     GROUP_PREFIX: ClassVar[str] = "group"
@@ -76,20 +75,20 @@ def split_into_chunks(
 
         range_lbl = HDFGroupInterface.time_key(initial_time=time_arr[initial_step])
 
-        df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="t")
+        df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="table")
 
 
 def calculate_statistics_for_groups(
     grouped_data_path: pathlib.Path,
-    statistics: list[Statistics],
-    # extreme_params: ExtremeValuesParameters | None,
+    statistics: list[BasicStatisticModel | ParameterizedStatisticModel],
+    time_scale_factor: float,
 ) -> pd.DataFrame:
     """Calculates statistics for groups of points
 
     Args:
         grouped_data_path (pathlib.Path): Path of grouped data (HDF)
-        statistics (list[Statistics]): List of statistics to apply
-        extreme_params (ExtremeValuesParameters | None): Parameters for extreme values analysis
+        statistics (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistics with parameters to apply
+        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         pd.DataFrame: Statistics dataframe
@@ -107,20 +106,20 @@ def calculate_statistics_for_groups(
                 df = groups_store.get(key)
                 group_dfs.append(df)
 
-            cp_data = pd.concat(group_dfs).sort_values(by=["time_step", "point_idx"])
+            cp_data = pd.concat(group_dfs).sort_values(by=["time_step"])
             cp_stats = calculate_statistics(
                 cp_data,
                 statistics_to_apply=statistics,
-                variables=["cp"],
-                group_by_key="point_idx",
-                extreme_params=extreme_params,
+                time_scale_factor=time_scale_factor,
             )
             del cp_data
             stats_df.append(cp_stats)
 
-    full_stats = pd.concat(stats_df).sort_values(by=["point_idx"])
+    full_stats = pd.concat(stats_df)
 
-    return full_stats
+    return full_stats[
+        ["time_step"] + sorted([col for col in full_stats.columns if col != "time_step"])
+    ]
 
 
 def divide_timeseries_in_groups(
@@ -140,16 +139,16 @@ def divide_timeseries_in_groups(
         for group_lbl in groups:
             coefficient_data = data_store.get(group_lbl)
             if pt_groups == None:
-                points_arr = coefficient_data.point_idx.unique()
+                points_arr = np.array(
+                    [col for col in coefficient_data.columns if col != "time_step"], dtype=np.int32
+                )
                 n_per_group = len(points_arr) // n_groups
                 pt_groups = np.split(points_arr, range(n_per_group, len(points_arr), n_per_group))
 
             for i, points_in_group in enumerate(pt_groups):
-                group_data = coefficient_data.loc[
-                    coefficient_data.point_idx.isin(points_in_group)
-                ].copy()
+                group_data = coefficient_data[points_in_group].copy()
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
-                group_data.to_hdf(output_path, key=group_key, mode="a")
+                group_data.to_hdf(output_path, key=group_key, mode="a", format="table")
 
 
 def process_timestep_groups(

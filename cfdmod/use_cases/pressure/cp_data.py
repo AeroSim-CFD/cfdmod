@@ -104,10 +104,23 @@ def process_raw_groups(
                 keys_to_include = HDFGroupInterface.filter_groups(
                     body_groups, cp_config.timestep_range
                 )
+
+            average_value = None
+
+            if cp_config.reference_pressure == "average":
+                static_dfs = []
+                for store_group in static_groups:
+                    static_dfs.append(static_store.get(store_group))
+                merged_df = pd.concat(static_dfs)
+                # Old versions index the column with rho and new versions use point index (0)
+                # to label the column. Hence the condition below
+                average_value = (
+                    merged_df["rho"].mean() if "rho" in merged_df.columns else merged_df[0].mean()
+                )
+
             for store_group in body_groups:
-                if more_than_one_group:
-                    if store_group not in keys_to_include:
-                        continue
+                if more_than_one_group and store_group not in keys_to_include:
+                    continue
 
                 static_df = static_store.get(store_group)
                 static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
@@ -119,7 +132,10 @@ def process_raw_groups(
                 if "point_idx" in static_df.columns:
                     static_df = convert_dataframe_into_matrix(static_df)
 
-                if (static_df.time_step.unique() != body_df.time_step.unique()).all():
+                if average_value != None:
+                    static_df[0] = average_value
+
+                if any(static_df.time_step.unique() != body_df.time_step.unique()):
                     raise Exception(f"Timesteps for key {store_group} do not match!")
 
                 coefficient_data = transform_to_cp(
@@ -129,7 +145,7 @@ def process_raw_groups(
                     ref_press_mode=cp_config.reference_pressure,
                     correction_factor=cp_config.U_H_correction_factor,
                 )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="a")
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="table")
 
 
 def process_cp(
@@ -170,28 +186,28 @@ def process_cp(
         cp_config=cfg,
     )
 
-    # grouped_data_path = path_manager.get_grouped_cp_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
+    grouped_data_path = path_manager.get_grouped_timeseries_path(cfg_lbl=cfg_label)
 
-    # if grouped_data_path.exists():
-    #     warnings.warn(
-    #         f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
-    #         RuntimeWarning,
-    #     )
-    #     grouped_data_path.unlink()
+    if grouped_data_path.exists():
+        warnings.warn(
+            f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
+            RuntimeWarning,
+        )
+        grouped_data_path.unlink()
 
-    # logger.info("Dividing into point groups")
-    # divide_timeseries_in_groups(
-    #     n_groups=cfg.number_of_chunks,
-    #     timeseries_path=timeseries_path,
-    #     output_path=grouped_data_path,
-    # )
+    logger.info("Dividing into point groups")
+    divide_timeseries_in_groups(
+        n_groups=cfg.number_of_chunks,
+        timeseries_path=timeseries_path,
+        output_path=grouped_data_path,
+    )
 
-    # logger.info("Calculating statistics")
-    # cp_stats = calculate_statistics_for_groups(
-    #     grouped_data_path=grouped_data_path,
-    #     statistics=cfg.statistics,
-    #     extreme_params=extreme_params,
-    # )
+    logger.info("Calculating statistics")
+    cp_stats = calculate_statistics_for_groups(
+        grouped_data_path=grouped_data_path,
+        statistics=cfg.statistics,
+        time_scale_factor=time_scale_factor,
+    )
 
     # stats_path = path_manager.get_cp_stats_path(cfg_lbl=cfg_label, cfg_hash=cfg_hash)
     # cp_stats.to_hdf(path_or_buf=stats_path, key="cp_stats", mode="w", index=False)
