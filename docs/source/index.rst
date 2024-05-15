@@ -38,7 +38,7 @@ A brief list of the modules available can be found in the `Release notes <releas
    :caption: Others
    :hidden:
 
-   Release Notes <release_notes.rst>
+   Release Notes <release_notes.md>
 
 
 .. Indices and tables
