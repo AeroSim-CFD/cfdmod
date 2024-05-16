@@ -29,7 +29,7 @@ pressure_coefficient:
           peak_duration: 3 # in seconds
           event_duration: 600 # in seconds. Period of extreme event
           n_subdivisions: 10 # Number of subdivisions
-          non_exceedance_probability: 0.9 # Confidence parameter in %
+          non_exceedance_probability: 0.78 # Confidence parameter in %
       # - stats: "max"
       #   params:
       #     method_type: "Peak"

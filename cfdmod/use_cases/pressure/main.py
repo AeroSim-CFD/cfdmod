@@ -89,7 +89,7 @@ def main(*args):
             cfg=cfg,
             mesh=mesh.geometry,
             path_manager=path_manager,
-            extreme_params=post_proc_cfg.extreme_values,
+            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
         )
 
         logger.info("Copying input artifacts")

@@ -38,9 +38,13 @@ class HDFGroupInterface:
     ) -> list[str]:
         steps = [int(key.replace(cls.TEMPORAL_PREFIX, "")) for key in group_keys]
         lower_values = [x for x in steps if x <= timestep_range[0]]
-        initial_step = max(lower_values)
-
-        return [cls.time_key(step) for step in steps if initial_step <= step <= timestep_range[1]]
+        if len(lower_values) == 0:
+            return [cls.time_key(step) for step in steps if step <= timestep_range[1]]
+        else:
+            initial_step = max(lower_values)
+            return [
+                cls.time_key(step) for step in steps if initial_step <= step <= timestep_range[1]
+            ]
 
 
 def split_into_chunks(
@@ -149,6 +153,7 @@ def divide_timeseries_in_groups(
                 group_data["time_step"] = coefficient_data["time_step"]
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
                 group_data.to_hdf(output_path, key=group_key, mode="a", format="table")
+                del group_data
 
 
 def process_timestep_groups(
