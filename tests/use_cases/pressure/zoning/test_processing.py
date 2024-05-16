@@ -1,10 +1,10 @@
 import unittest
+from typing import get_args
 
 import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
@@ -16,17 +16,7 @@ from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 class TestProcessingFunctions(unittest.TestCase):
     def setUp(self) -> None:
-        self.stats_to_apply: list[Statistics] = [
-            "max",
-            "min",
-            "std",
-            "mean",
-            "mean_eq",
-            "skewness",
-            "kurtosis",
-            "xtr_min",
-            "xtr_max",
-        ]
+        self.stats_to_apply = get_args(Statistics)
         self.zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
         self.zoning.offset_limits(0.1)
         self.mesh = LnasGeometry(

@@ -60,6 +60,9 @@ class ParameterizedStatisticModel(BasicStatisticModel):
     @field_validator("params", mode="before")
     def validate_params(cls, v):
         validated_params = None
+        if not isinstance(v, dict):
+            # Already validated
+            return v
         if "method_type" in v.keys():
             if v["method_type"] == "Gumbel":
                 validated_params = ExtremeGumbelParamsModel(**v)

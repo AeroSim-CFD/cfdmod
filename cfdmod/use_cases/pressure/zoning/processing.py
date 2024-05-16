@@ -122,7 +122,6 @@ def calculate_extreme_values(
         len(set([s.stats for s in stats])) == len(stats) == 2
         and len(set([s.params.method_type for s in stats])) == 1
     ):
-        method_type = stats[0].params.method_type
         extremes_df = extreme_values_analysis(
             params=stats[0].params,
             data_df=data_df,

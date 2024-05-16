@@ -72,15 +72,11 @@ def gumbel_extreme_values(
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    # time = (timestep_arr - timestep_arr[0]) * params.time_scale
     time = (timestep_arr - timestep_arr[0]) * time_scale_factor
 
-    # window_size = int(params.parameters["t"] / (time[1] - time[0]))
     window_size = int(params.peak_duration / (time[1] - time[0]))
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
-
-    new_time = time[window_size // 2 - 2 : -window_size // 2 - 1]
-    # N = int(round((new_time[-1] - new_time[0]) / params.parameters["T0"]))  # num_divisions
+    new_time = time[max(window_size // 2 - 2, 0) : min(-window_size // 2 - 1, -1)]
     N = int(
         round((new_time[-1] - new_time[0]) / (params.event_duration / params.n_subdivisions))
     )  # num_divisions
@@ -95,6 +91,9 @@ def gumbel_extreme_values(
 
     max_extreme_val = fit_gumbel_model(cp_max, params=params)
     min_extreme_val = fit_gumbel_model(cp_min, params=params)
+
+    min_extreme_val = 0 if np.isnan(min_extreme_val) else min_extreme_val
+    max_extreme_val = 0 if np.isnan(max_extreme_val) else max_extreme_val
 
     return min_extreme_val, max_extreme_val
 
