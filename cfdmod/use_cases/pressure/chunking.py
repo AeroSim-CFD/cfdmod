@@ -8,6 +8,7 @@ from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
+from cfdmod.utils import convert_matrix_into_dataframe
 
 
 class HDFGroupInterface:
@@ -161,6 +162,7 @@ def process_timestep_groups(
     geometry_df: pd.DataFrame,
     geometry: LnasGeometry,
     processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
+    data_label: str = "cp",
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
@@ -170,6 +172,7 @@ def process_timestep_groups(
         geometry (LnasGeometry): Geometry to be processed. Needed for evaluating representative area and volume
         processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
             Coefficient processing function
+        data_label (str): Label of the tabulated time series dataframe. Defaults to "cp".
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
@@ -181,6 +184,10 @@ def process_timestep_groups(
 
         for store_group in store_groups:
             sample = df_store.get(store_group)
+            if "point_idx" not in sample.columns:
+                # If point_idx is not in dataframe columns, then matrix form is assumed
+                # and needs to be converted to older format
+                sample = convert_matrix_into_dataframe(sample, value_data_label=data_label)
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 

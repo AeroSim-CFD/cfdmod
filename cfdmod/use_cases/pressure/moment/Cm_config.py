@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.use_cases.pressure.zoning.body_config import BodyDefinition, MomentBodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import MomentVariables

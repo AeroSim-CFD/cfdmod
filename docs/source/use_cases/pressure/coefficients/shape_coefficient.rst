@@ -129,18 +129,21 @@ Data format
 .. important:: All tables for shape coefficient listed below are defined for **each of the body's surfaces**, unlike the other coefficients. The idea is to keep the processing for a single surface and not account for unrelated data. 
 
 .. list-table:: :math:`C_e(t)`
-   :widths: 33 33 33
+   :widths: 15 15 15 15
    :header-rows: 1
 
-   * - region_idx
+   * - time_step_idx/region_idx
      - timestep
-     - C_e
+     - 0-Surface 1
+     - 1-Surface 1
    * - 0
-     - 10000
-     - 1.25
+     - 0.0
+     - 0.25
+     - 0.35
    * - 1
-     - 10000
-     - 1.15
+     - 1.0
+     - 0.23
+     - 0.32
 
 .. list-table:: :math:`C_e (stats)`
    :widths: 20 10 10 10 10 20 20
@@ -153,14 +156,14 @@ Data format
      - std
      - skewness
      - kurtosis
-   * - 0
+   * - 0-Surface 1
      - 1.25
      - 0.9
      - 1.1
      - 0.2
      - 0.1
      - 0.15
-   * - 1
+   * - 1-Surface 1
      - 1.15
      - 0.95
      - 1.13
@@ -168,7 +171,18 @@ Data format
      - 0.11
      - 0.13
 
-.. list-table:: :math:`C_e(regions)`
+.. list-table:: :math:`Regions(indexing)`
+   :widths: 50 50
+   :header-rows: 1
+
+   * - region_idx
+     - point_idx
+   * - 0-Surface 1
+     - 0
+   * - 1-Surface 1
+     - 1
+
+.. list-table:: :math:`Regions(definition)`
    :widths: 10 10 10 10 10 10 10
    :header-rows: 1
 
@@ -179,14 +193,14 @@ Data format
      - y_max
      - z_min
      - z_max
-   * - 0
+   * - 0-Surface 1
      - 0
      - 100
      - 0
      - 50
      - 0
      - 20
-   * - 1
+   * - 1-Surface 1
      - 100
      - 200
      - 0

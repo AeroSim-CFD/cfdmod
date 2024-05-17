@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import shutil
 from dataclasses import dataclass
 
 from lnas import LnasFormat
@@ -93,6 +94,7 @@ def main(*args):
         )
 
         logger.info("Copying input artifacts")
+        shutil.copy(cfg_path, path_manager.get_config_path(cfg_lbl))
         copy_input_artifacts(
             cfg_path=cfg_path,
             mesh_path=mesh_path,

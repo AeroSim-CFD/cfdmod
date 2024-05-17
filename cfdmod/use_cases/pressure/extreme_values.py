@@ -47,9 +47,7 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> floa
     y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
     A = np.vstack([y, np.ones(len(y))]).T
     a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
-    # U_T1 = U_T0 + a_inv * math.log(params.parameters["T1"] / params.parameters["T0"])
     U_T1 = U_T0 + a_inv * math.log(params.n_subdivisions)
-    # extreme_val = a_inv * params.parameters["yR"] + U_T1  # This is the design value
     extreme_val = a_inv * params.yR + U_T1  # This is the design value
 
     return extreme_val
@@ -89,6 +87,7 @@ def gumbel_extreme_values(
     cp_max = np.sort(cp_max)
     cp_min = np.sort(cp_min)[::-1]
 
+    # It may return NaN values if the time series is invalid or has very few points
     max_extreme_val = fit_gumbel_model(cp_max, params=params)
     min_extreme_val = fit_gumbel_model(cp_min, params=params)
 
@@ -111,7 +110,6 @@ def moving_average_extreme_values(
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    # window_size = math.floor(params.parameters["window_size_real"] / params.time_scale)
     window_size = math.floor(params.window_size_real_scale / time_scale_factor)
 
     kernel = np.ones(window_size) / window_size
