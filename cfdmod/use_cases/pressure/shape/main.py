@@ -83,7 +83,7 @@ def main(*args):
             time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
         )
 
-        Ce_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
-        Ce_output.export_mesh(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
+        Ce_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+        Ce_output.export_mesh(cfg_label=cfg_label, path_manager=path_manager)
 
         logger.info(f"Processed {cfg_label}!")

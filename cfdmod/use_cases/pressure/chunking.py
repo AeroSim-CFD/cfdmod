@@ -10,6 +10,7 @@ from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, Parameteri
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 from cfdmod.utils import convert_matrix_into_dataframe
 
+
 class HDFGroupInterface:
     # HDF keys follow the convention /step_{formatted initial_step}_group_{formatted group_idx}
     # Step information comes from simulation results
@@ -160,8 +161,8 @@ def process_timestep_groups(
     data_path: pathlib.Path,
     geometry_df: pd.DataFrame,
     geometry: LnasGeometry,
-    data_label: str,
     processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
+    data_label: str = "cp",
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
@@ -169,9 +170,9 @@ def process_timestep_groups(
         data_path (pathlib.Path): Path for pressure coefficient data
         geometry_df (pd.DataFrame): Geometric properties dataframe
         geometry (LnasGeometry): Geometry to be processed. Needed for evaluating representative area and volume
-        data_label (str): Label of the tabulated time series dataframe
         processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
             Coefficient processing function
+        data_label (str): Label of the tabulated time series dataframe. Defaults to "cp".
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
@@ -185,7 +186,8 @@ def process_timestep_groups(
             sample = df_store.get(store_group)
             if "point_idx" not in sample.columns:
                 # If point_idx is not in dataframe columns, then matrix form is assumed
-                sample = convert_matrix_into_dataframe(sample, value_data_label=)
+                # and needs to be converted to older format
+                sample = convert_matrix_into_dataframe(sample, value_data_label=data_label)
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 

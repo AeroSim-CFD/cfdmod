@@ -22,17 +22,14 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
 )
-from cfdmod.utils import create_folders_for_file
+from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
 
 
 @dataclass
 class CeOutput(CommonOutput):
-    def export_mesh(self, cfg_label: str, cfg: CeConfig, path_manager: CePathManager):
+    def export_mesh(self, cfg_label: str, path_manager: CePathManager):
         # Regions Mesh
-        cfg_hash = cfg.sha256()
-        mesh_path = path_manager.get_surface_path(
-            cfg_lbl=cfg_label, cfg_hash=cfg_hash, sfc_lbl="body"
-        )
+        mesh_path = path_manager.get_surface_path(cfg_lbl=cfg_label, sfc_lbl="body")
         create_folders_for_file(mesh_path)
         regions_mesh = self.processed_entities[0].mesh.copy()
         regions_mesh.join([sfc.mesh.copy() for sfc in self.processed_entities[1:]])
@@ -41,7 +38,7 @@ class CeOutput(CommonOutput):
         # (Optional) Excluded Mesh
         if len(self.excluded_entities) != 0:
             excluded_mesh_path = path_manager.get_surface_path(
-                cfg_lbl=cfg_label, cfg_hash=cfg_hash, sfc_lbl="excluded_surfaces"
+                cfg_lbl=cfg_label, sfc_lbl="excluded_surfaces"
             )
             self.excluded_entities[0].mesh.export_stl(excluded_mesh_path)
 
@@ -154,39 +151,40 @@ def process_Ce(
         geometry=mesh.geometry,
         processing_function=transform_Ce,
     )
-    # logger.info("Calculating statistics...")
-    # Ce_stats = calculate_statistics(
-    #     Ce_data,
-    #     statistics_to_apply=cfg.statistics,
-    #     variables=["Ce"],
-    #     group_by_key="region_idx",
-    #     extreme_params=extreme_params,
-    # )
-    # logger.info("Processing surfaces...")
-    # processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
-    # logger.info("Processed surfaces!")
+    Ce_data = convert_dataframe_into_matrix(
+        Ce_data, column_data_label="region_idx", value_data_label="Ce"
+    )
 
-    # excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
-    # excluded_sfc_list += [
-    #     sfc
-    #     for set_lbl, sfc_set in cfg.sets.items()
-    #     for sfc in sfc_set
-    #     if set_lbl in cfg.zoning.exclude  # type: ignore
-    # ]
-    # if len(excluded_sfc_list) != 0:
-    #     col = Ce_stats.columns
-    #     excluded_surfaces = [
-    #         get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
-    #     ]
-    # else:
-    #     excluded_surfaces = []
+    logger.info("Calculating statistics...")
+    Ce_stats = calculate_statistics(
+        Ce_data, statistics_to_apply=cfg.statistics, time_scale_factor=time_scale_factor
+    )
 
-    # ce_output = CeOutput(
-    #     processed_entities=processed_surfaces,
-    #     excluded_entities=excluded_surfaces,
-    #     data_df=Ce_data,
-    #     stats_df=Ce_stats,
-    #     regions_df=geometry_df,
-    # )
+    logger.info("Processing surfaces...")
+    processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+    logger.info("Processed surfaces!")
 
-    # return ce_output
+    excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
+    excluded_sfc_list += [
+        sfc
+        for set_lbl, sfc_set in cfg.sets.items()
+        for sfc in sfc_set
+        if set_lbl in cfg.zoning.exclude  # type: ignore
+    ]
+    if len(excluded_sfc_list) != 0:
+        col = Ce_stats.columns
+        excluded_surfaces = [
+            get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
+        ]
+    else:
+        excluded_surfaces = []
+
+    ce_output = CeOutput(
+        processed_entities=processed_surfaces,
+        excluded_entities=excluded_surfaces,
+        data_df=Ce_data,
+        stats_df=Ce_stats,
+        regions_df=geometry_df,
+    )
+
+    return ce_output
