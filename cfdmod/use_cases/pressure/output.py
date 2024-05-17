@@ -14,13 +14,22 @@ class CommonOutput:
     excluded_entities: list[ProcessedEntity]
     data_df: pd.DataFrame
     stats_df: pd.DataFrame
-    regions_df: pd.DataFrame
+    region_indexing_df: pd.DataFrame
+    region_definition_df: pd.DataFrame
 
     def save_outputs(self, cfg_label: str, path_manager: PathManagerBody):
-        # Output 1: Regions dataframe
-        regions_path = path_manager.get_regions_path(cfg_lbl=cfg_label)
-        create_folders_for_file(regions_path)
-        self.regions_df.to_hdf(regions_path, key="Regions", mode="w", index=False, format="table")
+        # Output 1-A: Region indexing dataframe
+        region_indexing_path = path_manager.get_region_indexing_path(cfg_lbl=cfg_label)
+        create_folders_for_file(region_indexing_path)
+        self.region_indexing_df.to_hdf(
+            region_indexing_path, key="Region", mode="w", index=False, format="table"
+        )
+        # Output 1-B: Region definition dataframe
+        region_definition_path = path_manager.get_region_definition_path(cfg_lbl=cfg_label)
+        create_folders_for_file(region_definition_path)
+        self.region_definition_df.to_hdf(
+            region_definition_path, key="Region", mode="w", index=False, format="table"
+        )
 
         # Output 2: Time series dataframe
         timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)

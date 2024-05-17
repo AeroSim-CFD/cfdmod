@@ -31,8 +31,21 @@ class PathManagerBody(PathManagerBase):
     def get_excluded_surface_path(self, cfg_lbl: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / "excluded_surfaces.stl"
 
-    def get_regions_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "regions.h5"
+    def get_region_indexing_path(self, cfg_lbl: str) -> pathlib.Path:
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}.region_indexing.h5"
+        )
+
+    def get_region_definition_path(self, cfg_lbl: str) -> pathlib.Path:
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}.region_definition.h5"
+        )
 
 
 class CmPathManager(PathManagerBody):

@@ -9,6 +9,7 @@ from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_d
 from cfdmod.use_cases.pressure.shape.Ce_config import CeConfig, ZoningConfig
 from cfdmod.use_cases.pressure.shape.Ce_data import (
     calculate_statistics,
+    get_region_definition_dataframe,
     process_surfaces,
     transform_Ce,
 )
@@ -33,6 +34,22 @@ class TestCeData(unittest.TestCase):
         self.matrix_cp_data = convert_dataframe_into_matrix(self.cp_data, value_data_label="cp")
         self.zoning = ZoningModel(x_intervals=[0, 5, 10])
         self.zoning.offset_limits(0.1)
+
+    def test_get_region_definition_dataframe(self):
+        geom_dict = {
+            "sfc1": GeometryData(
+                mesh=self.mesh, zoning_to_use=self.zoning, triangles_idxs=np.array([0, 1])
+            )
+        }
+        region_df = get_region_definition_dataframe(geom_dict)
+
+        self.assertTrue(
+            [
+                f"{i}-{sfc_id}" in region_df["region_idx"]
+                for i in range(len(self.zoning.get_regions()))
+                for sfc_id in geom_dict.keys()
+            ]
+        )
 
     def test_transform_Ce(self):
         geom_dict = {

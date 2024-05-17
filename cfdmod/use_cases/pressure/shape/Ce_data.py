@@ -127,6 +127,25 @@ def get_surface_dict(cfg: CeConfig, mesh: LnasFormat) -> dict[str, list[str]]:
     return sfc_dict
 
 
+def get_region_definition_dataframe(geom_dict: dict[str, GeometryData]) -> pd.DataFrame:
+    """Creates a dataframe with the resulting region index and its bounds (x_min, x_max, y_min, y_max, z_min, z_max)
+
+    Args:
+        geom_dict (dict[str, GeometryData]): Geometry data dictionary
+
+    Returns:
+        pd.DataFrame: Region definition dataframe
+    """
+    dfs = []
+    for sfc_id, geom_data in geom_dict.items():
+        df = pd.DataFrame()
+        df = geom_data.zoning_to_use.get_regions_df()
+        df["region_idx"] = df["region_idx"].astype(str) + f"-{sfc_id}"
+        dfs.append(df)
+
+    return pd.concat(dfs)
+
+
 def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
@@ -199,7 +218,8 @@ def process_Ce(
         excluded_entities=excluded_surfaces,
         data_df=Ce_data,
         stats_df=Ce_stats,
-        regions_df=geometry_df,
+        region_indexing_df=geometry_df[["region_idx", "point_idx"]],
+        region_definition_df=get_region_definition_dataframe(geometry_dict),
     )
 
     return ce_output
