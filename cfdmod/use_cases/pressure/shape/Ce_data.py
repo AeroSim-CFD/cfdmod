@@ -111,6 +111,22 @@ def process_surfaces(
     return processed_surfaces
 
 
+def get_surface_dict(cfg: CeConfig, mesh: LnasFormat) -> dict[str, list[str]]:
+    """Generates a dictionary with surface names keyed by the surface or set name
+
+    Args:
+        cfg (CeConfig): Shape coefficient configuration
+        mesh (LnasFormat): Input mesh
+
+    Returns:
+        dict[str, list[str]]: Surface definition dictionary
+    """
+    sfc_dict = {set_lbl: sfc_list for set_lbl, sfc_list in cfg.sets.items()}
+    sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
+
+    return sfc_dict
+
+
 def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
@@ -131,8 +147,7 @@ def process_Ce(
     mesh_areas = mesh.geometry.areas
     mesh_normals = mesh.geometry.normals
 
-    sfc_dict = {set_lbl: sfc_list for set_lbl, sfc_list in cfg.sets.items()}
-    sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
+    sfc_dict = get_surface_dict(cfg=cfg, mesh=mesh)
 
     logger.info("Getting geometry data...")
     geometry_dict = get_geometry_data(surface_dict=sfc_dict, cfg=cfg, mesh=mesh)

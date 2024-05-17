@@ -19,18 +19,24 @@ class BasePressureConfig(BaseModel):
 
     @field_validator("statistics", mode="before")
     def validate_statistics(cls, v):
-        stats_types = [s["stats"] for s in v]
+        if isinstance(v[0], dict):
+            stats_types = [s["stats"] for s in v]
+        else:
+            stats_types = [s.stats for s in v]
         if len(set(stats_types)) != len(stats_types):
-            raise Exception("Duplicated statistics! I can only have one statistic of each type")
+            raise Exception("Duplicated statistics! It can only have one statistic of each type")
         if "mean_eq" in stats_types:
             if any(expected_s not in stats_types for expected_s in ["mean", "min", "max"]):
                 raise Exception("Equivalent mean (mean_eq) requires mean, min and max statistics")
         validated_list = []
         for statistic in v:
-            if "params" in statistic.keys():
-                validated_list.append(ParameterizedStatisticModel(**statistic))
+            if isinstance(statistic, dict):
+                if "params" in statistic.keys():
+                    validated_list.append(ParameterizedStatisticModel(**statistic))
+                else:
+                    validated_list.append(BasicStatisticModel(**statistic))
             else:
-                validated_list.append(BasicStatisticModel(**statistic))
+                validated_list.append(statistic)
         return validated_list
 
 
