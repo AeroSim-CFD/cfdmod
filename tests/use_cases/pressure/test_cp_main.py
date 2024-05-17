@@ -1,4 +1,3 @@
-import pathlib
 import unittest
 
 from cfdmod.logger import logger
