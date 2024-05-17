@@ -15,16 +15,16 @@ class PathManagerBase(BaseModel):
     )
 
     def get_stats_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "stats.h5"
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.stats.h5"
 
     def get_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "time_series.h5"
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.time_series.h5"
 
     def get_vtp_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "stats.vtp"
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.stats.vtp"
 
     def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "config.yaml"
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.config.yaml"
 
 
 class PathManagerBody(PathManagerBase):

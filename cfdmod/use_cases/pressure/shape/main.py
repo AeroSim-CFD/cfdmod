@@ -77,7 +77,10 @@ def main(*args):
         logger.info(f"Processing {cfg_label} ...")
 
         Ce_output: CeOutput = process_Ce(
-            mesh=mesh, cfg=cfg, cp_path=cp_path, extreme_params=post_proc_cfg.extreme_values
+            mesh=mesh,
+            cfg=cfg,
+            cp_path=cp_path,
+            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
         )
 
         Ce_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)

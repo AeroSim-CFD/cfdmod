@@ -8,7 +8,6 @@ from lnas import LnasFormat, LnasGeometry
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
@@ -119,7 +118,7 @@ def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
     cp_path: pathlib.Path,
-    extreme_params: ExtremeValuesParameters | None,
+    time_scale_factor: float,
 ) -> CeOutput:
     """Executes the shape coefficient processing routine
 
@@ -127,9 +126,7 @@ def process_Ce(
         mesh (LnasFormat): Input mesh
         cfg (CeConfig): Shape coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
-        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
-        path_manager (CePathManager): Path manager
-        cfg_label (str): Label of the current shape coefficient configuration
+        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         CeOutput: Compiled outputs for shape coefficient use case
@@ -157,39 +154,39 @@ def process_Ce(
         geometry=mesh.geometry,
         processing_function=transform_Ce,
     )
-    logger.info("Calculating statistics...")
-    Ce_stats = calculate_statistics(
-        Ce_data,
-        statistics_to_apply=cfg.statistics,
-        variables=["Ce"],
-        group_by_key="region_idx",
-        extreme_params=extreme_params,
-    )
-    logger.info("Processing surfaces...")
-    processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
-    logger.info("Processed surfaces!")
+    # logger.info("Calculating statistics...")
+    # Ce_stats = calculate_statistics(
+    #     Ce_data,
+    #     statistics_to_apply=cfg.statistics,
+    #     variables=["Ce"],
+    #     group_by_key="region_idx",
+    #     extreme_params=extreme_params,
+    # )
+    # logger.info("Processing surfaces...")
+    # processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+    # logger.info("Processed surfaces!")
 
-    excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
-    excluded_sfc_list += [
-        sfc
-        for set_lbl, sfc_set in cfg.sets.items()
-        for sfc in sfc_set
-        if set_lbl in cfg.zoning.exclude  # type: ignore
-    ]
-    if len(excluded_sfc_list) != 0:
-        col = Ce_stats.columns
-        excluded_surfaces = [
-            get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
-        ]
-    else:
-        excluded_surfaces = []
+    # excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
+    # excluded_sfc_list += [
+    #     sfc
+    #     for set_lbl, sfc_set in cfg.sets.items()
+    #     for sfc in sfc_set
+    #     if set_lbl in cfg.zoning.exclude  # type: ignore
+    # ]
+    # if len(excluded_sfc_list) != 0:
+    #     col = Ce_stats.columns
+    #     excluded_surfaces = [
+    #         get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
+    #     ]
+    # else:
+    #     excluded_surfaces = []
 
-    ce_output = CeOutput(
-        processed_entities=processed_surfaces,
-        excluded_entities=excluded_surfaces,
-        data_df=Ce_data,
-        stats_df=Ce_stats,
-        regions_df=geometry_df,
-    )
+    # ce_output = CeOutput(
+    #     processed_entities=processed_surfaces,
+    #     excluded_entities=excluded_surfaces,
+    #     data_df=Ce_data,
+    #     stats_df=Ce_stats,
+    #     regions_df=geometry_df,
+    # )
 
-    return ce_output
+    # return ce_output
