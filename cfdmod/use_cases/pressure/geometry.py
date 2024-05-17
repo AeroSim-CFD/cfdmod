@@ -7,8 +7,6 @@ from vtk import vtkPolyData
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
-from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask

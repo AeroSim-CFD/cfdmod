@@ -148,25 +148,38 @@ Currently, CFD modules support two models of extreme value calculation:
 
 - **Moving average**: The coefficient signal is smoothed using a time window, then its min and max values are assigned to the extreme peaks
 - **Gumbel**: The coefficient signal time window is extrapolated using Gumbel statistical model.
+- **Peak factor**: The value of the peak is calculated using the average, RMS and peak factor values.
 
 The following configuration illustrates how to select and configure the appropriate model:
 
 .. code-block:: yaml
 
-    extreme_values:
-    CST_real: 0.56
-    CST_sim: 16.89
-    # When using Moving average model
-    extreme_model: Moving average
-    parameters:
-        window_size_real: 3 # (seconds)
-    # When using Gumbel model
-    extreme_model: Gumbell
-    parameters:
-        t: 0.3 # (s) duracao do evento extremo
-        T0: 6 # (s) actual observation period
-        T1: 60 # (s) target observation period
-        yR: 1.4
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Gumbel"
+          peak_duration: 3 # in seconds
+          event_duration: 600 # in seconds. Period of extreme event
+          n_subdivisions: 10 # Number of subdivisions
+          non_exceedance_probability: 0.78 # Confidence parameter in %
+      - stats: "max"
+        params:
+          method_type: "Peak"
+          peak_factor: 3 # xtr = avg +- factor * rms
+      - stats: "max"
+        params:
+          method_type: "Moving Average"
+          window_size_real_scale: 3 # s
 
 Moving average
 ^^^^^^^^^^^^^^
@@ -260,6 +273,17 @@ The method consists of the following steps:
 
 .. note:: 
     For more information about extreme values for structure design, check out Chapter 13 (:footcite:t:`wyatt1990designer`)
+
+Peak Factor
+^^^^^^^^^^^
+
+Using this method, the extreme value is calculated provided a peak factor :math:`f`.
+Peak value is then defined using the RMS :math:`\tilde{x}` and average values :math:`\bar{x}`.
+The expression for calculation is as follows:
+
+.. math::
+
+    \hat{x} = \bar{x} + f \tilde{x}
 
 Mean Equivalent
 ===============
