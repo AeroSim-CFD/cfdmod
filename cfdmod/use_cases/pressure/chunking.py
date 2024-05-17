@@ -141,7 +141,7 @@ def divide_timeseries_in_groups(
 
         for group_lbl in groups:
             coefficient_data = data_store.get(group_lbl)
-            if pt_groups == None:
+            if pt_groups is None:
                 points_arr = np.array(
                     [col for col in coefficient_data.columns if col != "time_step"], dtype=np.int32
                 )

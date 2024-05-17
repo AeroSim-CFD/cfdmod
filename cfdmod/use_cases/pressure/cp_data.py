@@ -125,9 +125,12 @@ def process_raw_groups(
                 body_df = body_store.get(store_group)
                 body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
 
+                # This logic should be removed in later versions
                 if "point_idx" in body_df.columns:
+                    # Data is in older format, must convert to matrix
                     body_df = convert_dataframe_into_matrix(body_df)
                 if "point_idx" in static_df.columns:
+                    # Data is in older format, must convert to matrix
                     static_df = convert_dataframe_into_matrix(static_df)
 
                 if average_value != None:

@@ -144,6 +144,33 @@ def calculate_extreme_values(
     return stats_df_dict
 
 
+def calculate_mean_equivalent(
+    statistics_to_apply: list[BasicStatisticModel | ParameterizedStatisticModel],
+    stats_df_dict: dict[str, pd.Series],
+) -> np.ndarray:
+    """Calculates Mean Equivalent values, which are based on other stats such as min, max and mean.
+    It uses the greater absolute value, check the docs for more details.
+
+    Args:
+        statistics_to_apply (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistical functions to apply
+        stats_df_dict (dict[str, pd.Series]): Statistics series dictionary
+
+    Returns:
+        np.ndarray: Mean equivalent values array
+    """
+    comparison_df = pd.DataFrame()
+    mean_eq_stat = [s for s in statistics_to_apply if s.stats == "mean_eq"][0]
+    scale_factor = mean_eq_stat.params.scale_factor
+    for stat_lbl in ["min", "max", "mean"]:
+        comparison_df[stat_lbl] = stats_df_dict[stat_lbl].copy()
+        comparison_df[stat_lbl] *= 1 if stat_lbl == "mean" else scale_factor
+
+    max_abs_col_index = np.abs(comparison_df.values).argmax(axis=1)
+    max_abs_values = comparison_df.values[np.arange(len(comparison_df)), max_abs_col_index]
+
+    return max_abs_values
+
+
 def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[BasicStatisticModel | ParameterizedStatisticModel],
@@ -159,7 +186,7 @@ def calculate_statistics(
     Returns:
         pd.DataFrame: Statistics for the given coefficient
     """
-    stats_df_dict: dict[str, pd.DataFrame] = {}
+    stats_df_dict: dict[str, pd.Series] = {}
     statistics_list = [s.stats for s in statistics_to_apply]
     data_df = historical_data.drop(columns=["time_step"])
 
@@ -184,16 +211,9 @@ def calculate_statistics(
             data_df=data_df,
         )
     if "mean_eq" in statistics_list:
-        comparison_df = pd.DataFrame()
-        mean_eq_stat = [s for s in statistics_to_apply if s.stats == "mean_eq"][0]
-        scale_factor = mean_eq_stat.params.scale_factor
-        for stat_lbl in ["min", "max", "mean"]:
-            comparison_df[stat_lbl] = stats_df_dict[stat_lbl].copy()
-            comparison_df[stat_lbl] *= 1 if stat_lbl == "mean" else scale_factor
-
-        max_abs_col_index = np.abs(comparison_df.values).argmax(axis=1)
-        max_abs_values = comparison_df.values[np.arange(len(comparison_df)), max_abs_col_index]
-        stats_df_dict["mean_eq"] = max_abs_values
+        stats_df_dict["mean_eq"] = calculate_mean_equivalent(
+            statistics_to_apply=statistics_to_apply, stats_df_dict=stats_df_dict
+        )
 
     return pd.DataFrame(stats_df_dict)
 

@@ -27,14 +27,6 @@ pressure_coefficient:
           event_duration: 600 # in seconds. Period of extreme event
           n_subdivisions: 10 # Number of subdivisions
           non_exceedance_probability: 0.78 # Confidence parameter in %
-      - stats: "max"
-        params:
-          method_type: "Peak"
-          peak_factor: 3 # xtr = avg +- factor * rms
-      - stats: "max"
-        params:
-          method_type: "Moving Average"
-          window_size_real_scale: 3 # s
 
 time_scale_conversion:
   CST_real: 0.56
