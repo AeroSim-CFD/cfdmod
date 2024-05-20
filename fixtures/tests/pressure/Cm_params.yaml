@@ -10,19 +10,18 @@ moment_coefficient:
     bodies:
       - name: marquise
         lever_origin: [0, 10, 10]
-    variables: ["Cmx", "Cmy", "Cmz"]
+    directions: ["x", "y", "z"]
     statistics:
-      [
-        "min",
-        "max",
-        "std",
-        "mean",
-        "skewness",
-        "kurtosis",
-        "xtr_min",
-        "xtr_max",
-        "mean_eq",
-      ]
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
@@ -31,28 +30,21 @@ moment_coefficient:
         lever_origin: [0, 10, 10]
         sub_bodies: # Optional, default is the whole body
           z_intervals: [0, 10, 20]
-    variables: ["Cmx", "Cmy", "Cmz"]
+    directions: ["x", "y", "z"]
     statistics:
-      [
-        "min",
-        "max",
-        "std",
-        "mean",
-        "skewness",
-        "kurtosis",
-        "xtr_min",
-        "xtr_max",
-        "mean_eq",
-      ]
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
 
-extreme_values:
+time_scale_conversion:
   CST_real: 0.56
   CST_sim: 16.89
-  extreme_model: Gumbel
-  parameters:
-    t: 0.3 # (s) duracao do evento extremo
-    T0: 6 # (s) actual observation period
-    T1: 60 # (s) target observation period
-    yR: 1.4

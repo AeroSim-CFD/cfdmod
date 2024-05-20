@@ -38,7 +38,6 @@ def process_Cf(
         cfg (CfConfig): Force coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
         bodies_definition (dict[str, BodyDefinition]): Dictionary of bodies definition
-        extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
         time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
