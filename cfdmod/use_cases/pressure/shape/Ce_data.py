@@ -12,6 +12,7 @@ from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
     get_excluded_entities,
+    get_region_definition_dataframe,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput
@@ -125,25 +126,6 @@ def get_surface_dict(cfg: CeConfig, mesh: LnasFormat) -> dict[str, list[str]]:
     sfc_dict |= {sfc: [sfc] for sfc in mesh.surfaces.keys() if sfc not in cfg.surfaces_in_sets}
 
     return sfc_dict
-
-
-def get_region_definition_dataframe(geom_dict: dict[str, GeometryData]) -> pd.DataFrame:
-    """Creates a dataframe with the resulting region index and its bounds (x_min, x_max, y_min, y_max, z_min, z_max)
-
-    Args:
-        geom_dict (dict[str, GeometryData]): Geometry data dictionary
-
-    Returns:
-        pd.DataFrame: Region definition dataframe
-    """
-    dfs = []
-    for sfc_id, geom_data in geom_dict.items():
-        df = pd.DataFrame()
-        df = geom_data.zoning_to_use.get_regions_df()
-        df["region_idx"] = df["region_idx"].astype(str) + f"-{sfc_id}"
-        dfs.append(df)
-
-    return pd.concat(dfs)
 
 
 def process_Ce(

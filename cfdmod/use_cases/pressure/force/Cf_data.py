@@ -5,7 +5,6 @@ from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
 from cfdmod.use_cases.pressure.force.Cf_geom import get_representative_areas
 from cfdmod.use_cases.pressure.geometry import (
@@ -13,14 +12,16 @@ from cfdmod.use_cases.pressure.geometry import (
     ProcessedEntity,
     get_excluded_entities,
     get_geometry_data,
+    get_region_definition_dataframe,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, BodyDefinition
+from cfdmod.use_cases.pressure.zoning.body_config import BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import (
     calculate_statistics,
     combine_stats_data_with_mesh,
 )
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 def process_Cf(
@@ -28,8 +29,8 @@ def process_Cf(
     cfg: CfConfig,
     cp_path: pathlib.Path,
     bodies_definition: dict[str, BodyDefinition],
-    extreme_params: ExtremeValuesParameters | None,
-) -> CommonOutput:
+    time_scale_factor: float,
+) -> dict[str, CommonOutput]:
     """Executes the force coefficient processing routine
 
     Args:
@@ -38,9 +39,10 @@ def process_Cf(
         cp_path (pathlib.Path): Path for pressure coefficient time series
         bodies_definition (dict[str, BodyDefinition]): Dictionary of bodies definition
         extreme_params (ExtremeValuesParameters | None): Optional parameters for extreme values analysis
+        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
-        CommonOutput: Compiled outputs for force coefficient use case
+        dict[str, CommonOutput]: Compiled outputs for force coefficient use case keyed by direction
     """
     geometry_dict: dict[str, GeometryData] = {}
     for body_cfg in cfg.bodies:
@@ -63,30 +65,6 @@ def process_Cf(
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-    Cf_stats = calculate_statistics(
-        historical_data=Cf_data,
-        statistics_to_apply=cfg.statistics,
-        variables=cfg.variables,
-        group_by_key="region_idx",
-        extreme_params=extreme_params,
-    )
-
-    processed_entities: list[ProcessedEntity] = []
-    for body_cfg in cfg.bodies:
-        body_data = geometry_dict[body_cfg.name]
-        region_idx_arr = geometry_df.loc[
-            geometry_df.region_idx.str.contains(body_cfg.name)
-        ].region_idx.to_numpy()
-
-        body_data_df = combine_stats_data_with_mesh(
-            mesh=body_data.mesh,
-            region_idx_array=region_idx_arr,
-            data_stats=Cf_stats,
-        )
-
-        polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
-        data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
-        processed_entities.append(data_entity)
 
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
@@ -94,22 +72,52 @@ def process_Cf(
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
     if len(excluded_sfc_list) != 0:
-        col = Cf_stats.columns
+        col = [s.stats for s in cfg.statistics]
         excluded_entity = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
         ]
     else:
         excluded_entity = []
 
-    cf_output = CommonOutput(
-        data_df=Cf_data,
-        stats_df=Cf_stats,
-        regions_df=geometry_df,
-        processed_entities=processed_entities,
-        excluded_entities=excluded_entity,
-    )
+    compild_cf_output = {}
+    for direction_lbl in cfg.directions:
+        Cf_dir_data = convert_dataframe_into_matrix(
+            Cf_data[["region_idx", "time_step", f"Cf{direction_lbl}"]],
+            column_data_label="region_idx",
+            value_data_label=f"Cf{direction_lbl}",
+        )
+        Cf_stats = calculate_statistics(
+            historical_data=Cf_dir_data,
+            statistics_to_apply=cfg.statistics,
+            time_scale_factor=time_scale_factor,
+        )
+        processed_entities: list[ProcessedEntity] = []
+        for body_cfg in cfg.bodies:
+            body_data = geometry_dict[body_cfg.name]
+            region_idx_arr = geometry_df.loc[
+                geometry_df.region_idx.str.contains(body_cfg.name)
+            ].region_idx.to_numpy()
 
-    return cf_output
+            body_data_df = combine_stats_data_with_mesh(
+                mesh=body_data.mesh,
+                region_idx_array=region_idx_arr,
+                data_stats=Cf_stats,
+            )
+
+            polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
+            data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
+            processed_entities.append(data_entity)
+
+        compild_cf_output[direction_lbl] = CommonOutput(
+            data_df=Cf_dir_data,
+            stats_df=Cf_stats,
+            processed_entities=processed_entities,
+            excluded_entities=excluded_entity,
+            region_indexing_df=geometry_df[["region_idx", "point_idx"]],
+            region_definition_df=get_region_definition_dataframe(geometry_dict),
+        )
+
+    return compild_cf_output
 
 
 def transform_Cf(

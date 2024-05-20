@@ -14,14 +14,33 @@ class PathManagerBase(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
+    direction_label: str = Field(
+        "", title="Direction of coefficient", description="Direction of coefficient"
+    )
+
     def get_stats_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.stats.h5"
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.stats.h5"
+        )
 
     def get_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.time_series.h5"
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.time_series.h5"
+        )
 
     def get_vtp_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.stats.vtp"
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.stats.vtp"
+        )
 
     def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.config.yaml"
