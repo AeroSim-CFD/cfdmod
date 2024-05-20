@@ -120,7 +120,7 @@ def process_Cm(
             processed_entities.append(data_entity)
 
         compild_cm_output[direction_lbl] = CommonOutput(
-            data_df=Cm_data,
+            data_df=Cm_dir_data,
             stats_df=Cm_stats,
             processed_entities=processed_entities,
             excluded_entities=excluded_entity,
