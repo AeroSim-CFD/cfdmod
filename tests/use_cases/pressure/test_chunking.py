@@ -7,7 +7,11 @@ import pandas as pd
 from lnas import LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.chunking import process_timestep_groups, split_into_chunks
+from cfdmod.use_cases.pressure.chunking import (
+    HDFGroupInterface,
+    process_timestep_groups,
+    split_into_chunks,
+)
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
@@ -62,8 +66,7 @@ class TestChunking(unittest.TestCase):
         time_arr = self.sample_df.time_step.unique()
         step = math.ceil(len(time_arr) / self.number_of_chunks)
         expected_keys = [
-            f"/range_{int(time_arr[i * step])}_{int(min((i + 1) * step - 1, len(time_arr) - 1))}"
-            for i in range(self.number_of_chunks)
+            HDFGroupInterface.time_key(time_arr[i * step]) for i in range(self.number_of_chunks)
         ]
 
         split_into_chunks(self.sample_df, self.number_of_chunks, self.output_path)

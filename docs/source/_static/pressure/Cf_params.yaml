@@ -7,12 +7,22 @@ bodies:
     surfaces: [building]
 force_coefficient:
   measurement_1:
-    bodies: 
-    - name: building
-      sub_bodies: # Optional, default is the whole body
-        z_intervals: [0,10,20]
-    variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    bodies:
+      - name: building
+        sub_bodies: # Optional, default is the whole body
+          z_intervals: [0, 10, 20]
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     # Apply transformations before indexing the regions
     transformation:
       translation: [0, 0, 0]
@@ -20,9 +30,19 @@ force_coefficient:
       fixed_point: [0, 0, 0]
   measurement_2:
     bodies:
-    - name: marquise
-    variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+      - name: marquise
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     # Apply transformations before indexing the regions
     transformation:
       translation: [0, 0, 0]

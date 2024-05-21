@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.1.0
+
+It features the refactor for pressure use case module.
+
+- Updated time series format to matrix form
+- Changed how direction logic is applied for Cf and Cm
+- Updated statistics functions and models
+
 ## v1.0.0
 
 First production stable release.

@@ -62,13 +62,13 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    path_manager = CfPathManager(output_path=pathlib.Path(args_use.output))
 
     cfg_path = pathlib.Path(args_use.config)
     mesh_path = pathlib.Path(args_use.mesh)
     cp_path = pathlib.Path(args_use.cp)
 
     post_proc_cfg = CfCaseConfig.from_file(cfg_path)
+    path_manager = CfPathManager(output_path=pathlib.Path(args_use.output))
 
     logger.info("Reading mesh description...")
     mesh = LnasFormat.from_file(mesh_path)
@@ -77,13 +77,21 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
         logger.info(f"Processing Cf config {cfg_label} ...")
 
-        cf_output: CommonOutput = process_Cf(
+        cf_output_dict: dict[str, CommonOutput] = process_Cf(
             mesh=mesh,
             cfg=cfg,
             cp_path=cp_path,
             bodies_definition=post_proc_cfg.bodies,
-            extreme_params=post_proc_cfg.extreme_values,
+            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
         )
-        cf_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
+        already_saved = False
+        for direction_lbl, cf_output in cf_output_dict.items():
+            path_manager.direction_label = direction_lbl
+            if already_saved:
+                cf_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+            else:
+                cf_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
+                cf_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+                already_saved = True
 
         logger.info(f"Processed Cf config {cfg_label}!")

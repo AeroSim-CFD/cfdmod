@@ -1,4 +1,5 @@
 # cfdmod
+
 Package to provide analysis and processing tools for CFD cases
 
 ## Tests
@@ -13,7 +14,7 @@ Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" t
 
 ## Memory usage profiling
 
-In order to check memory usage, *memory-profiler* library is used.
+In order to check memory usage, _memory-profiler_ library is used.
 First, install memory-profiler:
 
 ```bash
@@ -29,7 +30,7 @@ poetry shell
 Then, run:
 
 ```bash
-mprof run python path_to_script.py
+mprof run -C -M python path_to_script.py
 mprof plot
 ```
 
