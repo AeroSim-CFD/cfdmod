@@ -1,37 +1,20 @@
+import pathlib
+import warnings
 from typing import Literal
 
 import pandas as pd
+from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.cp_config import Statistics
-
-
-def filter_pressure_data(
-    press_data: pd.DataFrame,
-    body_data: pd.DataFrame,
-    timestep_range: tuple[float, float],
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Filter slice data
-
-    Args:
-        press_data (pd.DataFrame): Pressure dataframe
-        body_data (pd.DataFrame): Path for body pressure data
-        timestep_range (tuple[float, float]): Range of timestep to slice data
-
-    Returns:
-        tuple[pd.DataFrame, pd.DataFrame]: Tuple with static pressure data and body pressure data sliced
-    """
-
-    press_data = press_data[
-        (press_data["time_step"] >= timestep_range[0])
-        & (press_data["time_step"] <= timestep_range[1])
-    ]
-
-    body_data = body_data[
-        (body_data["time_step"] >= timestep_range[0])
-        & (body_data["time_step"] <= timestep_range[1])
-    ]
-
-    return press_data, body_data
+from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+from cfdmod.logger import logger
+from cfdmod.use_cases.pressure.chunking import (
+    HDFGroupInterface,
+    calculate_statistics_for_groups,
+    divide_timeseries_in_groups,
+)
+from cfdmod.use_cases.pressure.cp_config import CpConfig
+from cfdmod.use_cases.pressure.path_manager import CpPathManager
+from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
 
 
 def transform_to_cp(
@@ -53,56 +36,182 @@ def transform_to_cp(
     Returns:
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
-    average_static_pressure = press_data["rho"].to_numpy().mean()
+    static_pressure_array = press_data[0].to_numpy()
+    average_static_pressure = static_pressure_array.mean()
     dynamic_pressure = 0.5 * average_static_pressure * (reference_vel * correction_factor) ** 2
     cs_square = 1 / 3
     multiplier = cs_square / dynamic_pressure
 
-    df_pressure = press_data.set_index("time_step")
-    df_body = body_data.set_index("time_step")
+    press = static_pressure_array if ref_press_mode == "instantaneous" else average_static_pressure
+    convert_to_cp = lambda col: multiplier * (col - press)
+    df_cp = body_data.apply(
+        lambda col: col if col.name == "time_step" else col.apply(convert_to_cp)
+    )
 
-    if ref_press_mode == "instantaneous":
-        df_body["cp"] = multiplier * (df_body["rho"] - df_body.index.map(df_pressure["rho"]))
-    elif ref_press_mode == "average":
-        df_body["cp"] = multiplier * (df_body["rho"] - average_static_pressure)
-
-    df_body.reset_index(inplace=True)
-    df_body.drop(columns=["rho"], inplace=True)
-
-    return df_body
+    return df_cp
 
 
-def calculate_statistics(
-    body_data: pd.DataFrame, statistics_to_apply: list[Statistics]
-) -> pd.DataFrame:
-    """Calculates statistics for pressure coefficient of a body data
+def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.DataFrame:
+    """Filter data in between timestep range
 
     Args:
-        body_data (pd.DataFrame): Dataframe of the body data pressure coefficients
-        statistics_to_apply (Statistics): List of statistical functions to apply
+        data (pd.DataFrame): Dataframe to be filtered
+        timestep_range (tuple[float, float]): Range of timestep to filter data
 
     Returns:
-        pd.DataFrame: Statistics for pressure coefficient
+        pd.DataFrame: Data filtered
     """
-    group_by_point_cp = body_data.groupby("point_idx")["cp"]
 
-    statistics_data = pd.DataFrame({"point_idx": body_data["point_idx"].unique()})
+    filtered_data = data[
+        (data["time_step"] >= timestep_range[0]) & (data["time_step"] <= timestep_range[1])
+    ].copy()
 
-    if "mean" in statistics_to_apply:
-        statistics_data["cp_mean"] = group_by_point_cp.mean()
-    if "min" in statistics_to_apply:
-        statistics_data["cp_min"] = group_by_point_cp.min()
-    if "max" in statistics_to_apply:
-        statistics_data["cp_max"] = group_by_point_cp.max()
-    if "std" in statistics_to_apply:
-        statistics_data["cp_std"] = group_by_point_cp.std()
+    return filtered_data
 
-    # Calculate skewness and kurtosis using apply
-    if "skewness" in statistics_to_apply:
-        skewness = group_by_point_cp.apply(lambda x: x.skew()).reset_index(name="skewness")
-        statistics_data["cp_skewness"] = skewness["skewness"]
-    if "kurtosis" in statistics_to_apply:
-        kurtosis = group_by_point_cp.apply(lambda x: x.kurt()).reset_index(name="kurtosis")
-        statistics_data["cp_kurtosis"] = kurtosis["kurtosis"]
 
-    return statistics_data
+def process_raw_groups(
+    static_pressure_path: pathlib.Path,
+    body_pressure_path: pathlib.Path,
+    output_path: pathlib.Path,
+    cp_config: CpConfig,
+):
+    """Saves transformed data (pressure coefficient) into time series and a grouped data.
+
+    Args:
+        static_pressure_path (pathlib.Path): Path of the static pressure time series
+        body_pressure_path (pathlib.Path): Path of the body pressure time series
+        output_path (pathlib.Path): Output path of the timeseries
+        cp_config (CpConfig): Pressure coefficient configuration
+
+    Raises:
+        Exception: If the keys for body and static pressure data do not match
+    """
+    with pd.HDFStore(body_pressure_path, mode="r") as body_store:
+        with pd.HDFStore(static_pressure_path, mode="r") as static_store:
+            static_groups = static_store.keys()
+            body_groups = body_store.keys()
+
+            if static_groups != body_groups:
+                raise Exception(f"Keys for body and static pressure don't match!")
+
+            more_than_one_group = len(body_groups) > 1
+
+            keys_to_include: list[str] = []
+
+            if more_than_one_group:
+                keys_to_include = HDFGroupInterface.filter_groups(
+                    body_groups, cp_config.timestep_range
+                )
+
+            average_value = None
+
+            if cp_config.reference_pressure == "average":
+                static_dfs = []
+                for store_group in static_groups:
+                    static_dfs.append(static_store.get(store_group))
+                merged_df = pd.concat(static_dfs)
+                # Old versions index the column with rho and new versions use point index (0)
+                # to label the column. Hence the condition below
+                average_value = (
+                    merged_df["rho"].mean() if "rho" in merged_df.columns else merged_df[0].mean()
+                )
+
+            for store_group in body_groups:
+                if more_than_one_group and store_group not in keys_to_include:
+                    continue
+
+                static_df = static_store.get(store_group)
+                static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
+                body_df = body_store.get(store_group)
+                body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
+
+                # This logic should be removed in later versions
+                if "point_idx" in body_df.columns:
+                    # Data is in older format, must convert to matrix
+                    body_df = convert_dataframe_into_matrix(body_df)
+                if "point_idx" in static_df.columns:
+                    # Data is in older format, must convert to matrix
+                    static_df = convert_dataframe_into_matrix(static_df)
+
+                if average_value != None:
+                    static_df[0] = average_value
+
+                if any(static_df.time_step.unique() != body_df.time_step.unique()):
+                    raise Exception(f"Timesteps for key {store_group} do not match!")
+
+                coefficient_data = transform_to_cp(
+                    press_data=static_df,
+                    body_data=body_df,
+                    reference_vel=cp_config.U_H,
+                    ref_press_mode=cp_config.reference_pressure,
+                    correction_factor=cp_config.U_H_correction_factor,
+                )
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="table")
+
+
+def process_cp(
+    pressure_data_path: pathlib.Path,
+    body_data_path: pathlib.Path,
+    cfg_label: str,
+    cfg: CpConfig,
+    mesh: LnasGeometry,
+    path_manager: CpPathManager,
+    time_scale_factor: float,
+):
+    """Executes the pressure coefficient processing routine
+
+    Args:
+        pressure_data_path (pathlib.Path): Path for static reference pressure time series
+        body_data_path (pathlib.Path): Path for body pressure time series
+        cfg_label (str): Label of the configuration
+        cfg (CpConfig): Pressure coefficient configuration
+        mesh (LnasGeometry): Geometry of the body
+        path_manager (CpPathManager): Object to handle paths
+        time_scale_factor (float): Factor for converting time scales from CST values
+    """
+    timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
+    create_folders_for_file(timeseries_path)
+
+    if timeseries_path.exists():
+        warnings.warn(
+            f"Path for time series already exists {timeseries_path}. Deleted old file",
+            RuntimeWarning,
+        )
+        timeseries_path.unlink()
+
+    logger.info("Transforming into pressure coefficient")
+    process_raw_groups(
+        static_pressure_path=pressure_data_path,
+        body_pressure_path=body_data_path,
+        output_path=timeseries_path,
+        cp_config=cfg,
+    )
+
+    grouped_data_path = path_manager.get_grouped_timeseries_path(cfg_lbl=cfg_label)
+
+    if grouped_data_path.exists():
+        warnings.warn(
+            f"Path for grouped time series already exists {grouped_data_path}. Deleted old file",
+            RuntimeWarning,
+        )
+        grouped_data_path.unlink()
+
+    logger.info("Dividing into point groups")
+    divide_timeseries_in_groups(
+        n_groups=cfg.number_of_chunks,
+        timeseries_path=timeseries_path,
+        output_path=grouped_data_path,
+    )
+
+    logger.info("Calculating statistics")
+    cp_stats = calculate_statistics_for_groups(
+        grouped_data_path=grouped_data_path,
+        statistics=cfg.statistics,
+        time_scale_factor=time_scale_factor,
+    )
+    stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
+    cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="table")
+
+    vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
+    polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
+    write_polydata(vtp_path, polydata)

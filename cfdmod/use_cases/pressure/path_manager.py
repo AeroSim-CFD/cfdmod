@@ -14,69 +14,79 @@ class PathManagerBase(BaseModel):
         ..., title="Output path", description="Path for saving output files"
     )
 
-    def get_excluded_surface_path(self, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path / cfg_label / self._FOLDERNAME / "surfaces" / "excluded_surfaces.stl"
-        )
+    direction_label: str = Field(
+        "", title="Direction of coefficient", description="Direction of coefficient"
+    )
 
-    def get_vtp_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / self._FOLDERNAME / f"{body_label}.stats.vtp"
-
-    def get_timeseries_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+    def get_stats_path(self, cfg_lbl: str) -> pathlib.Path:
         return (
             self.output_path
-            / cfg_label
             / self._FOLDERNAME
-            / "time_series"
-            / f"{body_label}.time_series.hdf"
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.stats.h5"
         )
 
-    def get_stats_df_path(self, body_label: str, cfg_label: str) -> pathlib.Path:
+    def get_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
         return (
-            self.output_path / cfg_label / self._FOLDERNAME / "stats" / f"{body_label}.stats.hdf"
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.time_series.h5"
+        )
+
+    def get_vtp_path(self, cfg_lbl: str) -> pathlib.Path:
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}{self.direction_label}.stats.vtp"
+        )
+
+    def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.config.yaml"
+
+
+class PathManagerBody(PathManagerBase):
+    def get_excluded_surface_path(self, cfg_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / "excluded_surfaces.stl"
+
+    def get_region_indexing_path(self, cfg_lbl: str) -> pathlib.Path:
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}.region_indexing.h5"
+        )
+
+    def get_region_definition_path(self, cfg_lbl: str) -> pathlib.Path:
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{self._FOLDERNAME}.region_definition.h5"
         )
 
 
-class CmPathManager(PathManagerBase):
+class CmPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cm"
 
 
-class CfPathManager(PathManagerBase):
+class CfPathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Cf"
 
 
-class CePathManager(PathManagerBase):
+class CePathManager(PathManagerBody):
     _FOLDERNAME: ClassVar[str] = "Ce"
 
-    def get_surface_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / cfg_label
-            / self._FOLDERNAME
-            / "surfaces"
-            / f"{sfc_label}.regions.stl"
-        )
-
-    def get_regions_df_path(self, sfc_label: str, cfg_label: str) -> pathlib.Path:
-        return self.output_path / cfg_label / "Ce" / "regions" / f"regions.{sfc_label}.hdf"
+    def get_surface_path(self, cfg_lbl: str, sfc_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{sfc_lbl}.regions.stl"
 
 
-class CpPathManager(BaseModel):
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
+class CpPathManager(PathManagerBase):
+    _FOLDERNAME: ClassVar[str] = "cp"
 
-    @property
-    def cp_stats_path(self):
-        return self.output_path / "cp_stats.hdf"
-
-    @property
-    def cp_t_path(self):
-        return self.output_path / "cp_t.hdf"
-
-    @property
-    def vtp_path(self):
-        return self.output_path / "cp_stats.vtp"
+    def get_grouped_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
+        return self.output_path / self._FOLDERNAME / cfg_lbl / "time_series.grouped.h5"
 
 
 def copy_input_artifacts(
@@ -90,16 +100,7 @@ def copy_input_artifacts(
     create_folder_path(path_manager.output_path / "input_cp" / "data")
 
     shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
-    mesh_output = path_manager.output_path / "input_cp" / mesh_path.parent.name
-    if mesh_output.is_dir():
-        # Overwrite the files in the output folder
-        for file in mesh_path.parent.iterdir():
-            shutil.copy(
-                file,
-                mesh_output / file.name,
-            )
-    else:
-        shutil.copytree(mesh_path.parent, mesh_output)
+    shutil.copy(mesh_path, path_manager.output_path / "input_cp" / mesh_path.name)
     shutil.copy(
         static_data_path, path_manager.output_path / "input_cp" / "data" / static_data_path.name
     )

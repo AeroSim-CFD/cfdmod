@@ -1,29 +1,78 @@
 shape_coefficient:
   measurement_1:
-    zoning: 
+    zoning:
       yaml: "./zoning_params.yaml"
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Peak"
+          peak_factor: 3
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
-    zoning: 
+    zoning:
       global_zoning:
         x_intervals: [0, 250]
         y_intervals: [0, 200]
         z_intervals: [0, 20]
       no_zoning: ["t2_yp"]
       exclude: ["lanternim", "t1_ym"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Gumbel"
+          peak_duration: 3
+          event_duration: 300
+          n_subdivisions: 10
+          non_exceedance_probability: 0.78
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     sets:
       lanternim: ["L1_xp", "L2_yp", "L3_zp_yp", "L4_zp_ym", "L5_ym", "L6_xm"]
     transformation:
       rotation: [0, 0, 0]
   measurement_3:
-    zoning: 
+    zoning:
       global_zoning:
         x_intervals: [0, 125, 250]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Moving Average"
+          window_size_real_scale: 3
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
+
+time_scale_conversion:
+  CST_real: 0.56
+  CST_sim: 16.89

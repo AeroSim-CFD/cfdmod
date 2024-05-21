@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from lnas import LnasGeometry
 
@@ -32,7 +34,7 @@ def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -
     else:
         tri_indexes.append([0, 1, 2])
 
-    return sorted_vertices[np.array(tri_indexes)]
+    return sorted_vertices[np.array(tri_indexes, dtype=np.uint32)].astype(np.float32)
 
 
 def slice_triangle(tri_verts: np.ndarray, axis: int, axis_value: float) -> np.ndarray:
@@ -67,12 +69,39 @@ def slice_triangle(tri_verts: np.ndarray, axis: int, axis_value: float) -> np.nd
 
                 insert_idx = i + 1 + intersected_pts.shape[0] // 4
                 insertion_indices.append(insert_idx)
+
                 intersected_pts = np.insert(intersected_pts, insert_idx, intersect_pt, axis=0)
 
-    if len(intersected_pts) == 3:
-        return np.array([tri_verts])
-    else:
-        return triangulate_tri(intersected_pts, sorted(insertion_indices))
+    return triangulate_tri(intersected_pts, sorted(insertion_indices))
+
+
+def clean_triangles(geom: LnasGeometry, minimal_area: float = 1e-5) -> LnasGeometry:
+    """Removes any malformed triangles from the geometry
+
+    Args:
+        geom (LnasGeometry): Geometry to be cleaned
+
+    Returns:
+        LnasGeometry: Filtered geometry with all valid triangles
+    """
+    cross_prod = geom._cross_prod()
+    norm_cross_prod = np.linalg.norm(cross_prod, axis=1)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        normals = cross_prod / norm_cross_prod[:, np.newaxis]
+
+    areas = norm_cross_prod / 2
+    nan_normals = ~np.isnan(normals)
+    filter_areas = areas > minimal_area
+
+    idxs_triangles = (
+        geom.triangles[np.all(nan_normals, axis=1) & filter_areas].copy().reshape(-1, 3)
+    )
+    cleaned_geom = LnasGeometry(vertices=geom.vertices.copy(), triangles=idxs_triangles)
+    cleaned_geom._full_update()
+
+    return cleaned_geom
 
 
 def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeometry:
@@ -86,20 +115,28 @@ def slice_surface(surface: LnasGeometry, axis: int, interval: float) -> LnasGeom
     Returns:
         LnasGeometry: Sliced LNAS surface mesh
     """
-    new_triangles = np.zeros((0, 3, 3))
+    triangles_list = []
 
     for tri_verts, tri_normal in zip(surface.triangle_vertices, surface.normals):
         # If triangle normal is the same of plane normal, not slice it
         if np.abs(tri_normal).max() == np.abs(tri_normal)[axis]:
-            new_triangles = np.concatenate((new_triangles, [tri_verts]), axis=0)
+            triangles_list.extend([tri_verts.tolist()])
             continue
-        sliced_triangles = slice_triangle(tri_verts, axis, interval)
-        new_triangles = np.concatenate((new_triangles, sliced_triangles), axis=0)
+        if tri_verts[:, axis].max() < interval or tri_verts[:, axis].min() > interval:
+            triangles_list.extend([tri_verts.tolist()])
+        else:
+            sliced_triangles = slice_triangle(tri_verts, axis, interval)
+            triangles_list.extend(sliced_triangles.tolist())
 
-    full_verts = new_triangles.reshape(len(new_triangles) * 3, 3)
+    new_triangles = np.array(triangles_list, dtype=np.float32)
+
+    full_verts = new_triangles.reshape(len(triangles_list) * 3, 3)
     verts, triangles = np.unique(full_verts, axis=0, return_inverse=True)
 
-    return LnasGeometry(verts, triangles.reshape(-1, 3))
+    geom = LnasGeometry(verts, triangles.reshape(-1, 3))
+    geom = clean_triangles(geom=geom)
+
+    return geom
 
 
 def get_mesh_bounds(input_mesh: LnasGeometry) -> tuple[tuple[float, float], ...]:

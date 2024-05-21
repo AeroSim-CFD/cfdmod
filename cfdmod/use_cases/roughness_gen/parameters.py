@@ -10,6 +10,7 @@ __all__ = [
     "GenerationParams",
     "ElementParams",
     "SpacingParams",
+    "PositionParams",
 ]
 
 
@@ -52,6 +53,46 @@ class ElementParams(BaseModel):
         description="Size of the generated elements in Y axis",
         gt=0,
     )
+
+
+class BoundingBox(BaseModel):
+    start: tuple[float, float, float] = Field(
+        ...,
+        title="Start position",
+        description="Bounding box starting position (x, y, z)",
+    )
+    end: tuple[float, float, float] = Field(
+        ..., title="End position", description="Bounding box ending position (x, y, z)"
+    )
+
+
+class PositionParams(BaseModel):
+    element_params: ElementParams = Field(
+        ..., title="Element parameters", description="Object with element geometry parameters"
+    )
+    spacing_params: SpacingParams = Field(
+        ..., title="Spacing parameters", description="Object with spacing parameters"
+    )
+    bounding_box: BoundingBox = Field(
+        BoundingBox(
+            start=(float("-inf"), float("-inf"), float("-inf")),
+            end=(float("inf"), float("inf"), float("inf")),
+        ),
+        title="Bounding box",
+        description="Definition of the inside volume in which to generate elements",
+    )
+    surfaces: dict[str, str] = Field(
+        ..., title="Surfaces dictionary", description="LNAS surface path keyed by label"
+    )
+
+    @classmethod
+    def from_file(cls, file_path: pathlib.Path):
+        if file_path.exists():
+            yaml_vals = read_yaml(file_path)
+            params = cls(**yaml_vals)
+            return params
+        else:
+            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
 
 
 class GenerationParams(BaseModel):

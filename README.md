@@ -1,4 +1,5 @@
 # cfdmod
+
 Package to provide analysis and processing tools for CFD cases
 
 ## Tests
@@ -10,3 +11,27 @@ poetry run python -m unittest discover -v -s tests/ -p 'test_*.py'
 ```
 
 Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" target="_blank">Visual Studio Code</a>
+
+## Memory usage profiling
+
+In order to check memory usage, _memory-profiler_ library is used.
+First, install memory-profiler:
+
+```bash
+pip install -U memory-profiler
+```
+
+And activate the poetry virtual environment:
+
+```bash
+poetry shell
+```
+
+Then, run:
+
+```bash
+mprof run -C -M python path_to_script.py
+mprof plot
+```
+
+That will plot the latest profiling data.

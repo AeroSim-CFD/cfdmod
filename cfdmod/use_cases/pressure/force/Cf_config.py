@@ -1,50 +1,40 @@
 from __future__ import annotations
 
-import pathlib
-
-from pydantic import BaseModel, Field, model_validator
-
-from cfdmod.api.configs.hashable import HashableConfig
-from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.statistics import Statistics
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
-from cfdmod.use_cases.pressure.zoning.processing import ForceVariables
-from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
-from cfdmod.utils import read_yaml
-
 __all__ = ["CfConfig", "CfCaseConfig"]
 
 
-class CfConfig(HashableConfig):
-    body: str = Field(..., title="Body label", description="Define which body should be processed")
-    sub_bodies: ZoningModel = Field(
-        ZoningModel(
-            x_intervals=[float("-inf"), float("inf")],
-            y_intervals=[float("-inf"), float("inf")],
-            z_intervals=[float("-inf"), float("inf")],
-        ),
-        title="Sub body intervals",
-        description="Definition of the intervals that will section the body into sub-bodies",
-    )
-    variables: list[ForceVariables] = Field(
+from pydantic import Field, model_validator
+
+from cfdmod.api.configs.hashable import HashableConfig
+from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.base_config import BasePressureCaseConfig, BasePressureConfig
+from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, BodyDefinition
+from cfdmod.use_cases.pressure.zoning.processing import AxisDirections
+
+
+class CfConfig(HashableConfig, BasePressureConfig):
+    bodies: list[BodyConfig] = Field(
         ...,
-        title="List of variables",
-        description="Define which variables will be calculated",
+        title="Bodies configuration",
+        description="Define which bodies should be processed separated and then joined"
+        + "and assign to each a zoning config",
     )
-    statistics: list[Statistics] = Field(
+
+    directions: list[AxisDirections] = Field(
         ...,
-        title="List of statistics",
-        description="Define which statistical analysis will be performed to the coefficient",
+        title="List of directions",
+        description="Define for which directions force coefficient will be calculated",
     )
+
     transformation: TransformationConfig = Field(
-        ...,
+        TransformationConfig(),
         title="Transformation config",
         description="Configuration for mesh transformation",
     )
 
 
-class CfCaseConfig(BaseModel):
-    bodies: dict[str, BodyConfig] = Field(
+class CfCaseConfig(BasePressureCaseConfig):
+    bodies: dict[str, BodyDefinition] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )
     force_coefficient: dict[str, CfConfig] = Field(
@@ -55,13 +45,15 @@ class CfCaseConfig(BaseModel):
 
     @model_validator(mode="after")
     def valdate_body_list(self):
-        for body_label in [cfg.body for cfg in self.force_coefficient.values()]:
+        for body_label in [b.name for cfg in self.force_coefficient.values() for b in cfg.bodies]:
             if body_label not in self.bodies.keys():
                 raise Exception(f"Body {body_label} is not defined in the configuration file")
         return self
 
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CfCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
-        return cfg
+    @model_validator(mode="after")
+    def valdate_body_surfaces(self):
+        for cfg_lbl, cfg in self.force_coefficient.items():
+            all_sfc = [sfc for b in cfg.bodies for sfc in self.bodies[b.name].surfaces]
+            if len(all_sfc) != len(set(all_sfc)):
+                raise Exception(f"Config {cfg_lbl} repeats surface in more than one body.")
+        return self

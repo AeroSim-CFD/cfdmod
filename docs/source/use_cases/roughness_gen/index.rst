@@ -41,6 +41,28 @@ The figure below shows how the blocks are generated through configuration
 .. figure:: /_static/roughness_gen/roughness_config.png
    :width: 100%
 
+Another way is running via `notebook <./gen_roughness_elements.ipynb>`_.
+
+Positioned roughness elements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One typical application of the roughness elements is to use them to mantain the turbulence near the ground, in the **upwind direction**.
+Because of that, their position should follow the terrain profile.
+
+To generate and position the roughness elements following a terrain profile, the **user must specify a bounding box** to where to spawn roughness elements.
+The image below illustrates a bounding box that is going to delimit the roughness elements spawn location:
+
+.. figure:: /_static/roughness_gen/bounding_box.png
+   :width: 80%
+
+The user can also specify multiple surfaces if the bounding box crosses them.
+Parameters file must also be an input, such as the following example:
+
+.. literalinclude:: /_static/roughness_gen/position_params.yaml
+    :language: yaml
+
+Currently the only way to run this use case is via `notebook for positioning elements <./position_roughness_elements.ipynb>`_.
+
 Output
 ^^^^^^
 
@@ -55,3 +77,8 @@ An example of the output can be seen below:
    :hidden:
 
    Generating roughness elements <gen_roughness_elements.ipynb>
+   Positioning elements in terrain <position_roughness_elements.ipynb>
+
+For the second use case, generating elements that conform to the terrain surface, the output geometry will be:
+
+.. figure:: /_static/roughness_gen/elements_positioned.png

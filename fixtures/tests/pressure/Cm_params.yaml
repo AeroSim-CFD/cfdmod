@@ -7,18 +7,44 @@ bodies:
     surfaces: []
 moment_coefficient:
   measurement_1:
-    body: marquise
-    variables: ["Cmx", "Cmy", "Cmz"]
-    lever_origin: [0, 10, 10]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    bodies:
+      - name: marquise
+        lever_origin: [0, 10, 10]
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
-    body: building
-    sub_bodies: # Optional, default is the whole body
-      z_intervals: [0,10,20]
-    variables: ["Cmx", "Cmy", "Cmz"]
-    lever_origin: [0, 10, 10]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    bodies:
+      - name: building
+        lever_origin: [0, 10, 10]
+        sub_bodies: # Optional, default is the whole body
+          z_intervals: [0, 10, 20]
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
+
+time_scale_conversion:
+  CST_real: 0.56
+  CST_sim: 16.89

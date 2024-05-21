@@ -6,19 +6,71 @@ bodies:
   building:
     surfaces: [] # If empty, all surfaces from LNAS will be included
   building2:
-    surfaces: ["p1_xp", "p2_xp", "p3_ym", "p4_ym", "p5_ym", "p6c_yp", "p7_xm", "p8_yp", "p9_yp", "t1_ym", "t2_yp"] 
+    surfaces:
+      [
+        "p1_xp",
+        "p2_xp",
+        "p3_ym",
+        "p4_ym",
+        "p5_ym",
+        "p6c_yp",
+        "p7_xm",
+        "p8_yp",
+        "p9_yp",
+        "t1_ym",
+        "t2_yp",
+      ]
 force_coefficient:
   measurement_1:
-    body: "building2"
-    variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
-    sub_bodies: # Optional, default is the whole body
-      z_intervals: [0,10,20]
+    bodies:
+      - name: building2
+        sub_bodies:
+          z_intervals: [0, 10, 20]
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Moving Average"
+          window_size_real_scale: 3
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
   measurement_2:
-    body: marquise
-    variables: ["Cfx", "Cfy", "Cfz"]
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis"]
+    bodies:
+      - name: marquise
+        sub_bodies:
+          z_intervals: [0, 10, 20]
+      - name: lanternim
+        sub_bodies:
+          z_intervals: [0, 10, 20]
+    directions: ["x", "y", "z"]
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Moving Average"
+          window_size_real_scale: 3
+      - stats: "max"
+        params:
+          method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
+
+time_scale_conversion:
+  CST_real: 0.56
+  CST_sim: 16.89

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+__all__ = ["CeConfig", "CeCaseConfig"]
+
 import pathlib
 
 from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
+from cfdmod.use_cases.pressure.base_config import BasePressureCaseConfig, BasePressureConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
-from cfdmod.use_cases.pressure.statistics import Statistics
 from cfdmod.utils import read_yaml
-
-__all__ = ["CeConfig", "CeCaseConfig"]
 
 
 class ZoningBuilder(BaseModel):
@@ -26,18 +26,13 @@ class ZoningBuilder(BaseModel):
         return zoning_cfg
 
 
-class CeConfig(HashableConfig):
+class CeConfig(HashableConfig, BasePressureConfig):
     """Configuration for shape coefficient"""
 
     zoning: ZoningConfig | ZoningBuilder = Field(
         ...,
         title="Zoning configuration",
         description="Zoning configuration with intervals information",
-    )
-    statistics: list[Statistics] = Field(
-        ...,
-        title="List of statistics",
-        description="List of statistics to calculate from shape coefficient signal",
     )
     sets: dict[str, list[str]] = Field(
         {}, title="Surface sets", description="Combine multiple surfaces into a set of surfaces"
@@ -70,7 +65,7 @@ class CeConfig(HashableConfig):
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 
 
-class CeCaseConfig(BaseModel):
+class CeCaseConfig(BasePressureCaseConfig):
     shape_coefficient: dict[str, CeConfig] = Field(
         ...,
         title="Shape Coefficient configs",
