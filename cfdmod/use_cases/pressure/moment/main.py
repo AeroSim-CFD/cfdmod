@@ -87,9 +87,11 @@ def main(*args):
         already_saved = False
         for direction_lbl, cm_output in cm_output_dict.items():
             path_manager.direction_label = direction_lbl
-            cm_output.save_outputs(
-                cfg_label=cfg_label, path_manager=path_manager, already_saved=already_saved
-            )
-            already_saved = True
+            if already_saved:
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+            else:
+                cm_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+                already_saved = True
 
         logger.info(f"Processed Cm config {cfg_label}!")
