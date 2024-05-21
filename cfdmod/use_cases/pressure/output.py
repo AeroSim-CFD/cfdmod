@@ -17,7 +17,7 @@ class CommonOutput:
     region_indexing_df: pd.DataFrame
     region_definition_df: pd.DataFrame
 
-    def save_outputs(self, cfg_label: str, path_manager: PathManagerBody):
+    def save_region_info(self, cfg_label: str, path_manager: PathManagerBody):
         # Output 1-A: Region indexing dataframe
         region_indexing_path = path_manager.get_region_indexing_path(cfg_lbl=cfg_label)
         create_folders_for_file(region_indexing_path)
@@ -31,6 +31,7 @@ class CommonOutput:
             region_definition_path, key="Region", mode="w", index=False, format="table"
         )
 
+    def save_outputs(self, cfg_label: str, path_manager: PathManagerBody):
         # Output 2: Time series dataframe
         timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
         self.data_df.to_hdf(

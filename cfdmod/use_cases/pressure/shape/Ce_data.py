@@ -12,6 +12,7 @@ from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
     get_excluded_entities,
+    get_region_definition_dataframe,
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.output import CommonOutput
@@ -127,25 +128,6 @@ def get_surface_dict(cfg: CeConfig, mesh: LnasFormat) -> dict[str, list[str]]:
     return sfc_dict
 
 
-def get_region_definition_dataframe(geom_dict: dict[str, GeometryData]) -> pd.DataFrame:
-    """Creates a dataframe with the resulting region index and its bounds (x_min, x_max, y_min, y_max, z_min, z_max)
-
-    Args:
-        geom_dict (dict[str, GeometryData]): Geometry data dictionary
-
-    Returns:
-        pd.DataFrame: Region definition dataframe
-    """
-    dfs = []
-    for sfc_id, geom_data in geom_dict.items():
-        df = pd.DataFrame()
-        df = geom_data.zoning_to_use.get_regions_df()
-        df["region_idx"] = df["region_idx"].astype(str) + f"-{sfc_id}"
-        dfs.append(df)
-
-    return pd.concat(dfs)
-
-
 def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
@@ -207,15 +189,15 @@ def process_Ce(
     ]
     if len(excluded_sfc_list) != 0:
         col = Ce_stats.columns
-        excluded_surfaces = [
+        excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
         ]
     else:
-        excluded_surfaces = []
+        excluded_entities = []
 
     ce_output = CeOutput(
         processed_entities=processed_surfaces,
-        excluded_entities=excluded_surfaces,
+        excluded_entities=excluded_entities,
         data_df=Ce_data,
         stats_df=Ce_stats,
         region_indexing_df=geometry_df[["region_idx", "point_idx"]],

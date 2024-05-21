@@ -128,6 +128,11 @@ Data format
 
 .. important:: All tables for shape coefficient listed below are defined for **each of the body's surfaces**, unlike the other coefficients. The idea is to keep the processing for a single surface and not account for unrelated data. 
 
+.. note:: The rule for determining the region_idx is based on the **region index and the surface name**.
+        Input mesh can have multiple surfaces, and each of them can be applied a specific zoning/region rule.
+        Because of that, region_idx has to be composed by the **zoning region index joined by "-" and the surface name**.
+        This also guarantee that even if different surfaces lie on the same region, the interpreted region for each of them will be different
+
 .. list-table:: :math:`C_e(t)`
    :widths: 15 15 15 15
    :header-rows: 1

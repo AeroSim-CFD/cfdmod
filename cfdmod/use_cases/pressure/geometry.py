@@ -45,6 +45,25 @@ def get_excluded_entities(
     return ProcessedEntity(mesh=excluded_sfcs, polydata=excluded_polydata)
 
 
+def get_region_definition_dataframe(geom_dict: dict[str, GeometryData]) -> pd.DataFrame:
+    """Creates a dataframe with the resulting region index and its bounds (x_min, x_max, y_min, y_max, z_min, z_max)
+
+    Args:
+        geom_dict (dict[str, GeometryData]): Geometry data dictionary
+
+    Returns:
+        pd.DataFrame: Region definition dataframe
+    """
+    dfs = []
+    for sfc_id, geom_data in geom_dict.items():
+        df = pd.DataFrame()
+        df = geom_data.zoning_to_use.get_regions_df()
+        df["region_idx"] = df["region_idx"].astype(str) + f"-{sfc_id}"
+        dfs.append(df)
+
+    return pd.concat(dfs)
+
+
 def create_NaN_polydata(mesh: LnasGeometry, column_labels: list[str]) -> vtkPolyData:
     """Creates vtkPolyData from a given mesh and populate column labels with NaN values
 

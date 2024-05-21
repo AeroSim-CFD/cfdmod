@@ -15,10 +15,7 @@ from cfdmod.use_cases.pressure.statistics import (
     StatisticsParamsModel,
 )
 
-ForceVariables = Literal["Cfx", "Cfy", "Cfz"]
-MomentVariables = Literal["Cmx", "Cmy", "Cmz"]
-ShapeVariables = Literal["Ce"]
-PressureVariables = Literal["cp"]
+AxisDirections = Literal["x", "y", "z"]
 
 
 def get_indexing_mask(mesh: LnasGeometry, df_regions: pd.DataFrame) -> np.ndarray:
