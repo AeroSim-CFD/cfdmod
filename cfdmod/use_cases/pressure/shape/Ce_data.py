@@ -189,15 +189,15 @@ def process_Ce(
     ]
     if len(excluded_sfc_list) != 0:
         col = Ce_stats.columns
-        excluded_surfaces = [
+        excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
         ]
     else:
-        excluded_surfaces = []
+        excluded_entities = []
 
     ce_output = CeOutput(
         processed_entities=processed_surfaces,
-        excluded_entities=excluded_surfaces,
+        excluded_entities=excluded_entities,
         data_df=Ce_data,
         stats_df=Ce_stats,
         region_indexing_df=geometry_df[["region_idx", "point_idx"]],
