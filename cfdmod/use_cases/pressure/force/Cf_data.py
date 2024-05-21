@@ -73,11 +73,11 @@ def process_Cf(
 
     if len(excluded_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
-        excluded_entity = [
+        excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
         ]
     else:
-        excluded_entity = []
+        excluded_entities = []
 
     compild_cf_output = {}
     for direction_lbl in cfg.directions:
@@ -112,7 +112,7 @@ def process_Cf(
             data_df=Cf_dir_data,
             stats_df=Cf_stats,
             processed_entities=processed_entities,
-            excluded_entities=excluded_entity,
+            excluded_entities=excluded_entities,
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
             region_definition_df=get_region_definition_dataframe(geometry_dict),
         )
