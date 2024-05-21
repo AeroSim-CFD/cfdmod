@@ -1,9 +1,10 @@
+import pathlib
+import sys
+
 import numpy as np
 import vtk
-import sys
-import pathlib
-
 from nassu.lnas import LagrangianFormat, LagrangianGeometry
+
 from cfdmod.api.vtk.write_vtk import _mkVtkIdList
 
 

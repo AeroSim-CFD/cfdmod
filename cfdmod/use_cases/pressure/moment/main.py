@@ -77,14 +77,21 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.moment_coefficient.items():
         logger.info(f"Processing Cm config {cfg_label} ...")
 
-        cm_output: CommonOutput = process_Cm(
+        cm_output_dict: dict[str, CommonOutput] = process_Cm(
             mesh=mesh,
             cfg=cfg,
             cp_path=cp_path,
             bodies_definition=post_proc_cfg.bodies,
-            extreme_params=post_proc_cfg.extreme_values,
+            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
         )
-
-        cm_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
+        already_saved = False
+        for direction_lbl, cm_output in cm_output_dict.items():
+            path_manager.direction_label = direction_lbl
+            if already_saved:
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+            else:
+                cm_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+                already_saved = True
 
         logger.info(f"Processed Cm config {cfg_label}!")

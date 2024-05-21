@@ -7,8 +7,10 @@ from lnas import LnasFormat, LnasGeometry
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.force.Cf_data import get_representative_areas, transform_Cf
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
+from cfdmod.use_cases.pressure.statistics import BasicStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 class TestCfData(unittest.TestCase):
@@ -85,10 +87,17 @@ class TestCfData(unittest.TestCase):
             transformation=TransformationConfig(),
         )
         cf_data = transform_Cf(cp_data, geometry_df, upper_mesh.geometry)
+        cf_data = convert_dataframe_into_matrix(
+            cf_data, column_data_label="region_idx", value_data_label="Cfz"
+        )
         cf_stats = calculate_statistics(
             historical_data=cf_data,
-            statistics_to_apply=["mean"],
-            variables=["Cfz"],
-            group_by_key="region_idx",
+            statistics_to_apply=[
+                BasicStatisticModel(stats="mean"),
+                BasicStatisticModel(stats="rms"),
+                BasicStatisticModel(stats="skewness"),
+                BasicStatisticModel(stats="kurtosis"),
+            ],
+            time_scale_factor=1,
         )
-        self.assertEqual(round(cf_stats.iloc[0].Cfz_mean, 1), 0.6)
+        self.assertEqual(round(cf_stats.iloc[0]["mean"], 1), 0.6)
