@@ -43,6 +43,7 @@ class MeanEquivalentParamsModel(BaseModel):
 
 class BasicStatisticModel(BaseModel):
     stats: Statistics
+    display_name: str = ""
 
 
 StatisticsParamsModel = (
