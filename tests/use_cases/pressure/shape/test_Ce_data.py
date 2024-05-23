@@ -28,10 +28,12 @@ class TestCeData(unittest.TestCase):
             {
                 "point_idx": [0, 0, 0, 1, 1, 1],
                 "cp": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-                "time_step": [0, 1, 2, 0, 1, 2],
+                "time_normalized": [0, 1, 2, 0, 1, 2],
             }
         )
-        self.matrix_cp_data = convert_dataframe_into_matrix(self.cp_data, value_data_label="cp")
+        self.matrix_cp_data = convert_dataframe_into_matrix(
+            self.cp_data, row_data_label="time_normalized", value_data_label="cp"
+        )
         self.zoning = ZoningModel(x_intervals=[0, 5, 10])
         self.zoning.offset_limits(0.1)
 
@@ -66,7 +68,8 @@ class TestCeData(unittest.TestCase):
         ce_data = transform_Ce(self.cp_data, geometry_df, self.mesh)
 
         self.assertEqual(
-            len(ce_data), self.cp_data.time_step.nunique() * self.cp_data.point_idx.nunique()
+            len(ce_data),
+            self.cp_data["time_normalized"].nunique() * self.cp_data.point_idx.nunique(),
         )  # Three timesteps x 2 triangle
         self.assertTrue("Ce" in ce_data.columns)
 
@@ -80,26 +83,27 @@ class TestCeData(unittest.TestCase):
             pd.DataFrame(
                 {
                     "region_idx": [0, 0, 0, 0, 1, 1, 1, 1],
-                    "time_step": [0, 1, 2, 3, 0, 1, 2, 3],
+                    "time_normalized": [0, 1, 2, 3, 0, 1, 2, 3],
                     "Ce": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
                 }
             ),
+            row_data_label="time_normalized",
             column_data_label="region_idx",
             value_data_label="Ce",
         )
         cfg = CeConfig(
             statistics=[
-                BasicStatisticModel(stats="mean").model_dump(),
-                BasicStatisticModel(stats="rms").model_dump(),
-                BasicStatisticModel(stats="skewness").model_dump(),
-                BasicStatisticModel(stats="kurtosis").model_dump(),
+                BasicStatisticModel(stats="mean"),
+                BasicStatisticModel(stats="rms"),
+                BasicStatisticModel(stats="skewness"),
+                BasicStatisticModel(stats="kurtosis"),
             ],
             zoning=ZoningConfig(global_zoning=self.zoning),
             sets={},
             transformation=TransformationConfig(),
         )
         ce_stats = calculate_statistics(
-            historical_data=region_data, statistics_to_apply=cfg.statistics, time_scale_factor=1
+            historical_data=region_data, statistics_to_apply=cfg.statistics
         )
         processed_sfcs = process_surfaces(geometry_dict=geom_dict, cfg=cfg, ce_stats=ce_stats)
 

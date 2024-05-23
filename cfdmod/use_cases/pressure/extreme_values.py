@@ -11,26 +11,12 @@ __all__ = [
 import math
 
 import numpy as np
-from pydantic import BaseModel, Field
 
 from cfdmod.use_cases.pressure.statistics import (
     ExtremeGumbelParamsModel,
     ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
 )
-
-
-class TimeScaleParameters(BaseModel):
-    CST_real: float = Field(
-        ..., title="CST real", description="Value for real scale Convective Scale Time"
-    )
-    CST_sim: float = Field(
-        ..., title="CST simulated", description="Value for simulation scale Convective Scale Time"
-    )
-
-    @property
-    def time_scale(self) -> float:
-        return self.CST_real / self.CST_sim
 
 
 def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> float:
@@ -55,7 +41,6 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> floa
 
 def gumbel_extreme_values(
     params: ExtremeGumbelParamsModel,
-    time_scale_factor: float,
     timestep_arr: np.ndarray,
     hist_series: np.ndarray,
 ) -> tuple[float, float]:
@@ -70,7 +55,8 @@ def gumbel_extreme_values(
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    time = (timestep_arr - timestep_arr[0]) * time_scale_factor
+    CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
+    time = (timestep_arr - timestep_arr[0]) * (CST_full_scale)
 
     window_size = int(params.peak_duration / (time[1] - time[0]))
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
@@ -98,19 +84,19 @@ def gumbel_extreme_values(
 
 
 def moving_average_extreme_values(
-    params: ExtremeMovingAverageParamsModel, time_scale_factor: float, hist_series: np.ndarray
+    params: ExtremeMovingAverageParamsModel, hist_series: np.ndarray
 ) -> tuple[float, float]:
     """Apply extreme values analysis to coefficient historic series using moving average model
 
     Args:
         params (ExtremeMovingAverageParamsModel): Parameters for extreme values calculation
-        time_scale_factor (float): Value for converting time scales
         hist_series (np.ndarray): Coefficient historic series
 
     Returns:
         tuple[float, float]: Tuple with (min, max) extreme values
     """
-    window_size = math.floor(params.window_size_real_scale / time_scale_factor)
+    CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
+    window_size = max(1, round(params.window_size_interval / CST_full_scale))
 
     kernel = np.ones(window_size) / window_size
     smoothed_signal = np.convolve(hist_series, kernel, mode="valid")

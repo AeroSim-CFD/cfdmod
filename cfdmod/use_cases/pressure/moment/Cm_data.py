@@ -32,7 +32,6 @@ def process_Cm(
     cfg: CmConfig,
     cp_path: pathlib.Path,
     bodies_definition: dict[str, BodyDefinition],
-    time_scale_factor: float,
 ) -> dict[str, CommonOutput]:
     """Executes the moment coefficient processing routine
 
@@ -41,7 +40,6 @@ def process_Cm(
         cfg (CmConfig): Moment coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
         bodies_definition (dict[str, BodyDefinition]): Dictionary of bodies definition
-        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         dict[str, CommonOutput]: Compiled outputs for moment coefficient use case keyed by direction
@@ -92,14 +90,13 @@ def process_Cm(
     compild_cm_output = {}
     for direction_lbl in cfg.directions:
         Cm_dir_data = convert_dataframe_into_matrix(
-            Cm_data[["region_idx", "time_step", f"Cm{direction_lbl}"]],
+            Cm_data[["region_idx", "time_normalized", f"Cm{direction_lbl}"]],
+            row_data_label="time_normalized",
             column_data_label="region_idx",
             value_data_label=f"Cm{direction_lbl}",
         )
         Cm_stats = calculate_statistics(
-            historical_data=Cm_dir_data,
-            statistics_to_apply=cfg.statistics,
-            time_scale_factor=time_scale_factor,
+            historical_data=Cm_dir_data, statistics_to_apply=cfg.statistics
         )
 
         processed_entities: list[ProcessedEntity] = []
@@ -154,7 +151,7 @@ def transform_Cm(
     cp_data["mz"] = cp_data["rx"] * cp_data["fy"] - cp_data["ry"] * cp_data["fx"]  # x Fy - y Fx
 
     Cm_data = (
-        cp_data.groupby(["region_idx", "time_step"])  # type: ignore
+        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Mx=pd.NamedAgg(column="mx", aggfunc="sum"),
             My=pd.NamedAgg(column="my", aggfunc="sum"),

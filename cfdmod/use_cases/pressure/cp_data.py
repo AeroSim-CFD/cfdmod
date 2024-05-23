@@ -21,8 +21,8 @@ def transform_to_cp(
     press_data: pd.DataFrame,
     body_data: pd.DataFrame,
     reference_vel: float,
+    characteristic_length: float,
     ref_press_mode: Literal["instantaneous", "average"],
-    correction_factor: float = 1,
 ) -> pd.DataFrame:
     """Transform the body pressure data into Cp coefficient
 
@@ -30,15 +30,15 @@ def transform_to_cp(
         press_data (pd.DataFrame): Historic series pressure DataFrame
         body_data (pd.DataFrame): Body's DataFrame
         reference_vel (float): Value of reference velocity for dynamic pressure
+        characteristic_length (float): Characteristic length in simulation time scale
         ref_press_mode (Literal["instantaneous", "average"]): Sets how to account for reference pressure effects
-        correction_factor (float, optional): Reference Velocity correction factor. Defaults to 1.
 
     Returns:
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
     static_pressure_array = press_data[0].to_numpy()
     average_static_pressure = static_pressure_array.mean()
-    dynamic_pressure = 0.5 * average_static_pressure * (reference_vel * correction_factor) ** 2
+    dynamic_pressure = 0.5 * average_static_pressure * reference_vel**2
     cs_square = 1 / 3
     multiplier = cs_square / dynamic_pressure
 
@@ -47,8 +47,12 @@ def transform_to_cp(
     df_cp = body_data.apply(
         lambda col: col if col.name == "time_step" else col.apply(convert_to_cp)
     )
+    df_cp["time_normalized"] = df_cp["time_step"] / (characteristic_length / reference_vel)
 
-    return df_cp
+    return df_cp[
+        ["time_normalized"]
+        + [col for col in df_cp.columns if col not in ["time_step", "time_normalized"]]
+    ]
 
 
 def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.DataFrame:
@@ -142,9 +146,9 @@ def process_raw_groups(
                 coefficient_data = transform_to_cp(
                     press_data=static_df,
                     body_data=body_df,
-                    reference_vel=cp_config.U_H,
+                    reference_vel=cp_config.simul_U_H,
+                    characteristic_length=cp_config.simul_characteristic_length,
                     ref_press_mode=cp_config.reference_pressure,
-                    correction_factor=cp_config.U_H_correction_factor,
                 )
                 coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="table")
 
@@ -156,7 +160,6 @@ def process_cp(
     cfg: CpConfig,
     mesh: LnasGeometry,
     path_manager: CpPathManager,
-    time_scale_factor: float,
 ):
     """Executes the pressure coefficient processing routine
 
@@ -167,7 +170,6 @@ def process_cp(
         cfg (CpConfig): Pressure coefficient configuration
         mesh (LnasGeometry): Geometry of the body
         path_manager (CpPathManager): Object to handle paths
-        time_scale_factor (float): Factor for converting time scales from CST values
     """
     timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
     create_folders_for_file(timeseries_path)
@@ -207,7 +209,6 @@ def process_cp(
     cp_stats = calculate_statistics_for_groups(
         grouped_data_path=grouped_data_path,
         statistics=cfg.statistics,
-        time_scale_factor=time_scale_factor,
     )
     stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
     cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="table")

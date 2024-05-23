@@ -38,7 +38,9 @@ force_coefficient:
       - stats: "min"
         params:
           method_type: "Moving Average"
-          window_size_real_scale: 3
+          window_size_interval: 3
+          full_scale_U_H: 40
+          full_scale_characteristic_length: 22.4
       - stats: "max"
         params:
           method_type: "Absolute"
@@ -64,13 +66,11 @@ force_coefficient:
       - stats: "min"
         params:
           method_type: "Moving Average"
-          window_size_real_scale: 3
+          window_size_interval: 3
+          full_scale_U_H: 40
+          full_scale_characteristic_length: 22.4
       - stats: "max"
         params:
           method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
-
-time_scale_conversion:
-  CST_real: 0.56
-  CST_sim: 16.89

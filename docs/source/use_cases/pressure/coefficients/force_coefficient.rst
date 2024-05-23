@@ -136,12 +136,15 @@ Data format
         Because of that, region_idx has to be composed by the **zoning region index joined by "-" and the body name**.
         This also guarantee that even if different bodies lie on the same region, the interpreted region for each of them will be different
 
+.. note::
+    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+
 .. list-table:: :math:`C_{fx}(t)`
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - time_step
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2
@@ -160,8 +163,8 @@ Data format
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - time_step
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2
@@ -180,8 +183,8 @@ Data format
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - time_step
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2

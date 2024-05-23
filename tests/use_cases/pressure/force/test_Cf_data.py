@@ -19,7 +19,7 @@ class TestCfData(unittest.TestCase):
             {
                 "point_idx": [0, 0, 0, 1, 1, 1],
                 "cp": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-                "time_step": [0, 1, 2, 0, 1, 2],
+                "time_normalized": [0, 1, 2, 0, 1, 2],
             }
         )
 
@@ -49,7 +49,7 @@ class TestCfData(unittest.TestCase):
         cf_data = transform_Cf(self.cp_data, geometry_df, self.body_geom)
 
         self.assertEqual(
-            len(cf_data), self.cp_data.time_step.nunique() * geometry_df.region_idx.nunique()
+            len(cf_data), self.cp_data.time_normalized.nunique() * geometry_df.region_idx.nunique()
         )  # Three timesteps x 1 region
         self.assertTrue(all([f"Cf{var}" in cf_data.columns for var in ["x", "y", "z"]]))
 
@@ -58,7 +58,7 @@ class TestCfData(unittest.TestCase):
             {
                 "point_idx": [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3],
                 "cp": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2],
-                "time_step": [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2],
+                "time_normalized": [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2],
             }
         )
 
@@ -88,7 +88,10 @@ class TestCfData(unittest.TestCase):
         )
         cf_data = transform_Cf(cp_data, geometry_df, upper_mesh.geometry)
         cf_data = convert_dataframe_into_matrix(
-            cf_data, column_data_label="region_idx", value_data_label="Cfz"
+            cf_data,
+            row_data_label="time_normalized",
+            column_data_label="region_idx",
+            value_data_label="Cfz",
         )
         cf_stats = calculate_statistics(
             historical_data=cf_data,
@@ -98,6 +101,5 @@ class TestCfData(unittest.TestCase):
                 BasicStatisticModel(stats="skewness"),
                 BasicStatisticModel(stats="kurtosis"),
             ],
-            time_scale_factor=1,
         )
         self.assertEqual(round(cf_stats.iloc[0]["mean"], 1), 0.6)

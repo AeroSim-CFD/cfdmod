@@ -71,12 +71,15 @@ Another way to run the pressure coefficient conversion, is through the `notebook
 Data format
 ===========
 
+.. note::
+    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+
 .. list-table:: :math:`c_p(t)`
    :widths: 20 20 20 20 20
    :header-rows: 1
 
-   * - time_step_idx/point_idx
-     - time_step
+   * - time_idx/point_idx
+     - Normalized time (:math:`t^*`)
      - 0
      - 1
      - 2

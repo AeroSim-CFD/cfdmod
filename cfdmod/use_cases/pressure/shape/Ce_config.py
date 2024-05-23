@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.base_config import BasePressureCaseConfig, BasePressureConfig
+from cfdmod.use_cases.pressure.base_config import BasePressureConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.utils import read_yaml
 
@@ -65,7 +65,7 @@ class CeConfig(HashableConfig, BasePressureConfig):
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 
 
-class CeCaseConfig(BasePressureCaseConfig):
+class CeCaseConfig(BaseModel):
     shape_coefficient: dict[str, CeConfig] = Field(
         ...,
         title="Shape Coefficient configs",

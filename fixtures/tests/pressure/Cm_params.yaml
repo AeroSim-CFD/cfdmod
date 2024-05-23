@@ -44,7 +44,3 @@ moment_coefficient:
           method_type: "Absolute"
     transformation:
       rotation: [0, 0, 0]
-
-time_scale_conversion:
-  CST_real: 0.56
-  CST_sim: 16.89

@@ -61,7 +61,7 @@ def transform_Ce(
     cp_data["f/q"] = cp_data["cp"] * cp_data["area"]
 
     Ce_data = (
-        cp_data.groupby(["region_idx", "time_step"])  # type: ignore
+        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             total_area=pd.NamedAgg(column="area", aggfunc="sum"),
             total_force=pd.NamedAgg(column="f/q", aggfunc="sum"),
@@ -132,7 +132,6 @@ def process_Ce(
     mesh: LnasFormat,
     cfg: CeConfig,
     cp_path: pathlib.Path,
-    time_scale_factor: float,
 ) -> CeOutput:
     """Executes the shape coefficient processing routine
 
@@ -140,7 +139,6 @@ def process_Ce(
         mesh (LnasFormat): Input mesh
         cfg (CeConfig): Shape coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
-        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         CeOutput: Compiled outputs for shape coefficient use case
@@ -168,13 +166,14 @@ def process_Ce(
         processing_function=transform_Ce,
     )
     Ce_data = convert_dataframe_into_matrix(
-        Ce_data, column_data_label="region_idx", value_data_label="Ce"
+        Ce_data,
+        row_data_label="time_normalized",
+        column_data_label="region_idx",
+        value_data_label="Ce",
     )
 
     logger.info("Calculating statistics...")
-    Ce_stats = calculate_statistics(
-        Ce_data, statistics_to_apply=cfg.statistics, time_scale_factor=time_scale_factor
-    )
+    Ce_stats = calculate_statistics(Ce_data, statistics_to_apply=cfg.statistics)
 
     logger.info("Processing surfaces...")
     processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)

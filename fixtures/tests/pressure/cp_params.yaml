@@ -7,7 +7,8 @@ pressure_coefficient:
     # Define how to consider the effect of static reference pressure
     reference_pressure: "average" # or "instantaneous"
     # Velocity at the building interest height
-    U_H: 0.05
+    simul_U_H: 0.05
+    simul_characteristic_length: 0.8445
     # Define which statistics will be calculated
     statistics:
       - stats: "mean"
@@ -27,6 +28,8 @@ pressure_coefficient:
           event_duration: 600 # in seconds. Period of extreme event
           n_subdivisions: 10 # Number of subdivisions
           non_exceedance_probability: 0.78 # Confidence parameter in %
+          full_scale_U_H: 40
+          full_scale_characteristic_length: 22.4
       # - stats: "max"
       #   params:
       #     method_type: "Peak"
@@ -34,8 +37,6 @@ pressure_coefficient:
       # - stats: "max"
       #   params:
       #     method_type: "Moving Average"
-      #     window_size_real_scale: 3 # s
-
-time_scale_conversion:
-  CST_real: 0.56
-  CST_sim: 16.89
+      #     window_size_interval: 3 # s
+      #     full_scale_U_H: 40
+      #     full_scale_characteristic_length: 16

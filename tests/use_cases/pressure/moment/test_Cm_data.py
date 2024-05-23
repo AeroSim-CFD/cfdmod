@@ -19,7 +19,7 @@ class TestCmData(unittest.TestCase):
         self.body_data = pd.DataFrame(
             {
                 "cp": [0.1, 0.2, 0.3, 0.4],
-                "time_step": [0, 0, 1, 1],
+                "time_normalized": [0, 0, 1, 1],
                 "point_idx": [0, 1, 0, 1],
             }
         )
