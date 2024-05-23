@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import pathlib
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-
-from cfdmod.use_cases.pressure.extreme_values import TimeScaleParameters
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
-from cfdmod.utils import read_yaml
 
 
 class BasePressureConfig(BaseModel):
@@ -38,33 +33,3 @@ class BasePressureConfig(BaseModel):
             else:
                 validated_list.append(statistic)
         return validated_list
-
-
-class BasePressureCaseConfig(BaseModel):
-    time_scale_conversion: Optional[TimeScaleParameters] = Field(
-        None,
-        title="Time scale conversion parameters",
-        description="Parameters for converting time scale",
-    )
-
-    @model_validator(mode="after")
-    def check_extreme_values_params(self) -> BasePressureCaseConfig:
-        attributes = dir(self)
-        attr_lbl = [attr for attr in attributes if attr.endswith("_coefficient")][0]
-        case_dict = getattr(self, attr_lbl)
-        parameterized_stats = [
-            s for v in case_dict.values() for s in v.statistics if s.stats in ["min", "max"]
-        ]
-        if any(
-            stats.params.method_type in ["Moving Average", "Gumbel"]
-            for stats in parameterized_stats
-        ):
-            if self.time_scale_conversion is None:
-                raise ValueError("Time scale conversion parameters must be specified!")
-        return self
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> BasePressureCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
-        return cfg

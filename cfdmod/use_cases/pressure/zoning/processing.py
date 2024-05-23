@@ -53,7 +53,6 @@ def extreme_values_analysis(
     params: StatisticsParamsModel,
     data_df: pd.DataFrame,
     timestep_arr: np.ndarray,
-    time_scale_factor: float,
 ) -> pd.DataFrame:
     """Perform extreme values analysis to a dataframe
 
@@ -61,7 +60,6 @@ def extreme_values_analysis(
         params (StatisticsParamsModel): Extreme values parameters
         data_df (pd.DataFrame): Input dataframe in matrix form
         timestep_arr (np.ndarray, optional): Time step array for Gumbel method.
-        time_scale_factor (float, optional): Time scale factor for Gumbel and Moving Average methods.
 
     Returns:
         pd.DataFrame: _description_
@@ -73,7 +71,6 @@ def extreme_values_analysis(
         stat_df = data_df.apply(
             lambda x: gumbel_extreme_values(
                 params=params,
-                time_scale_factor=time_scale_factor,
                 timestep_arr=timestep_arr,
                 hist_series=x,
             )
@@ -89,7 +86,6 @@ def extreme_values_analysis(
         stat_df = data_df.apply(
             lambda x: moving_average_extreme_values(
                 params=params,
-                time_scale_factor=time_scale_factor,
                 hist_series=x,
             )
         )
@@ -98,7 +94,6 @@ def extreme_values_analysis(
 
 def calculate_extreme_values(
     extreme_statistics: list[ParameterizedStatisticModel],
-    time_scale_factor: float,
     timestep_arr: np.ndarray,
     data_df: pd.DataFrame,
 ) -> dict[str, pd.DataFrame]:
@@ -106,7 +101,6 @@ def calculate_extreme_values(
 
     Args:
         extreme_statistics (list[ParameterizedStatisticModel]): List of min and max statistical model parameters
-        time_scale_factor (float): Factor for converting time scales from CST values
         timestep_arr (np.ndarray): Time step array for Gumbel and Moving Average methods
         data_df (pd.DataFrame): Point hist series dataframe
 
@@ -123,7 +117,6 @@ def calculate_extreme_values(
             params=stats[0].params,
             data_df=data_df,
             timestep_arr=timestep_arr,
-            time_scale_factor=time_scale_factor,
         )
         stats_df_dict["min"] = extremes_df.iloc[0]
         stats_df_dict["max"] = extremes_df.iloc[1]
@@ -133,7 +126,6 @@ def calculate_extreme_values(
                 params=stat.params,
                 data_df=data_df,
                 timestep_arr=timestep_arr,
-                time_scale_factor=time_scale_factor,
             )
             target_index = 0 if stat.stats == "min" else 1
             stats_df_dict[stat.stats] = extremes_df.iloc[target_index]
@@ -171,21 +163,19 @@ def calculate_mean_equivalent(
 def calculate_statistics(
     historical_data: pd.DataFrame,
     statistics_to_apply: list[BasicStatisticModel | ParameterizedStatisticModel],
-    time_scale_factor: float,
 ) -> pd.DataFrame:
     """Calculates statistics for force coefficient of a body data
 
     Args:
         historical_data (pd.DataFrame): Dataframe of the data coefficients historical series
         statistics_to_apply (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistical functions to apply
-        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         pd.DataFrame: Statistics for the given coefficient
     """
     stats_df_dict: dict[str, pd.Series] = {}
     statistics_list = [s.stats for s in statistics_to_apply]
-    data_df = historical_data.drop(columns=["time_step"])
+    data_df = historical_data.drop(columns=["time_normalized"])
 
     if "mean" in statistics_list:
         mean_df = data_df.mean()
@@ -203,8 +193,7 @@ def calculate_statistics(
         stats = [s for s in statistics_to_apply if s.stats in ["min", "max"]]
         stats_df_dict = stats_df_dict | calculate_extreme_values(
             extreme_statistics=stats,
-            time_scale_factor=time_scale_factor,
-            timestep_arr=historical_data.time_step.to_numpy(),
+            timestep_arr=historical_data["time_normalized"].to_numpy(),
             data_df=data_df,
         )
     if "mean_eq" in statistics_list:

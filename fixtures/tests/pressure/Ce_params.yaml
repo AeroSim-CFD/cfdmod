@@ -73,6 +73,9 @@ shape_coefficient:
     transformation:
       rotation: [0, 0, 0]
 
-time_scale_conversion:
-  CST_real: 0.56
-  CST_sim: 16.89
+simulation:
+  U_H: 0.038
+  length_scale: 1
+full_scale:
+  U_H: 40
+  length_scale: 16
