@@ -199,6 +199,6 @@ def process_timestep_groups(
     if time_column_label in sort_columns:
         merged_samples.sort_values(by=sort_columns, inplace=True)
     else:
-        raise KeyError("Missing time_step column in data stored")
+        raise KeyError(f"Missing time {time_column_label} column in data stored")
 
     return merged_samples

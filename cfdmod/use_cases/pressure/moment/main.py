@@ -78,11 +78,7 @@ def main(*args):
         logger.info(f"Processing Cm config {cfg_label} ...")
 
         cm_output_dict: dict[str, CommonOutput] = process_Cm(
-            mesh=mesh,
-            cfg=cfg,
-            cp_path=cp_path,
-            bodies_definition=post_proc_cfg.bodies,
-            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
+            mesh=mesh, cfg=cfg, cp_path=cp_path, bodies_definition=post_proc_cfg.bodies
         )
         already_saved = False
         for direction_lbl, cm_output in cm_output_dict.items():
