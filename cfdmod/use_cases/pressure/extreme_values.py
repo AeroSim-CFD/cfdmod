@@ -96,7 +96,7 @@ def moving_average_extreme_values(
         tuple[float, float]: Tuple with (min, max) extreme values
     """
     CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
-    window_size = max(1, round(params.window_size_real_scale / CST_full_scale))
+    window_size = max(1, round(params.window_size_interval / CST_full_scale))
 
     kernel = np.ones(window_size) / window_size
     smoothed_signal = np.convolve(hist_series, kernel, mode="valid")

@@ -29,7 +29,6 @@ def process_Cf(
     cfg: CfConfig,
     cp_path: pathlib.Path,
     bodies_definition: dict[str, BodyDefinition],
-    time_scale_factor: float,
 ) -> dict[str, CommonOutput]:
     """Executes the force coefficient processing routine
 
@@ -38,7 +37,6 @@ def process_Cf(
         cfg (CfConfig): Force coefficient configuration
         cp_path (pathlib.Path): Path for pressure coefficient time series
         bodies_definition (dict[str, BodyDefinition]): Dictionary of bodies definition
-        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         dict[str, CommonOutput]: Compiled outputs for force coefficient use case keyed by direction
@@ -81,14 +79,13 @@ def process_Cf(
     compild_cf_output = {}
     for direction_lbl in cfg.directions:
         Cf_dir_data = convert_dataframe_into_matrix(
-            Cf_data[["region_idx", "time_step", f"Cf{direction_lbl}"]],
+            Cf_data[["region_idx", "time_normalized", f"Cf{direction_lbl}"]],
+            row_data_label="time_normalized",
             column_data_label="region_idx",
             value_data_label=f"Cf{direction_lbl}",
         )
         Cf_stats = calculate_statistics(
-            historical_data=Cf_dir_data,
-            statistics_to_apply=cfg.statistics,
-            time_scale_factor=time_scale_factor,
+            historical_data=Cf_dir_data, statistics_to_apply=cfg.statistics
         )
         processed_entities: list[ProcessedEntity] = []
         for body_cfg in cfg.bodies:
@@ -138,7 +135,7 @@ def transform_Cf(
     cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
 
     Cf_data = (
-        cp_data.groupby(["region_idx", "time_step"])  # type: ignore
+        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),

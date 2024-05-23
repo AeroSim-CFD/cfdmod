@@ -3,13 +3,16 @@ from __future__ import annotations
 __all__ = ["CfConfig", "CfCaseConfig"]
 
 
-from pydantic import Field, model_validator
+import pathlib
+
+from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.base_config import BasePressureCaseConfig, BasePressureConfig
+from cfdmod.use_cases.pressure.base_config import BasePressureConfig
 from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import AxisDirections
+from cfdmod.utils import read_yaml
 
 
 class CfConfig(HashableConfig, BasePressureConfig):
@@ -33,7 +36,7 @@ class CfConfig(HashableConfig, BasePressureConfig):
     )
 
 
-class CfCaseConfig(BasePressureCaseConfig):
+class CfCaseConfig(BaseModel):
     bodies: dict[str, BodyDefinition] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )
@@ -57,3 +60,9 @@ class CfCaseConfig(BasePressureCaseConfig):
             if len(all_sfc) != len(set(all_sfc)):
                 raise Exception(f"Config {cfg_lbl} repeats surface in more than one body.")
         return self
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path) -> CfCaseConfig:
+        yaml_vals = read_yaml(filename)
+        cfg = cls(**yaml_vals)
+        return cfg

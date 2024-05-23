@@ -161,6 +161,7 @@ def process_timestep_groups(
     geometry: LnasGeometry,
     processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
     data_label: str = "cp",
+    time_column_label: str = "time_normalized",
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
@@ -171,6 +172,7 @@ def process_timestep_groups(
         processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
             Coefficient processing function
         data_label (str): Label of the tabulated time series dataframe. Defaults to "cp".
+        time_column_label (str): Label of time series time column. Defaults to "time_normalized".
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
@@ -191,8 +193,10 @@ def process_timestep_groups(
 
     merged_samples = pd.concat(processed_samples)
 
-    sort_columns = [col for col in ["time_step", "region_idx"] if col in merged_samples.columns]
-    if "time_step" in sort_columns:
+    sort_columns = [
+        col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
+    ]
+    if time_column_label in sort_columns:
         merged_samples.sort_values(by=sort_columns, inplace=True)
     else:
         raise KeyError("Missing time_step column in data stored")
