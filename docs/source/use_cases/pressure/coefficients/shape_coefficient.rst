@@ -140,8 +140,8 @@ Data format
    :widths: 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - :math:`t^*`
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Surface 1
      - 1-Surface 1
    * - 0

@@ -143,8 +143,8 @@ Data format
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - :math:`t^*`
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2
@@ -163,8 +163,8 @@ Data format
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - :math:`t^*`
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2
@@ -183,8 +183,8 @@ Data format
    :widths: 15 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - :math:`t^*`
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Body1
      - 1-Body1
      - 0-Body2

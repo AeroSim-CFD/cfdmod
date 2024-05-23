@@ -78,8 +78,8 @@ Data format
    :widths: 20 20 20 20 20
    :header-rows: 1
 
-   * - time_step_idx/point_idx
-     - :math:`t^*`
+   * - time_idx/point_idx
+     - Normalized time (:math:`t^*`)
      - 0
      - 1
      - 2

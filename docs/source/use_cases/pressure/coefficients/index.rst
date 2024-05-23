@@ -40,4 +40,4 @@ It also contains some functions to evaluate geometric properties such as triangl
    Shape Coefficient <./shape_coefficient.rst>
    Force Coefficient <./force_coefficient.rst>
    Moment Coefficient <./moment_coefficient.rst>
-   Normalization <./normalization.rst>
+   Time Normalization <./time_normalization.rst>
