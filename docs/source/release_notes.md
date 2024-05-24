@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.1.1
+
+Coefficient time series are now in normalized time scales.
+Time values from the solver are normalized by the CST value in the solver time scale.
+
+- Input body pressure data is normalized by the CST value
+- Derived coefficients also use a normalized time scale
+- Parameters for statistical model are in full scale and need to be normalized using full scale CST.
+
 ## v1.1.0
 
 It features the refactor for pressure use case module.
