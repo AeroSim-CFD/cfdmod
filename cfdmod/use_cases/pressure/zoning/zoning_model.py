@@ -33,7 +33,9 @@ class ZoningModel(BaseModel):
 
     @field_validator("x_intervals", "y_intervals", "z_intervals")
     def validate_intervals(cls, v):
-        if len(v) < 2:
+        if len(v) == 0:
+            v = [float("-inf"), float("inf")]
+        elif len(v) < 2:
             raise Exception("Interval must have at least 2 values")
         for i in range(len(v) - 1):
             if v[i] >= v[i + 1]:
