@@ -76,12 +76,7 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.shape_coefficient.items():
         logger.info(f"Processing {cfg_label} ...")
 
-        Ce_output: CeOutput = process_Ce(
-            mesh=mesh,
-            cfg=cfg,
-            cp_path=cp_path,
-            time_scale_factor=post_proc_cfg.time_scale_conversion.time_scale,
-        )
+        Ce_output: CeOutput = process_Ce(mesh=mesh, cfg=cfg, cp_path=cp_path)
 
         Ce_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
         Ce_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)

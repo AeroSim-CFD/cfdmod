@@ -19,6 +19,8 @@ class ExtremeGumbelParamsModel(BaseModel):
     event_duration: float
     n_subdivisions: int = 10
     non_exceedance_probability: float = Field(0.78, gt=0, lt=1)
+    full_scale_U_H: float = Field(gt=0)
+    full_scale_characteristic_length: float = Field(gt=0)
 
     @property
     def yR(self):
@@ -34,7 +36,9 @@ class ExtremePeakParamsModel(BaseModel):
 
 class ExtremeMovingAverageParamsModel(BaseModel):
     method_type: Literal["Moving Average"] = "Moving Average"
-    window_size_real_scale: float = Field(gt=0)
+    window_size_interval: float = Field(gt=0)
+    full_scale_U_H: float = Field(gt=0)
+    full_scale_characteristic_length: float = Field(gt=0)
 
 
 class MeanEquivalentParamsModel(BaseModel):
@@ -43,6 +47,7 @@ class MeanEquivalentParamsModel(BaseModel):
 
 class BasicStatisticModel(BaseModel):
     stats: Statistics
+    display_name: str = ""
 
 
 StatisticsParamsModel = (

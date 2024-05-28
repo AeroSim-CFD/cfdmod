@@ -94,7 +94,11 @@ class TestChunking(unittest.TestCase):
         )
 
         result_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            time_column_label="time_step",
         )
         self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
         result_df.sort_values(by=["time_step", "point_idx"], inplace=True)
@@ -120,7 +124,11 @@ class TestChunking(unittest.TestCase):
 
         split_into_chunks(self.sample_df, self.number_of_chunks, self.output_path)
         first_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            time_column_label="time_step",
         )
         avg = first_df.value.mean()
         std = first_df.value.std()
@@ -131,7 +139,11 @@ class TestChunking(unittest.TestCase):
 
         split_into_chunks(self.sample_df, self.number_of_chunks + 2, self.output_path)
         second_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            time_column_label="time_step",
         )
 
         self.assertEqual(avg, second_df.value.mean())

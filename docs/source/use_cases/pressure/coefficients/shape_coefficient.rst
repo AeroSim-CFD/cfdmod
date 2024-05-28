@@ -133,12 +133,15 @@ Data format
         Because of that, region_idx has to be composed by the **zoning region index joined by "-" and the surface name**.
         This also guarantee that even if different surfaces lie on the same region, the interpreted region for each of them will be different
 
+.. note::
+    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+
 .. list-table:: :math:`C_e(t)`
    :widths: 15 15 15 15
    :header-rows: 1
 
-   * - time_step_idx/region_idx
-     - timestep
+   * - time_idx/region_idx
+     - Normalized time (:math:`t^*`)
      - 0-Surface 1
      - 1-Surface 1
    * - 0

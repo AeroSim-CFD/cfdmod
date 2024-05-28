@@ -86,14 +86,12 @@ def split_into_chunks(
 def calculate_statistics_for_groups(
     grouped_data_path: pathlib.Path,
     statistics: list[BasicStatisticModel | ParameterizedStatisticModel],
-    time_scale_factor: float,
 ) -> pd.DataFrame:
     """Calculates statistics for groups of points
 
     Args:
         grouped_data_path (pathlib.Path): Path of grouped data (HDF)
         statistics (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistics with parameters to apply
-        time_scale_factor (float): Factor for converting time scales from CST values
 
     Returns:
         pd.DataFrame: Statistics dataframe
@@ -110,11 +108,10 @@ def calculate_statistics_for_groups(
             for key in keys_for_group:
                 df = groups_store.get(key)
                 group_dfs.append(df)
-            cp_data = pd.concat(group_dfs).sort_values(by=["time_step"])
+            cp_data = pd.concat(group_dfs).sort_values(by=["time_normalized"])
             cp_stats = calculate_statistics(
                 cp_data,
                 statistics_to_apply=statistics,
-                time_scale_factor=time_scale_factor,
             )
             del cp_data
             stats_df.append(cp_stats)
@@ -144,14 +141,15 @@ def divide_timeseries_in_groups(
             coefficient_data = data_store.get(group_lbl)
             if pt_groups is None:
                 points_arr = np.array(
-                    [col for col in coefficient_data.columns if col != "time_step"], dtype=np.int32
+                    [col for col in coefficient_data.columns if col != "time_normalized"],
+                    dtype=np.int32,
                 )
                 n_per_group = len(points_arr) // n_groups
                 pt_groups = np.split(points_arr, range(n_per_group, len(points_arr), n_per_group))
 
             for i, points_in_group in enumerate(pt_groups):
                 group_data = coefficient_data[points_in_group].copy()
-                group_data["time_step"] = coefficient_data["time_step"]
+                group_data["time_normalized"] = coefficient_data["time_normalized"]
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
                 group_data.to_hdf(output_path, key=group_key, mode="a", format="table")
                 del group_data
@@ -163,6 +161,7 @@ def process_timestep_groups(
     geometry: LnasGeometry,
     processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
     data_label: str = "cp",
+    time_column_label: str = "time_normalized",
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
@@ -173,6 +172,7 @@ def process_timestep_groups(
         processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
             Coefficient processing function
         data_label (str): Label of the tabulated time series dataframe. Defaults to "cp".
+        time_column_label (str): Label of time series time column. Defaults to "time_normalized".
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
@@ -193,10 +193,12 @@ def process_timestep_groups(
 
     merged_samples = pd.concat(processed_samples)
 
-    sort_columns = [col for col in ["time_step", "region_idx"] if col in merged_samples.columns]
-    if "time_step" in sort_columns:
+    sort_columns = [
+        col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
+    ]
+    if time_column_label in sort_columns:
         merged_samples.sort_values(by=sort_columns, inplace=True)
     else:
-        raise KeyError("Missing time_step column in data stored")
+        raise KeyError(f"Missing time {time_column_label} column in data stored")
 
     return merged_samples
