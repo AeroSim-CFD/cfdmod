@@ -148,10 +148,10 @@ def divide_timeseries_in_groups(
                 pt_groups = np.split(points_arr, range(n_per_group, len(points_arr), n_per_group))
 
             for i, points_in_group in enumerate(pt_groups):
-                group_data = coefficient_data[points_in_group].copy()
+                group_data = coefficient_data[points_in_group.astype(str)].copy()
                 group_data["time_normalized"] = coefficient_data["time_normalized"]
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
-                group_data.to_hdf(output_path, key=group_key, mode="a", format="table")
+                group_data.to_hdf(output_path, key=group_key, mode="a", format="fixed")
                 del group_data
 
 
@@ -187,11 +187,14 @@ def process_timestep_groups(
             if "point_idx" not in sample.columns:
                 # If point_idx is not in dataframe columns, then matrix form is assumed
                 # and needs to be converted to older format
-                sample = convert_matrix_into_dataframe(sample, value_data_label=data_label)
+                sample = convert_matrix_into_dataframe(
+                    sample, row_data_label=time_column_label, value_data_label=data_label
+                )
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
+    merged_samples.columns = [str(col) for col in merged_samples.columns]
 
     sort_columns = [
         col for col in [time_column_label, "region_idx"] if col in merged_samples.columns

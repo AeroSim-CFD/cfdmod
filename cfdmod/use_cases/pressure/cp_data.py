@@ -150,7 +150,10 @@ def process_raw_groups(
                     characteristic_length=cp_config.simul_characteristic_length,
                     ref_press_mode=cp_config.reference_pressure,
                 )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="table")
+                coefficient_data.rename(
+                    columns={col: str(col) for col in coefficient_data.columns}, inplace=True
+                )
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="fixed")
 
 
 def process_cp(
@@ -211,7 +214,7 @@ def process_cp(
         statistics=cfg.statistics,
     )
     stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
-    cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="table")
+    cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="fixed")
 
     vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
