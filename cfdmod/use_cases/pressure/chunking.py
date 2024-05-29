@@ -194,7 +194,7 @@ def process_timestep_groups(
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
-    merged_samples.columns = [str(col) for col in merged_samples.columns]
+    merged_samples.rename(columns={col: str(col) for col in merged_samples.columns}, inplace=True)
 
     sort_columns = [
         col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
