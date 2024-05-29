@@ -50,6 +50,26 @@ def read_yaml(filename: pathlib.Path) -> Any:
             raise Exception(f"Unable to load YAML from {filename}. Exception {e}") from e
 
 
+def save_yaml(data: Any, filename: pathlib.Path):
+    """Saves data to file as YAML format
+
+    Args:
+        data (Any): data to save
+        filename (pathlib.Path): filename to save to
+    """
+
+    def repr_path(representer, data):
+        return representer.represent_scalar("tag:yaml.org,2002:str", str(data))
+
+    with open(filename, "w") as f:
+        with YAML(typ="safe", output=f) as yaml:
+            for p in [pathlib.PosixPath, pathlib.WindowsPath]:
+                yaml.representer.add_representer(p, repr_path)
+
+            yaml.explicit_start = True
+            yaml.dump(data, f)
+
+
 def convert_dataframe_into_matrix(
     source_dataframe: pd.DataFrame,
     row_data_label: str = "time_step",
