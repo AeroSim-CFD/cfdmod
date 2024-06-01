@@ -10,6 +10,7 @@ from cfdmod.use_cases.loft.functions import (
     apply_remeshing,
     generate_loft_surface,
     rotate_vector_around_z,
+    correct_inverted_normals
 )
 from cfdmod.use_cases.loft.parameters import LoftCaseConfig
 
@@ -82,27 +83,23 @@ def main(*args):
                     projection_diretion=direction,
                     loft_length=loft_params.loft_length,
                     loft_z_pos=loft_params.upwind_elevation,
+                    filter_radius=loft_params.filter_radius,
                 )
 
                 export_stl(
-                    output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft.stl",
+                    output_path / f"{case_lbl}" / f"{side}_loft.stl",
                     loft_tri,
                     loft_normals,
                 )
                 apply_remeshing(
                     element_size=loft_params.mesh_element_size,
-                    mesh_path=output_path / f"{case_lbl}" / f"{wind_angle}" / f"{side}_loft.stl",
+                    mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
                     output_path=output_path
                     / f"{case_lbl}"
-                    / f"{wind_angle}"
-                    / f"{side}_loft_remeshed.stl",
+                    / f"{side}_loft.stl",
+                    crease_angle=89
                 )
-            export_stl(
-                output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain.stl", triangles, normals
-            )
-            apply_remeshing(
-                element_size=loft_params.mesh_element_size,
-                mesh_path=output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain.stl",
-                output_path=output_path / f"{case_lbl}" / f"{wind_angle}" / "terrain_remeshed.stl",
-            )
+                correct_inverted_normals(mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl", 
+                    output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl", 
+                )
             logger.info(f"Generated loft for {case_lbl}/{wind_angle}!")

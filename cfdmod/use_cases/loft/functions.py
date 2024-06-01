@@ -55,6 +55,20 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
 
     return flattened_vertices[np.unique(border_indexes)], unique_edges
 
+def remove_vertices_from_internal_holes(border_verts: np.ndarray, radius: float) -> np.ndarray:
+    """Remove border vertices comming from internal holes
+
+    Args:
+        triangle_vertices (np.ndarray): STL triangles
+
+    Returns:
+        np.ndarray: Vertices from the border that are not from internal holes
+    """
+
+    vert_selection = (np.sum((border_verts**2),axis=1)**0.5 > radius)
+
+    return border_verts[vert_selection,:]
+
 
 def get_angle_between(ref_vec: np.ndarray, target_vec: np.ndarray) -> float:
     """Returns the angle in radians between vectors 'ref_vec' and 'target_vec'
@@ -246,6 +260,7 @@ def generate_loft_surface(
     projection_diretion: np.ndarray,
     loft_length: float,
     loft_z_pos: float,
+    filter_radius: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate loft surface (triangles and normals)
 
@@ -259,6 +274,7 @@ def generate_loft_surface(
         tuple[np.ndarray, np.ndarray]: Loft triangles and normals
     """
     border_verts, border_edges = find_border(triangle_vertices=triangle_vertices)
+    border_verts = remove_vertices_from_internal_holes(border_verts=border_verts, radius=filter_radius)
     border_profile, mesh_center = project_border(
         border_verts, projection_diretion=projection_diretion
     )
@@ -287,6 +303,19 @@ def apply_remeshing(element_size: float, mesh_path: pathlib.Path, output_path: p
     ms: MeshSet = pymeshlab.MeshSet()
     ms.load_new_mesh(str(mesh_path.absolute()))
     ms.meshing_isotropic_explicit_remeshing(iterations=15, targetlen=AbsoluteValue(element_size), featuredeg=crease_angle)
+    ms.save_current_mesh(str(output_path.absolute()), binary=True)
+
+def correct_inverted_normals(mesh_path: pathlib.Path, output_path: pathlib.Path):
+    """Sometimes a few triangles get flipped on the borders after applying remesh. This function puts them back up.
+
+    Args:
+        mesh_path (pathlib.Path): Original mesh path
+        output_path (pathlib.Path): Output mesh path
+    """
+    ms: MeshSet = pymeshlab.MeshSet()
+    ms.load_new_mesh(str(mesh_path.absolute()))
+    ms.compute_selection_by_condition_per_face(condselect='fnz<0')
+    ms.meshing_invert_face_orientation(onlyselected=True)
     ms.save_current_mesh(str(output_path.absolute()), binary=True)
 
 
