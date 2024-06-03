@@ -10,7 +10,6 @@ from cfdmod.use_cases.loft.functions import (
     apply_remeshing,
     generate_loft_surface,
     rotate_vector_around_z,
-    correct_inverted_normals
 )
 from cfdmod.use_cases.loft.parameters import LoftCaseConfig
 
@@ -94,12 +93,6 @@ def main(*args):
                 apply_remeshing(
                     element_size=loft_params.mesh_element_size,
                     mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                    output_path=output_path
-                    / f"{case_lbl}"
-                    / f"{side}_loft.stl",
-                    crease_angle=89
-                )
-                correct_inverted_normals(mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl", 
-                    output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl", 
+                    output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
                 )
             logger.info(f"Generated loft for {case_lbl}/{wind_angle}!")

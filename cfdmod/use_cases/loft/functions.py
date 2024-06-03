@@ -55,19 +55,27 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
 
     return flattened_vertices[np.unique(border_indexes)], unique_edges
 
-def remove_vertices_from_internal_holes(border_verts: np.ndarray, radius: float) -> np.ndarray:
+
+def remove_vertices_from_internal_holes(
+    border_verts: np.ndarray, border_edges: np.ndarray, radius: float
+) -> tuple[np.ndarray, np.ndarray]:
     """Remove border vertices comming from internal holes
 
     Args:
-        triangle_vertices (np.ndarray): STL triangles
+        border_verts (np.ndarray): All border vertices
+        border_edges (np.ndarray): All border edges
+        radius (float): Internal radius where to ignore edges
 
     Returns:
-        np.ndarray: Vertices from the border that are not from internal holes
+        tuple[np.ndarray, np.ndarray]: Updated filtered border vertices and border edges
+        that are not from internal holes
     """
+    mask = np.where(np.sum((border_verts**2), axis=1) ** 0.5 > radius)[0]
+    filtered_edges = np.array(
+        [b_e for b_e in border_edges if not any([e_i in mask for e_i in b_e])]
+    )
 
-    vert_selection = (np.sum((border_verts**2),axis=1)**0.5 > radius)
-
-    return border_verts[vert_selection,:]
+    return border_verts[mask], filtered_edges
 
 
 def get_angle_between(ref_vec: np.ndarray, target_vec: np.ndarray) -> float:
@@ -269,12 +277,19 @@ def generate_loft_surface(
         projection_diretion (np.ndarray): Direction of loft projection
         loft_length (float): Minimum length of loft
         loft_z_pos (float): Target z position
+        filter_radius (float): Internal filter radius to ignore edges
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Loft triangles and normals
     """
-    border_verts, border_edges = find_border(triangle_vertices=triangle_vertices)
-    border_verts = remove_vertices_from_internal_holes(border_verts=border_verts, radius=filter_radius)
+    unfiltered_border_verts, unfiltered_border_edges = find_border(
+        triangle_vertices=triangle_vertices
+    )
+    border_verts, border_edges = remove_vertices_from_internal_holes(
+        border_verts=unfiltered_border_verts,
+        border_edges=unfiltered_border_edges,
+        radius=filter_radius,
+    )
     border_profile, mesh_center = project_border(
         border_verts, projection_diretion=projection_diretion
     )
@@ -292,29 +307,26 @@ def generate_loft_surface(
     return loft_tri, loft_normals
 
 
-def apply_remeshing(element_size: float, mesh_path: pathlib.Path, output_path: pathlib.Path, crease_angle: float):
+def apply_remeshing(
+    element_size: float,
+    mesh_path: pathlib.Path,
+    output_path: pathlib.Path,
+    crease_angle: float = 89,
+):
     """Create a remeshed surface from input mesh
 
     Args:
         element_size (float): Target element size
         mesh_path (pathlib.Path): Original mesh path
         output_path (pathlib.Path): Output mesh path
+        crease_angle (float): Minimal angle for preserving edges
     """
     ms: MeshSet = pymeshlab.MeshSet()
     ms.load_new_mesh(str(mesh_path.absolute()))
-    ms.meshing_isotropic_explicit_remeshing(iterations=15, targetlen=AbsoluteValue(element_size), featuredeg=crease_angle)
-    ms.save_current_mesh(str(output_path.absolute()), binary=True)
-
-def correct_inverted_normals(mesh_path: pathlib.Path, output_path: pathlib.Path):
-    """Sometimes a few triangles get flipped on the borders after applying remesh. This function puts them back up.
-
-    Args:
-        mesh_path (pathlib.Path): Original mesh path
-        output_path (pathlib.Path): Output mesh path
-    """
-    ms: MeshSet = pymeshlab.MeshSet()
-    ms.load_new_mesh(str(mesh_path.absolute()))
-    ms.compute_selection_by_condition_per_face(condselect='fnz<0')
+    ms.meshing_isotropic_explicit_remeshing(
+        iterations=15, targetlen=AbsoluteValue(element_size), featuredeg=crease_angle
+    )
+    ms.compute_selection_by_condition_per_face(condselect="fnz<0")
     ms.meshing_invert_face_orientation(onlyselected=True)
     ms.save_current_mesh(str(output_path.absolute()), binary=True)
 

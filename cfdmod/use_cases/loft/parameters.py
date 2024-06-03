@@ -32,7 +32,7 @@ class LoftParams(BaseModel):
         description="Elevation for upwind direction.",
     )
     filter_radius: float = Field(
-        ...,
+        0,
         title="Hole filter radius",
         description="Radius to filter out internal holes.",
     )
