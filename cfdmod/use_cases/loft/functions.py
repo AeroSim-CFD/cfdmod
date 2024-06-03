@@ -72,7 +72,7 @@ def remove_vertices_from_internal_holes(
     """
     mask = np.where(np.sum((border_verts**2), axis=1) ** 0.5 > radius)[0]
     filtered_edges = np.array(
-        [b_e for b_e in border_edges if not any([e_i in mask for e_i in b_e])]
+        [b_e for b_e in border_edges if not any([e_i not in mask for e_i in b_e])]
     )
 
     return border_verts[mask], filtered_edges
