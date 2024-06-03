@@ -6,14 +6,14 @@ import pymeshlab
 from pymeshlab import AbsoluteValue, MeshSet
 
 
-def find_border(triangle_vertices: np.ndarray) -> np.ndarray:
+def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
     """Extract vertices from unique edges from stl file's border with its triangles and normals
 
     Args:
         triangle_vertices (np.ndarray): STL triangles
 
     Returns:
-        np.ndarray: Vertices from the border
+        tuple[np.ndarray, set]: Vertices from the border and a set with border edges
     """
     s = triangle_vertices.shape
 
@@ -53,7 +53,7 @@ def find_border(triangle_vertices: np.ndarray) -> np.ndarray:
             unique_edges.remove(edge)
     border_indexes = [point_index for edge in unique_edges for point_index in edge]
 
-    return flattened_vertices[np.unique(border_indexes)]
+    return flattened_vertices[np.unique(border_indexes)], unique_edges
 
 
 def remove_vertices_from_internal_holes(border_verts: np.ndarray, radius: float) -> np.ndarray:
@@ -276,7 +276,7 @@ def generate_loft_surface(
     Returns:
         tuple[np.ndarray, np.ndarray]: Loft triangles and normals
     """
-    unfiltered_border_verts = find_border(triangle_vertices=triangle_vertices)
+    unfiltered_border_verts, _ = find_border(triangle_vertices=triangle_vertices)
     border_verts = remove_vertices_from_internal_holes(
         border_verts=unfiltered_border_verts,
         radius=filter_radius,
