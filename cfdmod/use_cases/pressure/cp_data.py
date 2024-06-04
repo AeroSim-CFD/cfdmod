@@ -89,6 +89,14 @@ def process_raw_groups(
     Raises:
         Exception: If the keys for body and static pressure data do not match
     """
+
+    def check_numeric(value) -> bool:
+        try:
+            float(value)
+            return True
+        except:
+            return False
+
     with pd.HDFStore(body_pressure_path, mode="r") as body_store:
         with pd.HDFStore(static_pressure_path, mode="r") as static_store:
             static_groups = static_store.keys()
@@ -144,15 +152,13 @@ def process_raw_groups(
                     columns={
                         col: str(int(float(col)))
                         for col in static_df.columns
-                        if str(col).isnumeric()
+                        if check_numeric(col)
                     },
                     inplace=True,
                 )
                 body_df.rename(
                     columns={
-                        col: str(int(float(col)))
-                        for col in body_df.columns
-                        if str(col).isnumeric()
+                        col: str(int(float(col))) for col in body_df.columns if check_numeric(col)
                     },
                     inplace=True,
                 )
