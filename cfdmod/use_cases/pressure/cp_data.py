@@ -113,27 +113,50 @@ def process_raw_groups(
                 for store_group in static_groups:
                     static_dfs.append(static_store.get(store_group))
                 merged_df = pd.concat(static_dfs)
-                merged_df.rename(columns={col: str(int(float(col))) for col in merged_df.columns if str(col).isnumeric()}, inplace=True)
+                merged_df.rename(
+                    columns={
+                        col: str(int(float(col)))
+                        for col in merged_df.columns
+                        if str(col).isnumeric()
+                    },
+                    inplace=True,
+                )
                 # Old versions index the column with rho and new versions use point index (0)
                 # to label the column. Hence the condition below
                 average_value = (
-                    merged_df["rho"].mean() if "rho" in merged_df.columns else merged_df["0"].mean()
+                    merged_df["rho"].mean()
+                    if "rho" in merged_df.columns
+                    else merged_df["0"].mean()
                 )
 
             for store_group in body_groups:
                 if more_than_one_group and store_group not in keys_to_include:
                     continue
-                
+
                 static_df = static_store.get(store_group)
                 static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
-                
+
                 body_df = body_store.get(store_group)
                 body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
-                
+
                 # FIX CONVERSION ERROR
-                static_df.rename(columns={col: str(int(float(col))) for col in static_df.columns if str(col).isnumeric()}, inplace=True)
-                body_df.rename(columns={col: str(int(float(col))) for col in body_df.columns if str(col).isnumeric()}, inplace=True)
-                
+                static_df.rename(
+                    columns={
+                        col: str(int(float(col)))
+                        for col in static_df.columns
+                        if str(col).isnumeric()
+                    },
+                    inplace=True,
+                )
+                body_df.rename(
+                    columns={
+                        col: str(int(float(col)))
+                        for col in body_df.columns
+                        if str(col).isnumeric()
+                    },
+                    inplace=True,
+                )
+
                 # This logic should be removed in later versions
                 if "point_idx" in body_df.columns:
                     # Data is in older format, must convert to matrix
