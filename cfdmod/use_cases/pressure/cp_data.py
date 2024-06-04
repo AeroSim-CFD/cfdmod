@@ -36,16 +36,15 @@ def transform_to_cp(
     Returns:
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
-    static_pressure_array = press_data[0].to_numpy()
+    static_pressure_array = press_data["0"].to_numpy()
     average_static_pressure = static_pressure_array.mean()
     dynamic_pressure = 0.5 * average_static_pressure * reference_vel**2
     cs_square = 1 / 3
     multiplier = cs_square / dynamic_pressure
 
     press = static_pressure_array if ref_press_mode == "instantaneous" else average_static_pressure
-    convert_to_cp = lambda col: multiplier * (col - press)
     df_cp = body_data.apply(
-        lambda col: col if col.name == "time_step" else col.apply(convert_to_cp)
+        lambda col: col if col.name == "time_step" else multiplier * (col - press)
     )
     df_cp["time_normalized"] = df_cp["time_step"] / (characteristic_length / reference_vel)
 
@@ -114,21 +113,27 @@ def process_raw_groups(
                 for store_group in static_groups:
                     static_dfs.append(static_store.get(store_group))
                 merged_df = pd.concat(static_dfs)
+                merged_df.rename(columns={col: str(int(float(col))) for col in merged_df.columns if str(col).isnumeric()}, inplace=True)
                 # Old versions index the column with rho and new versions use point index (0)
                 # to label the column. Hence the condition below
                 average_value = (
-                    merged_df["rho"].mean() if "rho" in merged_df.columns else merged_df[0].mean()
+                    merged_df["rho"].mean() if "rho" in merged_df.columns else merged_df["0"].mean()
                 )
 
             for store_group in body_groups:
                 if more_than_one_group and store_group not in keys_to_include:
                     continue
-
+                
                 static_df = static_store.get(store_group)
                 static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
+                
                 body_df = body_store.get(store_group)
                 body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
-
+                
+                # FIX CONVERSION ERROR
+                static_df.rename(columns={col: str(int(float(col))) for col in static_df.columns if str(col).isnumeric()}, inplace=True)
+                body_df.rename(columns={col: str(int(float(col))) for col in body_df.columns if str(col).isnumeric()}, inplace=True)
+                
                 # This logic should be removed in later versions
                 if "point_idx" in body_df.columns:
                     # Data is in older format, must convert to matrix
@@ -138,7 +143,7 @@ def process_raw_groups(
                     static_df = convert_dataframe_into_matrix(static_df)
 
                 if average_value != None:
-                    static_df[0] = average_value
+                    static_df["0"] = average_value
 
                 if any(static_df.time_step.unique() != body_df.time_step.unique()):
                     raise Exception(f"Timesteps for key {store_group} do not match!")
@@ -153,7 +158,7 @@ def process_raw_groups(
                 coefficient_data.rename(
                     columns={col: str(col) for col in coefficient_data.columns}, inplace=True
                 )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="fixed")
+                coefficient_data.to_hdf(output_path, key=store_group, mode="w", format="fixed")
 
 
 def process_cp(

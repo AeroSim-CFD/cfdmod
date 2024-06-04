@@ -164,6 +164,6 @@ def transform_Cf(
     Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
     Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
 
-    Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
+    Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
 
     return Cf_data
