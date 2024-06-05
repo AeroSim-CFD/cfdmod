@@ -68,7 +68,7 @@ def process_Cf(
     ]
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
-    if len(excluded_sfc_list) != 0:
+    if len(excluded_sfc_list) != 0 and len(included_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
         excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
@@ -99,7 +99,6 @@ def process_Cf(
                 region_idx_array=region_idx_arr,
                 data_stats=Cf_stats,
             )
-
             polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
             data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
             processed_entities.append(data_entity)
