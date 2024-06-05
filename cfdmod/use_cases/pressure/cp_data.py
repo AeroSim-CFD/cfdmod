@@ -185,6 +185,9 @@ def process_raw_groups(
                     characteristic_length=cp_config.simul_characteristic_length,
                     ref_press_mode=cp_config.reference_pressure,
                 )
+                coefficient_data.rename(
+                    columns={col: str(col) for col in coefficient_data.columns}, inplace=True
+                )
                 coefficient_data.to_hdf(output_path, key=store_group, mode="w", format="fixed")
 
 
