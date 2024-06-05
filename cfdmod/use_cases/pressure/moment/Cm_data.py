@@ -79,7 +79,7 @@ def process_Cm(
     ]
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
-    if len(excluded_sfc_list) != 0:
+    if len(excluded_sfc_list) != 0 and len(included_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
         excluded_entity = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)

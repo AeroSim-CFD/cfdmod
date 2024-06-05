@@ -63,36 +63,33 @@ def main(*args):
     output_path = pathlib.Path(args_use.output)
 
     cfg = LoftCaseConfig.from_file(cfg_file)
-    triangles, normals = read_stl(mesh_path)
+    triangles, _ = read_stl(mesh_path)
 
     for case_lbl, loft_params in cfg.cases.items():
-        for wind_angle in loft_params.wind_source_angles:
-            logger.info(f"Generating loft for {case_lbl}/{wind_angle}...")
-            wind_source_direction = rotate_vector_around_z(
-                np.array(cfg.reference_direction, dtype=np.float32), wind_angle
+        logger.info(f"Generating loft for {case_lbl}...")
+        wind_source_direction = rotate_vector_around_z(
+            np.array(cfg.reference_direction, dtype=np.float32), loft_params.wind_source_angle
+        )
+        loft_directions = {
+            "upwind": -np.array(wind_source_direction),
+            "downwind": np.array(wind_source_direction),
+        }
+        for side, direction in loft_directions.items():
+            loft_tri, loft_normals = generate_loft_surface(
+                triangle_vertices=triangles,
+                projection_diretion=direction,
+                loft_length=loft_params.loft_length,
+                loft_z_pos=loft_params.upwind_elevation,
+                filter_radius=loft_params.filter_radius,
             )
-            loft_directions = {
-                "upwind": -np.array(wind_source_direction),
-                "downwind": np.array(wind_source_direction),
-            }
-
-            for side, direction in loft_directions.items():
-                loft_tri, loft_normals = generate_loft_surface(
-                    triangle_vertices=triangles,
-                    projection_diretion=direction,
-                    loft_length=loft_params.loft_length,
-                    loft_z_pos=loft_params.upwind_elevation,
-                    filter_radius=loft_params.filter_radius,
-                )
-
-                export_stl(
-                    output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                    loft_tri,
-                    loft_normals,
-                )
-                apply_remeshing(
-                    element_size=loft_params.mesh_element_size,
-                    mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                    output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                )
-            logger.info(f"Generated loft for {case_lbl}/{wind_angle}!")
+            export_stl(
+                output_path / f"{case_lbl}" / f"{side}_loft.stl",
+                loft_tri,
+                loft_normals,
+            )
+            apply_remeshing(
+                element_size=loft_params.mesh_element_size,
+                mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
+                output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
+            )
+        logger.info(f"Generated loft for {case_lbl}!")
