@@ -47,7 +47,7 @@ def transform_to_cp(
     columns_to_convert = [col for col in body_data.columns if col != "time_step"]
     df_cp[columns_to_convert] = (df_cp[columns_to_convert].to_numpy().T - press).T * multiplier
     df_cp["time_step"] = df_cp["time_step"] / (characteristic_length / reference_vel)
-    df_cp.rename(columns={"time_step" : "time_normalized"}, inplace=True)
+    df_cp.rename(columns={"time_step": "time_normalized"}, inplace=True)
 
     return df_cp[
         ["time_normalized"]
@@ -184,9 +184,6 @@ def process_raw_groups(
                     reference_vel=cp_config.simul_U_H,
                     characteristic_length=cp_config.simul_characteristic_length,
                     ref_press_mode=cp_config.reference_pressure,
-                )
-                coefficient_data.rename(
-                    columns={col: str(col) for col in coefficient_data.columns}, inplace=True
                 )
                 coefficient_data.to_hdf(output_path, key=store_group, mode="w", format="fixed")
 
