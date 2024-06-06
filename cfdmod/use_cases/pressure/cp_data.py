@@ -43,11 +43,11 @@ def transform_to_cp(
     multiplier = cs_square / dynamic_pressure
     press = static_pressure_array if ref_press_mode == "instantaneous" else average_static_pressure
 
-    df_cp = body_data.copy()
     columns_to_convert = [col for col in body_data.columns if col != "time_step"]
-    df_cp[columns_to_convert] = (df_cp[columns_to_convert].to_numpy().T - press).T * multiplier
-    df_cp["time_step"] = df_cp["time_step"] / (characteristic_length / reference_vel)
-    df_cp.rename(columns={"time_step": "time_normalized"}, inplace=True)
+    data_to_convert = body_data[columns_to_convert].to_numpy()
+    result = (data_to_convert.T - press) * multiplier
+    df_cp = pd.DataFrame(result.T, columns=columns_to_convert)
+    df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (characteristic_length / reference_vel)
 
     return df_cp[
         ["time_normalized"]
