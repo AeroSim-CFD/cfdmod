@@ -279,7 +279,7 @@ Data format
      - 1
 
 .. list-table:: :math:`Regions(definition)`
-   :widths: 10 10 10 10 10 10 10
+   :widths: 10 10 10 10 10 10 10 10 10 10
    :header-rows: 1
 
    * - region_idx
@@ -289,6 +289,9 @@ Data format
      - y_max
      - z_min
      - z_max
+     - Lx
+     - Ly
+     - Lz
    * - 0-Body1
      - 0
      - 100
@@ -296,6 +299,9 @@ Data format
      - 50
      - 0
      - 20
+     - 0.5
+     - 0.8
+     - 0.1
    * - 1-Body1
      - 100
      - 200
@@ -303,6 +309,9 @@ Data format
      - 50
      - 0
      - 20
+     - 0.5
+     - 0.8
+     - 0.1
 
 .. toctree::
    :maxdepth: -1
