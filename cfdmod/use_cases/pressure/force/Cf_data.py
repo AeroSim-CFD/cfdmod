@@ -62,13 +62,20 @@ def process_Cf(
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-
+    region_definition_df = get_region_definition_dataframe(geometry_dict)
+    region_definition_df = pd.merge(
+        region_definition_df,
+        Cf_data[["region_idx", "Lx", "Ly", "Lz"]],
+        on="region_idx",
+        how="left",
+    )
+    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
-    if len(excluded_sfc_list) != 0:
+    if len(excluded_sfc_list) != 0 and len(included_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
         excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
@@ -99,7 +106,6 @@ def process_Cf(
                 region_idx_array=region_idx_arr,
                 data_stats=Cf_stats,
             )
-
             polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
             data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
             processed_entities.append(data_entity)
@@ -110,7 +116,7 @@ def process_Cf(
             processed_entities=processed_entities,
             excluded_entities=excluded_entities,
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
-            region_definition_df=get_region_definition_dataframe(geometry_dict),
+            region_definition_df=region_definition_df,
         )
 
     return compild_cf_output
@@ -149,12 +155,17 @@ def transform_Cf(
 
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
-        Ax, Ay, Az = get_representative_areas(input_mesh=geometry, point_idx=region_points_idx)
+        (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
+            input_mesh=geometry, point_idx=region_points_idx
+        )
 
         representative_areas[region_idx[0]] = {}
         representative_areas[region_idx[0]]["ATx"] = Ax
         representative_areas[region_idx[0]]["ATy"] = Ay
         representative_areas[region_idx[0]]["ATz"] = Az
+        representative_areas[region_idx[0]]["Lx"] = Lx
+        representative_areas[region_idx[0]]["Ly"] = Ly
+        representative_areas[region_idx[0]]["Lz"] = Lz
 
     rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})

@@ -23,17 +23,17 @@ pressure_coefficient:
           method_type: "Absolute"
       - stats: "max"
         params:
-          method_type: "Gumbel"
-          peak_duration: 3 # in seconds
-          event_duration: 600 # in seconds. Period of extreme event
-          n_subdivisions: 10 # Number of subdivisions
-          non_exceedance_probability: 0.78 # Confidence parameter in %
-          full_scale_U_H: 40
-          full_scale_characteristic_length: 22.4
+          method_type: "Peak"
+          peak_factor: 3 # xtr = avg +- factor * rms
       # - stats: "max"
       #   params:
-      #     method_type: "Peak"
-      #     peak_factor: 3 # xtr = avg +- factor * rms
+      #     method_type: "Gumbel"
+      #     peak_duration: 3 # in seconds
+      #     event_duration: 600 # in seconds. Period of extreme event
+      #     n_subdivisions: 10 # Number of subdivisions
+      #     non_exceedance_probability: 0.78 # Confidence parameter in %
+      #     full_scale_U_H: 40
+      #     full_scale_characteristic_length: 22.4
       # - stats: "max"
       #   params:
       #     method_type: "Moving Average"

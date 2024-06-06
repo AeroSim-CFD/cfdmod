@@ -27,7 +27,7 @@ class CmConfig(HashableConfig, BasePressureConfig):
         description="Define for which directions force coefficient will be calculated",
     )
     transformation: TransformationConfig = Field(
-        ...,
+        TransformationConfig(),
         title="Transformation config",
         description="Configuration for mesh transformation",
     )
