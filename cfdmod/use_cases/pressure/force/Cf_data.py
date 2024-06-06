@@ -63,13 +63,14 @@ def process_Cf(
         processing_function=transform_Cf,
     )
     region_definition_df = get_region_definition_dataframe(geometry_dict)
+    length_df = Cf_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
+    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
     region_definition_df = pd.merge(
         region_definition_df,
-        Cf_data[["region_idx", "Lx", "Ly", "Lz"]],
+        length_df,
         on="region_idx",
         how="left",
     )
-    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
