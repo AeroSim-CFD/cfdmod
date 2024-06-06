@@ -8,7 +8,7 @@ from vtk import vtkPolyData
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
+from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, MomentBodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask
 
 
@@ -142,11 +142,13 @@ def tabulate_geometry_data(
     return geometry_df
 
 
-def get_geometry_data(body_cfg: BodyConfig, sfc_list: list[str], mesh: LnasFormat) -> GeometryData:
+def get_geometry_data(
+    body_cfg: BodyConfig | MomentBodyConfig, sfc_list: list[str], mesh: LnasFormat
+) -> GeometryData:
     """Builds a GeometryData from the mesh and the configurations
 
     Args:
-        body_cfg (BodyConfig): Body configuration with zoning parameters
+        body_cfg (BodyConfig | MomentBodyConfig): Body configuration with zoning parameters
         sfc_list (list[str]): List of surfaces that compose the body
         mesh (LnasFormat): Input mesh
 
