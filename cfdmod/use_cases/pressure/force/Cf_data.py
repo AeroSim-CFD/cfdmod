@@ -62,7 +62,14 @@ def process_Cf(
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-
+    region_definition_df = get_region_definition_dataframe(geometry_dict)
+    region_definition_df = pd.merge(
+        region_definition_df,
+        Cf_data[["region_idx", "Lx", "Ly", "Lz"]],
+        on="region_idx",
+        how="left",
+    )
+    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
@@ -109,7 +116,7 @@ def process_Cf(
             processed_entities=processed_entities,
             excluded_entities=excluded_entities,
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
-            region_definition_df=get_region_definition_dataframe(geometry_dict),
+            region_definition_df=region_definition_df,
         )
 
     return compild_cf_output
@@ -148,12 +155,17 @@ def transform_Cf(
 
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
-        Ax, Ay, Az = get_representative_areas(input_mesh=geometry, point_idx=region_points_idx)
+        (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
+            input_mesh=geometry, point_idx=region_points_idx
+        )
 
         representative_areas[region_idx[0]] = {}
         representative_areas[region_idx[0]]["ATx"] = Ax
         representative_areas[region_idx[0]]["ATy"] = Ay
         representative_areas[region_idx[0]]["ATz"] = Az
+        representative_areas[region_idx[0]]["Lx"] = Lx
+        representative_areas[region_idx[0]]["Ly"] = Ly
+        representative_areas[region_idx[0]]["Lz"] = Lz
 
     rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})
@@ -163,6 +175,6 @@ def transform_Cf(
     Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
     Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
 
-    Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
+    Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
 
     return Cf_data

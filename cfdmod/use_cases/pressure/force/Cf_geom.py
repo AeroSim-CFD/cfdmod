@@ -4,7 +4,7 @@ from lnas import LnasGeometry
 
 def get_representative_areas(
     input_mesh: LnasGeometry, point_idx: np.ndarray
-) -> tuple[float, float, float]:
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     """Calculates the representative areas from the bounding box of a given mesh
 
     Args:
@@ -12,7 +12,8 @@ def get_representative_areas(
         point_idx (np.ndarray): Array of triangle indices of each sub region
 
     Returns:
-        tuple[float, float, float]: Representative areas tuple (Ax, Ay, Az)
+        tuple[tuple[float, float, float], tuple[float, float, float]]:
+            Tuple containing: Lengths tuple (Lx, Ly, Lz), and representative areas tuple (Ax, Ay, Az)
     """
     geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
     x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
@@ -32,4 +33,4 @@ def get_representative_areas(
     Ay = Lx * Lz
     Az = Lx * Ly
 
-    return Ax, Ay, Az
+    return (Lx, Ly, Lz), (Ax, Ay, Az)
