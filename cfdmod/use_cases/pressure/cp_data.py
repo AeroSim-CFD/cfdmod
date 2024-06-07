@@ -214,6 +214,9 @@ def process_cp(
     timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
     create_folders_for_file(timeseries_path)
 
+    create_folders_for_file(path_manager.get_config_path(cfg_lbl=cfg_label))
+    save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
+    
     if timeseries_path.exists():
         warnings.warn(
             f"Path for time series already exists {timeseries_path}. Deleted old file",
@@ -254,7 +257,6 @@ def process_cp(
     cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="fixed")
 
     logger.info("Exporting files")
-    save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
     vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
     write_polydata(vtp_path, polydata)

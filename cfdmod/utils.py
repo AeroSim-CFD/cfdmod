@@ -62,10 +62,10 @@ def save_yaml(data: Any, filename: pathlib.Path):
         return representer.represent_scalar("tag:yaml.org,2002:str", str(data))
 
     with open(filename, "w") as f:
-        with YAML(typ="safe", output=f) as yaml:
+        with YAML(typ="rt", output=f) as yaml:
             for p in [pathlib.PosixPath, pathlib.WindowsPath]:
                 yaml.representer.add_representer(p, repr_path)
-
+            yaml.indent(mapping=2, sequence=4, offset=2)
             yaml.explicit_start = True
             yaml.dump(data, f)
 
