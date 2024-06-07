@@ -9,6 +9,7 @@ from cfdmod.use_cases.pressure.moment.Cm_config import CmCaseConfig
 from cfdmod.use_cases.pressure.moment.Cm_data import process_Cm
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
+from cfdmod.utils import save_yaml
 
 
 @dataclass
@@ -89,5 +90,6 @@ def main(*args):
                 cm_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
                 cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
                 already_saved = True
+            save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
 
         logger.info(f"Processed Cm config {cfg_label}!")

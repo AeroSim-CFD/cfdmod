@@ -8,6 +8,7 @@ from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.path_manager import CePathManager
 from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
 from cfdmod.use_cases.pressure.shape.Ce_data import CeOutput, process_Ce
+from cfdmod.utils import save_yaml
 
 
 @dataclass
@@ -81,5 +82,6 @@ def main(*args):
         Ce_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
         Ce_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
         Ce_output.export_mesh(cfg_label=cfg_label, path_manager=path_manager)
+        save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
 
         logger.info(f"Processed {cfg_label}!")

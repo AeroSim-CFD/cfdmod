@@ -14,7 +14,7 @@ from cfdmod.use_cases.pressure.chunking import (
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
-from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
+from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file, save_yaml
 
 
 def transform_to_cp(
@@ -47,7 +47,9 @@ def transform_to_cp(
     data_to_convert = body_data[columns_to_convert].to_numpy()
     result = (data_to_convert.T - press) * multiplier
     df_cp = pd.DataFrame(result.T, columns=columns_to_convert)
-    df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (characteristic_length / reference_vel)
+    df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
+        characteristic_length / reference_vel
+    )
 
     return df_cp[
         ["time_normalized"]
@@ -251,6 +253,8 @@ def process_cp(
     stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
     cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="fixed")
 
+    logger.info("Exporting files")
+    save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
     vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
     write_polydata(vtp_path, polydata)
