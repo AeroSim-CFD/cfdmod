@@ -14,7 +14,7 @@ from cfdmod.use_cases.pressure.chunking import (
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
-from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
+from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file, save_yaml
 
 
 def transform_to_cp(
@@ -47,7 +47,9 @@ def transform_to_cp(
     data_to_convert = body_data[columns_to_convert].to_numpy()
     result = (data_to_convert.T - press) * multiplier
     df_cp = pd.DataFrame(result.T, columns=columns_to_convert)
-    df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (characteristic_length / reference_vel)
+    df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
+        characteristic_length / reference_vel
+    )
 
     return df_cp[
         ["time_normalized"]
@@ -188,7 +190,7 @@ def process_raw_groups(
                 coefficient_data.rename(
                     columns={col: str(col) for col in coefficient_data.columns}, inplace=True
                 )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="w", format="fixed")
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="fixed")
 
 
 def process_cp(
@@ -212,6 +214,9 @@ def process_cp(
     timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_label)
     create_folders_for_file(timeseries_path)
 
+    create_folders_for_file(path_manager.get_config_path(cfg_lbl=cfg_label))
+    save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
+    
     if timeseries_path.exists():
         warnings.warn(
             f"Path for time series already exists {timeseries_path}. Deleted old file",
@@ -251,6 +256,7 @@ def process_cp(
     stats_path = path_manager.get_stats_path(cfg_lbl=cfg_label)
     cp_stats.to_hdf(path_or_buf=stats_path, key="stats", mode="w", index=False, format="fixed")
 
+    logger.info("Exporting files")
     vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
     write_polydata(vtp_path, polydata)
