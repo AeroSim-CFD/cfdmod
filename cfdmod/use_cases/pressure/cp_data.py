@@ -190,7 +190,7 @@ def process_raw_groups(
                 coefficient_data.rename(
                     columns={col: str(col) for col in coefficient_data.columns}, inplace=True
                 )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="w", format="fixed")
+                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="fixed")
 
 
 def process_cp(
