@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from ruamel.yaml import YAML
 
-
 def create_folders_for_file(filename: pathlib.Path):
     """Creates folders to save given file
 
@@ -132,13 +131,26 @@ def convert_matrix_into_dataframe(
     default_sort_order = [row_data_label, column_data_label]
     if len(column_order) != 3 and len(column_order) != 0:
         raise Exception("Column order must have 3 or 0 elements")
-    dataframe = pd.melt(
-        matrix_df, id_vars=row_data_label, var_name=column_data_label, value_name=value_data_label
+    
+    # Manual melt logic
+    time_arr = matrix_df[row_data_label].to_numpy()
+    point_col = [col for col in matrix_df.columns if col != row_data_label]
+    point_arr = np.array([int(col) for col in point_col], dtype=np.uint32)
+    data_matrix = matrix_df[point_col].to_numpy()
+    
+    dataframe = pd.DataFrame(
+        {
+            row_data_label : np.repeat(time_arr, len(point_arr)),
+            column_data_label: np.tile(point_arr, len(time_arr)), 
+            value_data_label: data_matrix.reshape(-1, )
+        }
     )
+    
     if len(sort_order) != 0:
         dataframe.sort_values(by=sort_order, inplace=True)
     else:
         dataframe.sort_values(by=default_sort_order, inplace=True)
+        
     dataframe.reset_index(inplace=True)
     dataframe[column_data_label] = dataframe[column_data_label].astype(column_dtype)
     dataframe = dataframe[
