@@ -184,12 +184,15 @@ def process_timestep_groups(
 
         for store_group in store_groups:
             sample = df_store.get(store_group)
-            if "point_idx" not in sample.columns:
-                # If point_idx is not in dataframe columns, then matrix form is assumed
-                # and needs to be converted to older format
-                sample = convert_matrix_into_dataframe(
-                    sample, row_data_label=time_column_label, value_data_label=data_label
-                )
+            
+            if processing_function.__name__ not in ["transform_Cf"]:
+                if "point_idx" not in sample.columns:
+                    # If point_idx is not in dataframe columns, then matrix form is assumed
+                    # and needs to be converted to older format
+                    sample = convert_matrix_into_dataframe(
+                        sample, row_data_label=time_column_label, value_data_label=data_label
+                    )
+                    
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 

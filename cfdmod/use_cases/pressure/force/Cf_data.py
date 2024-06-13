@@ -1,6 +1,7 @@
 import pathlib
 
 import pandas as pd
+import numpy as np
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
@@ -129,13 +130,44 @@ def transform_Cf(
     Returns:
         pd.DataFrame: Force coefficient dataframe
     """
-    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
-    cp_data["fx"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_x"])
-    cp_data["fy"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_y"])
-    cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
+    time_normalized = raw_cp['time_normalized']
+    cols_points = [c for c in raw_cp.columns if c not in ['time_normalized']]
+    id_points = np.array([int(c) for c in cols_points])
+
+    cp = raw_cp[cols_points].to_numpy()
+    points_selection = geometry_df.sort_values(by="point_idx")["point_idx"].to_numpy()
+    
+    face_area = geometry_df['area'].to_numpy()
+    face_ns = geometry_df[['n_x','n_y','n_z']].to_numpy().T
+    
+    mask_valid_points = np.isin(id_points, points_selection)
+    id_points = id_points[mask_valid_points]
+    cp = cp[:,mask_valid_points]
+        
+    regions_list = geometry_df['region_idx'].unique()
+    
+    list_of_cf_region = []
+    for region in regions_list:
+        points_of_region = geometry_df[geometry_df['region_idx']==region]['point_idx'].to_numpy()
+        mask_points_of_region = np.isin(id_points, points_of_region)
+        cp_region = cp[:,mask_points_of_region]
+        face_area_region = face_area[mask_points_of_region]
+        face_ns_region = face_ns[:,mask_points_of_region]
+        
+        f = np.empty((cp_region.shape[0],3))
+        for coord in range(2):
+            f[:,coord] = np.sum(-(fp['cp']*fp['area']*
+                cp_region * face_area_region * face_ns_region[coord,:]), axis=1)
+
+        cf_region = pd.DataFrame({'time_normalized':time_normalized,'fx': f[:,0],'fy': f[:,1],'fz': f[:,2]})
+        cf_region['region_idx'] = region
+        list_of_cf_region.append(cf_region)
+        del mask_points_of_region, cp_region, face_area_region, face_ns_region, f
+    cf_full = pd.concat(list_of_cf_region)
+    del list_of_cf_region
 
     Cf_data = (
-        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
+        cf_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),
