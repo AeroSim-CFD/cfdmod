@@ -185,7 +185,7 @@ def process_timestep_groups(
         for store_group in store_groups:
             sample = df_store.get(store_group)
             
-            list_of_functions_that_uses_matrix_format = ['transform_Cf']
+            list_of_functions_that_uses_matrix_format = ['transform_Cf','transform_Cm']
             if "point_idx" in sample.columns and processing_function in list_of_functions_that_uses_matrix_format:
                 sample = convert_dataframe_into_matrix(
                     sample, row_data_label=time_column_label, value_data_label=data_label

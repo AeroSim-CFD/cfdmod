@@ -2,6 +2,7 @@ import pathlib
 
 import pandas as pd
 import numpy as np
+import numpy as np
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
@@ -77,6 +78,7 @@ def process_Cf(
     else:
         excluded_entities = []
 
+
     compild_cf_output = {}
     for direction_lbl in cfg.directions:
         Cf_dir_data = convert_dataframe_into_matrix(
@@ -113,7 +115,6 @@ def process_Cf(
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
             region_definition_df=get_region_definition_dataframe(geometry_dict),
         )
-
     return compild_cf_output
 
 
@@ -130,6 +131,7 @@ def transform_Cf(
     Returns:
         pd.DataFrame: Force coefficient dataframe
     """
+   
     time_normalized = raw_cp['time_normalized']
     cols_points = [c for c in raw_cp.columns if c not in ['time_normalized']]
     id_points = np.array([int(c) for c in cols_points])
@@ -165,7 +167,7 @@ def transform_Cf(
         del mask_points_of_region, cp_region, face_area_region, face_ns_region, f
     cf_full = pd.concat(list_of_cf_region)
     del list_of_cf_region
-
+    
     Cf_data = (
         cf_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
@@ -179,6 +181,7 @@ def transform_Cf(
     region_group_by = geometry_df.groupby(["region_idx"])
     representative_areas = {}
 
+
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
         Ax, Ay, Az = get_representative_areas(input_mesh=geometry, point_idx=region_points_idx)
@@ -187,15 +190,21 @@ def transform_Cf(
         representative_areas[region_idx[0]]["ATx"] = Ax
         representative_areas[region_idx[0]]["ATy"] = Ay
         representative_areas[region_idx[0]]["ATz"] = Az
+        representative_areas[region_idx[0]]["Lx"] = Lx
+        representative_areas[region_idx[0]]["Ly"] = Ly
+        representative_areas[region_idx[0]]["Lz"] = Lz
+
 
     rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})
     Cf_data = pd.merge(Cf_data, rep_df, on="region_idx")
+
 
     Cf_data["Cfx"] = Cf_data["Fx"] / Cf_data["ATx"]
     Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
     Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
 
     Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
+
 
     return Cf_data
