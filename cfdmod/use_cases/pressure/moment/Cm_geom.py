@@ -35,7 +35,9 @@ def add_lever_arm_to_geometry_df(
     return result
 
 
-def get_representative_volume(input_mesh: LnasGeometry, point_idx: np.ndarray) -> float:
+def get_representative_volume(
+    input_mesh: LnasGeometry, point_idx: np.ndarray
+) -> tuple[tuple[float, float, float], float]:
     """Calculates the representative volume from the bounding box of a given mesh
 
     Args:
@@ -43,7 +45,8 @@ def get_representative_volume(input_mesh: LnasGeometry, point_idx: np.ndarray) -
         point_idx (np.ndarray): Array of triangle indices of each sub region
 
     Returns:
-        float: Representative volume value
+        tuple[tuple[float, float, float], float]: Tuple containing:
+            Lengths tuple (Lx, Ly, Lz) and representative volume value
     """
     geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
     x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
@@ -59,7 +62,9 @@ def get_representative_volume(input_mesh: LnasGeometry, point_idx: np.ndarray) -
     Ly = 1 if Ly < 1 else Ly
     Lz = 1 if Lz < 1 else Lz
 
-    return Lx * Ly * Lz
+    V_rep = Lx * Ly * Lz
+
+    return (Lx, Ly, Lz), V_rep
 
 
 def _get_lever_relative_position_df(

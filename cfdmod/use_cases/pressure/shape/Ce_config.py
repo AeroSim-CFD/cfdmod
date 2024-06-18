@@ -38,7 +38,7 @@ class CeConfig(HashableConfig, BasePressureConfig):
         {}, title="Surface sets", description="Combine multiple surfaces into a set of surfaces"
     )
     transformation: TransformationConfig = Field(
-        ...,
+        TransformationConfig(),
         title="Transformation config",
         description="Configuration for mesh transformation",
     )

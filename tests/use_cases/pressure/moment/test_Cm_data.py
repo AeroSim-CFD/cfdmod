@@ -64,15 +64,18 @@ class TestCmData(unittest.TestCase):
         self.assertTrue(all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]]))
 
     def test_get_representative_volume(self):
-        V_rep = get_representative_volume(
+        (Lx, Ly, Lz), V_rep = get_representative_volume(
             self.body_geom, np.arange(0, len(self.body_geom.triangles))
         )
         shifted_geom = self.body_geom.copy()
         shifted_geom.vertices[-1][2] = 10  # Shifted z coord for the last vertex
         shifted_geom._full_update()
-        shifted_V_rep = get_representative_volume(
+        (shifted_Lx, shifted_Ly, shifted_Lz), shifted_V_rep = get_representative_volume(
             shifted_geom, np.arange(0, len(self.body_geom.triangles))
         )
 
-        self.assertEqual(V_rep, 100)
+        self.assertEqual(Lx, 10)
+        self.assertEqual(Ly, 10)
+        self.assertEqual(Lz, 1)
+        self.assertEqual(V_rep, 100, Lx * Ly * Lz)
         self.assertEqual(shifted_V_rep, 1000)

@@ -25,7 +25,6 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 )
 from cfdmod.utils import convert_dataframe_into_matrix
 
-
 def process_Cf(
     mesh: LnasFormat,
     cfg: CfConfig,
@@ -42,14 +41,14 @@ def process_Cf(
 
     Returns:
         dict[str, CommonOutput]: Compiled outputs for force coefficient use case keyed by direction
-    """
+    """    
     geometry_dict: dict[str, GeometryData] = {}
     for body_cfg in cfg.bodies:
         geom_data = get_geometry_data(
             body_cfg=body_cfg, sfc_list=bodies_definition[body_cfg.name].surfaces, mesh=mesh
         )
         geometry_dict[body_cfg.name] = geom_data
-
+    
     geometry_to_use = mesh.geometry.copy()
     geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
     geometry_df = tabulate_geometry_data(
@@ -58,19 +57,31 @@ def process_Cf(
         mesh_normals=geometry_to_use.normals,
         transformation=cfg.transformation,
     )
+    
     Cf_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-
+    
+    region_definition_df = get_region_definition_dataframe(geometry_dict)
+    length_df = Cf_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
+    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
+    
+    region_definition_df = pd.merge(
+        region_definition_df,
+        length_df,
+        on="region_idx",
+        how="left",
+    )
+    
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
-    if len(excluded_sfc_list) != 0:
+    if len(excluded_sfc_list) != 0 and len(included_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
         excluded_entities = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
@@ -87,9 +98,11 @@ def process_Cf(
             column_data_label="region_idx",
             value_data_label=f"Cf{direction_lbl}",
         )
+        
         Cf_stats = calculate_statistics(
             historical_data=Cf_dir_data, statistics_to_apply=cfg.statistics
         )
+        
         processed_entities: list[ProcessedEntity] = []
         for body_cfg in cfg.bodies:
             body_data = geometry_dict[body_cfg.name]
@@ -102,7 +115,6 @@ def process_Cf(
                 region_idx_array=region_idx_arr,
                 data_stats=Cf_stats,
             )
-
             polydata = create_polydata_for_cell_data(body_data_df, body_data.mesh)
             data_entity = ProcessedEntity(mesh=body_data.mesh, polydata=polydata)
             processed_entities.append(data_entity)
@@ -113,7 +125,7 @@ def process_Cf(
             processed_entities=processed_entities,
             excluded_entities=excluded_entities,
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
-            region_definition_df=get_region_definition_dataframe(geometry_dict),
+            region_definition_df=region_definition_df,
         )
     return compild_cf_output
 
@@ -184,7 +196,9 @@ def transform_Cf(
 
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
-        Ax, Ay, Az = get_representative_areas(input_mesh=geometry, point_idx=region_points_idx)
+        (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
+            input_mesh=geometry, point_idx=region_points_idx
+        )
 
         representative_areas[region_idx[0]] = {}
         representative_areas[region_idx[0]]["ATx"] = Ax

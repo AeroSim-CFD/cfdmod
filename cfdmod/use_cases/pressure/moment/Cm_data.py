@@ -73,13 +73,21 @@ def process_Cm(
         geometry=geometry_to_use,
         processing_function=transform_Cm,
     )
-
+    region_definition_df = get_region_definition_dataframe(geometry_dict)
+    length_df = Cm_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
+    Cm_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
+    region_definition_df = pd.merge(
+        region_definition_df,
+        length_df,
+        on="region_idx",
+        how="left",
+    )
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
     excluded_sfc_list = [sfc for sfc in mesh.surfaces.keys() if sfc not in included_sfc_list]
 
-    if len(excluded_sfc_list) != 0:
+    if len(excluded_sfc_list) != 0 and len(included_sfc_list) != 0:
         col = [s.stats for s in cfg.statistics]
         excluded_entity = [
             get_excluded_entities(excluded_sfc_list=excluded_sfc_list, mesh=mesh, data_columns=col)
@@ -122,7 +130,7 @@ def process_Cm(
             processed_entities=processed_entities,
             excluded_entities=excluded_entity,
             region_indexing_df=geometry_df[["region_idx", "point_idx"]],
-            region_definition_df=get_region_definition_dataframe(geometry_dict),
+            region_definition_df=region_definition_df,
         )
 
     return compild_cm_output
@@ -165,10 +173,15 @@ def transform_Cm(
 
     for region_idx, region_points in region_group_by:
         region_points_idx = region_points.point_idx.to_numpy()
-        V_rep = get_representative_volume(input_mesh=geometry, point_idx=region_points_idx)
+        (Lx, Ly, Lz), V_rep = get_representative_volume(
+            input_mesh=geometry, point_idx=region_points_idx
+        )
 
         representative_volume[region_idx[0]] = {}
         representative_volume[region_idx[0]]["V_rep"] = V_rep
+        representative_volume[region_idx[0]]["Lx"] = Lx
+        representative_volume[region_idx[0]]["Ly"] = Ly
+        representative_volume[region_idx[0]]["Lz"] = Lz
 
     rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
     rep_df = rep_df.rename(columns={"index": "region_idx"})

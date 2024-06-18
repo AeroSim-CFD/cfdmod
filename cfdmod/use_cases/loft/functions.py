@@ -56,14 +56,11 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
     return flattened_vertices[np.unique(border_indexes)], unique_edges
 
 
-def remove_vertices_from_internal_holes(
-    border_verts: np.ndarray, border_edges: np.ndarray, radius: float
-) -> tuple[np.ndarray, np.ndarray]:
+def remove_vertices_from_internal_holes(border_verts: np.ndarray, radius: float) -> np.ndarray:
     """Remove border vertices comming from internal holes
 
     Args:
         border_verts (np.ndarray): All border vertices
-        border_edges (np.ndarray): All border edges
         radius (float): Internal radius where to ignore edges
 
     Returns:
@@ -71,11 +68,8 @@ def remove_vertices_from_internal_holes(
         that are not from internal holes
     """
     mask = np.where(np.sum((border_verts**2), axis=1) ** 0.5 > radius)[0]
-    filtered_edges = np.array(
-        [b_e for b_e in border_edges if not any([e_i not in mask for e_i in b_e])]
-    )
 
-    return border_verts[mask], filtered_edges
+    return border_verts[mask]
 
 
 def get_angle_between(ref_vec: np.ndarray, target_vec: np.ndarray) -> float:
@@ -282,12 +276,9 @@ def generate_loft_surface(
     Returns:
         tuple[np.ndarray, np.ndarray]: Loft triangles and normals
     """
-    unfiltered_border_verts, unfiltered_border_edges = find_border(
-        triangle_vertices=triangle_vertices
-    )
-    border_verts, border_edges = remove_vertices_from_internal_holes(
+    unfiltered_border_verts, _ = find_border(triangle_vertices=triangle_vertices)
+    border_verts = remove_vertices_from_internal_holes(
         border_verts=unfiltered_border_verts,
-        border_edges=unfiltered_border_edges,
         radius=filter_radius,
     )
     border_profile, mesh_center = project_border(

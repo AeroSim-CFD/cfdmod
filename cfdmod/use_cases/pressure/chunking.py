@@ -10,7 +10,6 @@ from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, Parameteri
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
 from cfdmod.utils import convert_matrix_into_dataframe, convert_dataframe_into_matrix
 
-
 class HDFGroupInterface:
     # HDF keys follow the convention /step_{formatted initial_step}_group_{formatted group_idx}
     # Step information comes from simulation results
@@ -177,7 +176,6 @@ def process_timestep_groups(
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
     """
-
     processed_samples: list[pd.DataFrame] = []
     with pd.HDFStore(data_path, mode="r") as df_store:
         store_groups = df_store.keys()
@@ -196,17 +194,16 @@ def process_timestep_groups(
                 sample = convert_matrix_into_dataframe(
                     sample, row_data_label=time_column_label, value_data_label=data_label
                 )
-                    
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
     merged_samples.rename(columns={col: str(col) for col in merged_samples.columns}, inplace=True)
-
+    
     sort_columns = [
         col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
     ]
-    if time_column_label in sort_columns:
+    if time_column_label in merged_samples.columns:
         merged_samples.sort_values(by=sort_columns, inplace=True)
     else:
         raise KeyError(f"Missing time {time_column_label} column in data stored")
