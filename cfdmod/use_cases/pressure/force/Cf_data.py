@@ -170,8 +170,7 @@ def transform_Cf(
         
         f = np.empty((cp_region.shape[0],3))
         for coord in range(2):
-            f[:,coord] = np.sum(-(fp['cp']*fp['area']*
-                cp_region * face_area_region * face_ns_region[coord,:]), axis=1)
+            f[:,coord] = np.sum(-(cp_region * face_area_region * face_ns_region[coord,:]), axis=1)
 
         cf_region = pd.DataFrame({'time_normalized':time_normalized,'fx': f[:,0],'fy': f[:,1],'fz': f[:,2]})
         cf_region['region_idx'] = region

@@ -184,11 +184,11 @@ def process_timestep_groups(
             sample = df_store.get(store_group)
             
             list_of_functions_that_uses_matrix_format = ['transform_Cf','transform_Cm']
-            if "point_idx" in sample.columns and processing_function in list_of_functions_that_uses_matrix_format:
+            if "point_idx" in sample.columns and processing_function.__name__ in list_of_functions_that_uses_matrix_format:
                 sample = convert_dataframe_into_matrix(
                     sample, row_data_label=time_column_label, value_data_label=data_label
                 )
-            if "point_idx" not in sample.columns and processing_function not in list_of_functions_that_uses_matrix_format:
+            if "point_idx" not in sample.columns and processing_function.__name__ not in list_of_functions_that_uses_matrix_format:
                 # If point_idx is not in dataframe columns, then matrix form is assumed
                 # and needs to be converted to older format
                 sample = convert_matrix_into_dataframe(

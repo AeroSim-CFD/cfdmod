@@ -25,7 +25,7 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     combine_stats_data_with_mesh,
 )
 from cfdmod.utils import convert_dataframe_into_matrix
-
+import numpy as np
 
 def process_Cm(
     mesh: LnasFormat,
@@ -149,17 +149,51 @@ def transform_Cm(
     Returns:
         pd.DataFrame: Moment coefficient dataframe
     """
-    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
-    cp_data["fx"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_x"])
-    cp_data["fy"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_y"])
-    cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
+    
+    time_normalized = raw_cp['time_normalized']
+    cols_points = [c for c in raw_cp.columns if c not in ['time_normalized']]
+    id_points = np.array([int(c) for c in cols_points])
 
-    cp_data["mx"] = cp_data["ry"] * cp_data["fz"] - cp_data["rz"] * cp_data["fy"]  # y Fz - z Fy
-    cp_data["my"] = cp_data["rz"] * cp_data["fx"] - cp_data["rx"] * cp_data["fz"]  # z Fx - x Fz
-    cp_data["mz"] = cp_data["rx"] * cp_data["fy"] - cp_data["ry"] * cp_data["fx"]  # x Fy - y Fx
+    cp = raw_cp[cols_points].to_numpy()
+    points_selection = geometry_df.sort_values(by="point_idx")["point_idx"].to_numpy()
+    
+    face_area = geometry_df['area'].to_numpy()
+    face_ns = geometry_df[['n_x','n_y','n_z']].to_numpy().T
+    face_pos = geometry_df[['rx','ry','rz']].to_numpy().T
+    face_force = np.empty((cp.shape[0],cp.shape[1],3))
+    for coord in range(2):
+        face_force[:,:,coord] = -(cp * face_area * face_ns[coord,:])
+
+    mask_valid_points = np.isin(id_points, points_selection)
+    id_points = id_points[mask_valid_points]
+    cp = cp[:,mask_valid_points]
+        
+    regions_list = geometry_df['region_idx'].unique()
+    
+    list_of_cm_region = []
+    for region in regions_list:
+        points_of_region = geometry_df[geometry_df['region_idx']==region]['point_idx'].to_numpy()
+        mask_points_of_region = np.isin(id_points, points_of_region)
+        cp_region = cp[:,mask_points_of_region]
+        face_area_region = face_area[mask_points_of_region]
+        face_ns_region = face_ns[:,mask_points_of_region]
+        face_pos_region = face_pos[:,mask_points_of_region]
+        face_force_region = face_force[:,mask_points_of_region,:]
+        
+        m = np.empty((cp.shape[0],3))
+        m[:,0] = np.sum(face_pos_region[1,:]*face_force_region[:,:,2] - face_pos_region[2,:]*face_force_region[:,:,1],axis=1)
+        m[:,1] = np.sum(face_pos_region[2,:]*face_force_region[:,:,0] - face_pos_region[0,:]*face_force_region[:,:,2],axis=1)
+        m[:,2] = np.sum(face_pos_region[0,:]*face_force_region[:,:,1] - face_pos_region[1,:]*face_force_region[:,:,0],axis=1)
+
+        cm_region = pd.DataFrame({'time_normalized':time_normalized,'mx': m[:,0],'my': m[:,1],'mz': m[:,2]})
+        cm_region['region_idx'] = region
+        list_of_cm_region.append(cm_region)
+        del mask_points_of_region, cp_region, face_area_region, face_ns_region, face_force_region
+    cm_full = pd.concat(list_of_cm_region)
+    del list_of_cm_region
 
     Cm_data = (
-        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
+        cm_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Mx=pd.NamedAgg(column="mx", aggfunc="sum"),
             My=pd.NamedAgg(column="my", aggfunc="sum"),
