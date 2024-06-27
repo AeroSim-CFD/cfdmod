@@ -1,5 +1,6 @@
 import pathlib
 
+import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
@@ -23,6 +24,7 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 )
 from cfdmod.utils import convert_dataframe_into_matrix
 
+
 def process_Cf(
     mesh: LnasFormat,
     cfg: CfConfig,
@@ -39,14 +41,14 @@ def process_Cf(
 
     Returns:
         dict[str, CommonOutput]: Compiled outputs for force coefficient use case keyed by direction
-    """    
+    """
     geometry_dict: dict[str, GeometryData] = {}
     for body_cfg in cfg.bodies:
         geom_data = get_geometry_data(
             body_cfg=body_cfg, sfc_list=bodies_definition[body_cfg.name].surfaces, mesh=mesh
         )
         geometry_dict[body_cfg.name] = geom_data
-    
+
     geometry_to_use = mesh.geometry.copy()
     geometry_to_use.apply_transformation(cfg.transformation.get_geometry_transformation())
     geometry_df = tabulate_geometry_data(
@@ -55,25 +57,25 @@ def process_Cf(
         mesh_normals=geometry_to_use.normals,
         transformation=cfg.transformation,
     )
-    
+
     Cf_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
         geometry=geometry_to_use,
         processing_function=transform_Cf,
     )
-    
+
     region_definition_df = get_region_definition_dataframe(geometry_dict)
     length_df = Cf_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
     Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
-    
+
     region_definition_df = pd.merge(
         region_definition_df,
         length_df,
         on="region_idx",
         how="left",
     )
-    
+
     included_sfc_list = [
         sfc for body_cfg in cfg.bodies for sfc in bodies_definition[body_cfg.name].surfaces
     ]
@@ -95,11 +97,11 @@ def process_Cf(
             column_data_label="region_idx",
             value_data_label=f"Cf{direction_lbl}",
         )
-        
+
         Cf_stats = calculate_statistics(
             historical_data=Cf_dir_data, statistics_to_apply=cfg.statistics
         )
-        
+
         processed_entities: list[ProcessedEntity] = []
         for body_cfg in cfg.bodies:
             body_data = geometry_dict[body_cfg.name]
@@ -141,13 +143,45 @@ def transform_Cf(
     Returns:
         pd.DataFrame: Force coefficient dataframe
     """
-    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
-    cp_data["fx"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_x"])
-    cp_data["fy"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_y"])
-    cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
+    time_normalized = raw_cp["time_normalized"].copy()
+    cols_points = [c for c in raw_cp.columns if c != "time_normalized"]
+    id_points = np.array([int(c) for c in cols_points])
+
+    points_selection = geometry_df.sort_values(by="point_idx")["point_idx"].to_numpy()
+    face_area = geometry_df["area"].to_numpy()
+    face_ns = geometry_df[["n_x", "n_y", "n_z"]].to_numpy().T
+
+    mask_valid_points = np.isin(id_points, points_selection)
+    id_points_selected = id_points[mask_valid_points]
+    cp_matrix = raw_cp[cols_points].copy().to_numpy()[:, mask_valid_points]
+
+    regions_list = geometry_df["region_idx"].unique()
+
+    f_matrix_x = -cp_matrix * face_area * face_ns[0, :]
+    f_matrix_y = -cp_matrix * face_area * face_ns[1, :]
+    f_matrix_z = -cp_matrix * face_area * face_ns[2, :]
+
+    list_of_cf_region = []
+    for region in regions_list:
+        points_of_region = geometry_df[geometry_df["region_idx"] == region]["point_idx"].to_numpy()
+        mask_points_of_region = np.isin(id_points_selected, points_of_region)
+
+        cf_region = pd.DataFrame(
+            {
+                "time_normalized": time_normalized,
+                "fx": np.sum(f_matrix_x[:, mask_points_of_region], axis=1),
+                "fy": np.sum(f_matrix_y[:, mask_points_of_region], axis=1),
+                "fz": np.sum(f_matrix_z[:, mask_points_of_region], axis=1),
+                "region_idx": region,
+            }
+        )
+        list_of_cf_region.append(cf_region)
+
+    cf_full = pd.concat(list_of_cf_region)
+    del list_of_cf_region
 
     Cf_data = (
-        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
+        cf_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Fx=pd.NamedAgg(column="fx", aggfunc="sum"),
             Fy=pd.NamedAgg(column="fy", aggfunc="sum"),

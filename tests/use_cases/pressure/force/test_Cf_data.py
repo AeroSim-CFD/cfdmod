@@ -15,12 +15,15 @@ from cfdmod.utils import convert_dataframe_into_matrix
 
 class TestCfData(unittest.TestCase):
     def setUp(self):
-        self.cp_data = pd.DataFrame(
+        cp_data = pd.DataFrame(
             {
                 "point_idx": [0, 0, 0, 1, 1, 1],
                 "cp": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
                 "time_normalized": [0, 1, 2, 0, 1, 2],
             }
+        )
+        self.cp_data = convert_dataframe_into_matrix(
+            cp_data, row_data_label="time_normalized", value_data_label="cp"
         )
 
         vertices = np.array([[0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0]])
@@ -85,6 +88,9 @@ class TestCfData(unittest.TestCase):
             mesh_areas=upper_mesh.geometry.areas,
             mesh_normals=upper_mesh.geometry.normals,
             transformation=TransformationConfig(),
+        )
+        cp_data = convert_dataframe_into_matrix(
+            cp_data, row_data_label="time_normalized", value_data_label="cp"
         )
         cf_data = transform_Cf(cp_data, geometry_df, upper_mesh.geometry)
         cf_data = convert_dataframe_into_matrix(

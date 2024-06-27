@@ -98,8 +98,11 @@ class TestChunking(unittest.TestCase):
             geometry_df,
             self.geometry,
             _mock_processing_function,
+            data_label="value",
             time_column_label="time_step",
         )
+        # self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
+        # result_df.sort_values(by=["time_step", "point_idx"], inplace=True)
         self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
         result_df.sort_values(by=["time_step", "point_idx"], inplace=True)
 
