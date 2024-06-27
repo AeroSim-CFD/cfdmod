@@ -57,11 +57,41 @@ def transform_Ce(
     Returns:
         pd.DataFrame: Shape coefficient dataframe
     """
-    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
-    cp_data["f/q"] = cp_data["cp"] * cp_data["area"]
+    time_normalized = raw_cp["time_normalized"].copy()
+    cols_points = [c for c in raw_cp.columns if c != "time_normalized"]
+    id_points = np.array([int(c) for c in cols_points])
+
+    points_selection = geometry_df.sort_values(by="point_idx")["point_idx"].to_numpy()
+    face_area = geometry_df["area"].to_numpy()
+
+    mask_valid_points = np.isin(id_points, points_selection)
+    id_points_selected = id_points[mask_valid_points]
+    cp_matrix = raw_cp[cols_points].copy().to_numpy()[:, mask_valid_points]
+
+    regions_list = geometry_df["region_idx"].unique()
+
+    f_q_matrix = cp_matrix * face_area
+
+    list_of_ce_region = []
+    for region in regions_list:
+        points_of_region = geometry_df[geometry_df["region_idx"] == region]["point_idx"].to_numpy()
+        mask_points_of_region = np.isin(id_points_selected, points_of_region)
+
+        ce_region = pd.DataFrame(
+            {
+                "time_normalized": time_normalized,
+                "f/q": np.sum(f_q_matrix[:, mask_points_of_region], axis=1),
+                "area": np.sum(face_area[mask_points_of_region]),
+                "region_idx": region,
+            }
+        )
+        list_of_ce_region.append(ce_region)
+
+    ce_full = pd.concat(list_of_ce_region)
+    del list_of_ce_region
 
     Ce_data = (
-        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
+        ce_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             total_area=pd.NamedAgg(column="area", aggfunc="sum"),
             total_force=pd.NamedAgg(column="f/q", aggfunc="sum"),

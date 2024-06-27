@@ -65,7 +65,7 @@ class TestCeData(unittest.TestCase):
             mesh_normals=self.mesh.normals,
             transformation=TransformationConfig(),
         )
-        ce_data = transform_Ce(self.cp_data, geometry_df, self.mesh)
+        ce_data = transform_Ce(self.matrix_cp_data, geometry_df, self.mesh)
 
         self.assertEqual(
             len(ce_data),
