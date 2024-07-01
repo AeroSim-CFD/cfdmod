@@ -8,7 +8,8 @@ from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
-from cfdmod.utils import convert_matrix_into_dataframe
+from cfdmod.utils import convert_dataframe_into_matrix, convert_matrix_into_dataframe
+
 
 class HDFGroupInterface:
     # HDF keys follow the convention /step_{formatted initial_step}_group_{formatted group_idx}
@@ -182,19 +183,18 @@ def process_timestep_groups(
 
         for store_group in store_groups:
             sample = df_store.get(store_group)
-            
-            if "point_idx" not in sample.columns:
-                # If point_idx is not in dataframe columns, then matrix form is assumed
-                # and needs to be converted to older format
-                sample = convert_matrix_into_dataframe(
+            if "point_idx" in sample.columns:
+                # If point_idx is in dataframe columns, then dataframe (legacy) form is assumed
+                # and needs to be converted to newer (matrix) format
+                sample = convert_dataframe_into_matrix(
                     sample, row_data_label=time_column_label, value_data_label=data_label
                 )
-            coefficient_data = processing_function(sample, geometry_df, geometry)            
+            coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
     merged_samples.rename(columns={col: str(col) for col in merged_samples.columns}, inplace=True)
-    
+
     sort_columns = [
         col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
     ]

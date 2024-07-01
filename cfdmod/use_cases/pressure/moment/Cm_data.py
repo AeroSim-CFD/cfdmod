@@ -1,5 +1,6 @@
 import pathlib
 
+import numpy as np
 import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
@@ -149,17 +150,50 @@ def transform_Cm(
     Returns:
         pd.DataFrame: Moment coefficient dataframe
     """
-    cp_data = pd.merge(raw_cp, geometry_df, on="point_idx", how="inner")
-    cp_data["fx"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_x"])
-    cp_data["fy"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_y"])
-    cp_data["fz"] = -(cp_data["cp"] * cp_data["area"] * cp_data["n_z"])
+    time_normalized = raw_cp["time_normalized"].copy()
+    cols_points = [c for c in raw_cp.columns if c != "time_normalized"]
+    id_points = np.array([int(c) for c in cols_points])
 
-    cp_data["mx"] = cp_data["ry"] * cp_data["fz"] - cp_data["rz"] * cp_data["fy"]  # y Fz - z Fy
-    cp_data["my"] = cp_data["rz"] * cp_data["fx"] - cp_data["rx"] * cp_data["fz"]  # z Fx - x Fz
-    cp_data["mz"] = cp_data["rx"] * cp_data["fy"] - cp_data["ry"] * cp_data["fx"]  # x Fy - y Fx
+    points_selection = geometry_df.sort_values(by="point_idx")["point_idx"].to_numpy()
+    face_area = geometry_df["area"].to_numpy()
+    face_ns = geometry_df[["n_x", "n_y", "n_z"]].to_numpy().T
+    face_pos = geometry_df[["rx", "ry", "rz"]].to_numpy().T
+
+    mask_valid_points = np.isin(id_points, points_selection)
+    id_points_selected = id_points[mask_valid_points]
+    cp_matrix = raw_cp[cols_points].copy().to_numpy()[:, mask_valid_points]
+
+    regions_list = geometry_df["region_idx"].unique()
+
+    f_matrix_x = -cp_matrix * face_area * face_ns[0, :]
+    f_matrix_y = -cp_matrix * face_area * face_ns[1, :]
+    f_matrix_z = -cp_matrix * face_area * face_ns[2, :]
+
+    m_matrix_x = face_pos[1, :] * f_matrix_z - face_pos[2, :] * f_matrix_y
+    m_matrix_y = face_pos[2, :] * f_matrix_x - face_pos[0, :] * f_matrix_z
+    m_matrix_z = face_pos[0, :] * f_matrix_y - face_pos[1, :] * f_matrix_x
+
+    list_of_cm_region = []
+    for region in regions_list:
+        points_of_region = geometry_df[geometry_df["region_idx"] == region]["point_idx"].to_numpy()
+        mask_points_of_region = np.isin(id_points_selected, points_of_region)
+
+        cm_region = pd.DataFrame(
+            {
+                "time_normalized": time_normalized,
+                "mx": np.sum(m_matrix_x[:, mask_points_of_region], axis=1),
+                "my": np.sum(m_matrix_y[:, mask_points_of_region], axis=1),
+                "mz": np.sum(m_matrix_z[:, mask_points_of_region], axis=1),
+                "region_idx": region,
+            }
+        )
+        list_of_cm_region.append(cm_region)
+
+    cm_full = pd.concat(list_of_cm_region)
+    del list_of_cm_region
 
     Cm_data = (
-        cp_data.groupby(["region_idx", "time_normalized"])  # type: ignore
+        cm_full.groupby(["region_idx", "time_normalized"])  # type: ignore
         .agg(
             Mx=pd.NamedAgg(column="mx", aggfunc="sum"),
             My=pd.NamedAgg(column="my", aggfunc="sum"),

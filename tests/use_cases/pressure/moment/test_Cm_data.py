@@ -12,16 +12,20 @@ from cfdmod.use_cases.pressure.moment.Cm_data import (
     transform_Cm,
 )
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 class TestCmData(unittest.TestCase):
     def setUp(self):
-        self.body_data = pd.DataFrame(
+        body_data = pd.DataFrame(
             {
                 "cp": [0.1, 0.2, 0.3, 0.4],
                 "time_normalized": [0, 0, 1, 1],
                 "point_idx": [0, 1, 0, 1],
             }
+        )
+        self.body_data = convert_dataframe_into_matrix(
+            body_data, row_data_label="time_normalized", value_data_label="cp"
         )
 
         vertices = np.array([[0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0]])
