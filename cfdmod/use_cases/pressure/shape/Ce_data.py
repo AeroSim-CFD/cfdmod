@@ -107,7 +107,7 @@ def transform_Ce(
 
 def process_surfaces(
     geometry_dict: dict[str, GeometryData], cfg: CeConfig, ce_stats: pd.DataFrame
-) -> list[ProcessedEntity]:
+) -> tuple[list[ProcessedEntity], pd.DataFrame]:
     """Generates a Processed surface for each of the body's surfaces
 
     Args:
@@ -116,10 +116,13 @@ def process_surfaces(
         ce_stats (pd.DataFrame): Statistical values for each region of each surface
 
     Returns:
-        list[ProcessedEntity]: List of processed surface. One for each of the values inside geometry_dict
+        tuple[list[ProcessedEntity], pd.DataFrame]: Tuple with a list of processed surface, one for each of the values inside geometry_dict;
+        and region indexing dataframe (point_idx, region_idx)
     """
     processed_surfaces: list[ProcessedEntity] = []
 
+    region_indexing_dfs = []
+    last_index_recorded = 0
     for sfc_lbl, geom_data in geometry_dict.items():
         regions_mesh, regions_mesh_triangles_indexing = generate_regions_mesh(
             geom_data=geom_data, cfg=cfg
@@ -134,12 +137,19 @@ def process_surfaces(
             logger.warning(
                 "Region refinement is greater than data refinement. Resulted in NaN values"
             )
-
+        indexing_df = pd.DataFrame(
+            {
+                "point_idx" : np.arange(len(regions_mesh.triangle_vertices)) + last_index_recorded, 
+                "region_idx": regions_mesh_triangles_indexing
+            }
+        )
+        region_indexing_dfs.append(indexing_df)
+        last_index_recorded += len(regions_mesh.triangle_vertices)
         polydata = create_polydata_for_cell_data(region_data_df, regions_mesh)
 
         processed_surfaces.append(ProcessedEntity(mesh=regions_mesh, polydata=polydata))
 
-    return processed_surfaces
+    return processed_surfaces, pd.concat(region_indexing_dfs)
 
 
 def get_surface_dict(cfg: CeConfig, mesh: LnasFormat) -> dict[str, list[str]]:
@@ -206,7 +216,7 @@ def process_Ce(
     Ce_stats = calculate_statistics(Ce_data, statistics_to_apply=cfg.statistics)
 
     logger.info("Processing surfaces...")
-    processed_surfaces = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+    processed_surfaces, regions_indexing_df = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
     logger.info("Processed surfaces!")
 
     excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
@@ -229,7 +239,7 @@ def process_Ce(
         excluded_entities=excluded_entities,
         data_df=Ce_data,
         stats_df=Ce_stats,
-        region_indexing_df=geometry_df[["region_idx", "point_idx"]],
+        region_indexing_df=regions_indexing_df[["region_idx", "point_idx"]],
         region_definition_df=get_region_definition_dataframe(geometry_dict),
     )
 
