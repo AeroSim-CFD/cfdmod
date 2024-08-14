@@ -28,7 +28,7 @@ lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
 optional = true
 
 [tool.poetry.group.geometry.dependencies]
-pymeshlab = "^2022.2.post4"
+pymeshlab = "^2023"
 trimesh = "^3.23.5"
 
 [tool.poetry.group.dev.dependencies]
