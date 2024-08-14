@@ -105,7 +105,9 @@ class TestCeData(unittest.TestCase):
         ce_stats = calculate_statistics(
             historical_data=region_data, statistics_to_apply=cfg.statistics
         )
-        processed_sfcs = process_surfaces(geometry_dict=geom_dict, cfg=cfg, ce_stats=ce_stats)
+        processed_sfcs, processed_df = process_surfaces(
+            geometry_dict=geom_dict, cfg=cfg, ce_stats=ce_stats
+        )
 
         self.assertEqual(len(processed_sfcs), len(geom_dict))
 
