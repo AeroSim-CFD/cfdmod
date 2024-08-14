@@ -3,3 +3,4 @@
 *.vti -diff -merge -text
 *.vtk -diff -merge -text
 *.vtm -diff -merge -text
+*.pvsm -diff -merge -text

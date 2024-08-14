@@ -1,0 +1,7 @@
+project_path: /home/ubuntu/Documentos/Repositories/insight/Docker/local/openfoam/028-Lyon
+cases:
+  "000":
+    start_coordinate: [0, 0, 0]
+    end_coordinate: [0, 0, 0]
+    n_streamlines: 24
+    # streamlines_delta: 0.4 # n_streamlines calculated
