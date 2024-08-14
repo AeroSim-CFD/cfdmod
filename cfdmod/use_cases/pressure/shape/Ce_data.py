@@ -139,8 +139,8 @@ def process_surfaces(
             )
         indexing_df = pd.DataFrame(
             {
-                "point_idx" : np.arange(len(regions_mesh.triangle_vertices)) + last_index_recorded, 
-                "region_idx": regions_mesh_triangles_indexing
+                "point_idx": np.arange(len(regions_mesh.triangle_vertices)) + last_index_recorded,
+                "region_idx": regions_mesh_triangles_indexing,
             }
         )
         region_indexing_dfs.append(indexing_df)
@@ -216,7 +216,9 @@ def process_Ce(
     Ce_stats = calculate_statistics(Ce_data, statistics_to_apply=cfg.statistics)
 
     logger.info("Processing surfaces...")
-    processed_surfaces, regions_indexing_df = process_surfaces(geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats)
+    processed_surfaces, regions_indexing_df = process_surfaces(
+        geometry_dict=geometry_dict, cfg=cfg, ce_stats=Ce_stats
+    )
     logger.info("Processed surfaces!")
 
     excluded_sfc_list = [sfc for sfc in cfg.zoning.exclude if sfc in mesh.surfaces.keys()]  # type: ignore
