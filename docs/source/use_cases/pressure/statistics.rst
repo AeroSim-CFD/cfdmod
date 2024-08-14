@@ -140,8 +140,68 @@ Extreme values
 
 Extreme value analysis is a statistical approach used to analyze the **behavior of extreme events in a dataset**.
 In the context of CFD simulations, particularly for pressure coefficient signals, understanding extreme events is crucial for designing structures and systems that can **withstand extreme conditions**.
+
 Extreme events in pressure coefficient signals often represent **critical scenarios such as peak loads on structures or components**.
 The analysis involves fitting extreme value distributions to the data and extrapolating to estimate the occurrence of extreme events beyond the observed range.
+
+Currently, CFD modules support two models of extreme value calculation:
+
+- **Moving average**: The coefficient signal is smoothed using a time window, then its min and max values are assigned to the extreme peaks
+- **Gumbel**: The coefficient signal time window is extrapolated using Gumbel statistical model.
+- **Peak factor**: The value of the peak is calculated using the average, RMS and peak factor values.
+
+The following configuration illustrates how to select and configure the appropriate model:
+
+.. code-block:: yaml
+
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Gumbel"
+          peak_duration: 3 # in seconds
+          event_duration: 600 # in seconds. Period of extreme event
+          n_subdivisions: 10 # Number of subdivisions
+          non_exceedance_probability: 0.78 # Confidence parameter in %
+      - stats: "max"
+        params:
+          method_type: "Peak"
+          peak_factor: 3 # xtr = avg +- factor * rms
+      - stats: "max"
+        params:
+          method_type: "Moving Average"
+          window_size_real_scale: 3 # s
+
+Moving average
+^^^^^^^^^^^^^^
+
+In the context of wind engineering, sometimes it may be necessary to smooth a coefficient signal so that the **peak values (maximum and minimum) are in the same order as the event time scale**.
+Normally, atmospheric wind gusts **peak pressures last for about 3 seconds**, according to the wind standard NBR-6123.
+However, other wind standards may define a different base time scale.
+
+Therefore, the pressure coefficient peaks can be obtained after smoothing the pressure signal based on the event time scale.
+That way, a peak that happens in a shorter period can be neglected/smoothed.
+
+Applying a **moving average to a signal has the effect of smoothing it**.
+The image below illustrates the effect of a moving average:
+
+.. image:: /_static/pressure/moving_avg.png
+    :width: 60 %
+    :align: center
+
+After smoothing the pressure signal, based on the wind gust time scale, the peaks from the smoothed signal are captured and assigned as a extreme value (minimum/negative or maximum/positive).
+
+Gumbel model
+^^^^^^^^^^^^
 
 The Gumbel model is a widely used statistical model in extreme value theory for predicting the probability distribution of extreme values.
 
@@ -209,13 +269,24 @@ The method consists of the following steps:
 - Subdivide the coefficient time series into samples
 - Compute the extreme values for each sample and order them
 - Fit Gumbel PDF model to the data
-- Calculate the extreme value of the time series with a probability of exceeding this value
+- Calculate the extreme value of the time series with a probability of exceeding this value for positive and negative values
 
 .. note:: 
     For more information about extreme values for structure design, check out Chapter 13 (:footcite:t:`wyatt1990designer`)
 
-Mean Quasi static
-=================
+Peak Factor
+^^^^^^^^^^^
+
+Using this method, the extreme value is calculated provided a peak factor :math:`f`.
+Peak value is then defined using the RMS :math:`\tilde{x}` and average values :math:`\bar{x}`.
+The expression for calculation is as follows:
+
+.. math::
+
+    \hat{x} = \bar{x} + f \tilde{x}
+
+Mean Equivalent
+===============
 
 There are two ways of composing the wind load from coefficient data.
 The first one is to use mean pressure distribution, and the dymanic pressure, **which is based on the peak base wind velocity**.
@@ -242,13 +313,16 @@ The correction factor is defined as:
 .. math::
     f = \left(\frac{S_{2,600s}}{S_{2,3s}} \right) ^ 2
 
-The mean quasi static value is the worst case between the mean value and the extreme value scaled by the statistical factors.
-For example, the mean quasi static value of a pressure coefficient signal is defined as:
+The mean equivalent value is the worst case between the mean value and the extreme values scaled by the statistical factors.
+For example, the mean equivalent value of a pressure coefficient signal is defined as:
 
 .. math::
-    cp_{mean-qs} &= max(cp_{mean}, f cp_{xtr-max})   \text{   if  } cp_{mean} > 0
+    abs(cp_{mean-eq}) &= max(abs(cp_{mean}), abs(f * cp_{xtr-max}), abs(f * cp_{xtr-min}))
 
-    cp_{mean-qs} &= min(cp_{mean}, f cp_{xtr-min})   \text{   if  } cp_{mean} < 0
+    cp_{mean-eq} &= abs(cp_{mean-eq}) * sign(max(abs(val)))
 
+
+.. important:: 
+    **The sign of the mean equivalent value is the same as the value correspondent to the maximum absolute value** between the mean, extreme maximum and extreme minimum values.
 
 .. footbibliography::

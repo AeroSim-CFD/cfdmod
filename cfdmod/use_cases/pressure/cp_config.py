@@ -3,17 +3,16 @@ from __future__ import annotations
 __all__ = ["CpConfig", "CpCaseConfig"]
 
 import pathlib
-from typing import Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from cfdmod.api.configs.hashable import HashableConfig
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.base_config import BasePressureConfig
 from cfdmod.utils import read_yaml
 
 
-class CpConfig(HashableConfig):
+class CpConfig(HashableConfig, BasePressureConfig):
     number_of_chunks: int = Field(
         1,
         title="Number of chunks",
@@ -32,20 +31,16 @@ class CpConfig(HashableConfig):
         + "If set to average, static pressure signal will be averaged."
         + "If set to instantaneous, static pressure signal will be transient.",
     )
-    U_H: float = Field(
+    simul_U_H: float = Field(
         ...,
-        title="Reference Flow Velocity",
-        description="Value for reference Flow Velocity to calculate dynamic pressure",
+        title="Simulation Flow Velocity",
+        description="Value for simulation Flow Velocity to calculate dynamic "
+        + "pressure and convert time scales",
     )
-    U_H_correction_factor: float = Field(
-        1,
-        title="Reference Flow Velocity correction factor",
-        description="Value for reference Flow Velocity correction factor multiplier",
-    )
-    statistics: list[Statistics] = Field(
+    simul_characteristic_length: float = Field(
         ...,
-        title="List of statistics",
-        description="List of statistics to calculate from pressure coefficient signal",
+        title="Simulation Characteristic Length",
+        description="Value for simulation characteristic length to convert time scales",
     )
 
 
@@ -55,19 +50,6 @@ class CpCaseConfig(BaseModel):
         title="Pressure Coefficient configs",
         description="Dictionary with Pressure Coefficient configuration",
     )
-    extreme_values: Optional[ExtremeValuesParameters] = Field(
-        None,
-        title="Extreme values parameter",
-        description="Parameters for performing extreme value analysis",
-    )
-
-    @model_validator(mode="after")
-    def check_extreme_values_params(self) -> CpCaseConfig:
-        full_stats = [s for v in self.pressure_coefficient.values() for s in v.statistics]
-        if any(stats in full_stats for stats in ["xtr_min", "xtr_max"]):
-            if self.extreme_values is None:
-                raise ValueError("Extreme values parameters must be specified!")
-        return self
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:

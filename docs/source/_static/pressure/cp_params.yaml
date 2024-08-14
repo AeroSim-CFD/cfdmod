@@ -7,14 +7,37 @@ pressure_coefficient:
     # Define how to consider the effect of static reference pressure
     reference_pressure: "average" # or "instantaneous"
     # Velocity at the building interest height
-    U_H: 0.05
+    simul_U_H: 0.05
+    # Simulation characteristic length scale for time scale conversion
+    simul_characteristic_length: 0.8445
     # Define which statistics will be calculated
-    statistics: ["min", "max", "std", "mean", "skewness", "kurtosis", "xtr_min", "xtr_max", "mean_qs"]
-
-extreme_values:
-  CST_real: 0.56
-  CST_sim: 16.89
-  t:  0.3  # (s) duracao do evento extremo
-  T0: 6  # (s) actual observation period
-  T1: 60  # (s) target observation period
-  yR: 1.4
+    statistics:
+      - stats: "mean"
+      - stats: "rms"
+      - stats: "skewness"
+      - stats: "kurtosis"
+      - stats: "mean_eq"
+        params:
+          scale_factor: 0.61
+      - stats: "min"
+        params:
+          method_type: "Absolute"
+      - stats: "max"
+        params:
+          method_type: "Gumbel"
+          peak_duration: 3 # in seconds
+          event_duration: 600 # in seconds. Period of extreme event
+          n_subdivisions: 10 # Number of subdivisions
+          non_exceedance_probability: 0.78 # Confidence parameter in %
+          full_scale_U_H: 40
+          full_scale_characteristic_length: 22.4
+      - stats: "max"
+        params:
+          method_type: "Peak"
+          peak_factor: 3 # xtr = avg +- factor * rms
+      - stats: "max"
+        params:
+          method_type: "Moving Average"
+          window_size_interval: 3 # s
+          full_scale_U_H: 40
+          full_scale_characteristic_length: 22.4

@@ -9,6 +9,7 @@ from cfdmod.use_cases.pressure.moment.Cm_config import CmCaseConfig
 from cfdmod.use_cases.pressure.moment.Cm_data import process_Cm
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.path_manager import CmPathManager
+from cfdmod.utils import save_yaml
 
 
 @dataclass
@@ -77,14 +78,18 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.moment_coefficient.items():
         logger.info(f"Processing Cm config {cfg_label} ...")
 
-        cm_output: CommonOutput = process_Cm(
-            mesh=mesh,
-            cfg=cfg,
-            cp_path=cp_path,
-            bodies_definition=post_proc_cfg.bodies,
-            extreme_params=post_proc_cfg.extreme_values,
+        cm_output_dict: dict[str, CommonOutput] = process_Cm(
+            mesh=mesh, cfg=cfg, cp_path=cp_path, bodies_definition=post_proc_cfg.bodies
         )
-
-        cm_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
+        already_saved = False
+        for direction_lbl, cm_output in cm_output_dict.items():
+            path_manager.direction_label = direction_lbl
+            if already_saved:
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+            else:
+                cm_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
+                cm_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+                already_saved = True
+            save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
 
         logger.info(f"Processed Cm config {cfg_label}!")

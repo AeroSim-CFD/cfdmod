@@ -7,10 +7,8 @@ from vtk import vtkPolyData
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
-from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
 from cfdmod.use_cases.pressure.shape.zoning_config import ZoningModel
-from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig
+from cfdmod.use_cases.pressure.zoning.body_config import BodyConfig, MomentBodyConfig
 from cfdmod.use_cases.pressure.zoning.processing import get_indexing_mask
 
 
@@ -45,6 +43,25 @@ def get_excluded_entities(
     excluded_polydata = create_NaN_polydata(mesh=excluded_sfcs, column_labels=columns)
 
     return ProcessedEntity(mesh=excluded_sfcs, polydata=excluded_polydata)
+
+
+def get_region_definition_dataframe(geom_dict: dict[str, GeometryData]) -> pd.DataFrame:
+    """Creates a dataframe with the resulting region index and its bounds (x_min, x_max, y_min, y_max, z_min, z_max)
+
+    Args:
+        geom_dict (dict[str, GeometryData]): Geometry data dictionary
+
+    Returns:
+        pd.DataFrame: Region definition dataframe
+    """
+    dfs = []
+    for sfc_id, geom_data in geom_dict.items():
+        df = pd.DataFrame()
+        df = geom_data.zoning_to_use.get_regions_df()
+        df["region_idx"] = df["region_idx"].astype(str) + f"-{sfc_id}"
+        dfs.append(df)
+
+    return pd.concat(dfs)
 
 
 def create_NaN_polydata(mesh: LnasGeometry, column_labels: list[str]) -> vtkPolyData:
@@ -125,11 +142,13 @@ def tabulate_geometry_data(
     return geometry_df
 
 
-def get_geometry_data(body_cfg: BodyConfig, sfc_list: list[str], mesh: LnasFormat) -> GeometryData:
+def get_geometry_data(
+    body_cfg: BodyConfig | MomentBodyConfig, sfc_list: list[str], mesh: LnasFormat
+) -> GeometryData:
     """Builds a GeometryData from the mesh and the configurations
 
     Args:
-        body_cfg (BodyConfig): Body configuration with zoning parameters
+        body_cfg (BodyConfig | MomentBodyConfig): Body configuration with zoning parameters
         sfc_list (list[str]): List of surfaces that compose the body
         mesh (LnasFormat): Input mesh
 

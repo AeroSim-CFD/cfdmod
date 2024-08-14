@@ -1,41 +1,51 @@
 import math
 import pathlib
-from typing import Callable
+from typing import Callable, ClassVar
 
 import numpy as np
 import pandas as pd
 from lnas import LnasGeometry
 
-from cfdmod.use_cases.pressure.extreme_values import ExtremeValuesParameters
-from cfdmod.use_cases.pressure.statistics import Statistics
+from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
+from cfdmod.utils import convert_dataframe_into_matrix, convert_matrix_into_dataframe
 
 
 class HDFGroupInterface:
-    # HDF keys follow the convention step_{formatted initial_step}_group_{formatted group_idx}
+    # HDF keys follow the convention /step_{formatted initial_step}_group_{formatted group_idx}
     # Step information comes from simulation results
+    TEMPORAL_PREFIX: ClassVar[str] = "/step"
+    GROUP_PREFIX: ClassVar[str] = "group"
+
+    @classmethod
+    def time_key(cls, initial_time: float) -> str:
+        return f"{cls.TEMPORAL_PREFIX}{int(initial_time):07}"
 
     @classmethod
     def get_point_group_key(cls, timestep_group_lbl: str, group_idx: int) -> str:
-        return timestep_group_lbl + f"_group_{group_idx:03}"
+        return "_".join([timestep_group_lbl, cls.GROUP_PREFIX + f"{group_idx:04}"])
 
     @classmethod
     def get_available_point_groups(cls, hdf_keys: list[str]) -> set[str]:
-        return set(["group" + k.split("group")[1] for k in hdf_keys])
+        return set([cls.GROUP_PREFIX + k.split(cls.GROUP_PREFIX)[1] for k in hdf_keys])
 
     @classmethod
     def get_timestep_keys_for_group(cls, hdf_keys: list[str], group_key: str) -> list[str]:
-        return [k for k in hdf_keys if k.split("group")[1] in group_key]
+        return [k for k in hdf_keys if k.split(cls.GROUP_PREFIX)[1] in group_key]
 
     @classmethod
     def filter_groups(
         cls, group_keys: list[str], timestep_range: tuple[float, float]
     ) -> list[str]:
-        steps = [int(key.split("step")[1]) for key in group_keys]
+        steps = [int(key.replace(cls.TEMPORAL_PREFIX, "")) for key in group_keys]
         lower_values = [x for x in steps if x <= timestep_range[0]]
-        initial_step = max(lower_values)
-
-        return [f"/step{step:07}" for step in steps if initial_step <= step <= timestep_range[1]]
+        if len(lower_values) == 0:
+            return [cls.time_key(step) for step in steps if step <= timestep_range[1]]
+        else:
+            initial_step = max(lower_values)
+            return [
+                cls.time_key(step) for step in steps if initial_step <= step <= timestep_range[1]
+            ]
 
 
 def split_into_chunks(
@@ -62,28 +72,26 @@ def split_into_chunks(
         raise ValueError("There must be at least two steps in each chunk")
 
     for i in range(number_of_chunks):
-        min_step, max_step = i * step, min((i + 1) * step - 1, len(time_arr) - 1)
+        initial_step, end_step = i * step, min((i + 1) * step - 1, len(time_arr) - 1)
         df: pd.DataFrame = time_series_df.loc[
-            (time_series_df.time_step >= time_arr[min_step])
-            & (time_series_df.time_step <= time_arr[max_step])
+            (time_series_df.time_step >= time_arr[initial_step])
+            & (time_series_df.time_step <= time_arr[end_step])
         ].copy()
 
-        range_lbl = f"range_{int(time_arr[min_step])}_{int(time_arr[max_step])}"
+        range_lbl = HDFGroupInterface.time_key(initial_time=time_arr[initial_step])
 
-        df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="t")
+        df.to_hdf(path_or_buf=output_path, key=range_lbl, mode="a", index=False, format="table")
 
 
 def calculate_statistics_for_groups(
     grouped_data_path: pathlib.Path,
-    statistics: list[Statistics],
-    extreme_params: ExtremeValuesParameters | None,
+    statistics: list[BasicStatisticModel | ParameterizedStatisticModel],
 ) -> pd.DataFrame:
     """Calculates statistics for groups of points
 
     Args:
         grouped_data_path (pathlib.Path): Path of grouped data (HDF)
-        statistics (list[Statistics]): List of statistics to apply
-        extreme_params (ExtremeValuesParameters | None): Parameters for extreme values analysis
+        statistics (list[BasicStatisticModel | ParameterizedStatisticModel]): List of statistics with parameters to apply
 
     Returns:
         pd.DataFrame: Statistics dataframe
@@ -100,21 +108,19 @@ def calculate_statistics_for_groups(
             for key in keys_for_group:
                 df = groups_store.get(key)
                 group_dfs.append(df)
-
-            cp_data = pd.concat(group_dfs).sort_values(by=["time_step", "point_idx"])
+            cp_data = pd.concat(group_dfs).sort_values(by=["time_normalized"])
             cp_stats = calculate_statistics(
                 cp_data,
                 statistics_to_apply=statistics,
-                variables=["cp"],
-                group_by_key="point_idx",
-                extreme_params=extreme_params,
             )
             del cp_data
             stats_df.append(cp_stats)
 
-    full_stats = pd.concat(stats_df).sort_values(by=["point_idx"])
+    full_stats = pd.concat(stats_df).T
+    full_stats.reset_index(inplace=True)
+    full_stats.rename(columns={"index": "scalar"}, inplace=True)
 
-    return full_stats
+    return full_stats[["scalar"] + sorted([col for col in full_stats.columns if col != "scalar"])]
 
 
 def divide_timeseries_in_groups(
@@ -133,17 +139,20 @@ def divide_timeseries_in_groups(
 
         for group_lbl in groups:
             coefficient_data = data_store.get(group_lbl)
-            if pt_groups == None:
-                points_arr = coefficient_data.point_idx.unique()
+            if pt_groups is None:
+                points_arr = np.array(
+                    [col for col in coefficient_data.columns if col != "time_normalized"],
+                    dtype=np.int32,
+                )
                 n_per_group = len(points_arr) // n_groups
                 pt_groups = np.split(points_arr, range(n_per_group, len(points_arr), n_per_group))
 
             for i, points_in_group in enumerate(pt_groups):
-                group_data = coefficient_data.loc[
-                    coefficient_data.point_idx.isin(points_in_group)
-                ].copy()
+                group_data = coefficient_data[points_in_group.astype(str)].copy()
+                group_data["time_normalized"] = coefficient_data["time_normalized"]
                 group_key = HDFGroupInterface.get_point_group_key(group_lbl, i)
-                group_data.to_hdf(output_path, key=group_key, mode="a")
+                group_data.to_hdf(output_path, key=group_key, mode="a", format="fixed")
+                del group_data
 
 
 def process_timestep_groups(
@@ -151,6 +160,8 @@ def process_timestep_groups(
     geometry_df: pd.DataFrame,
     geometry: LnasGeometry,
     processing_function: Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame],
+    data_label: str = "cp",
+    time_column_label: str = "time_normalized",
 ) -> pd.DataFrame:
     """Process the timestep groups with geometric properties
 
@@ -160,26 +171,36 @@ def process_timestep_groups(
         geometry (LnasGeometry): Geometry to be processed. Needed for evaluating representative area and volume
         processing_function (Callable[[pd.DataFrame, pd.DataFrame, LnasGeometry], pd.DataFrame]):
             Coefficient processing function
+        data_label (str): Label of the tabulated time series dataframe. Defaults to "cp".
+        time_column_label (str): Label of time series time column. Defaults to "time_normalized".
 
     Returns:
         pd.DataFrame: Transformed pressure coefficient time series
     """
-
     processed_samples: list[pd.DataFrame] = []
     with pd.HDFStore(data_path, mode="r") as df_store:
         store_groups = df_store.keys()
 
         for store_group in store_groups:
             sample = df_store.get(store_group)
+            if "point_idx" in sample.columns:
+                # If point_idx is in dataframe columns, then dataframe (legacy) form is assumed
+                # and needs to be converted to newer (matrix) format
+                sample = convert_dataframe_into_matrix(
+                    sample, row_data_label=time_column_label, value_data_label=data_label
+                )
             coefficient_data = processing_function(sample, geometry_df, geometry)
             processed_samples.append(coefficient_data)
 
     merged_samples = pd.concat(processed_samples)
+    merged_samples.rename(columns={col: str(col) for col in merged_samples.columns}, inplace=True)
 
-    sort_columns = [col for col in ["time_step", "region_idx"] if col in merged_samples.columns]
-    if "time_step" in sort_columns:
+    sort_columns = [
+        col for col in [time_column_label, "region_idx"] if col in merged_samples.columns
+    ]
+    if time_column_label in merged_samples.columns:
         merged_samples.sort_values(by=sort_columns, inplace=True)
     else:
-        raise KeyError("Missing time_step column in data stored")
+        raise KeyError(f"Missing time {time_column_label} column in data stored")
 
     return merged_samples

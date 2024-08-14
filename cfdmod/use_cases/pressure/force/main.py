@@ -9,6 +9,7 @@ from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.use_cases.pressure.force.Cf_data import process_Cf
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.path_manager import CfPathManager
+from cfdmod.utils import save_yaml
 
 
 @dataclass
@@ -62,13 +63,13 @@ def get_args_process(args: list[str]) -> ArgsModel:
 
 def main(*args):
     args_use = get_args_process(*args)
-    path_manager = CfPathManager(output_path=pathlib.Path(args_use.output))
 
     cfg_path = pathlib.Path(args_use.config)
     mesh_path = pathlib.Path(args_use.mesh)
     cp_path = pathlib.Path(args_use.cp)
 
     post_proc_cfg = CfCaseConfig.from_file(cfg_path)
+    path_manager = CfPathManager(output_path=pathlib.Path(args_use.output))
 
     logger.info("Reading mesh description...")
     mesh = LnasFormat.from_file(mesh_path)
@@ -77,13 +78,18 @@ def main(*args):
     for cfg_label, cfg in post_proc_cfg.force_coefficient.items():
         logger.info(f"Processing Cf config {cfg_label} ...")
 
-        cf_output: CommonOutput = process_Cf(
-            mesh=mesh,
-            cfg=cfg,
-            cp_path=cp_path,
-            bodies_definition=post_proc_cfg.bodies,
-            extreme_params=post_proc_cfg.extreme_values,
+        cf_output_dict: dict[str, CommonOutput] = process_Cf(
+            mesh=mesh, cfg=cfg, cp_path=cp_path, bodies_definition=post_proc_cfg.bodies
         )
-        cf_output.save_outputs(cfg_label=cfg_label, cfg=cfg, path_manager=path_manager)
+        already_saved = False
+        for direction_lbl, cf_output in cf_output_dict.items():
+            path_manager.direction_label = direction_lbl
+            if already_saved:
+                cf_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+            else:
+                cf_output.save_region_info(cfg_label=cfg_label, path_manager=path_manager)
+                cf_output.save_outputs(cfg_label=cfg_label, path_manager=path_manager)
+                already_saved = True
+            save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
 
         logger.info(f"Processed Cf config {cfg_label}!")

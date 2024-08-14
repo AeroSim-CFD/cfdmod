@@ -7,16 +7,22 @@ import pandas as pd
 from lnas import LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.chunking import process_timestep_groups, split_into_chunks
+from cfdmod.use_cases.pressure.chunking import (
+    HDFGroupInterface,
+    process_timestep_groups,
+    split_into_chunks,
+)
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.utils import convert_matrix_into_dataframe
 
 
 def _mock_processing_function(
     cp_df: pd.DataFrame, _geom_df: pd.DataFrame, _geom: LnasGeometry
 ) -> pd.DataFrame:
+    cols_points = [c for c in cp_df.columns if c != "time_step"]
     result = cp_df.copy()
-    result["value"] *= 2
+    result[cols_points] *= 2
 
     return result
 
@@ -37,6 +43,8 @@ class TestChunking(unittest.TestCase):
         self.sample_df = pd.DataFrame(time_series_data)
         self.number_of_chunks = 3
         self.output_path = pathlib.Path("./output/chunking.h5")
+        if self.output_path.exists():
+            self.output_path.unlink()
         self.zoning = zoning.offset_limits(0.1)
 
     def test_raises_error_if_dataframe_lacks_time_step_column(self):
@@ -62,8 +70,7 @@ class TestChunking(unittest.TestCase):
         time_arr = self.sample_df.time_step.unique()
         step = math.ceil(len(time_arr) / self.number_of_chunks)
         expected_keys = [
-            f"/range_{int(time_arr[i * step])}_{int(min((i + 1) * step - 1, len(time_arr) - 1))}"
-            for i in range(self.number_of_chunks)
+            HDFGroupInterface.time_key(time_arr[i * step]) for i in range(self.number_of_chunks)
         ]
 
         split_into_chunks(self.sample_df, self.number_of_chunks, self.output_path)
@@ -91,10 +98,16 @@ class TestChunking(unittest.TestCase):
         )
 
         result_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            data_label="value",
+            time_column_label="time_step",
         )
-        self.sample_df.sort_values(by=["time_step", "point_idx"], inplace=True)
-        result_df.sort_values(by=["time_step", "point_idx"], inplace=True)
+        self.sample_df.sort_values(by=["time_step"], inplace=True)
+        result_df = convert_matrix_into_dataframe(result_df, value_data_label="value")
+        result_df.sort_values(by=["time_step"], inplace=True)
 
         self.assertTrue((result_df.value.to_numpy() == self.sample_df.value.to_numpy() * 2).all())
         self.assertTrue(result_df.time_step.nunique() == self.sample_df.time_step.nunique())
@@ -117,8 +130,14 @@ class TestChunking(unittest.TestCase):
 
         split_into_chunks(self.sample_df, self.number_of_chunks, self.output_path)
         first_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            data_label="value",
+            time_column_label="time_step",
         )
+        first_df = convert_matrix_into_dataframe(first_df, value_data_label="value")
         avg = first_df.value.mean()
         std = first_df.value.std()
         min_val, max_val = first_df.value.min(), first_df.value.max()
@@ -128,8 +147,14 @@ class TestChunking(unittest.TestCase):
 
         split_into_chunks(self.sample_df, self.number_of_chunks + 2, self.output_path)
         second_df = process_timestep_groups(
-            self.output_path, geometry_df, self.geometry, _mock_processing_function
+            self.output_path,
+            geometry_df,
+            self.geometry,
+            _mock_processing_function,
+            data_label="value",
+            time_column_label="time_step",
         )
+        second_df = convert_matrix_into_dataframe(second_df, value_data_label="value")
 
         self.assertEqual(avg, second_df.value.mean())
         self.assertEqual(std, second_df.value.std())

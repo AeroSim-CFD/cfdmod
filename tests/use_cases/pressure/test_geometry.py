@@ -5,7 +5,7 @@ from lnas import LnasFormat, LnasGeometry
 from vtk import vtkPolyData
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.geometry import (  # combine_geometries,; filter_geometry_from_list,; get_excluded_surfaces,
+from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     create_NaN_polydata,
     tabulate_geometry_data,

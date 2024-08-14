@@ -12,16 +12,20 @@ from cfdmod.use_cases.pressure.moment.Cm_data import (
     transform_Cm,
 )
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 class TestCmData(unittest.TestCase):
     def setUp(self):
-        self.body_data = pd.DataFrame(
+        body_data = pd.DataFrame(
             {
                 "cp": [0.1, 0.2, 0.3, 0.4],
-                "time_step": [0, 0, 1, 1],
+                "time_normalized": [0, 0, 1, 1],
                 "point_idx": [0, 1, 0, 1],
             }
+        )
+        self.body_data = convert_dataframe_into_matrix(
+            body_data, row_data_label="time_normalized", value_data_label="cp"
         )
 
         vertices = np.array([[0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0]])
@@ -64,15 +68,18 @@ class TestCmData(unittest.TestCase):
         self.assertTrue(all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]]))
 
     def test_get_representative_volume(self):
-        V_rep = get_representative_volume(
+        (Lx, Ly, Lz), V_rep = get_representative_volume(
             self.body_geom, np.arange(0, len(self.body_geom.triangles))
         )
         shifted_geom = self.body_geom.copy()
         shifted_geom.vertices[-1][2] = 10  # Shifted z coord for the last vertex
         shifted_geom._full_update()
-        shifted_V_rep = get_representative_volume(
+        (shifted_Lx, shifted_Ly, shifted_Lz), shifted_V_rep = get_representative_volume(
             shifted_geom, np.arange(0, len(self.body_geom.triangles))
         )
 
-        self.assertEqual(V_rep, 100)
+        self.assertEqual(Lx, 10)
+        self.assertEqual(Ly, 10)
+        self.assertEqual(Lz, 1)
+        self.assertEqual(V_rep, 100, Lx * Ly * Lz)
         self.assertEqual(shifted_V_rep, 1000)

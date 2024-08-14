@@ -71,45 +71,63 @@ Another way to run the pressure coefficient conversion, is through the `notebook
 Data format
 ===========
 
+.. note::
+    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+
 .. list-table:: :math:`c_p(t)`
-   :widths: 33 33 33
+   :widths: 20 20 20 20 20
    :header-rows: 1
 
-   * - point_idx
-     - timestep
-     - cp
+   * - time_idx/point_idx
+     - Normalized time (:math:`t^*`)
+     - 0
+     - 1
+     - 2
    * - 0
-     - 10000
+     - 0.0
      - 1.25
-   * - 1
-     - 10000
      - 1.15
+     - 1.32
+   * - 0
+     - 1.0
+     - 1.1
+     - 1.5
+     - 1.13
 
 .. list-table:: :math:`c_p (stats)`
-   :widths: 20 10 10 10 10 20 20
+   :widths: 20 20 20 20 20
    :header-rows: 1
 
-   * - point_idx
-     - max
-     - min
-     - mean
-     - std
-     - skewness
-     - kurtosis
-   * - 0
-     - 1.25
-     - 0.9
-     - 1.1
-     - 0.2
-     - 0.1
-     - 0.15
-   * - 1
+   * - scalar
+     - 0
+     - 1
+     - 2
+     - 3
+   * - min
+     - -1.25
+     - -0.9
+     - -1.1
+     - -0.2
+   * - max
      - 1.15
      - 0.95
      - 1.13
      - 0.19
-     - 0.11
+   * - mean
+     - 0.83
+     - 0.9
+     - 0.5
      - 0.13
+   * - rms
+     - 0.26
+     - 0.25
+     - 0.13
+     - 0.19
+   * - skewness
+     - 1.15
+     - -0.95
+     - 1.13
+     - 0.19
 
 .. toctree::
    :maxdepth: -1

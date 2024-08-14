@@ -39,7 +39,9 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
     """Creates a vtkPolyData for cell data combined with mesh description
 
     Args:
-        data (pd.DataFrame): Compiled cell data
+        data (pd.DataFrame): Compiled cell data. It supports table and matrix data formats.
+            In matrix form, each column represents a point, and each row identifies the scalar label.
+            In table form, there is a column with point indexes, and other columns for scalar data.
         mesh (LnasGeometry): Mesh description
 
     Returns:
@@ -60,12 +62,29 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
     polyData.SetPoints(points)
     polyData.SetPolys(polys)
 
-    scalars = [c for c in data.columns if c != "point_idx"]
-
-    for scalar_lbl in scalars:
+    scalars_lbls, point_idx = None, None
+    if "point_idx" in data.columns:
+        # Table form dataframe
+        scalars_lbls = [c for c in data.columns if c != "point_idx"]
+        point_idx = data["point_idx"].to_numpy()
+    else:
+        # Matrix form dataframe
+        scalars_lbls = data["scalar"]
+        point_idx = [int(c) for c in data.columns if c != "scalar"]
+    for scalar_index, scalar_lbl in enumerate(scalars_lbls):
         scalars = vtkFloatArray()
         scalars.SetName(scalar_lbl)
-        for i, value in zip(data["point_idx"].to_numpy(), data[scalar_lbl].to_numpy()):
+        scalar_data = None
+
+        if "point_idx" in data.columns:
+            # Table form dataframe, scalar is in columns
+            scalar_data = data[scalar_lbl].to_numpy()
+        else:
+            # Matrix form dataframe, scalar is in rows
+            scalar_data = data.iloc[scalar_index][
+                [col for col in data.columns if col != "scalar"]
+            ].to_numpy()
+        for i, value in zip(point_idx, scalar_data):
             scalars.InsertTuple1(i, value)
         polyData.GetCellData().AddArray(scalars)
 
