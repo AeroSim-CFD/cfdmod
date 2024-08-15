@@ -9,3 +9,9 @@ cases:
     mesh_element_size: 25.0
     wind_source_angle: 270
     upwind_elevation: 780
+  inherit_loft:
+    loft_length: 2000
+  inherit_element_size:
+    loft_length: 2000
+    wind_source_angle: 270
+    upwind_elevation: 800

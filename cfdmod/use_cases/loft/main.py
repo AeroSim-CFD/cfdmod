@@ -66,6 +66,8 @@ def main(*args):
     triangles, _ = read_stl(mesh_path)
 
     for case_lbl, loft_params in cfg.cases.items():
+        if case_lbl == "default":
+            continue
         logger.info(f"Generating loft for {case_lbl}...")
         wind_source_direction = rotate_vector_around_z(
             np.array(cfg.reference_direction, dtype=np.float32), loft_params.wind_source_angle

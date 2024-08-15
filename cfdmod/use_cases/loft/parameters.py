@@ -52,6 +52,14 @@ class LoftCaseConfig(BaseModel):
     def from_file(cls, file_path: pathlib.Path):
         if file_path.exists():
             yaml_vals = read_yaml(file_path)
+            for case_lbl, case_dict in yaml_vals["cases"].items():
+                try:
+                    _ = LoftParams(**case_dict)
+                except:
+                    try:
+                        yaml_vals["cases"][case_lbl] = yaml_vals["cases"]["default"] | case_dict
+                    except:
+                        raise Exception(f"Case {case_lbl} is missing fields, default is not set")
             params = cls(**yaml_vals)
             return params
         else:
