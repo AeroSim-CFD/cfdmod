@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - "release/**"
+      - "release/v*"
 
 jobs:
   build-and-upload:
@@ -35,8 +35,35 @@ jobs:
       - name: Build the project with Poetry
         run: poetry build
 
+      - name: Extract version
+        run: |
+          VERSION=${GITHUB_REF#refs/heads/release/}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
-          path: dist/*.zip, dist/*.whl
+          path: dist/cfdmod-${{ env.VERSION }.tar.gz, dist/cfdmod-${{ env.VERSION }-py3-none-any.whl
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: cfdmod-${{ env.VERSION }.gz
+          asset_name: cfdmod-release-${{ env.VERSION }.gz
+          asset_content_type: application/zip
