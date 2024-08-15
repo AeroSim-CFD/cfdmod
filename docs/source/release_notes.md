@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.1.2
+
+- Automated CI/CD workflow
+
 ## v1.1.1
 
 Coefficient time series are now in normalized time scales.
