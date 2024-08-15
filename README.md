@@ -12,6 +12,12 @@ poetry run python -m unittest discover -v -s tests/ -p 'test_*.py'
 
 Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" target="_blank">Visual Studio Code</a>
 
+The tests can also be automated to run in different environments, and include dist build commands using <a href="https://tox.wiki/en/stable/" target="_blank">tox</a>:
+
+```bash
+poetry run tox
+```
+
 ## Memory usage profiling
 
 In order to check memory usage, _memory-profiler_ library is used.

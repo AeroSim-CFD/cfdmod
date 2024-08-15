@@ -216,7 +216,7 @@ def process_cp(
 
     create_folders_for_file(path_manager.get_config_path(cfg_lbl=cfg_label))
     save_yaml(cfg.model_dump(), path_manager.get_config_path(cfg_lbl=cfg_label))
-    
+
     if timeseries_path.exists():
         warnings.warn(
             f"Path for time series already exists {timeseries_path}. Deleted old file",

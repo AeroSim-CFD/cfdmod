@@ -3,7 +3,7 @@ import pathlib
 
 import numpy as np
 import pymeshlab
-from pymeshlab import AbsoluteValue, MeshSet
+from pymeshlab import MeshSet, PureValue
 
 
 def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
@@ -315,7 +315,7 @@ def apply_remeshing(
     ms: MeshSet = pymeshlab.MeshSet()
     ms.load_new_mesh(str(mesh_path.absolute()))
     ms.meshing_isotropic_explicit_remeshing(
-        iterations=15, targetlen=AbsoluteValue(element_size), featuredeg=crease_angle
+        iterations=15, targetlen=PureValue(element_size), featuredeg=crease_angle
     )
     ms.compute_selection_by_condition_per_face(condselect="fnz<0")
     ms.meshing_invert_face_orientation(onlyselected=True)
