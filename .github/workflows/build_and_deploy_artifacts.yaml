@@ -39,14 +39,14 @@ jobs:
 
       - name: Extract version
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
+          VERSION=${GITHUB_REF#refs/heads/release/v}
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
-          path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz, ./dist/cfdmod-v${{ env.VERSION }}-py3-none-any.whl
+          path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz, ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
 
       - name: Create Release
         id: create_release
