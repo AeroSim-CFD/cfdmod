@@ -34,6 +34,9 @@ jobs:
       - name: Build the project with Poetry
         run: poetry build
 
+      - name: List files in dist directory
+        run: ls -al ./dist
+
       - name: Extract version
         run: |
           VERSION=${GITHUB_REF#refs/heads/release/}
