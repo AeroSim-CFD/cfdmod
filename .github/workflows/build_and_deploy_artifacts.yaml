@@ -1,15 +1,11 @@
 name: Build and Deploy artifacts
 
 on:
-  pull_request:
-    branches:
-      - main
-    types:
-      - closed
+  release:
+    types: [published]
 
 jobs:
   build-and-upload:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,7 +28,7 @@ jobs:
         run: pip install poetry
 
       - name: Install dependencies with Poetry
-        run: poetry install --with vtk,lnas,geometry
+        run: poetry install --with vtk,lnas,geometry,docs,notebook
 
       - name: Build the project with Poetry
         run: poetry build
@@ -42,19 +38,28 @@ jobs:
 
       - name: Extract version
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/v}
+          VERSION=${GITHUB_REF##*/}
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Extracted version: ${GITHUB_REF##*/}"
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Sphinx build
+        run: |
+          sudo apt-get install -y pandoc
+          cd docs
+          poetry run make html  # Build HTML docs
+          cd ..
+          zip -r sphinx-docs-${{ env.VERSION }}.zip docs/build/html
+
+      - name: Upload Release Asset Documentation
+        id: upload-release-asset-docs
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.VERSION }}
-          release_name: Release v${{ env.VERSION }}
-          draft: false
-          prerelease: false
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: sphinx-docs-${{ env.VERSION }}.zip
+          asset_name: sphinx-docs-${{ env.VERSION }}.zip
+          asset_content_type: application/zip
 
       - name: Upload Release Asset Zip
         id: upload-release-asset-zip
@@ -62,7 +67,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz
           asset_name: ./dist/cfdmod-release-${{ env.VERSION }}.tar.gz
           asset_content_type: application/zip
@@ -73,7 +78,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
           asset_name: ./dist/cfdmod-release-${{ env.VERSION }}-py3-none-any.whl
           asset_content_type: application/zip
