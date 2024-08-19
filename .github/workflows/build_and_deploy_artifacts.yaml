@@ -28,7 +28,7 @@ jobs:
         run: pip install poetry
 
       - name: Install dependencies with Poetry
-        run: poetry install --with vtk,lnas,geometry,docs,notebook
+        run: poetry install --with docs
 
       - name: Build the project with Poetry
         run: poetry build
@@ -57,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: sphinx-docs-${{ env.VERSION }}.zip
+          asset_path: docs-version-${{ env.VERSION }}.zip
           asset_name: sphinx-docs-${{ env.VERSION }}.zip
           asset_content_type: application/zip
 
