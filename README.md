@@ -1,5 +1,7 @@
 # cfdmod
 
+[![tests](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/tox_pipeline.yaml/badge.svg?branch=main)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/tox_pipeline.yaml)
+
 Package to provide analysis and processing tools for CFD cases
 
 ## Tests
