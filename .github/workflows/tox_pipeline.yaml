@@ -38,22 +38,12 @@ jobs:
       - name: Run Tox
         run: poetry run tox
 
-      - name: Check for uncommitted changes
-        id: check_changes
+      - name: Check for changes after Tox
         run: |
           if [[ $(git status --porcelain) ]]; then
-            echo "has_changes='true'" >> $GITHUB_ENV
+            echo "Warning: Code must be formatted!" >&2
+            git diff
+            exit 1
           else
-            echo "has_changes='false'" >> $GITHUB_ENV
+            echo "No formatting issues detected."
           fi
-          echo "has_changes: ${{ env.has_changes }}"
-        continue-on-error: true
-
-      - name: Commit and push changes if any
-        if: env.has_changes == 'true'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Apply code formatting via Tox pipeline"
-          git push
