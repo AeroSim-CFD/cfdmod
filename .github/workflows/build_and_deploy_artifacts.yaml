@@ -41,6 +41,29 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Extracted version: ${GITHUB_REF##*/}"
 
+      - name: Upload Release Asset Zip
+        id: upload-release-asset-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz
+          asset_name: ./dist/cfdmod-release-${{ env.VERSION }}.tar.gz
+          asset_content_type: application/zip
+  
+      - name: Upload Release Asset Wheel
+        id: upload-release-asset-wheel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
+          asset_name: ./dist/cfdmod-release-${{ env.VERSION }}-py3-none-any.whl
+          asset_content_type: application/zip
+  
+
       - name: Sphinx build
         run: |
           sudo apt-get install -y pandoc
@@ -60,24 +83,4 @@ jobs:
           asset_name: docs-version-${{ env.VERSION }}.zip
           asset_content_type: application/zip
 
-      - name: Upload Release Asset Zip
-        id: upload-release-asset-zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz
-          asset_name: ./dist/cfdmod-release-${{ env.VERSION }}.tar.gz
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset Wheel
-        id: upload-release-asset-wheel
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
-          asset_name: ./dist/cfdmod-release-${{ env.VERSION }}-py3-none-any.whl
-          asset_content_type: application/zip
+      
