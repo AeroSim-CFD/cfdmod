@@ -37,3 +37,23 @@ jobs:
 
       - name: Run Tox
         run: poetry run tox
+
+      - name: Check for uncommitted changes
+        id: check_changes
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            echo "true" > has_changes.txt
+          else
+            echo "false" > has_changes.txt
+          fi
+          cat has_changes.txt
+        continue-on-error: true
+
+      - name: Commit and push changes if any
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Apply code formatting via Tox pipeline"
+          git push
