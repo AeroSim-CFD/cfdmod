@@ -42,15 +42,15 @@ jobs:
         id: check_changes
         run: |
           if [[ $(git status --porcelain) ]]; then
-            echo "true" > has_changes.txt
+            echo "has_changes='true'" >> $GITHUB_ENV
           else
-            echo "false" > has_changes.txt
+            echo "has_changes='false'" >> $GITHUB_ENV
           fi
-          cat has_changes.txt
+          echo "has_changes: ${{ env.has_changes }}"
         continue-on-error: true
 
       - name: Commit and push changes if any
-        if: steps.check_changes.outputs.has_changes == 'true'
+        if: env.has_changes == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
