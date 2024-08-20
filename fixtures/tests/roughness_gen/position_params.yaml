@@ -6,8 +6,8 @@ spacing_params:
   line_offset: 10
   offset_direction: x # Optional, default is y
 bounding_box:
-  start: [-500,-1000,0]
-  end: [2400,1000,0]
+  start: [-500, -1000, 0]
+  end: [2400, 1000, 0]
 surfaces: # Dictionary of surfaces
   disk: "./fixtures/tests/roughness_gen/disk/disk.lnas"
   loft: "./fixtures/tests/roughness_gen/loft/loft.lnas"
