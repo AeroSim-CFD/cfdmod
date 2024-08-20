@@ -37,9 +37,9 @@ jobs:
 
       - name: Extract version
         run: |
-          VERSION=${GITHUB_REF##*/}
+          VERSION=${GITHUB_REF##*/v}
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "Extracted version: ${GITHUB_REF##*/}"
+          echo "Extracted version: ${GITHUB_REF##*/v}"
 
       - name: Upload Release Asset Zip
         id: upload-release-asset-zip
