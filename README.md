@@ -43,3 +43,20 @@ mprof plot
 ```
 
 That will plot the latest profiling data.
+
+## Generating schemas
+
+Schema files serve as a guide to fill config files.
+To generate a schema file for every config model, use the following command:
+
+```bash
+poetry run python -m scripts.generate_schemas
+```
+
+In order to setup the schema in VSCode, edit `settings.json`, or the workspace file, to include:
+
+```bash
+"yaml.schemas": {
+    "file:///path/to/cfdmod/output/schema-cfdmod.json": "**/cfdmod/**/\*.yaml"
+}
+```
