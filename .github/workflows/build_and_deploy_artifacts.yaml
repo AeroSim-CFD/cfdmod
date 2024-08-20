@@ -21,14 +21,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY_LNAS }}
 
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
-
-      - name: Install Poetry
-        run: pip install poetry
-
-      - name: Install dependencies with Poetry
-        run: poetry install --with docs
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+          pip install -U poetry
+          poetry cache clear --all pypi
+          poetry install --with docs
 
       - name: Build the project with Poetry
         run: poetry build
@@ -44,13 +43,11 @@ jobs:
 
       - name: Sphinx build
         run: |
-          pip install setuptools
-          python -c "import pkg_resources"
           sudo apt-get install -y pandoc
           cd docs
           poetry run make html  # Build HTML docs
           cd ..
-          zip -r sphinx-docs-${{ env.VERSION }}.zip docs/build/html
+          zip -r docs-version-${{ env.VERSION }}.zip docs/build/html
 
       - name: Upload Release Asset Documentation
         id: upload-release-asset-docs
@@ -60,7 +57,7 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: docs-version-${{ env.VERSION }}.zip
-          asset_name: sphinx-docs-${{ env.VERSION }}.zip
+          asset_name: docs-version-${{ env.VERSION }}.zip
           asset_content_type: application/zip
 
       - name: Upload Release Asset Zip
