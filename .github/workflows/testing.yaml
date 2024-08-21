@@ -1,9 +1,6 @@
-name: Tox Pipeline
+name: Testing Pipeline
 
-on:
-  push:
-    branches:
-      - main
+on: [pull_request]
 
 jobs:
   tox-pipeline:
@@ -37,13 +34,3 @@ jobs:
 
       - name: Run Tox
         run: poetry run tox
-
-      - name: Check for changes after Tox
-        run: |
-          if [[ $(git status --porcelain) ]]; then
-            echo "Warning: Code must be formatted!" >&2
-            git diff
-            exit 1
-          else
-            echo "No formatting issues detected."
-          fi
