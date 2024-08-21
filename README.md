@@ -1,6 +1,9 @@
 # cfdmod
 
-[![tests](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/tox_pipeline.yaml/badge.svg?branch=main)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/tox_pipeline.yaml)
+[![Testing Pipeline](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/testing.yaml/badge.svg)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/testing.yaml)
+[![Docs Deploy](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/pages/pages-build-deployment)
+[![Linting Workflow](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/linting.yaml/badge.svg)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/linting.yaml)
+[![Release artifacts](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/build_and_deploy_artifacts.yaml/badge.svg)](https://github.com/AeroSim-CFD/cfdmod/actions/workflows/build_and_deploy_artifacts.yaml)
 
 Package to provide analysis and processing tools for CFD cases
 
