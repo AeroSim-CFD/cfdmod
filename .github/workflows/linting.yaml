@@ -3,7 +3,7 @@ name: Linting Workflow
 on: [pull_request]
 
 jobs:
-  tox-pipeline:
+  linting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
