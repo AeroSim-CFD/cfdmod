@@ -16,6 +16,7 @@ tables = "^3.9.1"
 colorama = "^0.4.6"
 matplotlib = "^3.7.3"
 pyarrow = "^15.0.0"
+pytest = "^8.3.2"
 
 [tool.poetry.group.lnas]
 optional = true
@@ -65,6 +66,11 @@ pyvista = "^0.43.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
 
 [tool.black]
 exclude = '''
