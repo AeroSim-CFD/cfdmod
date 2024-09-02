@@ -3,7 +3,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 import scipy
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 
 from cfdmod.analysis.inflow.profile import InflowData, NormalizationParameters
 
