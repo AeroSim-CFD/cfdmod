@@ -37,5 +37,8 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
+      - name: Install dependencies with Poetry
+        run: poetry install --only dev
+
       - name: Run Tox
         run: poetry run tox

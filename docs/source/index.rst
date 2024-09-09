@@ -39,11 +39,3 @@ A brief list of the modules available can be found in the `Release notes <releas
    :hidden:
 
    Release Notes <release_notes.md>
-
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
