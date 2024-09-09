@@ -35,10 +35,9 @@ jobs:
           poetry install --extras "docs"
 
       - name: Build the project with Poetry
-        run: poetry build
-
-      - name: List files in dist directory
-        run: ls -al ./dist
+        run: |
+          poetry build
+          mv ./dist/* ./
 
       - name: Extract version
         run: |
@@ -54,10 +53,13 @@ jobs:
           cd ..
           zip -r docs-version-${{ env.VERSION }}.zip docs/build/html
 
+      - name: List files in dist directory
+        run: ls -al ./
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./dist/cfdmod-${{ env.VERSION }}.tar.gz
-            ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
+            cfdmod-${{ env.VERSION }}.tar.gz
+            cfdmod-${{ env.VERSION }}-py3-none-any.whl
             docs-version-${{ env.VERSION }}.zip
