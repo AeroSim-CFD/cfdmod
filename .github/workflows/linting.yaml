@@ -1,6 +1,14 @@
 name: Linting Workflow
 
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel previous jobs that are running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   linting:

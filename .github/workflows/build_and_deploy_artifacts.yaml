@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
 
+# Cancel previous jobs that are running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
