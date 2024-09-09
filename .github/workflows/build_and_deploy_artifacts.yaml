@@ -31,10 +31,9 @@ jobs:
           pip install --upgrade pip
           pip install poetry
           pip install -U poetry
-          pip install --upgrade setuptools 
-          pip install --upgrade distribute 
           poetry cache clear --all pypi
           poetry install --extras "docs"
+          pip install --upgrade setuptools
 
       - name: Build the project with Poetry
         run: poetry build
