@@ -27,7 +27,7 @@ jobs:
           pip install poetry
           pip install -U poetry
           poetry cache clear --all pypi
-          poetry install --with docs
+          poetry install --extras "docs"
       - name: Sphinx build
         run: |
           sudo apt-get install -y pandoc

@@ -9,13 +9,11 @@ Package to provide analysis and processing tools for CFD cases
 
 ## Tests
 
-There are two ways of running the repository tests. Both use Unit test python framework and it features tests for loft, cp, s1profile, config_models and altimetry modules. To run the tests via CLI:
+This codebase uses Pytest framework and it features tests for loft, cp, s1profile, config_models and altimetry modules. To run the tests via CLI:
 
 ```bash
-poetry run python -m unittest discover -v -s tests/ -p 'test_*.py'
+poetry run pytest <path/to/tests>
 ```
-
-Or you can run via <a href="https://code.visualstudio.com/docs/python/testing" target="_blank">Visual Studio Code</a>
 
 The tests can also be automated to run in different environments, and include dist build commands using <a href="https://tox.wiki/en/stable/" target="_blank">tox</a>:
 

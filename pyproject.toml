@@ -17,18 +17,46 @@ colorama = "^0.4.6"
 matplotlib = "^3.7.3"
 pyarrow = "^15.0.0"
 
-[tool.poetry.group.lnas]
-optional = true
+# **************************************** LNAS *******************************************
+lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main", optional = true }
+# *****************************************************************************************
 
-[tool.poetry.group.lnas.dependencies]
-lnas = { git = "git@github.com:AeroSim-CFD/lnas.git", branch="main" }
+# ************************************** Geometry *****************************************
+pymeshlab = { version = "^2023", optional = true }
+trimesh = { version = "^3.23.5", optional = true }
+# *****************************************************************************************
 
-[tool.poetry.group.geometry]
-optional = true
+# **************************************** Docs *******************************************
+sphinx-book-theme = { version = "^1.0.1", optional = true }
+myst-parser = { version = "^2.0.0", optional = true }
+sphinx-autobuild = { version = "^2021.3.14", optional = true }
+nbsphinx = { version = "^0.9.3", optional = true }
+sphinxcontrib-bibtex = { version = "^2.6.1", optional = true }
+# *****************************************************************************************
 
-[tool.poetry.group.geometry.dependencies]
-pymeshlab = "^2023"
-trimesh = "^3.23.5"
+# ************************************** Notebook *****************************************
+jupyter = { version = "^1.0.0", optional = true }
+ipython = { version = "^8.15.0", optional = true }
+ipykernel = { version = "^6.25.2", optional = true }
+# *****************************************************************************************
+
+# ***************************************** VTK *******************************************
+vtk = { version = "^9.2.6", optional = true }
+pyvista = { version = "^0.43.1", optional = true }
+# *****************************************************************************************
+
+[tool.poetry.extras]
+lnas = ["lnas"]
+geometry = ["pymeshlab", "trimesh"]
+docs = [
+  "sphinx-book-theme", 
+  "myst-parser", 
+  "sphinx-autobuild", 
+  "nbsphinx", 
+  "sphinxcontrib-bibtex"
+]
+notebook = ["jupyter", "ipython", "ipykernel"]
+vtk = ["vtk", "pyvista"]
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.7.0"}
@@ -37,31 +65,6 @@ tox = "^4.18.0"
 autoflake = "^2.2.1"
 json-schema-for-humans = "^1.0.2"
 pytest = "^8.3.2"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-sphinx-book-theme = "^1.0.1"
-myst-parser = "^2.0.0"
-sphinx-autobuild = "^2021.3.14"
-nbsphinx = "^0.9.3"
-sphinxcontrib-bibtex = "^2.6.1"
-
-[tool.poetry.group.notebook]
-optional = true
-
-[tool.poetry.group.notebook.dependencies]
-jupyter = "^1.0.0"
-ipython = "^8.15.0"
-ipykernel = "^6.25.2"
-
-[tool.poetry.group.vtk]
-optional = true
-
-[tool.poetry.group.vtk.dependencies]
-vtk = "^9.2.6"
-pyvista = "^0.43.1"
 
 [build-system]
 requires = ["poetry-core"]

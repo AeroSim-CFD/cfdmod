@@ -32,7 +32,7 @@ jobs:
           pip install poetry
           pip install -U poetry
           poetry cache clear --all pypi
-          poetry install --with docs
+          poetry install --extras "docs"
 
       - name: Build the project with Poetry
         run: poetry build
@@ -57,7 +57,7 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          file: |
+          files: |
             ./dist/cfdmod-${{ env.VERSION }}.tar.gz
             ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
             docs-version-${{ env.VERSION }}.zip
