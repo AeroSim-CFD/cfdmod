@@ -4,12 +4,15 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -38,28 +41,6 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Extracted version: ${GITHUB_REF##*/v}"
 
-      - name: Upload Release Asset Zip
-        id: upload-release-asset-zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/cfdmod-${{ env.VERSION }}.tar.gz
-          asset_name: cfdmod-release-${{ env.VERSION }}.tar.gz
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset Wheel
-        id: upload-release-asset-wheel
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
-          asset_name: cfdmod-release-${{ env.VERSION }}-py3-none-any.whl
-          asset_content_type: application/zip
-
       - name: Sphinx build
         run: |
           sudo apt-get install -y pandoc
@@ -68,13 +49,10 @@ jobs:
           cd ..
           zip -r docs-version-${{ env.VERSION }}.zip docs/build/html
 
-      - name: Upload Release Asset Documentation
-        id: upload-release-asset-docs
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: docs-version-${{ env.VERSION }}.zip
-          asset_name: docs-version-${{ env.VERSION }}.zip
-          asset_content_type: application/zip
+          file: |
+            ./dist/cfdmod-${{ env.VERSION }}.tar.gz
+            ./dist/cfdmod-${{ env.VERSION }}-py3-none-any.whl
+            docs-version-${{ env.VERSION }}.zip
