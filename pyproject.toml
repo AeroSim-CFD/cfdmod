@@ -6,7 +6,7 @@ authors = ["Waine Oliveira Jr <waine@aerosim.io>", "Pablo Penas <pablo@aerosim.i
 readme = "README.md"
 
 [build-system]
-requires = ["setuptools", "poetry-core"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
@@ -69,6 +69,7 @@ tox = "^4.18.0"
 autoflake = "^2.2.1"
 json-schema-for-humans = "^1.0.2"
 pytest = "^8.3.2"
+setuptools = "^74.1.2"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

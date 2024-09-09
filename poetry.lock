@@ -3653,7 +3653,7 @@ win32 = ["pywin32"]
 name = "setuptools"
 version = "74.1.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "setuptools-74.1.2-py3-none-any.whl", hash = "sha256:5f4c08aa4d3ebcb57a50c33b1b07e94315d7fc7230f7115e47fc99776c8ce308"},
@@ -4310,4 +4310,4 @@ vtk = ["pyvista", "vtk"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.13"
-content-hash = "51916b34d2f30525e5ba77586c41ba875039510d3bcb9bcf5f73220e3c3cd4b7"
+content-hash = "fa23e7e822b810218eba0d0f005caa7f0f252a4699c254b9c986b1b71eb9d9e3"
