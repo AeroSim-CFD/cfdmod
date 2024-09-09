@@ -38,7 +38,7 @@ jobs:
         run: pip install poetry
 
       - name: Install dependencies with Poetry
-        run: poetry install --only dev
+        run: poetry install --extras "vtk lnas geometry"
 
       - name: Run Tox
         run: poetry run tox
