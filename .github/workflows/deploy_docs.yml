@@ -27,7 +27,6 @@ jobs:
           pip install --upgrade pip
           pip install poetry
           pip install -U poetry
-          pip install --upgrade setuptools
           poetry cache clear --all pypi
           poetry install --extras "docs"
 
