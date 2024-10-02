@@ -58,7 +58,7 @@ def gumbel_extreme_values(
     CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
     time = (timestep_arr - timestep_arr[0]) * (CST_full_scale)
 
-    window_size = int(params.peak_duration / (time[1] - time[0]))
+    window_size = max(int(params.peak_duration / (time[1] - time[0])),1)
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
     new_time = time[max(window_size // 2 - 2, 0) : min(-window_size // 2 - 1, -1)]
     N = int(
