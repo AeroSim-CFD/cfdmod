@@ -19,8 +19,7 @@ class GlobalSchema(
     LoftCaseConfig,
     GenerationParams,
     PositionParams,
-):
-    ...
+): ...
 
 
 def main():
