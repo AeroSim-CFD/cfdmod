@@ -70,6 +70,7 @@ autoflake = "^2.2.1"
 json-schema-for-humans = "^1.0.2"
 pytest = "^8.3.2"
 setuptools = "^74.1.2"
+ruff = "^0.6.8"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
