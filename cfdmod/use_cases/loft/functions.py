@@ -15,6 +15,13 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
     Returns:
         tuple[np.ndarray, set]: Vertices from the border and a set with border edges
     """
+
+    def _get_float_as_int(v: float) -> int:
+        return int(v * 10**decimals)
+
+    def _get_as_key(v: np.ndarray) -> tuple[int]:
+        return tuple(_get_float_as_int(vv) for vv in v)
+
     s = triangle_vertices.shape
 
     flattened_vertices = triangle_vertices.reshape((s[0] * s[1], 3))
@@ -22,10 +29,7 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
     # Round for comparison
     decimals = 0
 
-    get_float_as_int = lambda v: int(v * 10**decimals)
-    get_as_key = lambda v: tuple(get_float_as_int(vv) for vv in v)
-
-    flat_indexes = {get_as_key(v): i for i, v in enumerate(flattened_vertices)}
+    flat_indexes = {_get_as_key(v): i for i, v in enumerate(flattened_vertices)}
 
     # Indexed as [t_idx, edge_idx] = (v0, v1)
     tri_index_matrix = np.empty((s[0], 3, 2), dtype=np.uint32)
@@ -33,7 +37,7 @@ def find_border(triangle_vertices: np.ndarray) -> tuple[np.ndarray, set]:
     for t_idx, tri in enumerate(triangle_vertices):
         v_idxs = []
         for v in tri:
-            key = get_as_key(v)
+            key = _get_as_key(v)
             val = flat_indexes[key]
             v_idxs.append(val)
         tri_edges = [tuple(sorted((v_idxs[i], v_idxs[j]))) for i, j in [(0, 1), (1, 2), (2, 0)]]
@@ -111,6 +115,10 @@ def project_border(
     Returns:
         tuple[np.ndarray, np.ndarray]: Ordered border profile vertices and mesh center coordinate
     """
+
+    def _sort_theta(theta: float):
+        return get_angle_between(ref_vec=p0 - center, target_vec=theta - center)
+
     flow_angle = get_angle_between(
         ref_vec=(1, 0, 0),
         target_vec=projection_diretion,
@@ -152,9 +160,7 @@ def project_border(
         if np.cross(separation_line[:2], target_vec[:2]) >= 0:
             profile_vertices = np.vstack((profile_vertices, target_point))
 
-    theta_sort = lambda x: get_angle_between(ref_vec=p0 - center, target_vec=x - center)
-
-    profile_vertices = np.array(sorted(profile_vertices, key=theta_sort))
+    profile_vertices = np.array(sorted(profile_vertices, key=_sort_theta))
 
     return profile_vertices, center
 

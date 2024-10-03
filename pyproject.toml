@@ -103,9 +103,11 @@ src_paths = ["cfdmod", "tests", "notebooks"]
 skip_glob = ["**/__init__.py"] # avoid circular imports
 
 [tool.ruff]
-fixable = ["ALL"]
+lint.fixable = ["ALL"]
 # Exclude a variety of commonly ignored directories.
 exclude = [
+    "consulting",
+    "paraview",
     ".bzr",
     ".direnv",
     ".eggs",

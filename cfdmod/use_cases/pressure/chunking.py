@@ -8,7 +8,7 @@ from lnas import LnasGeometry
 
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel, ParameterizedStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
-from cfdmod.utils import convert_dataframe_into_matrix, convert_matrix_into_dataframe
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 class HDFGroupInterface:

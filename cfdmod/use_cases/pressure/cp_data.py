@@ -97,7 +97,7 @@ def process_raw_groups(
         try:
             float(value)
             return True
-        except:
+        except ValueError as _:
             return False
 
     with pd.HDFStore(body_pressure_path, mode="r") as body_store:
@@ -106,7 +106,7 @@ def process_raw_groups(
             body_groups = body_store.keys()
 
             if static_groups != body_groups:
-                raise Exception(f"Keys for body and static pressure don't match!")
+                raise Exception("Keys for body and static pressure don't match!")
 
             more_than_one_group = len(body_groups) > 1
 
@@ -174,7 +174,7 @@ def process_raw_groups(
                     # Data is in older format, must convert to matrix
                     static_df = convert_dataframe_into_matrix(static_df)
 
-                if average_value != None:
+                if average_value is not None:
                     static_df["0"] = average_value
 
                 if any(static_df.time_step.unique() != body_df.time_step.unique()):

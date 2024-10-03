@@ -52,7 +52,7 @@ class CeConfig(HashableConfig, BasePressureConfig):
     def validate_sets(cls, v):
         surface_list = [sfc for sfc_list in v.values() for sfc in sfc_list]
         if len(surface_list) != len(set(surface_list)):
-            raise Exception(f"A surface cannot be listed in more than one set")
+            raise Exception("A surface cannot be listed in more than one set")
         return v
 
     def to_zoning(self):

@@ -41,14 +41,19 @@ class SectionVertices:
             plane_origin (np.ndarray): Plane origin
             plane_normal (np.ndarray): PLane normal
         """
+
+        def _direction_func(point: np.ndarray) -> float:
+            return (
+                -plane_normal[1] * point[0]
+                + plane_normal[0] * point[1]
+                + plane_normal[2] * point[2]
+            )
+
         position = self.pos.copy()
         position[:, :2] -= plane_origin[:2]  # Centralize according to origin but ignore z
         distance = np.apply_along_axis(lambda x: np.linalg.norm(x[:2]), 1, position)
 
-        direction_func = (
-            lambda x: -plane_normal[1] * x[0] + plane_normal[0] * x[1] + plane_normal[2] * x[2]
-        )
-        direction = np.apply_along_axis(direction_func, 1, position)
+        direction = np.apply_along_axis(_direction_func, 1, position)
         direction /= abs(direction)
 
         self.projected_position = distance * direction
