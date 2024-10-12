@@ -135,8 +135,11 @@ def remove_edges_of_internal_holes(vertices: np.ndarray, edges: np.ndarray) -> n
         y = [vertices[v,1] for v in vertices_id]
         z = [vertices[v,2] for v in vertices_id]
         x_ampl = max(x) - min(x)
-        y_ampl = max(y) - min(y)
+        y_ampl = max(y) - min(y) 
         z_ampl = max(z) - min(z)
+        x_ampl = 1E-16 if x_ampl==0 else x_ampl 
+        y_ampl = 1E-16 if y_ampl==0 else y_ampl 
+        z_ampl = 1E-16 if z_ampl==0 else z_ampl 
         groups_diameter.append(x_ampl**2+y_ampl**2+z_ampl**2)
     max_diam = max(groups_diameter)
     max_diam_group_id = groups_diameter.index(max_diam)
