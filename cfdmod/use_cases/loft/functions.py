@@ -1,9 +1,4 @@
-import math
-import pathlib
-
 import numpy as np
-import pymeshlab
-from pymeshlab import MeshSet, PureValue
 
 
 def flatten_vertices_and_get_triangles_as_list_of_indexes(
