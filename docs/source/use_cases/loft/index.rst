@@ -12,7 +12,8 @@ Use Case
 The loft geometry is generated in the **pre-processing** step of the CFD simulations.
 In order to use the loft module, the **terrain surface artifact**, from the landscaping project must be generated beforehand.
 
-The terrain surface must be conformed in a **cirular shape**, in order to simplify the process of rotating the domain to simulate other **wind source directions**.
+The process of loft generation and the rotation of the domain to simulate other **wind source directions**
+is simplified if the terrain surface has a **cirular shape**, but other shapes can be used.
 An example of the shape of the input terrain surface is shown below:
 
 .. image:: /_static/loft/terrain.png

@@ -31,10 +31,10 @@ class LoftParams(BaseModel):
         title="Upwind elevation",
         description="Elevation for upwind direction.",
     )
-    filter_radius: float = Field(
-        0,
-        title="Hole filter radius",
-        description="Radius to filter out internal holes.",
+    cutoff_angle_projection: float = Field(
+        45,
+        title="Alignment between projection and edge cutoff",
+        description="Minimum alignment tolerated between projection direction and edge.",
     )
 
 
