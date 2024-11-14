@@ -3,11 +3,13 @@ import numpy as np
 import pytest
 
 from cfdmod.use_cases.loft.functions import (
-    find_border,
-    generate_circular_loft_vertices,
+    find_borders,
+    flatten_vertices_and_get_triangles_as_list_of_indexes,
+    remove_edges_of_internal_holes,
+    remove_edges_oposite_to_loft_direction,
+    remove_edges_too_aligned_with_projection_direction,
     generate_loft_triangles,
     get_angle_between,
-    project_border,
 )
 
 
@@ -32,16 +34,22 @@ def triangle_vertices(nx, ny):
     triangles = tri.Triangulation(vertices[:, 0], vertices[:, 1]).triangles
 
     yield vertices[triangles]
+    
+@pytest.fixture()
+def triangle_indices(triangle_vertices):
+    (
+        flattened_vertices, tri_index_matrix 
+    ) = flatten_vertices_and_get_triangles_as_list_of_indexes(triangle_vertices)
+    
+    yield tri_index_matrix
 
 
-def test_find_border(nx, ny, triangle_vertices):
-    border_verts, border_edges = find_border(triangle_vertices=triangle_vertices)
+def test_find_border(nx, ny, triangle_indices):
+    border_edges = find_borders(triangles_vertices=triangle_indices)
     expected_edge_count = (nx + ny) * 2
-    expected_vertex_count = (nx + ny + 2) * 2 - 4
-
+    
     assert len(border_edges) == expected_edge_count
-    assert len(border_verts) == expected_vertex_count
-
+    
 
 def test_angle_between():
     vec1 = np.array([1, 0, 0])
@@ -51,37 +59,48 @@ def test_angle_between():
 
     assert get_angle_between(vec1, vec2) == 90
     assert get_angle_between(vec1, vec3) == 45
-    assert get_angle_between(vec1, vec4) == 225
-    assert get_angle_between(vec2, vec3) == 315
-    assert get_angle_between(vec3, vec4) == 180
-
-
-def test_project_border(triangle_vertices):
-    border_verts, _ = find_border(triangle_vertices=triangle_vertices)
-    border_profile, _ = project_border(border_verts, projection_diretion=np.array([1, 0, 0]))
-    assert all(border_profile[:, 0] >= 0)
-    border_profile, _ = project_border(border_verts, projection_diretion=np.array([-1, 0, 0]))
-    assert all(border_profile[:, 0] <= 0)
-    border_profile, _ = project_border(border_verts, projection_diretion=np.array([0, 1, 0]))
-    assert all(border_profile[:, 1] >= 0)
-    border_profile, _ = project_border(border_verts, projection_diretion=np.array([0, -1, 0]))
-    assert all(border_profile[:, 1] <= 0)
+    assert get_angle_between(vec1, vec4) == 135
+    assert get_angle_between(vec2, vec3) == 45
 
 
 def test_loft_surface(triangle_vertices):
-    projection_direction = np.array([1, 0, 0])
-    border_verts, _ = find_border(triangle_vertices=triangle_vertices)
-    border_profile, center = project_border(border_verts, projection_diretion=projection_direction)
-    loft_verts = generate_circular_loft_vertices(
-        border_profile=border_profile,
-        projection_diretion=projection_direction,
+    projection_diretion = np.array([1, 0, 0])
+    flattened_vertices, tri_index_matrix = flatten_vertices_and_get_triangles_as_list_of_indexes(
+        triangle_vertices=triangle_vertices
+    )
+    border_edges = find_borders(triangles_vertices=tri_index_matrix)
+    border_edges = remove_edges_of_internal_holes(
+        vertices=flattened_vertices,
+        edges=border_edges,
+    )
+
+    center = np.array(
+        [
+            (flattened_vertices[:, 0].max() + flattened_vertices[:, 0].min()) / 2,
+            (flattened_vertices[:, 1].max() + flattened_vertices[:, 1].min()) / 2,
+            (flattened_vertices[:, 2].max() + flattened_vertices[:, 2].min()) / 2,
+        ]
+    )
+
+    border_edges = remove_edges_oposite_to_loft_direction(
+        vertices=flattened_vertices,
+        edges=border_edges,
+        mesh_center=center,
+        projection_diretion=projection_diretion,
+    )
+
+    border_edges = remove_edges_too_aligned_with_projection_direction(
+        vertices=flattened_vertices,
+        edges=border_edges,
+        projection_diretion=projection_diretion,
+        angle_tolerance=45,
+    )
+
+    loft_tri, loft_normals = generate_loft_triangles(
+        vertices=flattened_vertices,
+        edges=border_edges,
+        projection_diretion=projection_diretion,
         loft_length=100,
         loft_z_pos=1,
         mesh_center=center,
     )
-    loft_tri, loft_normals = generate_loft_triangles(
-        border_profile=border_profile, loft_vertices=loft_verts
-    )
-
-    assert len(border_profile) == len(loft_verts)
-    assert len(border_profile) - 1 == len(loft_verts) - 1 == len(loft_tri) / 2

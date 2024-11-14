@@ -1,4 +1,6 @@
 import numpy as np
+import pathlib
+import pymeshlab
 
 
 def flatten_vertices_and_get_triangles_as_list_of_indexes(
@@ -340,7 +342,7 @@ def generate_loft_surface(
     projection_diretion: np.ndarray,
     loft_length: float,
     loft_z_pos: float,
-    angle_tolerance_for_alignement_edge_projection: float = 45,
+    cutoff_angle_projection: float = 45,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate loft surface (triangles and normals)
 
@@ -353,7 +355,7 @@ def generate_loft_surface(
         projection_diretion (np.ndarray[3]): vector with the direction where loft will be projected
         loft_length (float): Minimum length of loft
         loft_z_pos (float): Target z position
-        angle_tolerance_for_alignement_edge_projection (float)(default=45): Maximum alignment tolerated to avoid triangles with bad quality
+        cutoff_angle_projection (float)(default=45): Minimum alignment tolerated between projection direction and edge
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Loft triangles and normals
@@ -387,7 +389,7 @@ def generate_loft_surface(
         vertices=flattened_vertices,
         edges=border_edges,
         projection_diretion=projection_diretion,
-        angle_tolerance=angle_tolerance_for_alignement_edge_projection,
+        angle_tolerance=cutoff_angle_projection,
     )
 
     loft_tri, loft_normals = generate_loft_triangles(
@@ -402,48 +404,48 @@ def generate_loft_surface(
     return loft_tri, loft_normals
 
 
-# def apply_remeshing(
-#     element_size: float,
-#     mesh_path: pathlib.Path,
-#     output_path: pathlib.Path,
-#     crease_angle: float = 89,
-# ):
-#     """Create a remeshed surface from input mesh
+def apply_remeshing(
+    element_size: float,
+    mesh_path: pathlib.Path,
+    output_path: pathlib.Path,
+    crease_angle: float = 89,
+):
+    """Create a remeshed surface from input mesh
 
-#     Args:
-#         element_size (float): Target element size
-#         mesh_path (pathlib.Path): Original mesh path
-#         output_path (pathlib.Path): Output mesh path
-#         crease_angle (float): Minimal angle for preserving edges
-#     """
-#     ms: MeshSet = pymeshlab.MeshSet()
-#     ms.load_new_mesh(str(mesh_path.absolute()))
-#     ms.meshing_isotropic_explicit_remeshing(
-#         iterations=15, targetlen=PureValue(element_size), featuredeg=crease_angle
-#     )
-#     ms.compute_selection_by_condition_per_face(condselect="fnz<0")
-#     ms.meshing_invert_face_orientation(onlyselected=True)
-#     ms.save_current_mesh(str(output_path.absolute()), binary=True)
+    Args:
+        element_size (float): Target element size
+        mesh_path (pathlib.Path): Original mesh path
+        output_path (pathlib.Path): Output mesh path
+        crease_angle (float): Minimal angle for preserving edges
+    """
+    ms: pymeshlab.MeshSet = pymeshlab.MeshSet()
+    ms.load_new_mesh(str(mesh_path.absolute()))
+    ms.meshing_isotropic_explicit_remeshing(
+        iterations=15, targetlen=pymeshlab.PureValue(element_size), featuredeg=crease_angle
+    )
+    ms.compute_selection_by_condition_per_face(condselect="fnz<0")
+    ms.meshing_invert_face_orientation(onlyselected=True)
+    ms.save_current_mesh(str(output_path.absolute()), binary=True)
 
 
-# def rotate_vector_around_z(vector: np.ndarray, angle_degrees: float) -> np.ndarray:
-#     """Rotates a vector around z axis from a given angle
+def rotate_vector_around_z(vector: np.ndarray, angle_degrees: float) -> np.ndarray:
+    """Rotates a vector around z axis from a given angle
 
-#     Args:
-#         vector (np.ndarray): Vector to be rotated (x, y, z)
-#         angle_degrees (float): Angle of rotation in degrees
+    Args:
+        vector (np.ndarray): Vector to be rotated (x, y, z)
+        angle_degrees (float): Angle of rotation in degrees
 
-#     Returns:
-#         np.ndarray: Rotated 3D vector
-#     """
-#     angle_radians = np.radians(angle_degrees)
-#     rotation_matrix = np.array(
-#         [
-#             [np.cos(angle_radians), -np.sin(angle_radians), 0],
-#             [np.sin(angle_radians), np.cos(angle_radians), 0],
-#             [0, 0, 1],
-#         ]
-#     )
-#     rotated_vector = np.dot(rotation_matrix, vector)
+    Returns:
+        np.ndarray: Rotated 3D vector
+    """
+    angle_radians = np.radians(angle_degrees)
+    rotation_matrix = np.array(
+        [
+            [np.cos(angle_radians), -np.sin(angle_radians), 0],
+            [np.sin(angle_radians), np.cos(angle_radians), 0],
+            [0, 0, 1],
+        ]
+    )
+    rotated_vector = np.dot(rotation_matrix, vector)
 
-#     return rotated_vector
+    return rotated_vector
