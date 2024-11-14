@@ -58,10 +58,10 @@ def test_angle_between():
     vec3 = np.array([1, 1, 0])
     vec4 = np.array([-1, -1, 0])
 
-    assert get_angle_between(vec1, vec2) == 90
-    assert get_angle_between(vec1, vec3) == 45
-    assert get_angle_between(vec1, vec4) == 135
-    assert get_angle_between(vec2, vec3) == 45
+    assert abs(get_angle_between(vec1, vec2) - 90) < 1e-10
+    assert abs(get_angle_between(vec1, vec3) - 45) < 1e-10
+    assert abs(get_angle_between(vec1, vec4) - 135) < 1e-10
+    assert abs(get_angle_between(vec2, vec3) - 45) < 1e-10
 
 
 def test_loft_surface(triangle_vertices):
