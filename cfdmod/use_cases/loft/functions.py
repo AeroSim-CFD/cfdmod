@@ -1,5 +1,6 @@
-import numpy as np
 import pathlib
+
+import numpy as np
 import pymeshlab
 
 

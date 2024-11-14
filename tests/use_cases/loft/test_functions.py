@@ -5,11 +5,11 @@ import pytest
 from cfdmod.use_cases.loft.functions import (
     find_borders,
     flatten_vertices_and_get_triangles_as_list_of_indexes,
+    generate_loft_triangles,
+    get_angle_between,
     remove_edges_of_internal_holes,
     remove_edges_oposite_to_loft_direction,
     remove_edges_too_aligned_with_projection_direction,
-    generate_loft_triangles,
-    get_angle_between,
 )
 
 
