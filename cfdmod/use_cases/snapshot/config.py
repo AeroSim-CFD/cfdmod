@@ -81,7 +81,7 @@ class ColormapConfig(BaseModel):
     target_step: float = Field(None, title="Target step", description="Colormap target step", gt=0)
 
     def get_colormap_divs(self, scalar_range: tuple[float, float]) -> int:
-        if self.n_divs != None:
+        if self.n_divs is not None:
             return self.n_divs
         else:
             divs = round((scalar_range[1] - scalar_range[0]) / self.target_step)
@@ -89,7 +89,7 @@ class ColormapConfig(BaseModel):
 
     @model_validator(mode="after")
     def exclusive_props(self) -> ColormapConfig:
-        if self.n_divs != None and self.target_step != None:
+        if self.n_divs is not None and self.target_step is not None:
             raise ValueError("Cannot set both num_steps and target_step")
         return self
 

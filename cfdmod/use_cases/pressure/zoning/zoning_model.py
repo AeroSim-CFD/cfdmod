@@ -90,14 +90,15 @@ class ZoningModel(BaseModel):
             list[tuple[tuple[float, float], ...]]: List of regions as
                 ((x_min, x_max), (y_min, y_max), (z_min, z_max)) for all intervals combinations
         """
+
+        def _build_intervals(intervals: list[float]):
+            return [(intervals[i], intervals[i + 1]) for i in range(len(intervals) - 1)]
+
         regions = []
 
-        interval_for_region = lambda intervals: [
-            (intervals[i], intervals[i + 1]) for i in range(len(intervals) - 1)
-        ]
-        x_regions = interval_for_region(self.x_intervals)
-        y_regions = interval_for_region(self.y_intervals)
-        z_regions = interval_for_region(self.z_intervals)
+        x_regions = _build_intervals(self.x_intervals)
+        y_regions = _build_intervals(self.y_intervals)
+        z_regions = _build_intervals(self.z_intervals)
 
         regions_iter = itertools.product(x_regions, y_regions, z_regions)
         for region in regions_iter:

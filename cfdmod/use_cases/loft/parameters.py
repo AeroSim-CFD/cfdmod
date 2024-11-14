@@ -1,6 +1,6 @@
 import pathlib
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from cfdmod.utils import read_yaml
 
@@ -55,11 +55,13 @@ class LoftCaseConfig(BaseModel):
             for case_lbl, case_dict in yaml_vals["cases"].items():
                 try:
                     _ = LoftParams(**case_dict)
-                except:
+                except ValidationError:
                     try:
                         yaml_vals["cases"][case_lbl] = yaml_vals["cases"]["default"] | case_dict
-                    except:
-                        raise Exception(f"Case {case_lbl} is missing fields, default is not set")
+                    except KeyError as ex:
+                        raise KeyError(
+                            f"Case {case_lbl} is missing fields, default is not set"
+                        ) from ex
             params = cls(**yaml_vals)
             return params
         else:

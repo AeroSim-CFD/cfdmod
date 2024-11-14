@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "TimeScaleParameters",
     "gumbel_extreme_values",
     "moving_average_extreme_values",
     "peak_extreme_values",

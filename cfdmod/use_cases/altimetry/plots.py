@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
 from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d import Axes3D  # Needed for setting projection in figure
 
 from cfdmod.use_cases.altimetry import AltimetrySection
 

@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from colorama import Back, Fore
+from colorama import Fore
 
 __all__ = ["logger"]
 
