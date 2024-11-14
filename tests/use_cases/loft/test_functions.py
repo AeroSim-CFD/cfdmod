@@ -34,22 +34,23 @@ def triangle_vertices(nx, ny):
     triangles = tri.Triangulation(vertices[:, 0], vertices[:, 1]).triangles
 
     yield vertices[triangles]
-    
+
+
 @pytest.fixture()
 def triangle_indices(triangle_vertices):
-    (
-        flattened_vertices, tri_index_matrix 
-    ) = flatten_vertices_and_get_triangles_as_list_of_indexes(triangle_vertices)
-    
+    (flattened_vertices, tri_index_matrix) = flatten_vertices_and_get_triangles_as_list_of_indexes(
+        triangle_vertices
+    )
+
     yield tri_index_matrix
 
 
 def test_find_border(nx, ny, triangle_indices):
     border_edges = find_borders(triangles_vertices=triangle_indices)
     expected_edge_count = (nx + ny) * 2
-    
+
     assert len(border_edges) == expected_edge_count
-    
+
 
 def test_angle_between():
     vec1 = np.array([1, 0, 0])

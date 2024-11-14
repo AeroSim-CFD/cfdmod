@@ -82,7 +82,7 @@ def main(*args):
                 projection_diretion=direction,
                 loft_length=loft_params.loft_length,
                 loft_z_pos=loft_params.upwind_elevation,
-                cutoff_angle_projection = loft_params.cutoff_angle_projection
+                cutoff_angle_projection=loft_params.cutoff_angle_projection,
             )
             export_stl(
                 output_path / f"{case_lbl}" / f"{side}_loft.stl",
