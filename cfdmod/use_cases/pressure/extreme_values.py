@@ -19,7 +19,9 @@ from cfdmod.use_cases.pressure.statistics import (
 )
 
 
-def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel, sample_duration:float) -> float:
+def fit_gumbel_model(
+    data: np.ndarray, params: ExtremeGumbelParamsModel, sample_duration: float
+) -> float:
     """Fits the Gumbel model to predict extreme events
 
     Args:
@@ -58,9 +60,9 @@ def gumbel_extreme_values(
     """
     CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
     time = (timestep_arr - timestep_arr[0]) * (CST_full_scale)
-    
+
     T0 = time[-1]
-    window_size = max(int(params.peak_duration / (time[1] - time[0])),1)
+    window_size = max(int(params.peak_duration / (time[1] - time[0])), 1)
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
 
     sub_arrays = np.array_split(smooth_parent_cp, params.n_subdivisions)
