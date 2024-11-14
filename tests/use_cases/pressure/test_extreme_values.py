@@ -47,17 +47,17 @@ def peak_params():
     yield ExtremePeakParamsModel(peak_factor=2)
 
 
-def test_fit_gumbel_model(hist_series, gumbel_params):
-    result = fit_gumbel_model(hist_series, gumbel_params)
-    assert round(result, ndigits=3) == 0.712
+def test_fit_gumbel_model(hist_series, timestep_arr, gumbel_params):
+    result = fit_gumbel_model(hist_series, gumbel_params, timestep_arr[-1])
+    assert round(result, ndigits=3) == 1.184
 
 
 def test_calculate_gumbel_extreme_values(gumbel_params, timestep_arr, hist_series):
     result = gumbel_extreme_values(gumbel_params, timestep_arr, hist_series)
 
     assert len(result) == 2
-    assert round(result[0], ndigits=3) == 0.48
-    assert round(result[1], ndigits=3) == 0.973
+    assert round(result[0], ndigits=3) == -0.07
+    assert round(result[1], ndigits=3) == 0.768
 
 
 def test_calculate_moving_avg_extreme_values(moving_avg_params, hist_series):

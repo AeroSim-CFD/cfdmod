@@ -18,12 +18,15 @@ from cfdmod.use_cases.pressure.statistics import (
 )
 
 
-def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> float:
+def fit_gumbel_model(
+    data: np.ndarray, params: ExtremeGumbelParamsModel, sample_duration: float
+) -> float:
     """Fits the Gumbel model to predict extreme events
 
     Args:
         data (np.ndarray): Historic series
         params (ExtremeGumbelParamsModel): Parameters for Gumbel model analysis
+        sample_duration (float): Duration of the sample
 
     Returns:
         float: Gumbel value for data
@@ -32,7 +35,7 @@ def fit_gumbel_model(data: np.ndarray, params: ExtremeGumbelParamsModel) -> floa
     y = [-math.log(-math.log(i / (N + 1))) for i in range(1, N + 1)]
     A = np.vstack([y, np.ones(len(y))]).T
     a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * math.log(params.n_subdivisions)
+    U_T1 = U_T0 + a_inv * math.log(params.event_duration / (sample_duration / N))
     extreme_val = a_inv * params.yR + U_T1  # This is the design value
 
     return extreme_val
@@ -57,14 +60,11 @@ def gumbel_extreme_values(
     CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
     time = (timestep_arr - timestep_arr[0]) * (CST_full_scale)
 
+    T0 = time[-1]
     window_size = max(int(params.peak_duration / (time[1] - time[0])), 1)
     smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
-    new_time = time[max(window_size // 2 - 2, 0) : min(-window_size // 2 - 1, -1)]
-    N = int(
-        round((new_time[-1] - new_time[0]) / (params.event_duration / params.n_subdivisions))
-    )  # num_divisions
-    N = 1 if N < 1 else N
-    sub_arrays = np.array_split(smooth_parent_cp, N)
+
+    sub_arrays = np.array_split(smooth_parent_cp, params.n_subdivisions)
 
     cp_max = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
     cp_min = np.array([np.min(sub_arr) for sub_arr in sub_arrays])
@@ -73,8 +73,8 @@ def gumbel_extreme_values(
     cp_min = np.sort(cp_min)[::-1]
 
     # It may return NaN values if the time series is invalid or has very few points
-    max_extreme_val = fit_gumbel_model(cp_max, params=params)
-    min_extreme_val = fit_gumbel_model(cp_min, params=params)
+    max_extreme_val = fit_gumbel_model(cp_max, params=params, sample_duration=T0)
+    min_extreme_val = fit_gumbel_model(cp_min, params=params, sample_duration=T0)
 
     min_extreme_val = 0 if np.isnan(min_extreme_val) else min_extreme_val
     max_extreme_val = 0 if np.isnan(max_extreme_val) else max_extreme_val
