@@ -19,6 +19,21 @@ dev = ["pillow", "pkginfo (>=1.10)", "playwright", "pre-commit", "setuptools", "
 tests = ["hypothesis", "pytest"]
 
 [[package]]
+name = "aerosim-lnas"
+version = "0.6.0"
+description = "API for Lagrangian Nassu"
+optional = true
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "aerosim_lnas-0.6.0-py3-none-any.whl", hash = "sha256:77e7fa2e57cfa4f405d1ab2a236e9ca5686c4afda56eaee096fe4a91e8604d4b"},
+    {file = "aerosim_lnas-0.6.0.tar.gz", hash = "sha256:7b77f9038a8e33b41b50e228a7d6cc4113ec431d52aea9bf4c7eaac582cc8904"},
+]
+
+[package.dependencies]
+numpy = ">=1.26.2,<2.0.0"
+ruamel-yaml = ">=0.18.5,<0.19.0"
+
+[[package]]
 name = "alabaster"
 version = "0.7.16"
 description = "A light, configurable Sphinx theme"
@@ -1694,25 +1709,6 @@ files = [
 
 [package.dependencies]
 tornado = "*"
-
-[[package]]
-name = "lnas"
-version = "0.5.0"
-description = "API for Lagrangian Nassu"
-optional = true
-python-versions = "^3.10"
-files = []
-develop = false
-
-[package.dependencies]
-numpy = "^1.26.2"
-ruamel-yaml = "^0.18.5"
-
-[package.source]
-type = "git"
-url = "git@github.com:AeroSim-CFD/lnas.git"
-reference = "main"
-resolved_reference = "fcdc3900da9f5891706f8207a6af843b158e615d"
 
 [[package]]
 name = "markdown-it-py"
@@ -4438,11 +4434,11 @@ files = [
 [extras]
 docs = ["myst-parser", "nbsphinx", "sphinx-autobuild", "sphinx-book-theme", "sphinxcontrib-bibtex"]
 geometry = ["pymeshlab", "trimesh"]
-lnas = ["lnas"]
+lnas = []
 notebook = ["ipykernel", "ipython", "jupyter"]
 vtk = ["pyvista", "vtk"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "09eb1cdafa800ca7a1e75e65fd7cdabb3716e15567bcb772007f787b614e62ea"
+content-hash = "673f6d117a01e351dd2ed9867deaa1275cc6c23a897da2e975d052ce60677a9f"
