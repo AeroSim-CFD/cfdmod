@@ -1,16 +1,21 @@
 [tool.poetry]
-name = "cfdmod"
+name = "aerosim-cfdmod"
 version = "1.1.2"
 description = "Tools for analysis of CFD cases"
 authors = ["Waine Oliveira Jr <waine@aerosim.io>", "Pablo Penas <pablo@aerosim.io>"]
 readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/AeroSim-CFD/cfdmod"
+homepage = "https://github.com/AeroSim-CFD/cfdmod"
+
+packages = [{ include = "cfdmod" }]
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
-python = "^3.10, <3.13"
+python = "^3.10"
 numpy = "^1.26.0"
 scipy = "^1.11.2"
 pandas = "^2.1.0"
