@@ -55,7 +55,7 @@ pyvista = { version = "^0.43.1", optional = true }
 # *****************************************************************************************
 
 [tool.poetry.extras]
-lnas = ["lnas"]
+lnas = ["aerosim-lnas"]
 geometry = ["pymeshlab", "trimesh"]
 docs = [
   "sphinx-book-theme", 

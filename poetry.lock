@@ -4434,11 +4434,11 @@ files = [
 [extras]
 docs = ["myst-parser", "nbsphinx", "sphinx-autobuild", "sphinx-book-theme", "sphinxcontrib-bibtex"]
 geometry = ["pymeshlab", "trimesh"]
-lnas = []
+lnas = ["aerosim-lnas"]
 notebook = ["ipykernel", "ipython", "jupyter"]
 vtk = ["pyvista", "vtk"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "673f6d117a01e351dd2ed9867deaa1275cc6c23a897da2e975d052ce60677a9f"
+content-hash = "d8b32b98ca8d55ae2b49f32e44fdeb406df805a01b736294005563eb33262924"
