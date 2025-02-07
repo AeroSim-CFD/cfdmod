@@ -20,21 +20,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install poetry
-          pip install -U poetry
-          poetry cache clear --all pypi
-          poetry install --extras "docs"
+          pip install uv
+          uv pip install .[docs]
 
       - name: Sphinx build
         run: |
           sudo apt-get install -y pandoc
           cd docs
-          poetry run make html  # Build HTML docs
+          uv run make html  # Build HTML docs
           cd ..
 
       - name: Deploy to GitHub Pages

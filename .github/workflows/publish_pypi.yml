@@ -23,11 +23,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install poetry==1.8.4
+          pip install uv
 
-      - name: Build the project with Poetry
-        run: poetry build
+      - name: Build the project with uv
+        run: uv build
 
       - name: Publish to PyPi
-        run: poetry publish
+        run: uv publish

@@ -12,13 +12,13 @@ Package to provide analysis and processing tools for CFD cases
 This codebase uses Pytest framework and it features tests for loft, cp, s1profile, config_models and altimetry modules. To run the tests via CLI:
 
 ```bash
-poetry run pytest <path/to/tests>
+uv run pytest <path/to/tests>
 ```
 
 The tests can also be automated to run in different environments, and include dist build commands using <a href="https://tox.wiki/en/stable/" target="_blank">tox</a>:
 
 ```bash
-poetry run tox
+uv run tox
 ```
 
 ## Memory usage profiling
@@ -28,12 +28,6 @@ First, install memory-profiler:
 
 ```bash
 pip install -U memory-profiler
-```
-
-And activate the poetry virtual environment:
-
-```bash
-poetry shell
 ```
 
 Then, run:
@@ -51,7 +45,7 @@ Schema files serve as a guide to fill config files.
 To generate a schema file for every config model, use the following command:
 
 ```bash
-poetry run python -m scripts.generate_schemas
+uv run python -m scripts.generate_schemas
 ```
 
 In order to setup the schema in VSCode, edit `settings.json`, or the workspace file, to include:
