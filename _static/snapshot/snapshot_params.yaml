@@ -1,0 +1,21 @@
+polydata:
+- file_path: "" # Path of the polydata file
+  images:
+  - image_label: "" # Label for the output image
+    scalar_label: "" # Scalar name for the output image
+projection:
+  offset: 15 # Distance between projections
+  axis: [x_plus, x_minus, y_plus, y_minus] # Select which axis will be projected
+  rotation: [0, 0, 0] # Rotation of the original mesh
+colormap:
+  n_divs: 10 # Scalar bar division
+  # target_step: 0.1 # Optional parameter, if specified the number of divisions will be calculated automatically
+camera:
+  zoom: 1
+  offset_position: [0, 0, 0] # Offset from the original mesh center
+  view_up: [0, 0, 0] # Direction of view which will be pointing upwards in the image
+  window_size: [0, 0] # Rendering window size
+  crop:
+    width_ratio: 0.8
+    height_ratio: 0.8
+    watermark_path: "./fixtures/snapshot/axis.png"
