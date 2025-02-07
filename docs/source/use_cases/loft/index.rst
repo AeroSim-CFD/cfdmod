@@ -54,7 +54,7 @@ To invoke and generate loft surfaces, the following command can be used:
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.loft \
+   uv run python -m cfdmod.use_cases.loft \
       --config  {CONFIG_PATH}
       --surface {TERRAIN_PATH} \
       --output  {OUTPUT_PATH} \

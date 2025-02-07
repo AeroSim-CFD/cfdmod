@@ -104,7 +104,7 @@ To invoke and run the calculation, the following command can be used:
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.pressure.Ce \
+   uv run python -m cfdmod.use_cases.pressure.Ce \
       --output {OUTPUT_PATH} \
       --cp     {CP_SERIES_PATH} \
       --mesh   {LNAS_PATH} \
@@ -114,7 +114,7 @@ Or it can be generated together with the pressure data conversion:
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.pressure \
+   uv run python -m cfdmod.use_cases.pressure \
       --output {OUTPUT_PATH} \
       --cp     {CP_SERIES_PATH} \
       --mesh   {LNAS_PATH} \

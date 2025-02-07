@@ -11,11 +11,11 @@ Below are some useful commands to use for project documentation.
 ```bash
 cd docs
 # Cleans previous docs builds
-poetry run make clean
+uv run make clean
 # Write the documents output to HTML files in "/docs/build/html" (open index.html to see documentation)
-poetry run make html
+uv run make html
 # Check broken links in the documentation
-poetry run make linkcheck
+uv run make linkcheck
 # Auto build documentation when file is updated
-poetry run python -m sphinx_autobuild ./source/ build/html/
+uv run python -m sphinx_autobuild ./source/ build/html/
 ```

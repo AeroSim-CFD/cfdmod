@@ -47,7 +47,7 @@ There are several ways to use **altimetry** module. The main one is to run as a 
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.altimetry \
+   uv run python -m cfdmod.use_cases.altimetry \
       --csv {CSV_PATH} \
       --surface {SURFACE_PATH} \
       --output {OUTPUT_PATH}

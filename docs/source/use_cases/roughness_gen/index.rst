@@ -26,7 +26,7 @@ There are several ways to use **Roughness Elements generation** module. The main
 
 .. code-block:: Bash
 
-   poetry run python -m cfdmod.use_cases.roughness_gen --config {CONFIG_PATH} --output {OUTPUT_PATH}
+   uv run python -m cfdmod.use_cases.roughness_gen --config {CONFIG_PATH} --output {OUTPUT_PATH}
 
 It takes two arguments: the path for the **.yaml configuration file** with the generation parameters and the **output path** for saving the .STL file.
 For standard use, the user must fullfill a configuration file with the parameters.
