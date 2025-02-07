@@ -28,6 +28,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install venv
+          uv venv
           uv pip install .[docs]
 
       - name: Build the project with uv

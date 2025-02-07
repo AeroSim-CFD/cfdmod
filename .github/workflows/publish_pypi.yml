@@ -24,6 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
+          uv venv
 
       - name: Build the project with uv
         run: uv build
