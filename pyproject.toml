@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-lnas = ["aerosim-lnas>=0.6.2,<0.7"]
+lnas = ["aerosim-lnas>=0.6.0,<0.7"]
 geometry = [
     "pymeshlab>=2023,<2024",
     "trimesh>=4.0,<5",
