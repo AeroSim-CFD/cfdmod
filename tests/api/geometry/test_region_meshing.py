@@ -53,6 +53,7 @@ def test_multiple_slices():
         sliced_mesh = slice_surface(sliced_mesh, 1, y_int)
 
     # Is this a real thing or the value just asserted whatever number printed on screen?
+    # With updated on library this changed, which says either the lib was/is wrong, or the test is wrong
     assert len(sliced_mesh.vertices) == 456
     assert len(sliced_mesh.triangles) == 618
 
