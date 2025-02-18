@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "CFD Modules"
-copyright = "2023, Waine Oliveira Jr, Pablo Penas"
-author = "Waine Oliveira Jr, Pablo Penas"
+project = "AeroSim CFDmod"
+copyright = "2023-2025, AeroSim"
+author = "AeroSim"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -39,6 +39,22 @@ todo_include_todos = True
 
 html_theme = "sphinx_book_theme"
 
-html_title = "CFD Mods"
+html_favicon = "_static/favicon.svg"
+html_title = "AeroSim CFDmod"
+html_context = {
+    "plausible_script": """
+    <!-- Plausible -->
+    <script defer data-domain="aerosim.io" src="https://plausible.io/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"></script>
+    <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+    """
+}
+
+# Theme options
+html_theme_options = {}
 
 html_static_path = ["_static"]
+
+html_logo = "_static/img/logo_display.png"
+html_theme_options = {
+    "extra_footer": '<a href="https://www.aerosim.io">www.aerosim.io</a>',
+}
