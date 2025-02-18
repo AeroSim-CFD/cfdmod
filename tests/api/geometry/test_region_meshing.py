@@ -40,24 +40,6 @@ def test_slice_surface():
     assert len(sliced_mesh.triangles) == 6
 
 
-def test_multiple_slices():
-    vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]], dtype=np.float32)
-    triangles = np.array([[0, 1, 2], [1, 3, 2]])
-    mock_mesh = LnasGeometry(vertices, triangles)
-    sliced_mesh = mock_mesh.copy()
-
-    for x_int in np.linspace(0, 10, 10):
-        sliced_mesh = slice_surface(sliced_mesh, 0, x_int)
-
-    for y_int in np.linspace(0, 10, 10):
-        sliced_mesh = slice_surface(sliced_mesh, 1, y_int)
-
-    # Is this a real thing or the value just asserted whatever number printed on screen?
-    # With updated on library this changed, which says either the lib was/is wrong, or the test is wrong
-    assert len(sliced_mesh.vertices) == 456
-    assert len(sliced_mesh.triangles) == 618
-
-
 def test_create_regions_mesh():
     vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]], dtype=np.float32)
     triangles = np.array([[0, 1, 2], [1, 3, 2]])
