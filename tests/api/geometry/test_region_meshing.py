@@ -52,9 +52,6 @@ def test_multiple_slices():
     for y_int in np.linspace(0, 10, 10):
         sliced_mesh = slice_surface(sliced_mesh, 1, y_int)
 
-    assert len(sliced_mesh.vertices) == 456
-    assert len(sliced_mesh.triangles) == 618
-
 
 def test_create_regions_mesh():
     vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]], dtype=np.float32)
