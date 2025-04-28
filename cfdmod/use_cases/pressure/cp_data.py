@@ -1,8 +1,10 @@
 import pathlib
 import warnings
 from typing import Literal
+import multiprocessing as mp
 
 import pandas as pd
+import filelock
 from lnas import LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
@@ -23,6 +25,8 @@ def transform_to_cp(
     reference_vel: float,
     characteristic_length: float,
     ref_press_mode: Literal["instantaneous", "average"],
+    columns_drop: list[str] | None = None,
+    columns_process: list[str] | None = None,
 ) -> pd.DataFrame:
     """Transform the body pressure data into Cp coefficient
 
@@ -43,18 +47,19 @@ def transform_to_cp(
     multiplier = cs_square / dynamic_pressure
     press = static_pressure_array if ref_press_mode == "instantaneous" else average_static_pressure
 
-    columns_to_convert = [col for col in body_data.columns if col != "time_step"]
-    data_to_convert = body_data[columns_to_convert].to_numpy()
+    if(columns_process is None):
+        columns_process: list[str] = [col for col in body_data.columns if col.isnumeric()]
+    if(columns_drop is None):
+        columns_drop: list[str] = [col for col in body_data.columns if not col.isnumeric()]
+
+    data_to_convert = body_data.drop(columns=columns_drop).to_numpy()
     result = (data_to_convert.T - press) * multiplier
-    df_cp = pd.DataFrame(result.T, columns=columns_to_convert)
+    df_cp = pd.DataFrame(result.T, columns=columns_process)
     df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
         characteristic_length / reference_vel
     )
 
-    return df_cp[
-        ["time_normalized"]
-        + [col for col in df_cp.columns if col not in ["time_step", "time_normalized"]]
-    ]
+    return df_cp
 
 
 def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.DataFrame:
@@ -74,7 +79,99 @@ def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.D
 
     return filtered_data
 
+def process_single_raw_group(
+    static_pressure_path: pathlib.Path,
+    body_pressure_path: pathlib.Path,
+    output_path: pathlib.Path,
+    cp_config: CpConfig,
+    group_name: str,
+    average_value: float | None =  None,
+    columns_drop: list[str] | None = None,
+    columns_process: list[str] | None = None,
+):
+    with pd.HDFStore(body_pressure_path, mode="r") as body_store:
+        with pd.HDFStore(static_pressure_path, mode="r") as static_store:
+            static_df = static_store.get(group_name)
+            static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
 
+            body_df = body_store.get(group_name)
+            body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
+
+            # # FIX CONVERSION ERROR
+            # static_df.rename(
+            #     columns={
+            #         col: str(int(float(col)))
+            #         for col in static_df.columns
+            #         if col[0].isnumeric() # First letter numeric tells if it should be number
+            #     },
+            #     inplace=True,
+            # )
+            # body_df.rename(
+            #     columns={
+            #         col: str(int(float(col))) for col in body_df.columns if col[0].isnumeric()
+            #     },
+            #     inplace=True,
+            # )
+
+            # # This logic should be removed in later versions
+            # if "point_idx" in body_df.columns:
+            #     # Data is in older format, must convert to matrix
+            #     body_df = convert_dataframe_into_matrix(body_df)
+            # if "point_idx" in static_df.columns:
+            #     # Data is in older format, must convert to matrix
+            #     static_df = convert_dataframe_into_matrix(static_df)
+
+            if average_value is not None:
+                static_df["0"] = average_value
+
+            if any(static_df.time_step.unique() != body_df.time_step.unique()):
+                raise Exception(f"Timesteps for key {group_name} do not match!")
+
+            coefficient_data = transform_to_cp(
+                press_data=static_df,
+                body_data=body_df,
+                reference_vel=cp_config.simul_U_H,
+                characteristic_length=cp_config.simul_characteristic_length,
+                ref_press_mode=cp_config.reference_pressure,
+                columns_drop=columns_drop,
+                columns_process=columns_process,
+            )
+            # coefficient_data.rename(
+            #     columns={col: str(col) for col in coefficient_data.columns}, inplace=True
+            # )
+            lock = filelock.FileLock(output_path.as_posix() + ".lock")
+            with lock:
+                coefficient_data.to_hdf(output_path, key=group_name, mode="a", format="fixed")
+
+def get_columns_drop_proc(body_pressure_path: pathlib.Path) -> tuple[list[str], list[str]]:
+    with pd.HDFStore(body_pressure_path, mode="r") as body_store:
+        for store_key in body_store.keys():
+            df = body_store.get(store_key)
+            columns_drop: list[str] = [col for col in df.columns if not col.isnumeric()]
+            columns_process: list[str] = [col for col in df.columns if col.isnumeric()]
+            return columns_drop, columns_process
+def _process_single(args):
+    (
+        static_pressure_path,
+        body_pressure_path,
+        output_path,
+        cp_config,
+        group_name,
+        average_value,
+        columns_drop,
+        columns_process,
+    ) = args
+
+    process_single_raw_group(
+        static_pressure_path=static_pressure_path, 
+        body_pressure_path=body_pressure_path, 
+        output_path=output_path,
+        cp_config=cp_config,
+        group_name=group_name,
+        average_value=average_value,
+        columns_drop=columns_drop, 
+        columns_process=columns_process,
+    )
 def process_raw_groups(
     static_pressure_path: pathlib.Path,
     body_pressure_path: pathlib.Path,
@@ -93,13 +190,6 @@ def process_raw_groups(
         Exception: If the keys for body and static pressure data do not match
     """
 
-    def check_numeric(value) -> bool:
-        try:
-            float(value)
-            return True
-        except ValueError as _:
-            return False
-
     with pd.HDFStore(body_pressure_path, mode="r") as body_store:
         with pd.HDFStore(static_pressure_path, mode="r") as static_store:
             static_groups = static_store.keys()
@@ -110,12 +200,13 @@ def process_raw_groups(
 
             more_than_one_group = len(body_groups) > 1
 
-            keys_to_include: list[str] = []
+            keys_to_include: list[str] = list(body_groups)
 
             if more_than_one_group:
                 keys_to_include = HDFGroupInterface.filter_groups(
                     body_groups, cp_config.timestep_range
                 )
+            groups_process = keys_to_include
 
             average_value = None
 
@@ -140,57 +231,39 @@ def process_raw_groups(
                     else merged_df["0"].mean()
                 )
 
-            for store_group in body_groups:
-                if more_than_one_group and store_group not in keys_to_include:
-                    continue
+    if(output_path.exists()):
+        warnings.warn(f"Output path '{output_path.as_posix()}' exists, deleting it.")
+        output_path.unlink(missing_ok=True)
+    
+    columns_drop, columns_process = get_columns_drop_proc(body_pressure_path)
 
-                static_df = static_store.get(store_group)
-                static_df = filter_data(static_df, timestep_range=cp_config.timestep_range)
+    args_list = [
+        (
+            static_pressure_path,
+            body_pressure_path,
+            output_path,
+            cp_config,
+            store_group,
+            average_value,
+            columns_drop,
+            columns_process,
+        )
+        for store_group in groups_process
+    ]
+    with mp.Pool() as pool:
+        pool.map(_process_single, args_list)
 
-                body_df = body_store.get(store_group)
-                body_df = filter_data(body_df, timestep_range=cp_config.timestep_range)
-
-                # FIX CONVERSION ERROR
-                static_df.rename(
-                    columns={
-                        col: str(int(float(col)))
-                        for col in static_df.columns
-                        if check_numeric(col)
-                    },
-                    inplace=True,
-                )
-                body_df.rename(
-                    columns={
-                        col: str(int(float(col))) for col in body_df.columns if check_numeric(col)
-                    },
-                    inplace=True,
-                )
-
-                # This logic should be removed in later versions
-                if "point_idx" in body_df.columns:
-                    # Data is in older format, must convert to matrix
-                    body_df = convert_dataframe_into_matrix(body_df)
-                if "point_idx" in static_df.columns:
-                    # Data is in older format, must convert to matrix
-                    static_df = convert_dataframe_into_matrix(static_df)
-
-                if average_value is not None:
-                    static_df["0"] = average_value
-
-                if any(static_df.time_step.unique() != body_df.time_step.unique()):
-                    raise Exception(f"Timesteps for key {store_group} do not match!")
-
-                coefficient_data = transform_to_cp(
-                    press_data=static_df,
-                    body_data=body_df,
-                    reference_vel=cp_config.simul_U_H,
-                    characteristic_length=cp_config.simul_characteristic_length,
-                    ref_press_mode=cp_config.reference_pressure,
-                )
-                coefficient_data.rename(
-                    columns={col: str(col) for col in coefficient_data.columns}, inplace=True
-                )
-                coefficient_data.to_hdf(output_path, key=store_group, mode="a", format="fixed")
+    # for store_group in groups_process:
+    #     process_single_raw_group(
+    #         static_pressure_path=static_pressure_path, 
+    #         body_pressure_path=body_pressure_path, 
+    #         output_path=output_path,
+    #         cp_config=cp_config,
+    #         group_name=store_group,
+    #         average_value=average_value,
+    #         columns_drop=columns_drop, 
+    #         columns_process=columns_process,
+    #     )
 
 
 def process_cp(
