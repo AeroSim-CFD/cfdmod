@@ -94,7 +94,7 @@ def test_liquid_coefficients(body_geom):
         column_data_label="region_idx",
         value_data_label="Cfz",
     )
-    cf_stats = calculate_statistics(
+    calculate_statistics(
         historical_data=cf_data,
         statistics_to_apply=[
             BasicStatisticModel(stats="mean"),
