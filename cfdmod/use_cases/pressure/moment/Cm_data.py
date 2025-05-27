@@ -15,10 +15,7 @@ from cfdmod.use_cases.pressure.geometry import (
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
-from cfdmod.use_cases.pressure.moment.Cm_geom import (
-    add_lever_arm_to_geometry_df,
-    get_representative_volume,
-)
+from cfdmod.use_cases.pressure.moment.Cm_geom import add_lever_arm_to_geometry_df
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.zoning.body_config import BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import (
@@ -68,15 +65,19 @@ def process_Cm(
             geometry_df=geometry_df,
         )
 
+    def wrapper_transform_Cm(
+        raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+    ):
+        return transform_Cm(raw_cp, geometry_df, geometry, nominal_volume=cfg.nominal_volume)
+    
     Cm_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
         geometry=geometry_to_use,
-        processing_function=transform_Cm,
+        processing_function=wrapper_transform_Cm,
     )
     region_definition_df = get_region_definition_dataframe(geometry_dict)
-    length_df = Cm_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
-    Cm_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
+    length_df = Cm_data[["region_idx"]].drop_duplicates()
     region_definition_df = pd.merge(
         region_definition_df,
         length_df,
@@ -138,7 +139,7 @@ def process_Cm(
 
 
 def transform_Cm(
-    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry, *, nominal_volume: float,
 ) -> pd.DataFrame:
     """Transforms pressure coefficient into moment coefficient
 
@@ -146,6 +147,7 @@ def transform_Cm(
         raw_cp (pd.DataFrame): Body pressure coefficient data
         geometry_df (pd.DataFrame): Dataframe with geometric properties and triangle indexing
         geometry (LnasGeometry): Mesh geometry for bounding box definition
+        nominal_volume (float): Nominal volume to use for moment coeficient
 
     Returns:
         pd.DataFrame: Moment coefficient dataframe
@@ -202,30 +204,10 @@ def transform_Cm(
         .reset_index()
     )
 
-    region_group_by = geometry_df.groupby(["region_idx"])
-    representative_volume = {}
+    Cm_data["Cmx"] = Cm_data["Mx"] / nominal_volume
+    Cm_data["Cmy"] = Cm_data["My"] / nominal_volume
+    Cm_data["Cmz"] = Cm_data["Mz"] / nominal_volume
 
-    for region_idx, region_points in region_group_by:
-        region_points_idx = region_points.point_idx.to_numpy()
-        (Lx, Ly, Lz), V_rep = get_representative_volume(
-            input_mesh=geometry, point_idx=region_points_idx
-        )
-
-        representative_volume[region_idx[0]] = {}
-        representative_volume[region_idx[0]]["V_rep"] = V_rep
-        representative_volume[region_idx[0]]["Lx"] = Lx
-        representative_volume[region_idx[0]]["Ly"] = Ly
-        representative_volume[region_idx[0]]["Lz"] = Lz
-
-    rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
-    rep_df = rep_df.rename(columns={"index": "region_idx"})
-
-    Cm_data = pd.merge(Cm_data, rep_df, on="region_idx")
-
-    Cm_data["Cmx"] = Cm_data["Mx"] / Cm_data["V_rep"]
-    Cm_data["Cmy"] = Cm_data["My"] / Cm_data["V_rep"]
-    Cm_data["Cmz"] = Cm_data["Mz"] / Cm_data["V_rep"]
-
-    Cm_data.drop(columns=["Mx", "My", "Mz", "V_rep"], inplace=True)
+    Cm_data.drop(columns=["Mx", "My", "Mz"], inplace=True)
 
     return Cm_data

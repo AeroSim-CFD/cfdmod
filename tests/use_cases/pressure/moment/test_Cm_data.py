@@ -5,11 +5,7 @@ from lnas import LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.use_cases.pressure.moment.Cm_data import (
-    add_lever_arm_to_geometry_df,
-    get_representative_volume,
-    transform_Cm,
-)
+from cfdmod.use_cases.pressure.moment.Cm_data import add_lever_arm_to_geometry_df, transform_Cm
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
@@ -71,25 +67,7 @@ def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
         lever_origin=[0, 0, 10],
         geometry_df=geometry_df,
     )
-    Cm_data = transform_Cm(raw_cp=body_data, geometry_df=geometry_df, geometry=body_geom)
+    Cm_data = transform_Cm(raw_cp=body_data, geometry_df=geometry_df, geometry=body_geom, nominal_volume=10)
 
     assert Cm_data.notna().all().all()
     assert all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]])
-
-
-def test_get_representative_volume(body_geom):
-    (Lx, Ly, Lz), V_rep = get_representative_volume(
-        body_geom, np.arange(0, len(body_geom.triangles))
-    )
-    shifted_geom = body_geom.copy()
-    shifted_geom.vertices[-1][2] = 10  # Shifted z coord for the last vertex
-    shifted_geom._full_update()
-    (shifted_Lx, shifted_Ly, shifted_Lz), shifted_V_rep = get_representative_volume(
-        shifted_geom, np.arange(0, len(body_geom.triangles))
-    )
-
-    assert Lx == 10
-    assert Ly == 10
-    assert Lz == 1
-    assert V_rep == 100 == Lx * Ly * Lz
-    assert shifted_V_rep == 1000
