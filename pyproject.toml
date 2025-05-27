@@ -19,10 +19,10 @@ dependencies = [
     "colorama>=0.4.6,<0.5",
     "matplotlib>=3.7.3,<4",
     "pyarrow>=19.0.0,<20",
+    "aerosim-lnas>=0.6.0,<0.7",
 ]
 
 [project.optional-dependencies]
-lnas = ["aerosim-lnas>=0.6.0,<0.7"]
 geometry = [
     "pymeshlab>=2023,<2024",
     "trimesh>=4.0,<5",
