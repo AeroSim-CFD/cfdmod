@@ -69,7 +69,7 @@ def process_Cm(
         raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
     ):
         return transform_Cm(raw_cp, geometry_df, geometry, nominal_volume=cfg.nominal_volume)
-    
+
     Cm_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
@@ -139,7 +139,11 @@ def process_Cm(
 
 
 def transform_Cm(
-    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry, *, nominal_volume: float,
+    raw_cp: pd.DataFrame,
+    geometry_df: pd.DataFrame,
+    geometry: LnasGeometry,
+    *,
+    nominal_volume: float,
 ) -> pd.DataFrame:
     """Transforms pressure coefficient into moment coefficient
 

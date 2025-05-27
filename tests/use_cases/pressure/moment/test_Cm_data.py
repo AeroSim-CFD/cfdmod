@@ -67,7 +67,9 @@ def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
         lever_origin=[0, 0, 10],
         geometry_df=geometry_df,
     )
-    Cm_data = transform_Cm(raw_cp=body_data, geometry_df=geometry_df, geometry=body_geom, nominal_volume=10)
+    Cm_data = transform_Cm(
+        raw_cp=body_data, geometry_df=geometry_df, geometry=body_geom, nominal_volume=10
+    )
 
     assert Cm_data.notna().all().all()
     assert all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]])
