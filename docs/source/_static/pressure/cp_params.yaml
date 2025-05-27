@@ -4,8 +4,6 @@ pressure_coefficient:
     number_of_chunks: 10
     # Select the time interval to filter the signal and calculate statistics
     timestep_range: [10000, 20000]
-    # Define how to consider the effect of static reference pressure
-    reference_pressure: "average" # or "instantaneous"
     # Velocity at the building interest height
     simul_U_H: 0.05
     # Simulation characteristic length scale for time scale conversion

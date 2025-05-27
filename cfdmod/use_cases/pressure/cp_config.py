@@ -24,13 +24,6 @@ class CpConfig(HashableConfig, BasePressureConfig):
         title="Timestep Range",
         description="Interval between start and end steps to slice data",
     )
-    reference_pressure: Literal["average", "instantaneous"] = Field(
-        ...,
-        title="Reference Pressure",
-        description="Sets how to account for reference pressure effects."
-        + "If set to average, static pressure signal will be averaged."
-        + "If set to instantaneous, static pressure signal will be transient.",
-    )
     simul_U_H: float = Field(
         ...,
         title="Simulation Flow Velocity",
