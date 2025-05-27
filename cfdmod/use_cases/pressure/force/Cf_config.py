@@ -22,6 +22,11 @@ class CfConfig(HashableConfig, BasePressureConfig):
         description="Define which bodies should be processed separated and then joined"
         + "and assign to each a zoning config",
     )
+    nominal_area: float = Field(
+        ...,
+        title="Nominal Area",
+        description="Nominal area to use for calculation of force coefficient",
+    )
 
     directions: list[AxisDirections] = Field(
         ...,

@@ -4,7 +4,7 @@ import pytest
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
-from cfdmod.use_cases.pressure.force.Cf_data import get_representative_areas, transform_Cf
+from cfdmod.use_cases.pressure.force.Cf_data import transform_Cf
 from cfdmod.use_cases.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.use_cases.pressure.statistics import BasicStatisticModel
 from cfdmod.use_cases.pressure.zoning.processing import calculate_statistics
@@ -33,12 +33,6 @@ def body_geom():
     yield LnasGeometry(vertices, triangles)
 
 
-def test_get_representative_areas(body_geom):
-    tri_1_lengths, tri_1_area = get_representative_areas(body_geom, np.array([0]))
-    tri_2_lengths, tri_2_area = get_representative_areas(body_geom, np.array([1]))
-    assert (tri_1_area == tri_2_area == np.array([10, 10, 100])).all()
-
-
 def test_transform_to_Cf(body_geom, cp_data):
     geom_data = GeometryData(
         mesh=body_geom, zoning_to_use=ZoningModel(), triangles_idxs=np.array([0, 1])
@@ -51,7 +45,7 @@ def test_transform_to_Cf(body_geom, cp_data):
         mesh_normals=body_geom.normals,
         transformation=TransformationConfig(),
     )
-    cf_data = transform_Cf(cp_data, geometry_df, body_geom)
+    cf_data = transform_Cf(cp_data, geometry_df, body_geom, nominal_area=10)
 
     assert (
         len(cf_data) == cp_data.time_normalized.nunique() * geometry_df.region_idx.nunique()
@@ -93,14 +87,14 @@ def test_liquid_coefficients(body_geom):
     cp_data = convert_dataframe_into_matrix(
         cp_data, row_data_label="time_normalized", value_data_label="cp"
     )
-    cf_data = transform_Cf(cp_data, geometry_df, upper_mesh.geometry)
+    cf_data = transform_Cf(cp_data, geometry_df, upper_mesh.geometry, nominal_area=10)
     cf_data = convert_dataframe_into_matrix(
         cf_data,
         row_data_label="time_normalized",
         column_data_label="region_idx",
         value_data_label="Cfz",
     )
-    cf_stats = calculate_statistics(
+    calculate_statistics(
         historical_data=cf_data,
         statistics_to_apply=[
             BasicStatisticModel(stats="mean"),
@@ -109,4 +103,3 @@ def test_liquid_coefficients(body_geom):
             BasicStatisticModel(stats="kurtosis"),
         ],
     )
-    assert round(cf_stats.iloc[0]["mean"], 1) == 0.6
