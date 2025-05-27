@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from lnas import LnasGeometry
 
 from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.geometry import GeometryData
@@ -33,38 +32,6 @@ def add_lever_arm_to_geometry_df(
     result = pd.merge(geometry_df, position_df, on="point_idx", how="left")
 
     return result
-
-
-def get_representative_volume(
-    input_mesh: LnasGeometry, point_idx: np.ndarray
-) -> tuple[tuple[float, float, float], float]:
-    """Calculates the representative volume from the bounding box of a given mesh
-
-    Args:
-        input_mesh (LnasGeometry): Input LNAS mesh
-        point_idx (np.ndarray): Array of triangle indices of each sub region
-
-    Returns:
-        tuple[tuple[float, float, float], float]: Tuple containing:
-            Lengths tuple (Lx, Ly, Lz) and representative volume value
-    """
-    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
-    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
-    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
-    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
-
-    Lx = x_max - x_min
-    Ly = y_max - y_min
-    Lz = z_max - z_min
-
-    # Threshold to avoid big coefficients
-    Lx = 1 if Lx < 1 else Lx
-    Ly = 1 if Ly < 1 else Ly
-    Lz = 1 if Lz < 1 else Lz
-
-    V_rep = Lx * Ly * Lz
-
-    return (Lx, Ly, Lz), V_rep
 
 
 def _get_lever_relative_position_df(

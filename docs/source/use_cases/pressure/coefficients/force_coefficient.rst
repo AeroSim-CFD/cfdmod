@@ -37,24 +37,12 @@ It can also be defined for each axis direction:
    C_{fz} = \frac{\sum Fz_{res}}{q A_{z}} = \frac{Fz_{green} + Fz_{red}}{q A_{z}} = \frac{\sum{c_{pi} A_{iz}} + \sum{c_{pj} A_{jz}}}{A_{z}}
 
 
-The representative area is defined as a **projection of the surface area** for the body composed by the selected surfaces, for each direction.
+We define the nominal area ($A_x$, $A_y$, $A_z$) as a **user input**, constant for all axis ($A_x$=$A_y$=$A_z$).
+This is done to let the user define how they want to calculate its value.
+The mathematical definition is to use the **projection of the surface area** for the body composed in the given axis.
 
-To define the representative areas for each direction of the resulting force, we can sum the **projected area of each of one of the surfaces triangles**:
-
-.. math::
-   A_x = \sum Ax_{i}
-
-   A_y = \sum Ay_{i}
-
-   A_z = \sum Az_{i}
-
-One can also define the representative area as a vector:
-
-.. math::
-   A_{rep} = [A_x, A_y, A_z]
-
-.. important::
-  This method is valid for bodies composed by **parallel surfaces that have the same surface area**. For more complex geometries, the method has to account for the different representative areas for each surface, **not implemented yet**.
+.. note::
+  For a non constant nominal area, the values of moment coefficient can be generated and later renormalized based on geometry informations.
 
 Use Case
 ========
@@ -64,7 +52,7 @@ To do so, a similar logic applied to the shape coefficient is used to **determin
 If its center lies inside the sub-body volume, then it belongs to it.
 
 The result is a sectionated body in different **sub-bodies for each interval**.
-When sectioning the body, the respective representative area should be the same as the sub-body representative area.
+When sectioning the body, the respective nominal area should be the same as the sub-body nominal area.
 
 .. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 
