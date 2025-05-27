@@ -127,7 +127,7 @@ def process_surfaces(
         regions_mesh, regions_mesh_triangles_indexing = generate_regions_mesh(
             geom_data=geom_data, cfg=cfg
         )
-        regions_mesh_triangles_indexing = np.core.defchararray.add(
+        regions_mesh_triangles_indexing = np.char.add(
             regions_mesh_triangles_indexing.astype(str), "-" + sfc_lbl
         )
         region_data_df = combine_stats_data_with_mesh(

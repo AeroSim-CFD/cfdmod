@@ -7,7 +7,6 @@ from lnas import LnasFormat, LnasGeometry
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data
 from cfdmod.use_cases.pressure.chunking import process_timestep_groups
 from cfdmod.use_cases.pressure.force.Cf_config import CfConfig
-from cfdmod.use_cases.pressure.force.Cf_geom import get_representative_areas
 from cfdmod.use_cases.pressure.geometry import (
     GeometryData,
     ProcessedEntity,
@@ -58,16 +57,20 @@ def process_Cf(
         transformation=cfg.transformation,
     )
 
+    def wrapper_transform_Cf(
+        raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+    ):
+        return transform_Cf(raw_cp, geometry_df, geometry, nominal_area=cfg.nominal_area)
+
     Cf_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,
         geometry=geometry_to_use,
-        processing_function=transform_Cf,
+        processing_function=wrapper_transform_Cf,
     )
 
     region_definition_df = get_region_definition_dataframe(geometry_dict)
-    length_df = Cf_data[["region_idx", "Lx", "Ly", "Lz"]].drop_duplicates()
-    Cf_data.drop(columns=["Lx", "Ly", "Lz"], inplace=True)
+    length_df = Cf_data[["region_idx"]].drop_duplicates()
 
     region_definition_df = pd.merge(
         region_definition_df,
@@ -131,7 +134,7 @@ def process_Cf(
 
 
 def transform_Cf(
-    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+    raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry, *, nominal_area: float
 ) -> pd.DataFrame:
     """Transforms pressure coefficient into force coefficient
 
@@ -139,6 +142,7 @@ def transform_Cf(
         raw_cp (pd.DataFrame): Body pressure coefficient data
         geometry_df (pd.DataFrame): Dataframe with geometric properties and triangle indexing
         geometry (LnasGeometry): Mesh geometry for bounding box definition
+        nominal_area (float): Nominal area to consider for Cf calculation
 
     Returns:
         pd.DataFrame: Force coefficient dataframe
@@ -190,31 +194,10 @@ def transform_Cf(
         .reset_index()
     )
 
-    region_group_by = geometry_df.groupby(["region_idx"])
-    representative_areas = {}
+    Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
+    Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
+    Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area
 
-    for region_idx, region_points in region_group_by:
-        region_points_idx = region_points.point_idx.to_numpy()
-        (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
-            input_mesh=geometry, point_idx=region_points_idx
-        )
-
-        representative_areas[region_idx[0]] = {}
-        representative_areas[region_idx[0]]["ATx"] = Ax
-        representative_areas[region_idx[0]]["ATy"] = Ay
-        representative_areas[region_idx[0]]["ATz"] = Az
-        representative_areas[region_idx[0]]["Lx"] = Lx
-        representative_areas[region_idx[0]]["Ly"] = Ly
-        representative_areas[region_idx[0]]["Lz"] = Lz
-
-    rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
-    rep_df = rep_df.rename(columns={"index": "region_idx"})
-    Cf_data = pd.merge(Cf_data, rep_df, on="region_idx")
-
-    Cf_data["Cfx"] = Cf_data["Fx"] / Cf_data["ATx"]
-    Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
-    Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
-
-    Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
+    Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
 
     return Cf_data
