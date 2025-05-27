@@ -20,9 +20,12 @@ from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file,
 
 
 def transform_to_cp(
+    *,
     press_data: pd.DataFrame,
     body_data: pd.DataFrame,
     reference_vel: float,
+    fluid_density: float,
+    macroscopic_type: Literal["pressure", "rho"],
     characteristic_length: float,
     columns_drop: list[str] | None = None,
     columns_process: list[str] | None = None,
@@ -33,6 +36,9 @@ def transform_to_cp(
         press_data (pd.DataFrame): Historic series pressure DataFrame
         body_data (pd.DataFrame): Body's DataFrame
         reference_vel (float): Value of reference velocity for dynamic pressure
+        fluid_density (float): Value of reference fluid density for dynamic pressure
+        macroscopic_type ( Literal["pressure", "rho"]): Macroscopic type in dataframes, wheter LBM
+            rho or already pressure calculated
         characteristic_length (float): Characteristic length in simulation time scale
         ref_press_mode (Literal["instantaneous", "average"]): Sets how to account for reference pressure effects
 
@@ -40,19 +46,22 @@ def transform_to_cp(
         pd.DataFrame: Dataframe of pressure coefficient data for the body
     """
     static_pressure_array = press_data["0"].to_numpy()
-    average_static_pressure = static_pressure_array.mean()
-    dynamic_pressure = 0.5 * average_static_pressure * reference_vel**2
-    cs_square = 1 / 3
-    multiplier = cs_square / dynamic_pressure
-    press = static_pressure_array
+    dynamic_pressure = 0.5 * fluid_density * reference_vel**2
 
     if(columns_process is None):
-        columns_process: list[str] = [col for col in body_data.columns if col.isnumeric()]
+        columns_process = [col for col in body_data.columns if col.isnumeric()]
     if(columns_drop is None):
-        columns_drop: list[str] = [col for col in body_data.columns if not col.isnumeric()]
+        columns_drop = [col for col in body_data.columns if not col.isnumeric()]
 
-    data_to_convert = body_data.drop(columns=columns_drop).to_numpy()
-    result = (data_to_convert.T - press) * multiplier
+    multiplier = 1
+    if(macroscopic_type == "rho"):
+        cs_square = 1 / 3
+        multiplier = cs_square
+
+    press = static_pressure_array
+    press_body = body_data.drop(columns=columns_drop).to_numpy().T
+    result = (press_body - press) * (multiplier / dynamic_pressure)
+
     df_cp = pd.DataFrame(result.T, columns=columns_process)
     df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
         characteristic_length / reference_vel
@@ -102,6 +111,8 @@ def process_single_raw_group(
                 press_data=static_df,
                 body_data=body_df,
                 reference_vel=cp_config.simul_U_H,
+                fluid_density=cp_config.fluid_density,
+                macroscopic_type=cp_config.macroscopic_type,
                 characteristic_length=cp_config.simul_characteristic_length,
                 columns_drop=columns_drop,
                 columns_process=columns_process,

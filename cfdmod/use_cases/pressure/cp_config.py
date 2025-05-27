@@ -3,7 +3,7 @@ from __future__ import annotations
 __all__ = ["CpConfig", "CpCaseConfig"]
 
 import pathlib
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,8 @@ from cfdmod.utils import read_yaml
 
 
 class CpConfig(HashableConfig, BasePressureConfig):
+    """Configuration to calculate pressure coeficient"""
+
     number_of_chunks: int = Field(
         1,
         title="Number of chunks",
@@ -24,6 +26,20 @@ class CpConfig(HashableConfig, BasePressureConfig):
         title="Timestep Range",
         description="Interval between start and end steps to slice data",
     )
+    macroscopic_type: Annotated[
+        Literal["rho", "pressure"],
+        Field(
+            "rho",
+            title="Macroscopic type",
+            description="Macroscopic type in files, LBM density (rho) or pressure",
+        ),
+    ]
+    fluid_density: Annotated[
+        float,
+        Field(
+            1, title="Fluid density", description="Fluid density to consider for Cp calculation"
+        ),
+    ]
     simul_U_H: float = Field(
         ...,
         title="Simulation Flow Velocity",

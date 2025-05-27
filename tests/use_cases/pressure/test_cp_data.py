@@ -22,15 +22,33 @@ def test_read_and_slice_data(press_data, body_data):
     assert body_data_filtered["time_step"].tolist() == [2, 3, 4]
 
 
-def test_transform_instantaneous(press_data, body_data):
-    transformed_data = transform_to_cp(press_data, body_data, 0.05, 1, "instantaneous")
+def test_transform_rho(press_data, body_data):
+    transformed_data = transform_to_cp(
+        press_data=press_data,
+        body_data=body_data,
+        reference_vel=0.05,
+        fluid_density=1,
+        macroscopic_type="rho",
+        characteristic_length=1,
+        columns_drop=None,
+        columns_process=None,
+    )
 
     assert "0" in transformed_data.columns
     assert len(transformed_data.iloc[0]) == len(body_data.iloc[0])
 
 
-def test_transform_average(press_data, body_data):
-    transformed_data = transform_to_cp(press_data, body_data, 0.05, 1, "average")
+def test_transform_pressure(press_data, body_data):
+    transformed_data = transform_to_cp(
+        press_data=press_data,
+        body_data=body_data,
+        reference_vel=10,
+        fluid_density=1,
+        macroscopic_type="pressure",
+        characteristic_length=1,
+        columns_drop=None,
+        columns_process=None,
+    )
 
     assert "0" in transformed_data.columns
     assert len(transformed_data.iloc[0]) == len(body_data.iloc[0])
