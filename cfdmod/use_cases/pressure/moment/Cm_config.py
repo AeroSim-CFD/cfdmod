@@ -21,6 +21,11 @@ class CmConfig(HashableConfig, BasePressureConfig):
         description="Define which bodies should be processed separated and then joined"
         + "and assign to each a zoning config",
     )
+    nominal_volume: float = Field(
+        ...,
+        title="Nominal Volume",
+        description="Nominal volume to use for calculation of moments coefficient",
+    )
     directions: list[AxisDirections] = Field(
         ...,
         title="List of directions",
