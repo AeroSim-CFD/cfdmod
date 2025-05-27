@@ -57,9 +57,11 @@ def process_Cf(
         transformation=cfg.transformation,
     )
 
-    def wrapper_transform_Cf(raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry):
+    def wrapper_transform_Cf(
+        raw_cp: pd.DataFrame, geometry_df: pd.DataFrame, geometry: LnasGeometry
+    ):
         return transform_Cf(raw_cp, geometry_df, geometry, nominal_area=cfg.nominal_area)
-    
+
     Cf_data = process_timestep_groups(
         data_path=cp_path,
         geometry_df=geometry_df,

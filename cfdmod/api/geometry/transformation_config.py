@@ -1,9 +1,9 @@
 from typing import Annotated
 
 import numpy as np
+from lnas import TransformationsMatrix
 from pydantic import BaseModel, Field
 
-from lnas import TransformationsMatrix
 
 class TransformationConfig(BaseModel):
     """Geometry's transformation configurations"""
