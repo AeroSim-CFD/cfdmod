@@ -276,3 +276,6 @@ def process_cp(
     vtp_path = path_manager.get_vtp_path(cfg_lbl=cfg_label)
     polydata = create_polydata_for_cell_data(data=cp_stats, mesh=mesh)
     write_polydata(vtp_path, polydata)
+
+    if grouped_data_path.exists():
+        grouped_data_path.unlink()
