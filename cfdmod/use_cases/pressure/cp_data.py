@@ -1,10 +1,10 @@
+import multiprocessing as mp
 import pathlib
 import warnings
 from typing import Literal
-import multiprocessing as mp
 
-import pandas as pd
 import filelock
+import pandas as pd
 from lnas import LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
@@ -16,7 +16,7 @@ from cfdmod.use_cases.pressure.chunking import (
 )
 from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
-from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file, save_yaml
+from cfdmod.utils import create_folders_for_file, save_yaml
 
 
 def transform_to_cp(
@@ -48,13 +48,13 @@ def transform_to_cp(
     static_pressure_array = press_data["0"].to_numpy()
     dynamic_pressure = 0.5 * fluid_density * reference_vel**2
 
-    if(columns_process is None):
+    if columns_process is None:
         columns_process = [col for col in body_data.columns if col.isnumeric()]
-    if(columns_drop is None):
+    if columns_drop is None:
         columns_drop = [col for col in body_data.columns if not col.isnumeric()]
 
     multiplier = 1
-    if(macroscopic_type == "rho"):
+    if macroscopic_type == "rho":
         cs_square = 1 / 3
         multiplier = cs_square
 
@@ -86,6 +86,7 @@ def filter_data(data: pd.DataFrame, timestep_range: tuple[float, float]) -> pd.D
     ].copy()
 
     return filtered_data
+
 
 def process_single_raw_group(
     static_pressure_path: pathlib.Path,
@@ -122,6 +123,7 @@ def process_single_raw_group(
             with lock:
                 coefficient_data.to_hdf(output_path, key=group_name, mode="a", format="fixed")
 
+
 def get_columns_drop_proc(body_pressure_path: pathlib.Path) -> tuple[list[str], list[str]]:
     with pd.HDFStore(body_pressure_path, mode="r") as body_store:
         for store_key in body_store.keys():
@@ -130,6 +132,7 @@ def get_columns_drop_proc(body_pressure_path: pathlib.Path) -> tuple[list[str], 
             columns_process: list[str] = [col for col in df.columns if col.isnumeric()]
             return columns_drop, columns_process
         raise ValueError(f"Unable to find keys in file {body_pressure_path}")
+
 
 def _process_single(args):
     (
@@ -143,14 +146,16 @@ def _process_single(args):
     ) = args
 
     process_single_raw_group(
-        static_pressure_path=static_pressure_path, 
-        body_pressure_path=body_pressure_path, 
+        static_pressure_path=static_pressure_path,
+        body_pressure_path=body_pressure_path,
         output_path=output_path,
         cp_config=cp_config,
         group_name=group_name,
-        columns_drop=columns_drop, 
+        columns_drop=columns_drop,
         columns_process=columns_process,
     )
+
+
 def process_raw_groups(
     static_pressure_path: pathlib.Path,
     body_pressure_path: pathlib.Path,
@@ -187,10 +192,10 @@ def process_raw_groups(
                 )
             groups_process = keys_to_include
 
-    if(output_path.exists()):
+    if output_path.exists():
         warnings.warn(f"Output path '{output_path.as_posix()}' exists, deleting it.")
         output_path.unlink(missing_ok=True)
-    
+
     columns_drop, columns_process = get_columns_drop_proc(body_pressure_path)
 
     args_list = [
