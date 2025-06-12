@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import pandas as pd
 import numpy as np
 
@@ -75,10 +75,12 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
 
 class HFPIStructuralData(BaseModel):
     """Structural data required to run HFPI"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     df_modes: pd.DataFrame
     df_floors: pd.DataFrame
     df_phi_floors: list[pd.DataFrame]
+    is_normalized: bool = False
 
     @property
     def n_modes(self):
@@ -112,7 +114,10 @@ class HFPIStructuralData(BaseModel):
 
     def normalize_all_mode_shapes(self):
         """Normalize mode shapes for HFPI. Alters the `df_phi_floors`"""
+        if(self.is_normalized):
+            return
 
+        self.is_normalized = True
         self.df_phi_floors = [
             normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_phi_floors
         ]
@@ -120,6 +125,8 @@ class HFPIStructuralData(BaseModel):
 
 class HFPICaseData(BaseModel):
     """Analytical data required to analyze a given HFPI model"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     U_H: float
     height: float
     base: float
@@ -172,13 +179,20 @@ def normalize_hfpi_forces(
 
 
 class HFPIForcesData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     cf_x: pd.DataFrame
     cf_y: pd.DataFrame
     cm_z: pd.DataFrame
+    is_normalized: bool = False
 
     @property
     def n_samples(self):
         return len(self.cf_x)
+
+    @property
+    def delta_t(self):
+        return self.cf_x["time"][1] - self.cf_x["time"][0]
 
     @classmethod
     def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path):
@@ -200,32 +214,40 @@ class HFPIForcesData(BaseModel):
         """Generate HFPI normalized forces data"""
         time_factor = case_data.time_normalization_factor
 
-        cf_x = normalize_hfpi_forces(
-            self.cf_x.copy(),
+        if(self.is_normalized):
+            raise ValueError("Forces were already normalized. Unable to normalize again")
+
+        cf_x = self.cf_x.copy()
+        cf_y = self.cf_y.copy()
+        cm_z = self.cm_z.copy()
+        normalize_hfpi_forces(
+            cf_x,
             "FX",
             force_factor=case_data.force_normalization_factor,
             time_factor=time_factor,
         )
-        cf_y = normalize_hfpi_forces(
-            self.cf_y.copy(),
+        normalize_hfpi_forces(
+            cf_y,
             "FY",
             force_factor=case_data.force_normalization_factor,
             time_factor=time_factor,
         )
-        cm_z = normalize_hfpi_forces(
-            self.cm_z.copy(),
+        normalize_hfpi_forces(
+            cm_z,
             "MZ",
             force_factor=case_data.moments_normalization_factor,
             time_factor=time_factor,
         )
+
         return HFPIForcesData(
             cf_x=cf_x,
             cf_y=cf_y,
             cm_z=cm_z,
+            is_normalized=True,
         )
 
 
-def compute_generalized_forces(forces: HFPIForcesData, structural_data: HFPIStructuralData) -> pd.DataFrame:
+def solve_generalized_forces(forces: HFPIForcesData, structural_data: HFPIStructuralData) -> pd.DataFrame:
     """Compute generalized forces for a structure
 
     Generalized forces are the acting forces in the building projected to a given mode
@@ -374,5 +396,28 @@ class HFPISolver(BaseModel):
     structural_data: HFPIStructuralData
     case_data: HFPICaseData
     forces: HFPIForcesData
+    normalized_forces: None | HFPIForcesData = None
 
-    def get_general_displacement(self): ...
+    def normalize_data(self):
+        self.structural_data.normalize_all_mode_shapes()
+        self.normalized_forces = self.forces.get_normalized_forces(self.case_data)
+
+    def get_real_displacement(self): 
+        self.normalize_data()
+        generalized_forces = solve_generalized_forces(self.forces, self.structural_data)
+        n_modes = self.structural_data.n_modes
+        dt = self.forces.delta_t
+        xi = self.case_data.xi
+
+        all_real_displacements = []
+
+        for n_mode in range(n_modes):
+            df_mode = self.structural_data.df_phi_floors[n_mode]
+            wp = df_mode["wp"].iloc[n_mode]
+            gen_displacement = solve_mode_general_displacement(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+            real_displacement = solve_mode_real_displacement(gen_displacement, df_mode)
+            all_real_displacements.append(real_displacement)
+        total_displacement = combine_modes(all_real_displacements)
+
+        return total_displacement
+
