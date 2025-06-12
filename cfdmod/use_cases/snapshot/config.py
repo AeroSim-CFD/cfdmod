@@ -38,6 +38,35 @@ class CropConfig(BaseModel):
     )
 
 
+class TransformationConfig(BaseModel):
+    translate: tuple[float, float, float] = Field(
+        (0, 0, 0),
+        title="Translate vector",
+        description="Vector to representing the translation",
+    )
+    rotate: tuple[float, float, float] = Field(
+        (0, 0, 0),
+        title="Rotate vector",
+        description="Vector to representing the rotation",
+    )
+    scale: tuple[float, float, float] = Field(
+        (1, 1, 1),
+        title="Scale vector",
+        description="Vector to representing the scale",
+    )
+
+
+class ClipBoxConfig(BaseModel):
+    position: tuple[float, float, float] = Field(
+        (0, 0, 0),
+        title="Position vector",
+        description="Vector to representing the position of clip box",
+    )
+    length: float = (
+        Field(0, title="Length of the clip box", description="The length of the clip box"),
+    )
+
+
 class CameraConfig(BaseModel):
     zoom: float = Field(1, title="Camera zoom", gt=0)
     offset_position: tuple[float, float, float] = Field(
@@ -67,14 +96,10 @@ class PolydataConfig(BaseModel):
     file_path: str = Field(
         ..., title="Polydata file path", description="Path to the polydata file"
     )
-    images: list[ImageConfig] = Field(
-        ...,
-        title="Image list parameters",
-        description="Parameters for generating images for polydata",
-    )
 
 
 class ColormapConfig(BaseModel):
+    style: str = "contour"
     n_divs: int = Field(
         None, title="Number of divisions", description="Colormap divisions", ge=3, le=15
     )
@@ -95,33 +120,29 @@ class ColormapConfig(BaseModel):
 
 
 class ProjectionConfig(BaseModel):
-    model_config = ConfigDict(use_enum_values=True)
-    offset: float = Field(
-        10,
-        title="Offset value",
-        description="Value for offsetting each projection from the center projection",
-        ge=0,
+    clip_box: ClipBoxConfig = Field(
+        ..., title="ClipBox configuration", description="Parameters for clipbox"
     )
-    axis: list[PROJECTION_CASES] = Field(
-        ["x_plus", "x_minus", "y_plus", "y_minus"],
-        title="Projection axis",
-        description="Select which axis are included in the projections.",
+    transformation: TransformationConfig = Field(
+        ...,
+        title="Transformation components",
+        description="Parameters to represent the transformation of the body in the projection",
     )
-    rotation: tuple[float, float, float] = Field(
-        (0, 0, 0),
-        title="Rotation vector",
-        description="Vector to rotate the body for setting up the projection",
+    show_labels: bool = Field(False, title="", description="")
+    polydata_path: str = Field(
+        ..., title="Polydata file path", description="Path to the polydata file"
     )
 
 
 class SnapshotConfig(BaseModel):
-    polydata: list[PolydataConfig] = Field(
-        ...,
-        title="List of polydata configuration",
-        description="Parameters for polydata used in the snapshot",
-    )
-    projection: ProjectionConfig = Field(
-        ..., title="Projection configuration", description="Parameters for the projections"
+    # polydata: list[PolydataConfig] = Field(
+    #     ...,
+    #     title="List of polydata configuration",
+    #     description="Parameters for polydata used in the snapshot",
+    # )
+    images: list[ImageConfig] = Field(..., title="", description="")
+    projections: list[ProjectionConfig] = Field(
+        ..., title="Projections configuration", description="Parameters for the projections"
     )
     colormap: ColormapConfig = Field(
         ..., title="Colormap configuration", description="Parameters for colormap"

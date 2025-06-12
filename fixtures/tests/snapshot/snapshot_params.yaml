@@ -1,21 +1,53 @@
-polydata:
-- file_path: "./fixtures/tests/snapshot/env_max.vtp"
-  images:
-  - image_label: "CP_ENVMAX_G100"
-    scalar_label: "cp_xtr_max"
-projection:
-  offset: 15
-  axis: [x_plus, x_minus, y_plus, y_minus]
-  rotation: [0, 0, -13]
+# polydata_paths:
+#   - file_path: "./fixtures/tests/snapshot/loads_cupula_top.vtp"
+#   - file_path: "./fixtures/tests/snapshot/loads_cupula_bottom.vtp"
+images:
+- image_label: "CP_min_G100"
+  scalar_label: "mean [kgf/m²]"
+- image_label: "CP_min_G100"
+  scalar_label: "mean [kgf/m²]"
+# - image_label: "CP_min_G100"
+#   stats:
+#   - projection: top_proj
+#     scalar_label: "mean [kgf/m²]"
+projections:
+- clip_box:
+    position: [0, 0, 0]
+    length: 0
+  transformation:
+    translate: [0, 0, 0]
+    rotate: [0, 0, 0]
+    scale: [1, 1, 1]
+  show_labels: False
+  polydata_path: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
+- clip_box:
+    position: [0, 0, 0]
+    length: 0
+  transformation:
+    translate: [-80, 0, 0]
+    rotate: [0, 90, 0]
+    scale: [1, 1, 1]
+  show_labels: False
+  polydata_path: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
+- clip_box:
+    position: [0, 0, 0]
+    length: 0
+  transformation:
+    translate: [-2, -15, 0]
+    rotate: [0, 0, 0]
+    scale: [1, 1, 1]
+  show_labels: False
+  polydata_path: "../fixtures/tests/snapshot/loads_cupula_bottom.vtp"
+
 colormap:
-  n_divs: 10
+  n_divs: 15
   # target_step: 0.1 # n_divs auto
 camera:
-  zoom: 1.2
-  offset_position: [0, -20, 0]
+  zoom: 3
+  offset_position: [0, 0, 0]
   view_up: [0, 1, 0]
-  window_size: [800, 800]
+  window_size: [2400, 800]
   crop:
-    width_ratio: 0.8
+    width_ratio: 1
     height_ratio: 1
-    watermark_path: "./fixtures/tests/snapshot/axis_icon.png"
+    watermark_path: "../fixtures/tests/snapshot/axis_icon.png"

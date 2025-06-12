@@ -58,10 +58,9 @@ def get_translation(
 
 def take_snapshot(
     scalar_name: str,
-    file_path: pathlib.Path,
     output_path: pathlib.Path,
     colormap_params: ColormapConfig,
-    projection_params: ProjectionConfig,
+    projection_params: list[ProjectionConfig],
     camera_params: CameraConfig,
 ):
     """Use pyvista renderer to take a snapshot
@@ -74,58 +73,134 @@ def take_snapshot(
         projection_params (ProjectionConfig): Parameters for projection
         camera_params (CameraConfig): Parameters for camera
     """
-    original_mesh = pv.read(file_path)
-    original_mesh.set_active_scalars(scalar_name)
+    # original_mesh = pv.read(file_path)
+    # original_mesh.set_active_scalars(scalar_name)
 
-    scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
-    scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
-    colormap_divs = colormap_params.get_colormap_divs(scalar_range)
-    colormap_divs = 15 if colormap_divs > 15 else 3 if colormap_divs < 3 else colormap_divs
+    # scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
+    # scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
+    # colormap_divs = colormap_params.get_colormap_divs(scalar_range)
+    # colormap_divs = 15 if colormap_divs > 15 else 3 if colormap_divs < 3 else colormap_divs
 
-    sargs = dict(
-        title=f"{scalar_name}\n",
-        title_font_size=24,
-        label_font_size=20,
-        n_labels=colormap_divs + 1,
-        italic=False,
-        fmt="%.2f",
-        font_family="arial",
-        position_x=0.2,
-        position_y=0.0,
-        width=0.6,
-    )
+    # sargs = dict(
+    #     title=f"{scalar_name}\n",
+    #     title_font_size=24,
+    #     label_font_size=20,
+    #     n_labels=colormap_divs + 1,
+    #     italic=False,
+    #     fmt="%.2f",
+    #     font_family="arial",
+    #     position_x=0.2,
+    #     position_y=0.0,
+    #     width=0.6,
+    # )
     plotter = pv.Plotter(window_size=camera_params.window_size)
     plotter.enable_parallel_projection()
 
-    original_bounds = original_mesh.bounds
-    original_center = get_mesh_center(original_bounds)
+    # plotting_cmap = ColormapFactory(
+    #     scalar_range=scalar_range, n_divs=colormap_divs
+    # ).build_default_colormap()
 
-    original_mesh.rotate_x(projection_params.rotation[0], point=original_center, inplace=True)
-    original_mesh.rotate_y(projection_params.rotation[1], point=original_center, inplace=True)
-    original_mesh.rotate_z(projection_params.rotation[2], point=original_center, inplace=True)
+    # lut = pv.LookupTable(cmap="turbo")
+    # lut.scalar_range = (scalar_range[0], scalar_range[1])
+    # lut.n_values = colormap_divs
+    # lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
 
-    plotting_cmap = ColormapFactory(
-        scalar_range=scalar_range, n_divs=colormap_divs
-    ).build_default_colormap()
+    # feature_edges = original_mesh.extract_feature_edges(
+    #     feature_angle=5,  # degrees, controls sensitivity
+    #     boundary_edges=True,
+    #     feature_edges=True,
+    #     manifold_edges=False,
+    #     non_manifold_edges=False,
+    # )
+    # plotter.add_mesh(feature_edges, color="black", line_width=2)
 
-    plotter.add_mesh(original_mesh, lighting=False, cmap=plotting_cmap, scalar_bar_args=sargs)
+    # if colormap_params.style == "contour":
+    #     original_mesh = original_mesh.cell_data_to_point_data()
+    #     plotter.add_mesh(original_mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
+    #     contours = original_mesh.contour(
+    #         np.linspace(scalar_range[0], scalar_range[1], colormap_divs + 1),
+    #         scalars=scalar_name,  # optional, if you want to contour along z-axis
+    #     )
+    #     plotter.add_mesh(contours, color="grey", line_width=2)
+    # elif colormap_params.style == "flat":
+    #     plotter.add_mesh(original_mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
 
-    for projection in [p for p in Projections if p.value[0] in projection_params.axis]:
+    for projection in projection_params:
         axes = pv.Axes()
-        duplicated_mesh = original_mesh.copy()
+        current_mesh = pv.read(projection.polydata_path)
+        current_mesh.set_active_scalars(scalar_name)
 
-        axes.origin = original_center
-        duplicated_mesh.rotate_x(projection.value[1][0], point=axes.origin, inplace=True)
-        duplicated_mesh.rotate_y(projection.value[1][1], point=axes.origin, inplace=True)
+        scalar_arr = current_mesh.active_scalars[~np.isnan(current_mesh.active_scalars)]
+        scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
+        colormap_divs = colormap_params.get_colormap_divs(scalar_range)
 
-        translation = get_translation(
-            bounds=original_bounds, for_projection=projection, offset_val=projection_params.offset
+        sargs = dict(
+            title=f"{scalar_name}\n",
+            title_font_size=24,
+            label_font_size=20,
+            n_labels=colormap_divs + 1,
+            italic=False,
+            fmt="%.2f",
+            font_family="arial",
+            position_x=0.2,
+            position_y=0.0,
+            width=0.6,
         )
 
-        duplicated_mesh = duplicated_mesh.translate(translation, inplace=True)
+        plotting_cmap = ColormapFactory(
+            scalar_range=scalar_range, n_divs=colormap_divs
+        ).build_default_colormap()
+
+        lut = pv.LookupTable(cmap="turbo")
+        lut.scalar_range = (scalar_range[0], scalar_range[1])
+        lut.n_values = colormap_divs
+        lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
+
+        feature_edges = current_mesh.extract_feature_edges(
+            feature_angle=5,  # degrees, controls sensitivity
+            boundary_edges=True,
+            feature_edges=True,
+            manifold_edges=False,
+            non_manifold_edges=False,
+        )
+        plotter.add_mesh(feature_edges, color="black", line_width=2)
+
+        # duplicated_mesh = original_mesh.copy()
+        # transformed_box = reference_box.copy()
+
+        # axes.origin = original_center
+
+        current_mesh.rotate_x(projection.transformation.rotate[0], point=axes.origin, inplace=True)
+        current_mesh.rotate_y(projection.transformation.rotate[1], point=axes.origin, inplace=True)
+        current_mesh.rotate_z(projection.transformation.rotate[2], point=axes.origin, inplace=True)
+        # transformed_box.rotate_x(projection.value[1][0], point=axes.origin, inplace=True)
+        # transformed_box.rotate_y(projection.value[1][1], point=axes.origin, inplace=True)
+
+        current_mesh.translate(projection.transformation.translate, inplace=True)
+        # transformed_box = transformed_box.translate(translation, inplace=True)
+        current_mesh.cell_data_to_point_data()
         plotter.add_mesh(
-            duplicated_mesh, lighting=False, cmap=plotting_cmap, scalar_bar_args=sargs
+            current_mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color="white"
         )
+        feature_edges = current_mesh.extract_feature_edges(
+            feature_angle=5,  # degrees, controls sensitivity
+            boundary_edges=True,
+            feature_edges=True,
+            manifold_edges=False,
+            non_manifold_edges=False,
+        )
+        plotter.add_mesh(feature_edges, color="black", line_width=2)
+
+        if colormap_params.style == "contour":
+            current_mesh = current_mesh.cell_data_to_point_data()
+            plotter.add_mesh(current_mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
+            contours = current_mesh.contour(
+                np.linspace(scalar_range[0], scalar_range[1], colormap_divs + 1),
+                scalars=scalar_name,  # optional, if you want to contour along z-axis
+            )
+            plotter.add_mesh(contours, color="grey", line_width=2)
+        elif colormap_params.style == "flat":
+            plotter.add_mesh(current_mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
 
     plotter.camera_position = "xy"
     plotter.camera.SetParallelProjection(True)
