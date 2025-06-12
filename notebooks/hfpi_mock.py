@@ -22,24 +22,26 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     """
 
     df = pd.read_csv(csv_path, index_col=None)
-    req_keys = ["mode", "period", "wp"]
+    req_keys = ["mode", "period"]
     if not _validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI modes CSV {csv_path.as_posix()}. Found only keys {df.columns}"
         )
     df = df[req_keys]
     df["frequency"] = 1 / df["period"]
+    df["wp"] = 2 * np.pi * df["frequency"]
     return df
 
 
 def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
-    Z, XR, YR, XG, YG, M, I, R
+    Z, XR, YR, M, I, R
     """
 
     df = pd.read_csv(csv_path, index_col=None)
-    req_keys = ["Z", "XR", "YR", "XG", "YG", "M", "I", "R"]
+    # "XG", "YG", "I"
+    req_keys = ["Z", "XR", "YR", "M", "I", "R"]
     if not _validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
@@ -117,10 +119,10 @@ class HFPIStructuralData(BaseModel):
         if(self.is_normalized):
             return
 
-        self.is_normalized = True
         self.df_phi_floors = [
             normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_phi_floors
         ]
+        self.is_normalized = True
 
 
 class HFPICaseData(BaseModel):
