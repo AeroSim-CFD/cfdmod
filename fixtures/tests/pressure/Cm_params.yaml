@@ -11,6 +11,7 @@ moment_coefficient:
       - name: marquise
         lever_origin: [0, 10, 10]
     directions: ["x", "y", "z"]
+    nominal_volume: 10
     statistics:
       - stats: "mean"
       - stats: "rms"
@@ -30,6 +31,7 @@ moment_coefficient:
         lever_origin: [0, 10, 10]
         sub_bodies: # Optional, default is the whole body
           z_intervals: [0, 10, 20]
+    nominal_volume: 10
     directions: ["x", "y", "z"]
     statistics:
       - stats: "mean"

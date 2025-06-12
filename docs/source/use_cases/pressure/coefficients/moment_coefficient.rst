@@ -15,36 +15,38 @@ Similarly to the force coefficient, this coefficient is defined as a resulting m
 It is defined as a sum of the resulting moment for each triangle of each surface of the body:
 
 .. math::
-   \vec{C_{M}} = \frac{\sum \vec{M_{res}}}{q V_{rep}} = \frac{\sum \vec{r_o} \times \vec{f_{i}}}{q V_{rep}}
+   \vec{C_{M}} = \frac{\sum \vec{M_{res}}}{q V_{nom}} = \frac{\sum \vec{r_o} \times \vec{f_{i}}}{q V_{nom}}
 
 .. math::
    \vec{f_i} = c_{pi} q \vec{A_i}
 
 .. math::
-   \vec{C_{M}} = \frac{\sum (\vec{r_o} \times \vec{A_i}) c_{pi}}{V_{rep}}
+   \vec{C_{M}} = \frac{\sum (\vec{r_o} \times \vec{A_i}) c_{pi}}{V_{nom}}
 
 The position vector :math:`r_o` is defined for each triangle, from a common arbitrary points :math:`o`. One can also define it for each axis direction:
 
 .. math::
-   C_{M_x} = \frac{\sum M_{res_x}}{q V_{rep}} = \frac{\sum (r_{oy} A_{iz} - r_{oz} A_{iy}) c_{pi}}{V_{rep}}
+   C_{M_x} = \frac{\sum M_{res_x}}{q V_{nom}} = \frac{\sum (r_{oy} A_{iz} - r_{oz} A_{iy}) c_{pi}}{V_{nom}}
 
 .. math::
-   C_{M_y} = \frac{\sum M_{res_y}}{q V_{rep}} = \frac{\sum (r_{oz} A_{ix} - r_{ox} A_{iz}) c_{pi}}{V_{rep}}
+   C_{M_y} = \frac{\sum M_{res_y}}{q V_{nom}} = \frac{\sum (r_{oz} A_{ix} - r_{ox} A_{iz}) c_{pi}}{V_{nom}}
 
 .. math::
-   C_{M_z} = \frac{\sum M_{res_z}}{q V_{rep}} = \frac{\sum (r_{ox} A_{iy} - r_{oy} A_{ix}) c_{pi}}{V_{rep}}
+   C_{M_z} = \frac{\sum M_{res_z}}{q V_{nom}} = \frac{\sum (r_{ox} A_{iy} - r_{oy} A_{ix}) c_{pi}}{V_{nom}}
 
-The representative volume :math:`V_{rep}` is defined as the volume of the structure's bounding box.
-For example, consider a tall building:
+
+We define the nominal volume ($V_{nom}$) as a **user input**.
+This is done to let the user define how they want to calculate its value.
+For example, considering a rectangular tall building:
 
 .. image:: /_static/pressure/building.png
     :width: 45 %
     :align: center
 
-The representative volume can be calculated as:
+The nominal volume could be calculated with:
 
 .. math::
-   V_{rep} = b h l
+   V_{nom} = b h l
 
 Use Case
 ========
@@ -54,7 +56,7 @@ To do so, the same logic applied to the force coefficient is used to **determine
 If its center lies inside the sub-body volume, then it belongs to it.
 
 The result is a sectionated body in different **sub-bodies for each interval**.
-When sectioning the body, the respective representative volume should be the same as the sub-body representative volume.
+When sectioning the body, the respective nominal volume should be the same as the sub-body nominal volume.
 
 .. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
 
