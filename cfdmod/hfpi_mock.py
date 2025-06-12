@@ -4,6 +4,7 @@ import pathlib
 
 from pydantic import BaseModel, ConfigDict
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -198,7 +199,10 @@ class HFPIForcesData(BaseModel):
 
     @property
     def delta_t(self):
-        return self.cf_x["time"][1] - self.cf_x["time"][0]
+        k = "time_normalized"
+        if("time" in self.cf_x.columns):
+            k = "time"
+        return self.cf_x[k][1] - self.cf_x[k][0]
 
     @classmethod
     def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path):
@@ -300,7 +304,7 @@ def solve_mode_general_displacement(
     gf = gen_force
     n_samples = len(gen_force)
     gp = np.full((n_samples + 2), gf.mean() / (wp**2))
-    gp = np.full((n_samples + 2), 0)
+    # gp = np.full((n_samples + 2), 0)
 
     a = 2 - 2 * xi * wp * dt - (wp**2) * (dt**2)
     b = -1 + 2 * xi * wp * dt
@@ -426,3 +430,34 @@ class HFPISolver(BaseModel):
 
         return total_displacement
 
+import scipy
+from scipy.ndimage import gaussian_filter
+
+
+def plot_force_series(forces_data: HFPIForcesData, structure_data: HFPIStructuralData, *, plot_mz: bool = True, sigma: float = 2):
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+    dt = forces_data.delta_t
+    df_mode = structure_data.df_modes
+    coef_style = {"FX": "blue", "FY": "red", "MZ": "grey"}
+
+    for f_name, df_force in [("FX", forces_data.cf_x), ("FY", forces_data.cf_y), ("MZ", forces_data.cm_z)]:
+        if(not plot_mz and f_name == "MZ"):
+            continue
+        global_force = df_force.sum(axis=1)
+
+        axs[0].plot(df_force["time"], global_force, color=coef_style[f_name], label=f_name)
+        axs[0].set_ylabel("F [N ou N.m]")
+        axs[0].set_xlabel("t [s]")
+        axs[0].legend(loc="lower left", frameon=False)
+
+        (freq, PSD) = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
+        PSD = PSD * freq / (np.std(global_force) ** 2)
+        axs[1].loglog(freq, gaussian_filter(PSD, sigma=sigma), color=coef_style[f_name], label=f_name)
+        axs[1].loglog([df_mode["frequency"], df_mode["frequency"]], [1e-5, 1e1], color="black")
+        axs[1].set_ylim([1e-5, 1e1])
+
+        axs[1].set_ylabel(r"$ S(F) f / \tilde{F}^2 $")
+        axs[1].set_xlabel("f [Hz]")
+        axs[1].legend(loc="lower left", frameon=False)
+
+    return fig, axs
