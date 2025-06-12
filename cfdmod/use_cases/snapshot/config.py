@@ -90,6 +90,7 @@ class ImageConfig(BaseModel):
         ..., title="Scalar label", description="Label of the scalar to set active on the snapshot"
     )
     image_label: str = Field(..., title="Image label", description="Label of the output image")
+    data_source_paths: list[dict[str, str]] = Field(..., title="", description="")
 
 
 class PolydataConfig(BaseModel):
@@ -129,7 +130,7 @@ class ProjectionConfig(BaseModel):
         description="Parameters to represent the transformation of the body in the projection",
     )
     show_labels: bool = Field(False, title="", description="")
-    polydata_path: str = Field(
+    data_source_key: str = Field(
         ..., title="Polydata file path", description="Path to the polydata file"
     )
 

@@ -1,11 +1,17 @@
-# polydata_paths:
-#   - file_path: "./fixtures/tests/snapshot/loads_cupula_top.vtp"
-#   - file_path: "./fixtures/tests/snapshot/loads_cupula_bottom.vtp"
+# data_source_path:
+#   - top: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
+#   - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom.vtp"
 images:
 - image_label: "CP_min_G100"
   scalar_label: "mean [kgf/m²]"
+  data_source_paths:
+  - top: "../fixtures/tests/snapshot/loads_cupula_top_006.vtp"
+  - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom_006.vtp"
 - image_label: "CP_min_G100"
   scalar_label: "mean [kgf/m²]"
+  data_source_paths:
+  - top: "../fixtures/tests/snapshot/loads_cupula_top_036.vtp"
+  - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom_036.vtp"
 # - image_label: "CP_min_G100"
 #   stats:
 #   - projection: top_proj
@@ -19,16 +25,16 @@ projections:
     rotate: [0, 0, 0]
     scale: [1, 1, 1]
   show_labels: False
-  polydata_path: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
+  data_source_key: "top"
 - clip_box:
     position: [0, 0, 0]
     length: 0
   transformation:
     translate: [-80, 0, 0]
-    rotate: [0, 90, 0]
+    rotate: [90, 0, 90]
     scale: [1, 1, 1]
   show_labels: False
-  polydata_path: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
+  data_source_key: "top"
 - clip_box:
     position: [0, 0, 0]
     length: 0
@@ -37,8 +43,7 @@ projections:
     rotate: [0, 0, 0]
     scale: [1, 1, 1]
   show_labels: False
-  polydata_path: "../fixtures/tests/snapshot/loads_cupula_bottom.vtp"
-
+  data_source_key: "bottom"
 colormap:
   n_divs: 15
   # target_step: 0.1 # n_divs auto

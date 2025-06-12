@@ -58,6 +58,7 @@ def get_translation(
 
 def take_snapshot(
     scalar_name: str,
+    data_source_paths: list[dict],
     output_path: pathlib.Path,
     colormap_params: ColormapConfig,
     projection_params: list[ProjectionConfig],
@@ -73,26 +74,9 @@ def take_snapshot(
         projection_params (ProjectionConfig): Parameters for projection
         camera_params (CameraConfig): Parameters for camera
     """
-    # original_mesh = pv.read(file_path)
-    # original_mesh.set_active_scalars(scalar_name)
 
-    # scalar_arr = original_mesh.active_scalars[~np.isnan(original_mesh.active_scalars)]
-    # scalar_range = np.array([scalar_arr.min(), scalar_arr.max()])
-    # colormap_divs = colormap_params.get_colormap_divs(scalar_range)
-    # colormap_divs = 15 if colormap_divs > 15 else 3 if colormap_divs < 3 else colormap_divs
+    meshes = {key: pv.read(path) for item in data_source_paths for key, path in item.items()}
 
-    # sargs = dict(
-    #     title=f"{scalar_name}\n",
-    #     title_font_size=24,
-    #     label_font_size=20,
-    #     n_labels=colormap_divs + 1,
-    #     italic=False,
-    #     fmt="%.2f",
-    #     font_family="arial",
-    #     position_x=0.2,
-    #     position_y=0.0,
-    #     width=0.6,
-    # )
     plotter = pv.Plotter(window_size=camera_params.window_size)
     plotter.enable_parallel_projection()
 
@@ -127,7 +111,7 @@ def take_snapshot(
 
     for projection in projection_params:
         axes = pv.Axes()
-        current_mesh = pv.read(projection.polydata_path)
+        current_mesh = meshes.get(projection.data_source_key).copy()
         current_mesh.set_active_scalars(scalar_name)
 
         scalar_arr = current_mesh.active_scalars[~np.isnan(current_mesh.active_scalars)]
