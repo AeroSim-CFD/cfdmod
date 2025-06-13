@@ -4,12 +4,8 @@ import pathlib
 
 from pydantic import BaseModel, ConfigDict
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy
-from scipy.ndimage import gaussian_filter
 from scipy import integrate
-import matplotlib.pyplot as plt
 import pickle
 
 
@@ -87,14 +83,12 @@ class HFPIStructuralData(BaseModel):
     """Structural data required to run HFPI"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    df_modes: pd.DataFrame  # information about modes: how many and their natural frequency
-    df_floors: (
-        pd.DataFrame
-    )  # information about floors: height, center of rotation, mass, moment of inertia and radius
-    df_modal_shapes: list[
-        pd.DataFrame
-    ]  # list of modal shapes. Each shape has components of displacement X and Y and rotation Z.
+    # information about modes: how many and their natural frequency
+    df_modes: pd.DataFrame
+    # information about floors: height, center of rotation, mass, moment of inertia and radius
+    df_floors: pd.DataFrame
+    # list of modal shapes. Each shape has components of displacement X and Y and rotation Z.
+    df_modal_shapes: list[pd.DataFrame]
 
     max_active_modes: int
     is_normalized: bool = False
@@ -109,7 +103,11 @@ class HFPIStructuralData(BaseModel):
 
     @classmethod
     def build(
-        cls, modes_csv: pathlib.Path, floors_csv: pathlib.Path, phi_floors_csvs: list[pathlib.Path], max_active_modes: int = 1000
+        cls,
+        modes_csv: pathlib.Path,
+        floors_csv: pathlib.Path,
+        phi_floors_csvs: list[pathlib.Path],
+        max_active_modes: int = 1000,
     ):
         df_modes = read_hfpi_modes(modes_csv)
         df_floors = read_hfpi_floors_data(floors_csv)
@@ -143,7 +141,6 @@ class HFPIStructuralData(BaseModel):
             normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_modal_shapes
         ]
         self.is_normalized = True
-
 
 
 class HFPIDimensionalData(BaseModel):
@@ -188,6 +185,15 @@ def read_hfpi_forces(hdf_path: pathlib.Path, scalar_key: str) -> pd.DataFrame:
     return df_force
 
 
+def fill_hfpi_forces(forces_df: pd.DataFrame, n_floors: int):
+    """Fill missing floors with zeros"""
+    floors = [int(k) for k in forces_df if not isinstance(k, str) or k.isnumeric()]
+    for i in range(n_floors):
+        if i in floors:
+            continue
+        forces_df[i] = 0
+
+
 def scale_hfpi_forces(
     df_force: pd.DataFrame, key_name: str, *, force_factor: float, time_factor: float
 ):
@@ -207,6 +213,16 @@ class HFPIForcesData(BaseModel):
     cf_y: pd.DataFrame
     cm_z: pd.DataFrame
     is_scaled: bool = False
+
+    def get_as_dct(self):
+        def df2np(df: pd.DataFrame):
+            return df.drop(columns=["time"]).to_numpy()
+
+        return {"x": df2np(self.cf_x), "y": df2np(self.cf_y), "z": df2np(self.cm_z)}
+
+    def fill_missing_floors(self, n_floors: int):
+        for df in [self.cf_x, self.cf_y, self.cm_z]:
+            fill_hfpi_forces(df, n_floors)
 
     @property
     def n_samples(self):
@@ -239,29 +255,31 @@ class HFPIForcesData(BaseModel):
         """Generate HFPI scaled forces data"""
         time_factor = dim_data.time_normalization_factor
 
+        if self.is_scaled:
+            raise ValueError("Forces were already scaled, unable to scale again")
+
         cf_x = self.cf_x.copy()
         cf_y = self.cf_y.copy()
         cm_z = self.cm_z.copy()
 
-        if not self.is_scaled:
-            scale_hfpi_forces(
-                cf_x,
-                "FX",
-                force_factor=dim_data.force_normalization_factor,
-                time_factor=time_factor,
-            )
-            scale_hfpi_forces(
-                cf_y,
-                "FY",
-                force_factor=dim_data.force_normalization_factor,
-                time_factor=time_factor,
-            )
-            scale_hfpi_forces(
-                cm_z,
-                "MZ",
-                force_factor=dim_data.moments_normalization_factor,
-                time_factor=time_factor,
-            )
+        scale_hfpi_forces(
+            cf_x,
+            "FX",
+            force_factor=dim_data.force_normalization_factor,
+            time_factor=time_factor,
+        )
+        scale_hfpi_forces(
+            cf_y,
+            "FY",
+            force_factor=dim_data.force_normalization_factor,
+            time_factor=time_factor,
+        )
+        scale_hfpi_forces(
+            cm_z,
+            "MZ",
+            force_factor=dim_data.moments_normalization_factor,
+            time_factor=time_factor,
+        )
 
         return HFPIForcesData(
             cf_x=cf_x,
@@ -269,6 +287,50 @@ class HFPIForcesData(BaseModel):
             cm_z=cm_z,
             is_scaled=True,
         )
+
+
+def get_moments_from_force(force: dict[str, np.ndarray], floor_heights: np.ndarray):
+    keys = ["x", "y"]
+    moments = {}
+    for k in keys:
+        moments[k] = force[k] * floor_heights
+    moments["z"] = force["z"].copy()
+    return moments
+
+
+def _get_max_dct(dct: dict[str, np.ndarray]) -> dict[str, float]:
+    return {k: v.max() for k, v in dct.items()}
+
+
+class StaticResults(BaseModel):
+    """Results generated from static analysis"""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    floors_heights: np.ndarray
+
+    # data as ["x", "y", "z"] = time series
+    forces_static: dict[str, np.ndarray]
+    moments_static: dict[str, np.ndarray]
+
+    def get_max_forces_static(self):
+        return _get_max_dct(self.forces_static)
+
+    def get_max_moments_static(self):
+        return _get_max_dct(self.moments_static)
+
+
+def solve_static_forces(
+    forces: HFPIForcesData, dim_data: HFPIDimensionalData, floors_heights: np.ndarray
+):
+    """Solve system for static forces"""
+    forces.fill_missing_floors(len(floors_heights))
+    normalized_forces = forces.get_scaled_forces(dim_data)
+
+    force_static = normalized_forces.get_as_dct()
+    moments_static = get_moments_from_force(force_static, floors_heights)
+    return StaticResults(
+        floors_heights=floors_heights, forces_static=force_static, moments_static=moments_static
+    )
 
 
 def compute_generalized_forces(
@@ -356,12 +418,15 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
         dvdt = -2 * xi * wp * v - x + F_t
         return [dxdt, dvdt]
 
-    x0 = gen_force.mean() / (wp ** 2)
+    x0 = gen_force.mean() / (wp**2)
     df = (gen_force[1:] - gen_force[:-1]).mean() / dt
     v0 = df / (2 * xi * wp) if xi * wp != 0 else 0.0
 
-    sol = integrate.solve_ivp(system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method='RK45')
+    sol = integrate.solve_ivp(
+        system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method="RK45"
+    )
     return sol.y[0]
+
 
 def compute_mode_real_displacement(
     gen_mode_displacement: np.ndarray, df_mode_phi: pd.DataFrame
@@ -443,24 +508,31 @@ def combine_modes(all_modes_dct: list[dict[str, np.ndarray]]) -> dict[str, np.nd
 
     return summed
 
+
 class HFPIResults(BaseModel):
+    """Results generated from HFPI analysis"""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     delta_t: float
     xi: float
     n_modes: int
+    floors_heights: np.ndarray
 
-    # Displacement as ["x", "y", "z"] = time series
+    # data as ["x", "y", "z"] = time series
     displacement: dict[str, np.ndarray]
-    static_eq: dict[str, np.ndarray]
+    forces_static_eq: dict[str, np.ndarray]
+    moments_static_eq: dict[str, np.ndarray]
+
+    static_results: StaticResults | None
 
     def save(self, filename: pathlib.Path):
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             pickle.dump(self, f)
 
     @classmethod
     def load(cls, filename: pathlib.Path):
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             return pickle.load(f)
 
     def get_acceleration(self) -> np.ndarray:
@@ -479,57 +551,66 @@ class HFPIResults(BaseModel):
             acc[-1] = (disp[-1] - 2 * disp[-2] + disp[-3]) / dt**2
             acceleration[axis] = acc
 
-        scalar_acceleration = (acceleration["x"]**2+acceleration["y"]**2)**0.5
+        scalar_acceleration = (acceleration["x"] ** 2 + acceleration["y"] ** 2) ** 0.5
 
         return scalar_acceleration
 
     def get_max_acceleration(self) -> float:
         return self.get_acceleration().max()
 
-    def get_max_static_eq(self) -> dict[str, float]:
-        return {k: v.max() for k, v in self.static_eq.items()}
+    def get_max_forces_static_eq(self):
+        return _get_max_dct(self.forces_static_eq)
+
+    def get_max_moments_static_eq(self):
+        return _get_max_dct(self.moments_static_eq)
 
 
-class HFPISolver(BaseModel):
-    """Solver for full process of HFPI"""
+def solve_hfpi(
+    *,
+    structural_data: HFPIStructuralData,
+    dim_data: HFPIDimensionalData,
+    forces: HFPIForcesData,
+):
+    df_floors = structural_data.df_floors
+    floors_heights = df_floors["Z"].to_numpy()
 
-    structural_data: HFPIStructuralData
-    dim_data: HFPIDimensionalData
-    forces: HFPIForcesData
+    structural_data.normalize_all_mode_shapes()
+    normalized_forces = forces.get_scaled_forces(dim_data)
+    normalized_forces.fill_missing_floors(structural_data.n_floors)
 
-    def solve_hfpi(self):
-        df_floors = self.structural_data.df_floors
-        self.structural_data.normalize_all_mode_shapes()
-        normalized_forces = self.forces.get_scaled_forces(self.dim_data)
+    generalized_forces = compute_generalized_forces(normalized_forces, structural_data)
+    n_modes = structural_data.n_modes
+    dt = normalized_forces.delta_t
+    xi = dim_data.xi
 
-        generalized_forces = compute_generalized_forces(normalized_forces, self.structural_data)
-        n_modes = self.structural_data.n_modes
-        dt = normalized_forces.delta_t
-        xi = self.dim_data.xi
+    all_real_displacements = []
+    all_static_eq_force = []
 
-        all_real_displacements = []
-        all_static_eq_force = []
+    for n_mode in range(n_modes):
+        df_mode = structural_data.df_modes.iloc[n_mode]
+        df_phi = structural_data.df_modal_shapes[n_mode]
+        wp = df_mode["wp"]
+        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
+        all_real_displacements.append(real_displacement)
 
-        for n_mode in range(n_modes):
-            df_mode = self.structural_data.df_modes.iloc[n_mode]
-            df_phi = self.structural_data.df_modal_shapes[n_mode]
-            wp = df_mode["wp"]
-            gen_displacement = solve_runge_kunta(
-                generalized_forces[n_mode].to_numpy(), dt, wp, xi
-            )
-            real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
-            all_real_displacements.append(real_displacement)
-
-            static_eq_mode = compute_mode_static_equivalent_force(gen_displacement, df_phi, df_floors, wp)
-            all_static_eq_force.append(static_eq_mode)
-
-        total_displacement = combine_modes(all_real_displacements)
-        total_static_eq = combine_modes(all_static_eq_force)
-
-        return HFPIResults(
-            delta_t=dt,
-            xi=xi,
-            n_modes=n_modes,
-            displacement=total_displacement,
-            static_eq=total_static_eq,
+        static_eq_mode = compute_mode_static_equivalent_force(
+            gen_displacement, df_phi, df_floors, wp
         )
+        all_static_eq_force.append(static_eq_mode)
+
+    displacement = combine_modes(all_real_displacements)
+
+    force_static_eq = combine_modes(all_static_eq_force)
+    moments_static_eq = get_moments_from_force(force_static_eq, floors_heights)
+
+    return HFPIResults(
+        delta_t=dt,
+        xi=xi,
+        n_modes=n_modes,
+        floors_heights=floors_heights,
+        displacement=displacement,
+        forces_static_eq=force_static_eq,
+        moments_static_eq=moments_static_eq,
+        static_results=solve_static_forces(forces, dim_data, floors_heights),
+    )

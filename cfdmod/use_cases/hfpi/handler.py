@@ -16,6 +16,7 @@ from cfdmod.use_cases.hfpi import solver
 
 T = TypeVar("T")
 
+
 class WindAnalysis(BaseModel):
     """Data for wind analysis and calculation"""
 
@@ -61,8 +62,12 @@ def solve_hfpi_case(hfpi_analysis: HFPIAnalysisHandler, parameters: HFPICasePara
 
     t0 = time.time()
     logger.info(f"Solving HFPI for: {parameters.json()}")
-    hfpi_solver = hfpi_analysis.generate_hfpi_solver(parameters)
-    hfpi_results = hfpi_solver.solve_hfpi()
+    hfpi_params = hfpi_analysis.generate_hfpi_solver_params(parameters)
+    hfpi_results = solver.solve_hfpi(
+        structural_data=hfpi_params.structural_data,
+        dim_data=hfpi_params.dim_data,
+        forces=hfpi_params.forces,
+    )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.json()}!")
 
     path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
@@ -73,6 +78,12 @@ def solve_hfpi_case(hfpi_analysis: HFPIAnalysisHandler, parameters: HFPICasePara
 
 def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisHandler, HFPICaseParameters]):
     return solve_hfpi_case(args[0], args[1])
+
+
+class _HFPIParams(BaseModel):
+    structural_data: solver.HFPIStructuralData
+    dim_data: solver.HFPIDimensionalData
+    forces: solver.HFPIForcesData
 
 
 class HFPIAnalysisHandler(BaseModel):
@@ -86,7 +97,7 @@ class HFPIAnalysisHandler(BaseModel):
 
     results: dict[HFPICaseParameters, solver.HFPIResults] = Field(default_factory=dict)
 
-    def generate_hfpi_solver(self, parameters: HFPICaseParameters):
+    def generate_hfpi_solver_params(self, parameters: HFPICaseParameters):
         forces = self.directional_forces[parameters.direction]
         if forces.is_scaled:
             raise ValueError("Forces should not be scaled before generating HFPI solver")
@@ -102,7 +113,7 @@ class HFPIAnalysisHandler(BaseModel):
             height=dim.height,
         )
 
-        return solver.HFPISolver(
+        return _HFPIParams(
             structural_data=self.structural_data,
             forces=forces,
             dim_data=dim_data,
@@ -178,8 +189,8 @@ class HFPIFullResults(BaseModel):
     def get_max_static_forces(self):
         max_static_eq = {}
         for r in self.results.values():
-            r_max_static_eq = r.get_max_static_eq()
-            if(len(max_static_eq) == 0):
+            r_max_static_eq = r.get_max_forces_static_eq()
+            if len(max_static_eq) == 0:
                 max_static_eq = r_max_static_eq
                 continue
             for k in max_static_eq:
