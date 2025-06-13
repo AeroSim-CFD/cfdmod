@@ -571,6 +571,8 @@ def solve_hfpi(
     dim_data: HFPIDimensionalData,
     forces: HFPIForcesData,
 ):
+    """Solver HFPI (high frequency pressure integration) for given structure and forces conditions"""
+
     df_floors = structural_data.df_floors
     floors_heights = df_floors["Z"].to_numpy()
 
