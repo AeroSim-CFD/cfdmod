@@ -57,6 +57,6 @@ camera:
   view_up: [0, 1, 0]
   window_size: [1920, 1080]
   crop:
-    width_ratio: 1
+    width_ratio: 0.75
     height_ratio: 1
     watermark_path: "../fixtures/tests/snapshot/axis_icon.png"

@@ -2,6 +2,7 @@ import pathlib
 
 import numpy as np
 import pyvista as pv
+from cfdmod.logger import logger
 
 from cfdmod.use_cases.snapshot.colormap import ColormapFactory
 from cfdmod.use_cases.snapshot.config import (
@@ -98,19 +99,14 @@ def take_snapshot(
 
         clip_box = projection_config.clip_box
         if clip_box.scale[0] and clip_box.scale[1] and clip_box.scale[2] != 0:
-            clip_cube = pv.Cube(
-                center=mesh.center,
-                x_length=clip_box.scale[0],
-                y_length=clip_box.scale[1],
-                z_length=clip_box.scale[2],
-            )
-            transform(clip_cube, clip_box)
-            mesh = mesh.clip_box(clip_cube, invert=False)
+            mesh = clip(mesh, clip_box)
+            if mesh.n_cells == 0:
+                logger.warning(
+                    f"The clip box in projection '{projection}' is cropping the model completely."
+                )
+                return
 
         transform(mesh, projection_config.transformation)
-        if mesh.n_cells == 0:
-            print(f"The clip box in projection '{projection}' is cropping the model completely.")
-            return
 
         mesh = mesh.cell_data_to_point_data()
         plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color="white")
@@ -134,6 +130,17 @@ def take_snapshot(
     plotter.show(jupyter_backend="static")
     plotter.screenshot(snapshot_config.name)
     plotter.close()
+
+
+def clip(mesh, clip_box: TransformationConfig):
+    clip_cube = pv.Cube(
+        center=mesh.center,
+        x_length=clip_box.scale[0],
+        y_length=clip_box.scale[1],
+        z_length=clip_box.scale[2],
+    )
+    transform(clip_cube, clip_box)
+    return mesh.clip_box(clip_cube, invert=False)
 
 
 def transform(mesh, transformation: TransformationConfig):

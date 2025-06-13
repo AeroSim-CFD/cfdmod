@@ -42,17 +42,17 @@ class TransformationConfig(BaseModel):
     translate: tuple[float, float, float] = Field(
         (0, 0, 0),
         title="Translate vector",
-        description="Vector to representing the translation",
+        description="Vector representing the translation",
     )
     rotate: tuple[float, float, float] = Field(
         (0, 0, 0),
         title="Rotate vector",
-        description="Vector to representing the rotation",
+        description="Vector representing the rotation",
     )
     scale: tuple[float, float, float] = Field(
         (1, 1, 1),
         title="Scale vector",
-        description="Vector to representing the scale",
+        description="Vector representing the scale",
     )
 
 
