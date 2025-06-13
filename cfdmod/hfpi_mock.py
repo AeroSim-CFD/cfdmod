@@ -92,11 +92,13 @@ class HFPIStructuralData(BaseModel):
     df_modal_shapes: list[
         pd.DataFrame
     ]  # list of modal shapes. Each shape has components of displacement X and Y and rotation Z.
+    
+    n_active_modes: int = 1000
     is_normalized: bool = False
 
     @property
     def n_modes(self):
-        return len(self.df_modes)
+        return min(self.n_active_modes, len(self.df_modes))
 
     @property
     def n_floors(self):
@@ -178,9 +180,6 @@ class HFPICaseData(BaseModel):
 
     @property
     def time_normalization_factor(self):
-        # return 45.6 / self.U_H
-        print(self.CST)
-
         return self.CST
 
     @property
@@ -325,8 +324,8 @@ def compute_generalized_forces(
     return df_forces_gen
 
 
-def solve_dynamics_for_mode(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
-    """Solve generalized displacement for a mode with backward euler method
+def solve_euler_backwards(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
+    """Solve generalized displacement for a mode with Euler Backwards method
 
     gen_force: history series of generaliized force for one particular mode.
     dt: timestep
@@ -338,7 +337,7 @@ def solve_dynamics_for_mode(gen_force: np.ndarray, dt: float, wp: float, xi: flo
 
     gf = gen_force
     n_samples = len(gen_force)
-    gp = np.full((n_samples + 2), gf[0] / (wp**2))
+    gp = np.full((n_samples + 2), gf.mean() / (wp**2))
     # gp = np.full((n_samples + 2), 0)
 
     a = 2 - 2 * xi * wp * dt - (wp**2) * (dt**2)
@@ -459,7 +458,7 @@ class HFPISolver(BaseModel):
             df_mode = self.structural_data.df_modes.iloc[n_mode]
             df_phi = self.structural_data.df_modal_shapes[n_mode]
             wp = df_mode["wp"]
-            gen_displacement = solve_dynamics_for_mode(
+            gen_displacement = solve_euler_backwards(
                 generalized_forces[n_mode].to_numpy(), dt, wp, xi
             )
             real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
@@ -488,7 +487,47 @@ def plot_force_series(
     ]:
         if not plot_mz and f_name == "MZ":
             continue
-        global_force = df_force.sum(axis=1)
+        global_force = df_force.drop(columns=["time"]).sum(axis=1)
+
+        axs[0].plot(df_force["time"], global_force, color=coef_style[f_name], label=f_name)
+        axs[0].set_ylabel("F [N ou N.m]")
+        axs[0].set_xlabel("t [s]")
+        axs[0].legend(loc="lower left", frameon=False)
+
+        (freq, PSD) = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
+        PSD = PSD * freq / (np.std(global_force) ** 2)
+        axs[1].loglog(
+            freq, gaussian_filter(PSD, sigma=sigma), color=coef_style[f_name], label=f_name
+        )
+        axs[1].loglog([df_mode["frequency"], df_mode["frequency"]], [1e-5, 1e1], color="black")
+        axs[1].set_ylim([1e-5, 1e1])
+
+        axs[1].set_ylabel(r"$ S(F) f / \tilde{F}^2 $")
+        axs[1].set_xlabel("f [Hz]")
+        axs[1].legend(loc="lower left", frameon=False)
+
+    return fig, axs
+
+def plot_force_series(
+    forces_data: HFPIForcesData,
+    structure_data: HFPIStructuralData,
+    *,
+    plot_mz: bool = True,
+    sigma: float = 2,
+):
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+    dt = forces_data.delta_t
+    df_mode = structure_data.df_modes
+    coef_style = {"FX": "blue", "FY": "red", "MZ": "grey"}
+
+    for f_name, df_force in [
+        ("FX", forces_data.cf_x),
+        ("FY", forces_data.cf_y),
+        ("MZ", forces_data.cm_z),
+    ]:
+        if not plot_mz and f_name == "MZ":
+            continue
+        global_force = df_force.drop(columns=["time"]).sum(axis=1)
 
         axs[0].plot(df_force["time"], global_force, color=coef_style[f_name], label=f_name)
         axs[0].set_ylabel("F [N ou N.m]")
