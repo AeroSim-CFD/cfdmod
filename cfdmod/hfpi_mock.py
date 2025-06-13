@@ -10,6 +10,7 @@ import scipy
 from scipy.ndimage import gaussian_filter
 from scipy import integrate
 import matplotlib.pyplot as plt
+import pickle
 
 
 def _validate_keys_df(df: pd.DataFrame, keys: list[str]):
@@ -142,27 +143,9 @@ class HFPIStructuralData(BaseModel):
         ]
         self.is_normalized = True
 
- 
-class WindAnalysis(BaseModel):
-    """Data for wind analysis and calculation"""
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    recurrence_period: float = 50
-    directional_velocity_multiplier: dict[float, float]
-    directional_roughness_cats: pd.DataFrame
-
-    def S2(self, direction):
-        # parameters from NBR 6123, mean speed of 10min
-        Fr = 0.69
-        p = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
-        b = {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50}
-
-    @property
-    def S3(self):
-        return 0.54 * (0.994 / self.recurrence_period) ** -0.157
 
 
-class HFPICaseData(BaseModel):
+class HFPIDimensionalData(BaseModel):
     """Analytical data required to analyze a given HFPI model"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -251,9 +234,9 @@ class HFPIForcesData(BaseModel):
             cm_z=cm_z,
         )
 
-    def get_scaled_forces(self, case_data: HFPICaseData) -> HFPIForcesData:
+    def get_scaled_forces(self, dim_data: HFPIDimensionalData) -> HFPIForcesData:
         """Generate HFPI scaled forces data"""
-        time_factor = case_data.time_normalization_factor
+        time_factor = dim_data.time_normalization_factor
 
         cf_x = self.cf_x.copy()
         cf_y = self.cf_y.copy()
@@ -263,19 +246,19 @@ class HFPIForcesData(BaseModel):
             scale_hfpi_forces(
                 cf_x,
                 "FX",
-                force_factor=case_data.force_normalization_factor,
+                force_factor=dim_data.force_normalization_factor,
                 time_factor=time_factor,
             )
             scale_hfpi_forces(
                 cf_y,
                 "FY",
-                force_factor=case_data.force_normalization_factor,
+                force_factor=dim_data.force_normalization_factor,
                 time_factor=time_factor,
             )
             scale_hfpi_forces(
                 cm_z,
                 "MZ",
-                force_factor=case_data.moments_normalization_factor,
+                force_factor=dim_data.moments_normalization_factor,
                 time_factor=time_factor,
             )
 
@@ -459,27 +442,36 @@ def combine_modes(all_modes_dct: list[dict[str, np.ndarray]]) -> dict[str, np.nd
 
     return summed
 
+class HFPIResults(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    displacement: dict[str, np.ndarray]
+    static_eq: dict[str, np.ndarray]
+
+    def save(self, filename: pathlib.Path):
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, filename: pathlib.Path):
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
 
 class HFPISolver(BaseModel):
     """Solver for full process of HFPI"""
 
     structural_data: HFPIStructuralData
-    case_data: HFPICaseData
+    dim_data: HFPIDimensionalData
     forces: HFPIForcesData
-    normalized_forces: None | HFPIForcesData = None
 
-    def normalize_data(self):
+    def solve_hfpi(self):
         self.structural_data.normalize_all_mode_shapes()
-        self.normalized_forces = self.forces.get_scaled_forces(self.case_data)
-
-    def get_real_displacement(self):
-        self.structural_data.normalize_all_mode_shapes()
-        normalized_forces = self.forces.get_scaled_forces(self.case_data)
+        normalized_forces = self.forces.get_scaled_forces(self.dim_data)
 
         generalized_forces = compute_generalized_forces(normalized_forces, self.structural_data)
         n_modes = self.structural_data.n_modes
         dt = normalized_forces.delta_t
-        xi = self.case_data.xi
+        xi = self.dim_data.xi
 
         all_real_displacements = []
 
@@ -494,7 +486,10 @@ class HFPISolver(BaseModel):
             all_real_displacements.append(real_displacement)
         total_displacement = combine_modes(all_real_displacements)
 
-        return total_displacement
+        return HFPIResults(
+            displacement=total_displacement,
+            static_eq={}
+        )
 
 
 def plot_force_spectrum(
