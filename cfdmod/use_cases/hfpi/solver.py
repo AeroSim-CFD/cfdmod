@@ -446,6 +446,11 @@ def combine_modes(all_modes_dct: list[dict[str, np.ndarray]]) -> dict[str, np.nd
 class HFPIResults(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    delta_t: float
+    xi: float
+    n_modes: int
+
+    # Displacement as ["x", "y", "z"] = time series
     displacement: dict[str, np.ndarray]
     static_eq: dict[str, np.ndarray]
 
@@ -457,6 +462,33 @@ class HFPIResults(BaseModel):
     def load(cls, filename: pathlib.Path):
         with open(filename, 'rb') as f:
             return pickle.load(f)
+
+    def get_acceleration(self) -> np.ndarray:
+        acceleration = {}
+        dt = self.delta_t
+        for axis in ["x", "y"]:
+            disp = self.displacement[axis]
+            # Suppose last floor has the greatest acceleration
+            disp = disp[:, -1]
+            n = len(disp)
+            acc = np.zeros(n)
+            # Central difference for internal points
+            acc[1:-1] = (disp[2:] - 2 * disp[1:-1] + disp[:-2]) / dt**2
+            # Forward/backward difference for boundaries
+            acc[0] = (disp[2] - 2 * disp[1] + disp[0]) / dt**2
+            acc[-1] = (disp[-1] - 2 * disp[-2] + disp[-3]) / dt**2
+            acceleration[axis] = acc
+
+        scalar_acceleration = (acceleration["x"]**2+acceleration["y"]**2)**0.5
+
+        return scalar_acceleration
+
+    def get_max_acceleration(self) -> float:
+        return self.get_acceleration().max()
+
+    def get_max_static_eq(self) -> dict[str, float]:
+        return {k: v.max() for k, v in self.static_eq.items()}
+
 
 class HFPISolver(BaseModel):
     """Solver for full process of HFPI"""
@@ -495,6 +527,9 @@ class HFPISolver(BaseModel):
         total_static_eq = combine_modes(all_static_eq_force)
 
         return HFPIResults(
+            delta_t=dt,
+            xi=xi,
+            n_modes=n_modes,
             displacement=total_displacement,
             static_eq=total_static_eq,
         )

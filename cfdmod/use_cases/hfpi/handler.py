@@ -4,6 +4,7 @@ import pathlib
 import itertools
 from cfdmod.logger import logger
 import time
+from typing import Callable, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
@@ -13,6 +14,7 @@ from multiprocessing import Pool, cpu_count
 
 from cfdmod.use_cases.hfpi import solver
 
+T = TypeVar("T")
 
 class WindAnalysis(BaseModel):
     """Data for wind analysis and calculation"""
@@ -144,3 +146,46 @@ class HFPIFullResults(BaseModel):
             results.load_result(p)
         return results
 
+    def join_by(self, callback: Callable[[HFPICaseParameters], T]) -> dict[T, HFPIFullResults]:
+        joined_values = {}
+        for p in self.results:
+            key = callback(p)
+            if key not in joined_values:
+                joined_values[key] = []
+            joined_values[key].append((p, self.results[p]))
+        return {
+            k: HFPIFullResults(
+                results_folder=self.results_folder, results={p: r for p, r in res_list}
+            )
+            for k, res_list in joined_values.items()
+        }
+
+    def join_by_recurrence_period(self):
+        return self.join_by(lambda params: params.recurrence_period)
+
+    def join_by_xi(self):
+        return self.join_by(lambda params: params.xi)
+
+    def filter_by_xi(self, xi: float):
+        return self.join_by_xi().get(xi)
+
+    def filter_by_recurrence_period(self, recurrence_period: float):
+        return self.join_by_recurrence_period().get(recurrence_period)
+
+    def get_max_acceleration(self):
+        return max(res.get_max_acceleration() for res in self.results.values())
+
+    def get_max_static_forces(self):
+        max_static_eq = {}
+        for r in self.results.values():
+            r_max_static_eq = r.get_max_static_eq()
+            if(len(max_static_eq) == 0):
+                max_static_eq = r_max_static_eq
+                continue
+            for k in max_static_eq:
+                max_static_eq[k] = max(max_static_eq[k], r_max_static_eq[k])
+        return max_static_eq
+
+    def get_max_acceleration_by_recurrence_period(self):
+        res = self.join_by_recurrence_period()
+        return {k: r.get_max_acceleration() for k, r in res.items()}
