@@ -393,7 +393,7 @@ def compute_mode_real_displacement(
 
 
 def compute_mode_static_equivalent_force(
-    real_mode_displacement: np.ndarray,
+    gen_mode_displacement: np.ndarray,
     df_mode_phi: pd.DataFrame,
     df_floors: pd.DataFrame,
     wp: float,
@@ -411,7 +411,7 @@ def compute_mode_static_equivalent_force(
     """
 
     n_floors = len(df_mode_phi)
-    n_samples = len(real_mode_displacement)
+    n_samples = len(gen_mode_displacement)
 
     static_eq = {}
     static_eq["x"] = np.zeros((n_samples, n_floors))
@@ -424,9 +424,9 @@ def compute_mode_static_equivalent_force(
         df_floor = df_mode_phi.iloc[n_floor]
         force_factor = (wp**2) * M
         moment_factor = (wp**2) * M * (R**2)
-        static_eq["x"][:, n_floor] = real_mode_displacement * force_factor * df_floor["DX"]
-        static_eq["y"][:, n_floor] = real_mode_displacement * force_factor * df_floor["DY"]
-        static_eq["z"][:, n_floor] = real_mode_displacement * moment_factor * df_floor["RZ"]
+        static_eq["x"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DX"]
+        static_eq["y"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DY"]
+        static_eq["z"][:, n_floor] = gen_mode_displacement * moment_factor * df_floor["RZ"]
 
     return static_eq
 
@@ -466,6 +466,7 @@ class HFPISolver(BaseModel):
     forces: HFPIForcesData
 
     def solve_hfpi(self):
+        df_floors = self.structural_data.df_floors
         self.structural_data.normalize_all_mode_shapes()
         normalized_forces = self.forces.get_scaled_forces(self.dim_data)
 
@@ -475,6 +476,7 @@ class HFPISolver(BaseModel):
         xi = self.dim_data.xi
 
         all_real_displacements = []
+        all_static_eq_force = []
 
         for n_mode in range(n_modes):
             df_mode = self.structural_data.df_modes.iloc[n_mode]
@@ -485,11 +487,16 @@ class HFPISolver(BaseModel):
             )
             real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
             all_real_displacements.append(real_displacement)
+
+            static_eq_mode = compute_mode_static_equivalent_force(gen_displacement, df_phi, df_floors, wp)
+            all_static_eq_force.append(static_eq_mode)
+
         total_displacement = combine_modes(all_real_displacements)
+        total_static_eq = combine_modes(all_static_eq_force)
 
         return HFPIResults(
             displacement=total_displacement,
-            static_eq={}
+            static_eq=total_static_eq,
         )
 
 
