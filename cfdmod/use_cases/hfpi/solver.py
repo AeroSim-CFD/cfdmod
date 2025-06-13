@@ -524,7 +524,7 @@ class HFPIResults(BaseModel):
     forces_static_eq: dict[str, np.ndarray]
     moments_static_eq: dict[str, np.ndarray]
 
-    static_results: StaticResults | None
+    static_results: StaticResults
 
     def save(self, filename: pathlib.Path):
         with open(filename, "wb") as f:
