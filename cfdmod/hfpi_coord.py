@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pathlib
 import itertools
-import pickle
+from cfdmod.logger import logger
+import time
 
 from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
@@ -36,11 +37,15 @@ class WindAnalysis(BaseModel):
 
 
 class DimensionSpecs(BaseModel):
+    """Dimensions specification for structure"""
+
     base: float
     height: float
 
 
-class HFPICaseParameters(BaseModel):
+class HFPICaseParameters(BaseModel, frozen=True):
+    """Parameters for an HFPI case analysis"""
+
     direction: float
     xi: float
     recurrence_period: float
@@ -50,16 +55,26 @@ class HFPICaseParameters(BaseModel):
 
 
 def solve_hfpi_case(hfpi_analysis: HFPIAnalysisFull, parameters: HFPICaseParameters):
+    """Solve HFPI for system and save it to disk"""
+
+    t0 = time.time()
+    logger.info(f"Solving HFPI for: {parameters.json()}")
     hfpi_solver = hfpi_analysis.generate_hfpi_solver(parameters)
     hfpi_results = hfpi_solver.solve_hfpi()
+    logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.json()}!")
+
     path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
     hfpi_results.save(path_save)
+    logger.info(f"Saved HFPI results to {path_save.as_posix()}")
+
 
 def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisFull, HFPICaseParameters]):
     return solve_hfpi_case(args[0], args[1])
 
 
 class HFPIAnalysisFull(BaseModel):
+    """Full analysis for an HFPI case"""
+
     wind_analytics: WindAnalysis
     dimensions: DimensionSpecs
     structural_data: hfpi.HFPIStructuralData
@@ -83,7 +98,7 @@ class HFPIAnalysisFull(BaseModel):
             base=dim.base,
             height=dim.height,
         )
-        
+
         return hfpi.HFPISolver(
             structural_data=self.structural_data,
             forces=forces,
@@ -91,7 +106,7 @@ class HFPIAnalysisFull(BaseModel):
         )
 
     def generate_combined_parameters(
-        self, *, directions: list[ float], xis: list[float], recurrence_periods: list[float]
+        self, *, directions: list[float], xis: list[float], recurrence_periods: list[float]
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
@@ -103,9 +118,13 @@ class HFPIAnalysisFull(BaseModel):
         ]
         return cases_parameters
 
-    def load_results(self, parameters: HFPICaseParameters):
+    def load_result(self, parameters: HFPICaseParameters):
         filename = parameters.get_results_filename(self.save_folder)
         self.results[parameters] = hfpi.HFPIResults.load(filename)
+
+    def load_all_results(self, parameters: list[HFPICaseParameters]):
+        for p in parameters:
+            self.load_result(p)
 
     def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None):
         args = [(self, param) for param in parameters]
