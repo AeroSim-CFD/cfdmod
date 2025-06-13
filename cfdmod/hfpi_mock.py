@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from scipy.ndimage import gaussian_filter
+from scipy import integrate
 
 
 def _validate_keys_df(df: pd.DataFrame, keys: list[str]):
@@ -350,6 +351,33 @@ def solve_euler_backwards(gen_force: np.ndarray, dt: float, wp: float, xi: float
     return gp[2:]
 
 
+def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
+    """Solve generalized displacement for a mode with Euler Backwards method
+
+    gen_force: history series of generaliized force for one particular mode.
+    dt: timestep
+    wp: mode frequency (radians/sec)
+    xi: dissipation (1%-2%)
+
+    Returns displacement for time series for given mode
+    """
+    t_eval = np.arange(0, len(gen_force) * dt, dt)
+
+    def system(t, y):
+        i = min(int(t / dt), len(gen_force) - 1)  # Clamp to valid index
+        F_t = gen_force[i]
+        x, v = y
+        dxdt = v
+        dvdt = -2 * xi * wp * v - x + F_t
+        return [dxdt, dvdt]
+
+    x0 = gen_force[0]
+    df = (gen_force[1] - gen_force[0]) / dt
+    v0 = df / (2 * xi * wp) if xi * wp != 0 else 0.0
+
+    sol = integrate.solve_ivp(system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method='RK45')
+    return sol.y[0]
+
 def compute_mode_real_displacement(
     gen_mode_displacement: np.ndarray, df_mode_phi: pd.DataFrame
 ) -> dict[str, np.ndarray]:
@@ -458,7 +486,7 @@ class HFPISolver(BaseModel):
             df_mode = self.structural_data.df_modes.iloc[n_mode]
             df_phi = self.structural_data.df_modal_shapes[n_mode]
             wp = df_mode["wp"]
-            gen_displacement = solve_euler_backwards(
+            gen_displacement = solve_runge_kunta(
                 generalized_forces[n_mode].to_numpy(), dt, wp, xi
             )
             real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
