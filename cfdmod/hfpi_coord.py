@@ -4,7 +4,7 @@ import pathlib
 import itertools
 import pickle
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
 import pathlib
 from multiprocessing import Pool, cpu_count
@@ -60,13 +60,13 @@ def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisFull, HFPICaseParameters]):
 
 
 class HFPIAnalysisFull(BaseModel):
-    wind_cases: WindAnalysis
+    wind_analytics: WindAnalysis
     dimensions: DimensionSpecs
     structural_data: hfpi.HFPIStructuralData
     directional_forces: dict[float, hfpi.HFPIForcesData]
     save_folder: pathlib.Path
 
-    results: dict[HFPICaseParameters, hfpi.HFPIResults]
+    results: dict[HFPICaseParameters, hfpi.HFPIResults] = Field(default_factory=dict)
 
     def generate_hfpi_solver(self, parameters: HFPICaseParameters):
         forces = self.directional_forces[parameters.direction]
@@ -74,7 +74,7 @@ class HFPIAnalysisFull(BaseModel):
             raise ValueError("Forces should not be scaled before generating HFPI solver")
 
         dim = self.dimensions
-        U_h = self.wind_cases.get_U_H(
+        U_h = self.wind_analytics.get_U_H(
             dim.height, parameters.direction, parameters.recurrence_period
         )
         dim_data = hfpi.HFPIDimensionalData(
@@ -91,7 +91,7 @@ class HFPIAnalysisFull(BaseModel):
         )
 
     def generate_combined_parameters(
-        self, directions: list[float], xis: list[float], recurrence_periods: list[float]
+        self, *, directions: list[ float], xis: list[float], recurrence_periods: list[float]
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
@@ -109,5 +109,8 @@ class HFPIAnalysisFull(BaseModel):
 
     def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None):
         args = [(self, param) for param in parameters]
-        with Pool(processes=max_workers or cpu_count()) as pool:
+        # Avoid RAM explosion
+        n_lim_workers = 10
+        n_proc = min(n_lim_workers, max_workers or cpu_count())
+        with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)

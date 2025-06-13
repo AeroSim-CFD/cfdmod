@@ -95,13 +95,13 @@ class HFPIStructuralData(BaseModel):
     df_modal_shapes: list[
         pd.DataFrame
     ]  # list of modal shapes. Each shape has components of displacement X and Y and rotation Z.
-    
-    n_active_modes: int = 1000
+
+    max_active_modes: int
     is_normalized: bool = False
 
     @property
     def n_modes(self):
-        return min(self.n_active_modes, len(self.df_modes))
+        return min(self.max_active_modes, len(self.df_modes))
 
     @property
     def n_floors(self):
@@ -109,7 +109,7 @@ class HFPIStructuralData(BaseModel):
 
     @classmethod
     def build(
-        cls, modes_csv: pathlib.Path, floors_csv: pathlib.Path, phi_floors_csvs: list[pathlib.Path]
+        cls, modes_csv: pathlib.Path, floors_csv: pathlib.Path, phi_floors_csvs: list[pathlib.Path], max_active_modes: int = 1000
     ):
         df_modes = read_hfpi_modes(modes_csv)
         df_floors = read_hfpi_floors_data(floors_csv)
@@ -131,6 +131,7 @@ class HFPIStructuralData(BaseModel):
             df_modes=df_modes,
             df_floors=df_floors,
             df_modal_shapes=df_phi_floors,
+            max_active_modes=max_active_modes,
         )
 
     def normalize_all_mode_shapes(self):
