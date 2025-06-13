@@ -11,7 +11,7 @@ import pathlib
 from multiprocessing import Pool, cpu_count
 
 
-import cfdmod.hfpi_mock as hfpi
+from cfdmod.use_cases.hfpi import solver
 
 
 class WindAnalysis(BaseModel):
@@ -54,7 +54,7 @@ class HFPICaseParameters(BaseModel, frozen=True):
         return base_folder / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}.pickle"
 
 
-def solve_hfpi_case(hfpi_analysis: HFPIAnalysisFull, parameters: HFPICaseParameters):
+def solve_hfpi_case(hfpi_analysis: HFPIAnalysisHandler, parameters: HFPICaseParameters):
     """Solve HFPI for system and save it to disk"""
 
     t0 = time.time()
@@ -66,22 +66,23 @@ def solve_hfpi_case(hfpi_analysis: HFPIAnalysisFull, parameters: HFPICaseParamet
     path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
     hfpi_results.save(path_save)
     logger.info(f"Saved HFPI results to {path_save.as_posix()}")
+    return hfpi_results
 
 
-def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisFull, HFPICaseParameters]):
+def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisHandler, HFPICaseParameters]):
     return solve_hfpi_case(args[0], args[1])
 
 
-class HFPIAnalysisFull(BaseModel):
+class HFPIAnalysisHandler(BaseModel):
     """Full analysis for an HFPI case"""
 
     wind_analytics: WindAnalysis
     dimensions: DimensionSpecs
-    structural_data: hfpi.HFPIStructuralData
-    directional_forces: dict[float, hfpi.HFPIForcesData]
+    structural_data: solver.HFPIStructuralData
+    directional_forces: dict[float, solver.HFPIForcesData]
     save_folder: pathlib.Path
 
-    results: dict[HFPICaseParameters, hfpi.HFPIResults] = Field(default_factory=dict)
+    results: dict[HFPICaseParameters, solver.HFPIResults] = Field(default_factory=dict)
 
     def generate_hfpi_solver(self, parameters: HFPICaseParameters):
         forces = self.directional_forces[parameters.direction]
@@ -92,14 +93,14 @@ class HFPIAnalysisFull(BaseModel):
         U_h = self.wind_analytics.get_U_H(
             dim.height, parameters.direction, parameters.recurrence_period
         )
-        dim_data = hfpi.HFPIDimensionalData(
+        dim_data = solver.HFPIDimensionalData(
             U_H=U_h,
             xi=parameters.xi,
             base=dim.base,
             height=dim.height,
         )
 
-        return hfpi.HFPISolver(
+        return solver.HFPISolver(
             structural_data=self.structural_data,
             forces=forces,
             dim_data=dim_data,
@@ -118,14 +119,6 @@ class HFPIAnalysisFull(BaseModel):
         ]
         return cases_parameters
 
-    def load_result(self, parameters: HFPICaseParameters):
-        filename = parameters.get_results_filename(self.save_folder)
-        self.results[parameters] = hfpi.HFPIResults.load(filename)
-
-    def load_all_results(self, parameters: list[HFPICaseParameters]):
-        for p in parameters:
-            self.load_result(p)
-
     def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None):
         args = [(self, param) for param in parameters]
         # Avoid RAM explosion
@@ -133,3 +126,21 @@ class HFPIAnalysisFull(BaseModel):
         n_proc = min(n_lim_workers, max_workers or cpu_count())
         with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)
+
+
+class HFPIFullResults(BaseModel):
+    results_folder: pathlib.Path
+
+    results: dict[HFPICaseParameters, solver.HFPIResults] = Field(default_factory=dict)
+
+    def load_result(self, parameters: HFPICaseParameters):
+        filename = parameters.get_results_filename(self.results_folder)
+        self.results[parameters] = solver.HFPIResults.load(filename)
+
+    @classmethod
+    def load_all_results(cls, parameters: list[HFPICaseParameters], results_folder: pathlib.Path):
+        results = cls(results_folder=results_folder)
+        for p in parameters:
+            results.load_result(p)
+        return results
+
