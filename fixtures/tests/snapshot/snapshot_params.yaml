@@ -1,54 +1,44 @@
-# data_source_path:
-#   - top: "../fixtures/tests/snapshot/loads_cupula_top.vtp"
-#   - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom.vtp"
-images:
-- image_label: "CP_min_G100"
-  scalar_label: "mean [kgf/m²]"
-  data_source_paths:
-  - top: "../fixtures/tests/snapshot/loads_cupula_top_006.vtp"
-  - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom_006.vtp"
-- image_label: "CP_min_G100"
-  scalar_label: "mean [kgf/m²]"
-  data_source_paths:
-  - top: "../fixtures/tests/snapshot/loads_cupula_top_036.vtp"
-  - bottom: "../fixtures/tests/snapshot/loads_cupula_bottom_036.vtp"
-# - image_label: "CP_min_G100"
-#   stats:
-#   - projection: top_proj
-#     scalar_label: "mean [kgf/m²]"
+name: ""
 projections:
-- clip_box:
-    position: [0, 0, 0]
-    length: 0
-  transformation:
-    translate: [0, 0, 0]
-    rotate: [0, 0, 0]
-    scale: [1, 1, 1]
-  show_labels: False
-  data_source_key: "top"
-- clip_box:
-    position: [0, 0, 0]
-    length: 0
-  transformation:
-    translate: [-80, 0, 0]
-    rotate: [90, 0, 90]
-    scale: [1, 1, 1]
-  show_labels: False
-  data_source_key: "top"
-- clip_box:
-    position: [0, 0, 0]
-    length: 0
-  transformation:
-    translate: [-2, -15, 0]
-    rotate: [0, 0, 0]
-    scale: [1, 1, 1]
-  show_labels: False
-  data_source_key: "bottom"
+  top_projection:
+    file_path: ""
+    scalar: ""
+    clip_box:
+      position: [0, 0, 0]
+      length: 0
+    transformation:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [1, 1, 1]
+  right_projection:
+    file_path: ""
+    scalar: ""
+    clip_box:
+      position: [0, 0, 0]
+      length: 0
+    transformation:
+      translate: [20, 0, 0]
+      rotate: [0, 270, 0]
+      scale: [1, 1, 1]
+  bottom_projection:
+    file_path: ""
+    scalar: ""
+    clip_box:
+      position: [0, 0, 0]
+      length: 0
+    transformation:
+      translate: [0, -20, 0]
+      rotate: [0, 0, 0]
+      scale: [1, 1, 1]
 colormap:
+  range_of_values: []
   n_divs: 15
-  # target_step: 0.1 # n_divs auto
+legend_config:
+  label: ""
+  range: [0, 0]
+  n_divs: 0
 camera:
-  zoom: 3
+  zoom: 1
   offset_position: [0, 0, 0]
   view_up: [0, 1, 0]
   window_size: [2400, 800]

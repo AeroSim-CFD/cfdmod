@@ -67,6 +67,16 @@ class ClipBoxConfig(BaseModel):
     )
 
 
+class LegendConfig(BaseModel):
+    label: str = Field(..., title="Legend name", description="The name of the legend in the image")
+    range: tuple[float, float] = Field(
+        ..., title="Legend range values", description="Range of values in legend"
+    )
+    n_divs: int = Field(
+        ..., title="Number of divisions", description="Number of divisions in legend"
+    )
+
+
 class CameraConfig(BaseModel):
     zoom: float = Field(1, title="Camera zoom", gt=0)
     offset_position: tuple[float, float, float] = Field(
@@ -86,11 +96,13 @@ class CameraConfig(BaseModel):
 
 
 class ImageConfig(BaseModel):
-    scalar_label: str = Field(
-        ..., title="Scalar label", description="Label of the scalar to set active on the snapshot"
+    name: str = Field(..., title="Image label", description="Label of the output image")
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
     )
-    image_label: str = Field(..., title="Image label", description="Label of the output image")
-    data_source_paths: list[dict[str, str]] = Field(..., title="", description="")
+    projections: dict[str, PartialProjectionConfig] = Field(
+        ..., title="Projections", description="Projections in the image"
+    )
 
 
 class PolydataConfig(BaseModel):
@@ -121,28 +133,47 @@ class ColormapConfig(BaseModel):
 
 
 class ProjectionConfig(BaseModel):
+    file_path: pathlib.Path = Field(
+        ...,
+        title="Polydata file path",
+        description="Path to the polydata file",
+    )
+    scalar: str = Field(
+        ...,
+        title="Scalar field",
+        description="Label of the scalar to set active on the projection",
+    )
     clip_box: ClipBoxConfig = Field(
-        ..., title="ClipBox configuration", description="Parameters for clipbox"
+        ...,
+        title="ClipBox configuration",
+        description="Parameters for clipbox",
     )
     transformation: TransformationConfig = Field(
         ...,
         title="Transformation components",
         description="Parameters to represent the transformation of the body in the projection",
     )
-    show_labels: bool = Field(False, title="", description="")
-    data_source_key: str = Field(
-        ..., title="Polydata file path", description="Path to the polydata file"
+
+
+class PartialProjectionConfig(BaseModel):
+    file_path: pathlib.Path = Field(
+        ...,
+        title="Polydata file path",
+        description="Path to the polydata file",
+    )
+    scalar: str = Field(
+        ...,
+        title="Scalar field",
+        description="Label of the scalar to set active on the projection",
     )
 
 
 class SnapshotConfig(BaseModel):
-    # polydata: list[PolydataConfig] = Field(
-    #     ...,
-    #     title="List of polydata configuration",
-    #     description="Parameters for polydata used in the snapshot",
-    # )
-    images: list[ImageConfig] = Field(..., title="", description="")
-    projections: list[ProjectionConfig] = Field(
+    name: str = Field(..., title="Snapshot name", description="The name of the snapshot")
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
+    )
+    projections: dict[str, ProjectionConfig] = Field(
         ..., title="Projections configuration", description="Parameters for the projections"
     )
     colormap: ColormapConfig = Field(
