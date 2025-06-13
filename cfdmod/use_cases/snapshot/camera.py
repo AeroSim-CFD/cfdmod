@@ -5,8 +5,10 @@ import pyvista as pv
 
 from cfdmod.use_cases.snapshot.colormap import ColormapFactory
 from cfdmod.use_cases.snapshot.config import (
+    LegendConfig,
     Projections,
     SnapshotConfig,
+    TransformationConfig,
 )
 
 
@@ -89,50 +91,35 @@ def take_snapshot(
     lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
 
     for projection in snapshot_config.projections:
-        projection = snapshot_config.projections[projection]
-        mesh = pv.read(projection.file_path)
-        mesh.set_active_scalars(projection.scalar)
+        projection_config = snapshot_config.projections[projection]
 
-        feature_edges = mesh.extract_feature_edges(
-            feature_angle=5,  # degrees, controls sensitivity
-            boundary_edges=True,
-            feature_edges=True,
-            manifold_edges=False,
-            non_manifold_edges=False,
-        )
-        plotter.add_mesh(feature_edges, color="black", line_width=2)
+        mesh = pv.read(projection_config.file_path)
+        mesh.set_active_scalars(projection_config.scalar)
 
-        mesh.rotate_x(projection.transformation.rotate[0], point=mesh.center, inplace=True)
-        mesh.rotate_y(projection.transformation.rotate[1], point=mesh.center, inplace=True)
-        mesh.rotate_z(projection.transformation.rotate[2], point=mesh.center, inplace=True)
-
-        mesh.translate(projection.transformation.translate, inplace=True)
-
-        mesh.cell_data_to_point_data()
-        plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color="white")
-        feature_edges = mesh.extract_feature_edges(
-            feature_angle=5,  # degrees, controls sensitivity
-            boundary_edges=True,
-            feature_edges=True,
-            manifold_edges=False,
-            non_manifold_edges=False,
-        )
-        plotter.add_mesh(feature_edges, color="black", line_width=2)
-
-        if snapshot_config.colormap.style == "contour":
-            mesh = mesh.cell_data_to_point_data()
-            plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
-            contours = mesh.contour(
-                np.linspace(
-                    snapshot_config.legend_config.range[0],
-                    snapshot_config.legend_config.range[1],
-                    snapshot_config.legend_config.n_divs + 1,
-                ),
-                scalars=projection.scalar,  # optional, if you want to contour along z-axis
+        clip_box = projection_config.clip_box
+        if clip_box.scale[0] and clip_box.scale[1] and clip_box.scale[2] != 0:
+            clip_cube = pv.Cube(
+                center=mesh.center,
+                x_length=clip_box.scale[0],
+                y_length=clip_box.scale[1],
+                z_length=clip_box.scale[2],
             )
-            plotter.add_mesh(contours, color="grey", line_width=2)
-        elif snapshot_config.colormap.style == "flat":
-            plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs)
+            transform(clip_cube, clip_box)
+            mesh = mesh.clip_box(clip_cube, invert=False)
+
+        transform(mesh, projection_config.transformation)
+        if mesh.n_cells == 0:
+            print(f"The clip box in projection '{projection}' is cropping the model completely.")
+            return
+
+        mesh = mesh.cell_data_to_point_data()
+        plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color="white")
+
+        contours = create_contours(mesh, projection_config.scalar, snapshot_config.legend_config)
+        plotter.add_mesh(contours, color="grey", line_width=2)
+
+        feature_edge = create_feature_edges(mesh)
+        plotter.add_mesh(feature_edge, color="black", line_width=1)
 
     plotter.camera_position = "xy"
     plotter.camera.SetParallelProjection(True)
@@ -147,3 +134,31 @@ def take_snapshot(
     plotter.show(jupyter_backend="static")
     plotter.screenshot(snapshot_config.name)
     plotter.close()
+
+
+def transform(mesh, transformation: TransformationConfig):
+    mesh.rotate_x(transformation.rotate[0], point=mesh.center, inplace=True)
+    mesh.rotate_y(transformation.rotate[1], point=mesh.center, inplace=True)
+    mesh.rotate_z(transformation.rotate[2], point=mesh.center, inplace=True)
+    mesh.translate(transformation.translate, inplace=True)
+
+
+def create_contours(mesh, scalar: str, legend_config: LegendConfig):
+    return mesh.contour(
+        np.linspace(
+            legend_config.range[0],
+            legend_config.range[1],
+            legend_config.n_divs + 1,
+        ),
+        scalars=scalar,
+    )
+
+
+def create_feature_edges(mesh):
+    return mesh.extract_feature_edges(
+        feature_angle=30,
+        boundary_edges=True,
+        feature_edges=True,
+        manifold_edges=False,
+        non_manifold_edges=False,
+    )

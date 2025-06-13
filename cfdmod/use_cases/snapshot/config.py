@@ -56,17 +56,6 @@ class TransformationConfig(BaseModel):
     )
 
 
-class ClipBoxConfig(BaseModel):
-    position: tuple[float, float, float] = Field(
-        (0, 0, 0),
-        title="Position vector",
-        description="Vector to representing the position of clip box",
-    )
-    length: float = (
-        Field(0, title="Length of the clip box", description="The length of the clip box"),
-    )
-
-
 class LegendConfig(BaseModel):
     label: str = Field(..., title="Legend name", description="The name of the legend in the image")
     range: tuple[float, float] = Field(
@@ -105,12 +94,6 @@ class ImageConfig(BaseModel):
     )
 
 
-class PolydataConfig(BaseModel):
-    file_path: str = Field(
-        ..., title="Polydata file path", description="Path to the polydata file"
-    )
-
-
 class ColormapConfig(BaseModel):
     style: str = "contour"
     n_divs: int = Field(
@@ -143,7 +126,7 @@ class ProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
-    clip_box: ClipBoxConfig = Field(
+    clip_box: TransformationConfig = Field(
         ...,
         title="ClipBox configuration",
         description="Parameters for clipbox",
