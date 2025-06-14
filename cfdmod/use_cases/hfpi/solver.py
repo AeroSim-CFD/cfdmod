@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 
 from pydantic import BaseModel, ConfigDict
+from typing import Literal
 import pandas as pd
 import numpy as np
 from scipy import integrate
@@ -298,8 +299,16 @@ def get_moments_from_force(force: dict[str, np.ndarray], floor_heights: np.ndarr
     return moments
 
 
-def _get_max_dct(dct: dict[str, np.ndarray]) -> dict[str, float]:
-    return {k: v.max() for k, v in dct.items()}
+def _get_peak_dct(dct: dict[str, np.ndarray], peak_type: Literal["min", "max"]) -> dict[str, np.ndarray] | dict[str, float]:
+    if(peak_type == "max"):
+        return {k: v.max(axis=0) for k, v in dct.items()}
+    elif(peak_type == "min"):
+        return {k: v.min(axis=0) for k, v in dct.items()}
+    raise ValueError(f"Invalid peak type: {peak_type!r}, supports only 'min', 'max'")
+
+
+def _get_global_dct(dct: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return {k: v.sum(axis=0) for k, v in dct.items()}
 
 
 class StaticResults(BaseModel):
@@ -312,11 +321,25 @@ class StaticResults(BaseModel):
     forces_static: dict[str, np.ndarray]
     moments_static: dict[str, np.ndarray]
 
-    def get_max_forces_static(self):
-        return _get_max_dct(self.forces_static)
+    @property
+    def global_forces_static(self):
+        return _get_global_dct(self.forces_static)
 
-    def get_max_moments_static(self):
-        return _get_max_dct(self.moments_static)
+    @property
+    def global_moments_static(self):
+        return _get_global_dct(self.moments_static)
+
+    def get_peak_forces_static(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.forces_static, peak_type)
+
+    def get_peak_moments_static(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.moments_static, peak_type)
+
+    def get_peak_global_forces_static(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.global_forces_static, peak_type)
+
+    def get_peak_global_moments_static(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.global_moments_static, peak_type)
 
 
 def solve_static_forces(
@@ -535,6 +558,14 @@ class HFPIResults(BaseModel):
         with open(filename, "rb") as f:
             return pickle.load(f)
 
+    @property
+    def global_forces_static_eq(self):
+        return _get_global_dct(self.forces_static_eq)
+
+    @property
+    def global_moments_static_eq(self):
+        return _get_global_dct(self.moments_static_eq)
+
     def get_acceleration(self) -> np.ndarray:
         acceleration = {}
         dt = self.delta_t
@@ -558,11 +589,17 @@ class HFPIResults(BaseModel):
     def get_max_acceleration(self) -> float:
         return self.get_acceleration().max()
 
-    def get_max_forces_static_eq(self):
-        return _get_max_dct(self.forces_static_eq)
+    def get_peak_forces_static_eq(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.forces_static_eq, peak_type)
 
-    def get_max_moments_static_eq(self):
-        return _get_max_dct(self.moments_static_eq)
+    def get_peak_moments_static_eq(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.moments_static_eq, peak_type)
+
+    def get_peak_global_forces_static_eq(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.global_forces_static_eq, peak_type)
+
+    def get_peak_global_moments_static_eq(self, peak_type: Literal["min", "max"]):
+        return _get_peak_dct(self.global_moments_static_eq, peak_type)
 
 
 def solve_hfpi(

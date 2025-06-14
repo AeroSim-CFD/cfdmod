@@ -4,14 +4,14 @@ import pathlib
 import itertools
 from cfdmod.logger import logger
 import time
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
 import pathlib
 from multiprocessing import Pool, cpu_count
 
-
+import numpy as np
 from cfdmod.use_cases.hfpi import solver
 
 T = TypeVar("T")
@@ -141,6 +141,21 @@ class HFPIAnalysisHandler(BaseModel):
             pool.map(_wrapper_solve_hfpi_case, args)
 
 
+def _get_global_peak_dct_float(dcts: list[dict[str, float]], peak_type: Literal["min", "max"]) -> dict[str, float]:
+    dct_peak = {}
+    for d in dcts:
+        for k, v in d.items():
+            if(k not in dct_peak):
+                dct_peak[k] = v
+            if(peak_type == "max"):
+                dct_peak[k] = max(v, dct_peak[k])
+            elif(peak_type == "min"):
+                dct_peak[k] = min(v, dct_peak[k])
+            else:
+                raise ValueError(f"Invalid peak type: {peak_type!r}. Support for 'min', 'max'")
+    return dct_peak
+
+
 class HFPIFullResults(BaseModel):
     results_folder: pathlib.Path
 
@@ -177,6 +192,9 @@ class HFPIFullResults(BaseModel):
     def join_by_xi(self):
         return self.join_by(lambda params: params.xi)
 
+    def join_by_direction(self):
+        return self.join_by(lambda params: params.direction)
+
     def filter_by_xi(self, xi: float):
         return self.join_by_xi().get(xi)
 
@@ -186,17 +204,48 @@ class HFPIFullResults(BaseModel):
     def get_max_acceleration(self):
         return max(res.get_max_acceleration() for res in self.results.values())
 
-    def get_max_static_forces(self):
-        max_static_eq = {}
-        for r in self.results.values():
-            r_max_static_eq = r.get_max_forces_static_eq()
-            if len(max_static_eq) == 0:
-                max_static_eq = r_max_static_eq
-                continue
-            for k in max_static_eq:
-                max_static_eq[k] = max(max_static_eq[k], r_max_static_eq[k])
-        return max_static_eq
-
     def get_max_acceleration_by_recurrence_period(self):
         res = self.join_by_recurrence_period()
         return {k: r.get_max_acceleration() for k, r in res.items()}
+
+    def get_peak_global_forces_static_eq(self, peak_type: Literal["min", "max"]):
+        dcts = [v.get_peak_global_forces_static_eq(peak_type) for k, v in self.results.items()]
+        return _get_global_peak_dct_float(dcts, peak_type)
+
+    def get_peak_global_moments_static_eq(self, peak_type: Literal["min", "max"]):
+        dcts = [v.get_peak_global_moments_static_eq(peak_type) for k, v in self.results.items()]
+        return _get_global_peak_dct_float(dcts, peak_type)
+
+    def get_peak_global_forces_static(self, peak_type: Literal["min", "max"]):
+        dcts = [v.static_results.get_peak_global_forces_static(peak_type) for k, v in self.results.items()]
+        return _get_global_peak_dct_float(dcts, peak_type)
+
+    def get_peak_global_moments_static(self, peak_type: Literal["min", "max"]):
+        dcts = [v.static_results.get_peak_global_moments_static(peak_type) for k, v in self.results.items()]
+        return _get_global_peak_dct_float(dcts, peak_type)
+
+    def get_global_peaks_by_direction(self) -> dict[float, dict[str, dict[str, float]]]:
+        """Get global peaks per direction of results
+        
+        Returns results as [direction][load_type][peak_name] = val
+
+        load_type = "forces_static", "moments_static", "forces_static_eq", "moments_static_eq"
+        peak_type = "min_x", "min_y", "min_z", "max_x", "max_y", "max_z"
+        """
+        res = self.join_by_direction()
+
+        joined_res: dict[float, dict[str, dict[str, float]]] = {}
+        for d, r in res.items():
+            joined_res[d] = {}
+            calls = [
+                ("forces_static", r.get_peak_global_forces_static),
+                ("moments_static", r.get_peak_global_moments_static),
+                ("forces_static_eq", r.get_peak_global_forces_static_eq),
+                ("moments_static_eq", r.get_peak_global_moments_static_eq),
+            ]
+            for name, c in calls:
+                min_vals = c("min")
+                max_vals = c("max")
+                joined_res[d][name] = {f"min_{k}": v for k, v in min_vals.items()} | {f"max_{k}": v for k, v in max_vals.items()}
+
+        return joined_res
