@@ -5,6 +5,7 @@ import itertools
 from cfdmod.logger import logger
 import time
 from typing import Callable, TypeVar, Literal
+from collections import defaultdict
 
 from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
@@ -141,19 +142,25 @@ class HFPIAnalysisHandler(BaseModel):
             pool.map(_wrapper_solve_hfpi_case, args)
 
 
-def _get_global_peak_dct_float(dcts: list[dict[str, float]], peak_type: Literal["min", "max"]) -> dict[str, float]:
-    dct_peak = {}
+def _get_global_stats_dct_float(dcts: list[dict[str, float]], stats_type: Literal["min", "max", "mean"]) -> dict[str, float]:
+    grouped: dict[str, list[float]] = defaultdict(list)
+
     for d in dcts:
         for k, v in d.items():
-            if(k not in dct_peak):
-                dct_peak[k] = v
-            if(peak_type == "max"):
-                dct_peak[k] = max(v, dct_peak[k])
-            elif(peak_type == "min"):
-                dct_peak[k] = min(v, dct_peak[k])
-            else:
-                raise ValueError(f"Invalid peak type: {peak_type!r}. Support for 'min', 'max'")
-    return dct_peak
+            grouped[k].append(v)
+
+    result: dict[str, float] = {}
+    for k, values in grouped.items():
+        if stats_type == "min":
+            result[k] = min(values)
+        elif stats_type == "max":
+            result[k] = max(values)
+        elif stats_type == "mean":
+            result[k] = sum(values) / len(values)
+        else:
+            raise ValueError(f"Invalid stats_type: {stats_type!r}. Must be 'min', 'max', or 'mean'.")
+    
+    return result
 
 
 class HFPIFullResults(BaseModel):
@@ -196,10 +203,10 @@ class HFPIFullResults(BaseModel):
         return self.join_by(lambda params: params.direction)
 
     def filter_by_xi(self, xi: float):
-        return self.join_by_xi().get(xi)
+        return self.join_by_xi()[xi]
 
     def filter_by_recurrence_period(self, recurrence_period: float):
-        return self.join_by_recurrence_period().get(recurrence_period)
+        return self.join_by_recurrence_period()[recurrence_period]
 
     def get_max_acceleration(self):
         return max(res.get_max_acceleration() for res in self.results.values())
@@ -208,44 +215,69 @@ class HFPIFullResults(BaseModel):
         res = self.join_by_recurrence_period()
         return {k: r.get_max_acceleration() for k, r in res.items()}
 
-    def get_peak_global_forces_static_eq(self, peak_type: Literal["min", "max"]):
-        dcts = [v.get_peak_global_forces_static_eq(peak_type) for k, v in self.results.items()]
-        return _get_global_peak_dct_float(dcts, peak_type)
+    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_forces_static_eq(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_peak_global_moments_static_eq(self, peak_type: Literal["min", "max"]):
-        dcts = [v.get_peak_global_moments_static_eq(peak_type) for k, v in self.results.items()]
-        return _get_global_peak_dct_float(dcts, peak_type)
+    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_moments_static_eq(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_peak_global_forces_static(self, peak_type: Literal["min", "max"]):
-        dcts = [v.static_results.get_peak_global_forces_static(peak_type) for k, v in self.results.items()]
-        return _get_global_peak_dct_float(dcts, peak_type)
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.static_results.get_stats_global_forces_static(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_peak_global_moments_static(self, peak_type: Literal["min", "max"]):
-        dcts = [v.static_results.get_peak_global_moments_static(peak_type) for k, v in self.results.items()]
-        return _get_global_peak_dct_float(dcts, peak_type)
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.static_results.get_stats_global_moments_static(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_global_peaks_by_direction(self) -> dict[float, dict[str, dict[str, float]]]:
+    def get_global_peaks_by_direction(self) -> dict[str, dict[str, pd.DataFrame]]:
         """Get global peaks per direction of results
         
-        Returns results as [direction][load_type][peak_name] = val
+        Returns results as [load_type] = DataFrame["direction", stats_type]
 
         load_type = "forces_static", "moments_static", "forces_static_eq", "moments_static_eq"
-        peak_type = "min_x", "min_y", "min_z", "max_x", "max_y", "max_z"
+        stats_type = "min_x", "min_y", "min_z", "max_x", "max_y", "max_z"
         """
         res = self.join_by_direction()
 
-        joined_res: dict[float, dict[str, dict[str, float]]] = {}
+        s = ["min", "max"]
+        axis = ["x", "y", "z"]
+
+        # Dict as [load_type][(stats_type, direction)] = value
+        joined_res: dict[str, dict[tuple[str, float], float]] = {
+            "forces_static": {},
+            "moments_static": {},
+            "forces_static_eq": {},
+            "moments_static_eq": {},
+        }
         for d, r in res.items():
-            joined_res[d] = {}
             calls = [
-                ("forces_static", r.get_peak_global_forces_static),
-                ("moments_static", r.get_peak_global_moments_static),
-                ("forces_static_eq", r.get_peak_global_forces_static_eq),
-                ("moments_static_eq", r.get_peak_global_moments_static_eq),
+                ("forces_static", r.get_stats_global_forces_static),
+                ("moments_static", r.get_stats_global_moments_static),
+                ("forces_static_eq", r.get_stats_global_forces_static_eq),
+                ("moments_static_eq", r.get_stats_global_moments_static_eq),
             ]
             for name, c in calls:
                 min_vals = c("min")
                 max_vals = c("max")
-                joined_res[d][name] = {f"min_{k}": v for k, v in min_vals.items()} | {f"max_{k}": v for k, v in max_vals.items()}
+                mean_vals = c("mean")
+                for ax in axis:
+                    joined_res[name][f"min_{ax}", d] = min_vals[ax]
+                    joined_res[name][f"max_{ax}", d] = max_vals[ax]
+                    joined_res[name][f"mean_{ax}", d] = mean_vals[ax]
 
-        return joined_res
+        dct_dfs: dict[str, pd.DataFrame] = {}
+        for k, dct_res in joined_res.items():
+            all_directions = sorted(set(d for _, d in dct_res.keys()))
+            dct = {"direction": all_directions}
+            for stats in ("min", "max", "mean"):
+                for ax in axis:
+                    values = []
+                    for d in all_directions:
+                        v = dct_res[f"{stats}_{ax}", d]
+                        values.append(v)
+                    dct[f"{stats}_{ax}"] = values
+            dct_dfs[k] = pd.DataFrame(dct)
+
+        return dct_dfs
