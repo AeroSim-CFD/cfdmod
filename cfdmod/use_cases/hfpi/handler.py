@@ -37,7 +37,8 @@ class WindAnalysis(BaseModel):
 
     def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
         ...
-        return 45
+        # Just for test
+        return 15+recurrence_period * 0.6
 
 
 class DimensionSpecs(BaseModel):
