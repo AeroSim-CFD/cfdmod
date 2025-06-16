@@ -4,9 +4,10 @@ import numpy as np
 import pyvista as pv
 from cfdmod.logger import logger
 
-from cfdmod.use_cases.snapshot.colormap import ColormapFactory
 from cfdmod.use_cases.snapshot.config import (
+    LabelsConfig,
     LegendConfig,
+    ProjectionConfig,
     Projections,
     SnapshotConfig,
     TransformationConfig,
@@ -95,10 +96,9 @@ def take_snapshot(
         projection_config = snapshot_config.projections[projection]
 
         mesh = pv.read(projection_config.file_path)
-        mesh.set_active_scalars(projection_config.scalar)
 
         clip_box = projection_config.clip_box
-        if clip_box.scale[0] and clip_box.scale[1] and clip_box.scale[2] != 0:
+        if all(dimension > 0 for dimension in clip_box.scale):
             mesh = clip(mesh, clip_box)
             if mesh.n_cells == 0:
                 logger.warning(
@@ -108,11 +108,36 @@ def take_snapshot(
 
         transform(mesh, projection_config.transformation)
 
-        mesh = mesh.cell_data_to_point_data()
-        plotter.add_mesh(mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color="white")
+        if projection_config.scalar:
+            mesh.set_active_scalars(projection_config.scalar)
 
-        contours = create_contours(mesh, projection_config.scalar, snapshot_config.legend_config)
-        plotter.add_mesh(contours, color="grey", line_width=2)
+            mesh = mesh.cell_data_to_point_data()
+            plotter.add_mesh(
+                mesh, lighting=False, cmap=lut, scalar_bar_args=sargs, nan_color=lut.nan_color
+            )
+
+            contours = create_contours(
+                mesh, projection_config.scalar, snapshot_config.legend_config
+            )
+            plotter.add_mesh(contours, color="grey", line_width=2)
+
+            if projection_config.labels_config:
+                points, labels = create_labels(
+                    mesh, projection_config, projection_config.labels_config
+                )
+                plotter.add_point_labels(
+                    points=points,
+                    labels=labels,
+                    font_size=12,
+                    text_color="black",
+                    point_color="black",
+                    point_size=5,
+                    render_points_as_spheres=True,
+                    shape_opacity=0,
+                    always_visible=True,
+                )
+        else:
+            plotter.add_mesh(mesh, lighting=False, color="white")
 
         feature_edge = create_feature_edges(mesh)
         plotter.add_mesh(feature_edge, color="black", line_width=1)
@@ -134,12 +159,11 @@ def take_snapshot(
 
 def clip(mesh, clip_box: TransformationConfig):
     clip_cube = pv.Cube(
-        center=mesh.center,
+        center=[0, 0, 0],
         x_length=clip_box.scale[0],
         y_length=clip_box.scale[1],
         z_length=clip_box.scale[2],
     )
-    transform(clip_cube, clip_box)
     return mesh.clip_box(clip_cube, invert=False)
 
 
@@ -169,3 +193,50 @@ def create_feature_edges(mesh):
         manifold_edges=False,
         non_manifold_edges=False,
     )
+
+
+def create_labels(mesh, projection_config: ProjectionConfig, labels_config: LabelsConfig):
+    bounds = mesh.bounds
+
+    spacing_x, spacing_y = labels_config.spacing
+    padding_left, padding_right, padding_bottom, padding_top = labels_config.padding
+
+    size_x = bounds[1] - bounds[0]
+    size_y = bounds[3] - bounds[2]
+
+    padding_left = min(size_x / 2, padding_left)
+    padding_right = min(size_x / 2, padding_right)
+    padding_bottom = min(size_y / 2, padding_bottom)
+    padding_top = min(size_y / 2, padding_top)
+
+    num_divisions_x = max(
+        round((size_x - (padding_left + padding_right)) / spacing_x),
+        1,
+    )
+    num_divisions_y = max(
+        round((size_y - (padding_bottom + padding_top)) / spacing_y),
+        1,
+    )
+
+    spacing_x = max((size_x - (padding_left + padding_right)) / num_divisions_x, 1)
+    spacing_y = max((size_y - (padding_bottom + padding_top)) / num_divisions_y, 1)
+
+    x_targets = np.arange(bounds[0] + padding_left, bounds[1] - padding_right + 1e-3, spacing_x)
+    y_targets = np.arange(bounds[2] + padding_bottom, bounds[3] - padding_top + 1e-3, spacing_y)
+    z_level = bounds[5]
+
+    X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
+    target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
+
+    closest_point_ids = []
+    for pt in target_points:
+        closest_point_id = mesh.find_closest_point(pt)
+        closest_pt = mesh.points[closest_point_id]
+        if np.linalg.norm(pt - closest_pt) < 10:
+            closest_point_ids.append(closest_point_id)
+
+    points = mesh.points[closest_point_ids]
+    values = mesh.point_data[projection_config.scalar][closest_point_ids]
+    labels = [f"{v:.2f}" for v in values]
+
+    return points, labels

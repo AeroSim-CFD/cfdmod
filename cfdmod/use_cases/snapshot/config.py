@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pathlib
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from cfdmod.utils import read_yaml
 
@@ -94,6 +94,32 @@ class ImageConfig(BaseModel):
     )
 
 
+class LabelsConfig(BaseModel):
+    spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
+    padding: tuple[float, float, float, float] = Field(
+        ..., description="Padding (left, right, bottom, top)"
+    )
+
+    @field_validator("spacing", mode="before")
+    def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
+        if isinstance(v, (int, float)):
+            return (float(v), float(v))
+        if isinstance(v, tuple) and len(v) == 2:
+            return tuple(map(float, v))
+        raise ValueError("spacing must be a float or a 2-tuple of floats")
+
+    @field_validator("padding", mode="before")
+    def normalize_padding(cls, v: Union[float, tuple]) -> tuple[float, float, float, float]:
+        if isinstance(v, (int, float)):
+            return (float(v), float(v), float(v), float(v))
+        if isinstance(v, tuple):
+            if len(v) == 2:
+                return (float(v[0]), float(v[0]), float(v[1]), float(v[1]))
+            if len(v) == 4:
+                return tuple(map(float, v))
+        raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
+
+
 class ColormapConfig(BaseModel):
     style: str = "contour"
     n_divs: int = Field(
@@ -126,6 +152,7 @@ class ProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
+    labels_config: LabelsConfig | None = Field(..., title="", description="")
     clip_box: TransformationConfig = Field(
         ...,
         title="ClipBox configuration",
@@ -149,6 +176,7 @@ class PartialProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
+    labels_config: LabelsConfig | None = Field(..., title="", description="")
 
 
 class SnapshotConfig(BaseModel):
@@ -157,7 +185,7 @@ class SnapshotConfig(BaseModel):
         ..., title="Legend configuration", description="Image legend configuration"
     )
     projections: dict[str, ProjectionConfig] = Field(
-        ..., title="Projections configuration", description="Parameters for the projections"
+        ..., title="Labels configuration", description="Parameters for the projection labels"
     )
     colormap: ColormapConfig = Field(
         ..., title="Colormap configuration", description="Parameters for colormap"
