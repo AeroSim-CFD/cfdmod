@@ -1,28 +1,6 @@
 name: ""
 projections:
-  top_projection:
-    file_path: ""
-    scalar: ""
-    clip_box:
-      translate: [0, 0, 0]
-      rotate: [0, 0, 0]
-      scale: [0, 0, 0]
-    transformation:
-      translate: [0, 0, 0]
-      rotate: [0, 0, 0]
-      scale: [1, 1, 1]
-  right_projection:
-    file_path: ""
-    scalar: ""
-    clip_box:
-      translate: [0, 0, 0]
-      rotate: [0, 0, 0]
-      scale: [0, 0, 0]
-    transformation:
-      translate: [0, 0, 0]
-      rotate: [0, 0, 0]
-      scale: [1, 1, 1]
-  bottom_projection:
+  projection_name_01:
     file_path: ""
     scalar: ""
     clip_box:
