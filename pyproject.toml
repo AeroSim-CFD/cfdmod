@@ -20,6 +20,7 @@ dependencies = [
     "matplotlib>=3.7.3,<4",
     "pyarrow>=19.0.0,<20",
     "aerosim-lnas>=0.6.0,<0.7",
+    "filelock>=3.17.0",
 ]
 
 [project.optional-dependencies]
