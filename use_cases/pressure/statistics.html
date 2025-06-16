@@ -1,0 +1,785 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Statistics &#8212; AeroSim CFDmod</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'use_cases/pressure/statistics';</script>
+    <link rel="icon" href="../../_static/favicon.svg"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Pressure Coefficients" href="coefficients/index.html" />
+    <link rel="prev" title="Concepts" href="concepts.html" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  
+    <!-- Plausible -->
+    <script defer data-domain="aerosim.io" src="https://plausible.io/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"></script>
+    <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+    
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo_display.png" class="logo__image only-light" alt="AeroSim CFDmod - Home"/>
+    <script>document.write(`<img src="../../_static/logo_display.png" class="logo__image only-dark" alt="AeroSim CFDmod - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Use Cases</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../altimetry/index.html">Altimetry</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../loft/index.html">Loft</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../s1/index.html">S1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../roughness_gen/index.html">Roughness Elements</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Pressure</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="concepts.html">Concepts</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Statistics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="coefficients/index.html">Coefficients</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="coefficients/pressure_coefficient.html">Pressure Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="coefficients/shape_coefficient.html">Shape Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="coefficients/force_coefficient.html">Force Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="coefficients/moment_coefficient.html">Moment Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../snapshot/index.html">Snapshot</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Analysis</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../analysis/inflow/index.html">Inflow</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Others</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/use_cases/pressure/statistics.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Statistics</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimum-and-maximum-values">Minimum and maximum values</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#average-value">Average value</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ensemble-average">Ensemble Average</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#root-mean-square-value">Root Mean Square value</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skewness">Skewness</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kurtosis">Kurtosis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extreme-values">Extreme values</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#moving-average">Moving average</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gumbel-model">Gumbel model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#peak-factor">Peak Factor</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mean-equivalent">Mean Equivalent</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="statistics">
+<h1>Statistics<a class="headerlink" href="#statistics" title="Link to this heading">#</a></h1>
+<p>For every coefficient signal, some statistical operations are performed in order to extract value from the data.</p>
+<section id="minimum-and-maximum-values">
+<h2>Minimum and maximum values<a class="headerlink" href="#minimum-and-maximum-values" title="Link to this heading">#</a></h2>
+<p>Finding the minimum and maximum values is pretty straightforward.
+For example, the minimum and maximum values of a generic signal (<span class="math notranslate nohighlight">\(x\)</span>) is:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\check{x} = min(x)\\\widehat{x} = max(x)\end{aligned}\end{align} \]</div>
+<p>Sometimes it may be necessary to divide the time series in order to make it <strong>memory efficient</strong>.</p>
+<p>Thus the minimum and maximum values are computed <strong>for each subdivision</strong> (<span class="math notranslate nohighlight">\(n\)</span>), and the global minimum and maximum values are defined as:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\check{x} = min(\check{x_n})\\\widehat{x} = max(\widehat{x_n})\end{aligned}\end{align} \]</div>
+</section>
+<section id="average-value">
+<h2>Average value<a class="headerlink" href="#average-value" title="Link to this heading">#</a></h2>
+<p>The mean value is obtained by a sum over the signal, divided by how many samples there are.
+For example, the mean value of a generic signal (<span class="math notranslate nohighlight">\(x\)</span>) is:</p>
+<div class="math notranslate nohighlight">
+\[\bar{x} = \mu = \frac{\int x(t) dt}{T} = \frac{1}{N} \sum{x_i}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(t\)</span> is temporal variable, and <span class="math notranslate nohighlight">\(T\)</span> is the sample total time.
+For discrete signal <span class="math notranslate nohighlight">\(N\)</span> is the size of the sample.</p>
+<p>As mentioned before, the sample can be subdivided in <span class="math notranslate nohighlight">\(n\)</span> subsamples.
+Thus to compose the global average (<span class="math notranslate nohighlight">\(\mu\)</span>) from each subdivision average, a weighted average must be performed based on each subdivision size <span class="math notranslate nohighlight">\(N_n\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\mu = \frac{\sum{\bar{x_n} N_n}}{\sum{N_n}}\]</div>
+</section>
+<section id="ensemble-average">
+<h2>Ensemble Average<a class="headerlink" href="#ensemble-average" title="Link to this heading">#</a></h2>
+<p>The ensemble average of signal fluctuations is a statistical measure that involves <strong>averaging the values of a signal</strong> across multiple instances or repetitions of an experiment or observation.</p>
+<p>The ensemble average <span class="math notranslate nohighlight">\(\langle x'(t) \rangle\)</span> of the <strong>fluctuation of a signal</strong> <span class="math notranslate nohighlight">\(x(t)\)</span> is calculated by averaging the corresponding values across different trials or instances, for a m-th order moment:</p>
+<div class="math notranslate nohighlight">
+\[\langle x'(t) ^ m \rangle = \langle (x(t) - \mu) ^ m \rangle = \frac{\sum{[x(t) - \mu] ^ m}}{N}\]</div>
+<p>The following statistical operations use higher order moments.</p>
+</section>
+<section id="root-mean-square-value">
+<h2>Root Mean Square value<a class="headerlink" href="#root-mean-square-value" title="Link to this heading">#</a></h2>
+<p>The next statistic value is the Root Mean Square (RMS) value of a coefficient signal.
+It measures the magnitude of a varying quantity.
+The RMS value is a way to represent the <strong>“effective” or “equivalent” value of a varying quantity</strong>.
+For example, the RMS value of a generic signal (<span class="math notranslate nohighlight">\(x\)</span>) is:</p>
+<div class="math notranslate nohighlight">
+\[\tilde{x} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mu\)</span> is the <strong>global average</strong> and <span class="math notranslate nohighlight">\(N\)</span> is the number of time step samples.</p>
+<p>It can also be defined based on the <strong>ensemble average</strong> of the signal fluctuation (<span class="math notranslate nohighlight">\(x'\)</span>):</p>
+<div class="math notranslate nohighlight">
+\[\tilde{x} = \sqrt{\langle x' ^ 2 \rangle} = \sqrt{\frac{\sum{(x_i - \mu)^2}}{N}}\]</div>
+<p>The global RMS value for subdivided samples is computed <strong>cumulating the second-order moment</strong>.</p>
+<p>For each subdivision, the second-order moment is calculated as:</p>
+<div class="math notranslate nohighlight">
+\[\mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}\]</div>
+<p>Then the global RMS value is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\tilde{x} = \sqrt{\frac{\sum_{n} \mu_2}{N}}\]</div>
+</section>
+<section id="skewness">
+<h2>Skewness<a class="headerlink" href="#skewness" title="Link to this heading">#</a></h2>
+<p>Skewness, a third-order statistical moment, characterizes the <strong>asymmetry of the signal’s probability distribution</strong>.
+A positive skewness indicates a longer tail on the right side of the distribution, while negative skewness suggests a longer left tail.</p>
+<p>For example, the skewness value of a generic signal (<span class="math notranslate nohighlight">\(x\)</span>) is:</p>
+<div class="math notranslate nohighlight">
+\[Skew[x] = \frac{\langle x' ^ 3 \rangle}{\langle x' ^ 2 \rangle ^ {3/2}} = \frac{\sum{(x_i - \mu)^3}}{(\sum{(x_i - \mu)^2}) ^ {3 / 2}} \sqrt {N}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mu\)</span> is the <strong>global average</strong>.</p>
+<p>The global skewness value for subdivided samples is computed <strong>cumulating the second and third-order moment</strong>.</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}\\\mu_3 = \sum_{i=1}^{N_n}{(x_i - \mu)^3}\end{aligned}\end{align} \]</div>
+<p>Then the global skewness value is defined as:</p>
+<div class="math notranslate nohighlight">
+\[Skew[x] = \frac{\sum_{n} \mu_3}{(\sum_{n} \mu_2) ^ {3 / 2}} \sqrt {N}\]</div>
+</section>
+<section id="kurtosis">
+<h2>Kurtosis<a class="headerlink" href="#kurtosis" title="Link to this heading">#</a></h2>
+<p>Kurtosis, a fourth-order moment, measures the <strong>“tailedness” of the signal’s distribution</strong>.
+A high kurtosis indicates heavy tails and a more peaked distribution, suggesting the presence of outliers or extreme values.
+In the other hand, low kurtosis indicates lighter tails and a flatter distribution.</p>
+<p>For example, the kurtosis value of a generic signal (<span class="math notranslate nohighlight">\(x\)</span>) is:</p>
+<div class="math notranslate nohighlight">
+\[Kurt[x] = \frac{\langle x' ^ 4 \rangle}{\langle x' ^ 2 \rangle ^ 2} = \frac{\sum{(x_i - \mu)^4}}{(\sum{(x_i - \mu)^2}) ^ {2}} N\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mu\)</span> is the <strong>global average</strong>.</p>
+<p>The global kurtosis value for subdivided samples is computed <strong>cumulating the second and fourth-order moment</strong>.</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\mu_2 = \sum_{i=1}^{N_n}{(x_i - \mu)^2}\\\mu_4 = \sum_{i=1}^{N_n}{(x_i - \mu)^4}\end{aligned}\end{align} \]</div>
+<p>Then the global kurtosis value is defined as:</p>
+<div class="math notranslate nohighlight">
+\[Kurt[x] = \frac{\sum_{n} \mu_4}{(\sum_{n} \mu_2) ^ {2}} N\]</div>
+</section>
+<section id="extreme-values">
+<h2>Extreme values<a class="headerlink" href="#extreme-values" title="Link to this heading">#</a></h2>
+<p>Extreme value analysis is a statistical approach used to analyze the <strong>behavior of extreme events in a dataset</strong>.
+In the context of CFD simulations, particularly for pressure coefficient signals, understanding extreme events is crucial for designing structures and systems that can <strong>withstand extreme conditions</strong>.</p>
+<p>Extreme events in pressure coefficient signals often represent <strong>critical scenarios such as peak loads on structures or components</strong>.
+The analysis involves fitting extreme value distributions to the data and extrapolating to estimate the occurrence of extreme events beyond the observed range.</p>
+<p>Currently, CFD modules support two models of extreme value calculation:</p>
+<ul class="simple">
+<li><p><strong>Moving average</strong>: The coefficient signal is smoothed using a time window, then its min and max values are assigned to the extreme peaks</p></li>
+<li><p><strong>Gumbel</strong>: The coefficient signal time window is extrapolated using Gumbel statistical model.</p></li>
+<li><p><strong>Peak factor</strong>: The value of the peak is calculated using the average, RMS and peak factor values.</p></li>
+</ul>
+<p>The following configuration illustrates how to select and configure the appropriate model:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">statistics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rms&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;skewness&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;kurtosis&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean_eq&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">scale_factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.61</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;min&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Gumbel&quot;</span>
+<span class="w">      </span><span class="nt">peak_duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"> </span><span class="c1"># in seconds</span>
+<span class="w">      </span><span class="nt">event_duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span><span class="w"> </span><span class="c1"># in seconds. Period of extreme event</span>
+<span class="w">      </span><span class="nt">n_subdivisions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"> </span><span class="c1"># Number of subdivisions</span>
+<span class="w">      </span><span class="nt">non_exceedance_probability</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.78</span><span class="w"> </span><span class="c1"># Confidence parameter in %</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Peak&quot;</span>
+<span class="w">      </span><span class="nt">peak_factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"> </span><span class="c1"># xtr = avg +- factor * rms</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Moving</span><span class="nv"> </span><span class="s">Average&quot;</span>
+<span class="w">      </span><span class="nt">window_size_real_scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"> </span><span class="c1"># s</span>
+</pre></div>
+</div>
+<section id="moving-average">
+<h3>Moving average<a class="headerlink" href="#moving-average" title="Link to this heading">#</a></h3>
+<p>In the context of wind engineering, sometimes it may be necessary to smooth a coefficient signal so that the <strong>peak values (maximum and minimum) are in the same order as the event time scale</strong>.
+Normally, atmospheric wind gusts <strong>peak pressures last for about 3 seconds</strong>, according to the wind standard NBR-6123.
+However, other wind standards may define a different base time scale.</p>
+<p>Therefore, the pressure coefficient peaks can be obtained after smoothing the pressure signal based on the event time scale.
+That way, a peak that happens in a shorter period can be neglected/smoothed.</p>
+<p>Applying a <strong>moving average to a signal has the effect of smoothing it</strong>.
+The image below illustrates the effect of a moving average:</p>
+<a class="reference internal image-reference" href="../../_images/moving_avg.png"><img alt="../../_images/moving_avg.png" class="align-center" src="../../_images/moving_avg.png" style="width: 60%;" />
+</a>
+<p>After smoothing the pressure signal, based on the wind gust time scale, the peaks from the smoothed signal are captured and assigned as a extreme value (minimum/negative or maximum/positive).</p>
+</section>
+<section id="gumbel-model">
+<h3>Gumbel model<a class="headerlink" href="#gumbel-model" title="Link to this heading">#</a></h3>
+<p>The Gumbel model is a widely used statistical model in extreme value theory for predicting the probability distribution of extreme values.</p>
+<p>To determine the extreme values of a coefficient time series, the sample obtained by the simulation is subdivided according to a <strong>characteristic design interval</strong>.
+This interval is related to the duration of the events that are <strong>relevant for the structure design</strong>.</p>
+<a class="reference internal image-reference" href="../../_images/samples.png"><img alt="../../_images/samples.png" class="align-center" src="../../_images/samples.png" style="width: 60%;" />
+</a>
+<p>Then the peak values of each subdivided sample are computed, and ordered progressively, for the positive peak values, and regressively, for the negative peak values.</p>
+<p>The last step is to fit the <strong>Gumbel PDF</strong> to the ordered data, and compute the extreme value for the reduced variable related to a probability of exceeding the peak value.
+Firstly the extreme values for the samples are tabulated as follows:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id4">
+<caption><span class="caption-text">Sample extremes</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Sample number (i)</p></th>
+<th class="head"><p>min (cp)</p></th>
+<th class="head"><p>max (cp)</p></th>
+<th class="head"><p>Reduced variable (y)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>-0.3</p></td>
+<td><p>0.4</p></td>
+<td><p>y(1)</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>-0.4</p></td>
+<td><p>0.38</p></td>
+<td><p>y(2)</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>-0.28</p></td>
+<td><p>0.41</p></td>
+<td><p>y(3)</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>-0.31</p></td>
+<td><p>0.43</p></td>
+<td><p>y(4)</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>-0.2</p></td>
+<td><p>0.45</p></td>
+<td><p>y(5)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The reduced variable <span class="math notranslate nohighlight">\(y\)</span> is defined as:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}y(i) &amp;= -ln(-ln(P_i))\\P_i &amp;= \frac{i}{N + 1}\end{aligned}\end{align} \]</div>
+<p>Where <span class="math notranslate nohighlight">\(i\)</span> indicates the subdivided sample index, <span class="math notranslate nohighlight">\(N\)</span> is the number of subdivided samples, and <span class="math notranslate nohighlight">\(P(i)\)</span> is a weighting value for the sample.</p>
+<p>Then the values are ordered, and the Gumbel model is fit by:</p>
+<div class="math notranslate nohighlight">
+\[y = \frac{1}{\beta}(x - \mu)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\beta\)</span> and <span class="math notranslate nohighlight">\(\mu\)</span> are parameters of the fit.
+The value for reduced variable <span class="math notranslate nohighlight">\(y\)</span> commonly used is 1.4, resulting in 78% of non-exceeding extreme values.</p>
+<p>The method consists of the following steps:</p>
+<ul class="simple">
+<li><p>Subdivide the coefficient time series into samples</p></li>
+<li><p>Compute the extreme values for each sample and order them</p></li>
+<li><p>Fit Gumbel PDF model to the data</p></li>
+<li><p>Calculate the extreme value of the time series with a probability of exceeding this value for positive and negative values</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information about extreme values for structure design, check out Chapter 13 (Wyatt<a class="footnote-reference brackets" href="#footcite-wyatt1990designer" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>)</p>
+</div>
+</section>
+<section id="peak-factor">
+<h3>Peak Factor<a class="headerlink" href="#peak-factor" title="Link to this heading">#</a></h3>
+<p>Using this method, the extreme value is calculated provided a peak factor <span class="math notranslate nohighlight">\(f\)</span>.
+Peak value is then defined using the RMS <span class="math notranslate nohighlight">\(\tilde{x}\)</span> and average values <span class="math notranslate nohighlight">\(\bar{x}\)</span>.
+The expression for calculation is as follows:</p>
+<div class="math notranslate nohighlight">
+\[\hat{x} = \bar{x} + f \tilde{x}\]</div>
+</section>
+</section>
+<section id="mean-equivalent">
+<h2>Mean Equivalent<a class="headerlink" href="#mean-equivalent" title="Link to this heading">#</a></h2>
+<p>There are two ways of composing the wind load from coefficient data.
+The first one is to use mean pressure distribution, and the dymanic pressure, <strong>which is based on the peak base wind velocity</strong>.
+The definition of the first mode of peak wind load is:</p>
+<div class="math notranslate nohighlight">
+\[\hat{P} = \bar{c_p} . \hat{q} = \bar{c_p}  \frac{1}{2}  \rho \hat{V_0}^2\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\hat{P}\)</span> is the design peak load, <span class="math notranslate nohighlight">\(\hat{q}\)</span> is the peak dynamic pressure, <span class="math notranslate nohighlight">\(\rho\)</span> is the fluid density and <span class="math notranslate nohighlight">\(\hat{V_0}\)</span> is the peak wind velocity.</p>
+<p>For structure design purposes, the mean value of the coefficient time series can be misleading.
+Thus the peak wind load can be composed by the peak value for the coefficient and the dynamic pressure, <strong>which is based on the mean base wind velocity</strong>.
+The definition of the second mode of peak wind load is:</p>
+<div class="math notranslate nohighlight">
+\[\hat{P} = \hat{c_p} . \bar{q} = \hat{c_p}  \frac{1}{2}  \rho \bar{V_0}^2\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\bar{q}\)</span> is the average dynamic pressure, <span class="math notranslate nohighlight">\(\rho\)</span> is the fluid density and <span class="math notranslate nohighlight">\(\bar{V_0}\)</span> is the average wind velocity.</p>
+<p>However, the peak value for the coefficient needs to be scaled according to the characteristic event duration.
+This correction is performed using the values for the statistical factors (<span class="math notranslate nohighlight">\(S_2\)</span>) from the Nbr<a class="footnote-reference brackets" href="#footcite-nbr19886123" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> 6123.
+The correction factor is defined as:</p>
+<div class="math notranslate nohighlight">
+\[f = \left(\frac{S_{2,600s}}{S_{2,3s}} \right) ^ 2\]</div>
+<p>The mean equivalent value is the worst case between the mean value and the extreme values scaled by the statistical factors.
+For example, the mean equivalent value of a pressure coefficient signal is defined as:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}abs(cp_{mean-eq}) &amp;= max(abs(cp_{mean}), abs(f * cp_{xtr-max}), abs(f * cp_{xtr-min}))\\cp_{mean-eq} &amp;= abs(cp_{mean-eq}) * sign(max(abs(val)))\end{aligned}\end{align} \]</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><strong>The sign of the mean equivalent value is the same as the value correspondent to the maximum absolute value</strong> between the mean, extreme maximum and extreme minimum values.</p>
+</div>
+<div class="docutils container" id="id3">
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="footcite-wyatt1990designer" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>TA Wyatt. The designer’s guide to wind loading of building structures. part 2: static structures: by nj cook. butterworths/bre, 1990. 1990.</p>
+</aside>
+<aside class="footnote brackets" id="footcite-nbr19886123" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>ABNT Nbr. 6123: forças devidas ao vento em edificações. <em>ABNT Editora, Rio de Janeiro, Brasil</em>, 1988.</p>
+</aside>
+</aside>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="concepts.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Concepts</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="coefficients/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Pressure Coefficients</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimum-and-maximum-values">Minimum and maximum values</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#average-value">Average value</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ensemble-average">Ensemble Average</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#root-mean-square-value">Root Mean Square value</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skewness">Skewness</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kurtosis">Kurtosis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extreme-values">Extreme values</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#moving-average">Moving average</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gumbel-model">Gumbel model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#peak-factor">Peak Factor</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mean-equivalent">Mean Equivalent</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By AeroSim
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023-2025, AeroSim.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+<div class="extra_footer">
+  <a href="https://www.aerosim.io">www.aerosim.io</a>
+</div>
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
