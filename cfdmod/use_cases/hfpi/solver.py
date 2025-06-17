@@ -19,7 +19,7 @@ def _validate_keys_df(df: pd.DataFrame, keys: list[str]):
 def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI modes from CSV. Expected columns:
 
-    mode, period, wp
+    mode, period
 
     It adds a column frequency=1/period
     """
