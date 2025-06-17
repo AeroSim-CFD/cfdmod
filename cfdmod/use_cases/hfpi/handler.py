@@ -24,12 +24,13 @@ class WindAnalysis(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # Pandas with keys: wind_direction, catI, catII, catIII, catIV, catV, Kd
+    # Pandas with keys: wind_direction, I, II, III, IV, V, Kd
     # Kd is optional and defaults to read, it defaults to one
     directional_data: pd.DataFrame
+    V0: float
 
     @classmethod
-    def build(cls, data_csv: pathlib.Path):
+    def build(cls, data_csv: pathlib.Path, V0: float):
         df = pd.read_csv(data_csv, index_col=None)
         req_keys = ["wind_direction","I","II","III","IV","V"]
         if not solver._validate_keys_df(df, req_keys):
@@ -39,9 +40,9 @@ class WindAnalysis(BaseModel):
             df["Kd"] = 1
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
-        return WindAnalysis(directional_data=df)
+        return WindAnalysis(directional_data=df, V0=V0)
 
-    def S2(self, direction: float):
+    def S2(self, height: float, direction: float):
         # parameters from NBR 6123, mean speed of 10min
         Fr = 0.69
         p = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
@@ -51,26 +52,19 @@ class WindAnalysis(BaseModel):
         row = df.loc[df["wind_direction"] == direction].squeeze()
         sum_p = sum(row[k] * p[k] for k in p.keys())
         sum_b = sum(row[k] * b[k] for k in b.keys())
-        return sum_b
+        return Fr*sum_b*(height/10)**sum_p
 
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
-    
-    def height_velocity(self, height: float, direction: float):
-        z_0 = 0.05     # Roughness length for open terrain (m)
-        v_b = 28       # Basic wind speed (m/s)
-        c_0 = 1.0      # Orography factor
-        # Eurocode's kr for z0 = 0.05
-        k_r = 0.19     # Approximate kr for open terrain
-        # Compute roughness factor and final wind speed
-        c_r = k_r * math.log(height / z_0)
-
-        return c_r * c_0 * v_b
 
     def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
-        ...
-        # Just for test
-        return self.height_velocity(height, direction) * self.S2(direction) * self.S3(recurrence_period)
+        df = self.directional_data
+        row = df.loc[df["wind_direction"] == direction].squeeze()
+        V0 = self.V0
+        kd = row['Kd']
+        S2 = self.S2(height, direction)
+        S3 = self.S3(recurrence_period)
+        return V0*kd*S2*S3
 
 
 class DimensionSpecs(BaseModel):

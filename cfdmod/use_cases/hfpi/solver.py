@@ -298,10 +298,12 @@ class HFPIForcesData(BaseModel):
 
 
 def get_moments_from_force(force: dict[str, np.ndarray], floor_heights: np.ndarray):
-    keys = ["x", "y"]
     moments = {}
-    for k in keys:
-        moments[k] = force[k] * floor_heights
+    # Force in X causes -Y moment (right hand rule)
+    moments["x"] = -force["y"] * floor_heights
+    # Force in Y causes +Y moment (right hand rule)
+    moments["y"] = force["x"] * floor_heights
+    # Z is already a moment
     moments["z"] = force["z"].copy()
     return moments
 
