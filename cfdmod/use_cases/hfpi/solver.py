@@ -79,7 +79,7 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
     m, r = nodes["M"].to_numpy(), nodes["R"].to_numpy()
     M_pav = m * (dx ** 2 + dy ** 2 + (r * rz) ** 2)
     M_gen = sum(M_pav)
-    return df_phi / (M_gen**0.5)
+    df_phi[["DX", "DY", "RZ"]] /= (M_gen**0.5)
 
 
 class HFPIStructuralData(BaseModel):
@@ -145,9 +145,7 @@ class HFPIStructuralData(BaseModel):
         if self.is_normalized:
             return
 
-        self.df_modal_shapes = [
-            normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_modal_shapes
-        ]
+        [normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_modal_shapes]
         self.is_normalized = True
 
 
@@ -353,12 +351,20 @@ class StaticResults(BaseModel):
     def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
         return _get_stats_dct(self.global_moments_static, stats_type)
 
+def validate_forces_w_n_floors(forces: HFPIForcesData, n_floors: int):
+    for name, df in [("Cfx",forces.cf_x), ("Cfy", forces.cf_y), ("Cmz",forces.cm_z)]:
+        cols = df.columns
+        for k in range(n_floors):
+            if(int(k) not in cols and str(k) not in cols):
+                raise KeyError(f"Coefficient {name} doesn't have all floors available. Nº of floors: {n_floors}; Columns found: {cols}")
+
 
 def solve_static_forces(
     forces: HFPIForcesData, dim_data: HFPIDimensionalData, floors_heights: np.ndarray
 ):
     """Solve system for static forces"""
     forces.fill_missing_floors(len(floors_heights))
+    validate_forces_w_n_floors(forces, len(floors_heights))
     normalized_forces = forces.get_scaled_forces(dim_data)
 
     force_static = normalized_forces.get_as_dct()
@@ -389,17 +395,16 @@ def compute_generalized_forces(
     n_samples = forces.n_samples
 
     cf_x, cf_y, cm_z = forces.cf_x, forces.cf_y, forces.cm_z
+    use_string = "0" in forces.cf_x.columns
     for n_mode in range(n_modes):
         df_phi = structural_data.df_modal_shapes[n_mode]
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
-            if n_floor not in cf_x:
-                f_tmp[:, n_floor] = 0
-                continue
+            k_use = str(n_floor) if use_string else int(n_floor) 
             f_tmp[n_floor] = (
-                cf_x[n_floor] * df_phi["DX"].iloc[n_floor]
-                + cf_y[n_floor] * df_phi["DY"].iloc[n_floor]
-                + cm_z[n_floor] * df_phi["RZ"].iloc[n_floor]
+                cf_x[k_use] * df_phi["DX"].iloc[n_floor]
+                + cf_y[k_use] * df_phi["DY"].iloc[n_floor]
+                + cm_z[k_use] * df_phi["RZ"].iloc[n_floor]
             )
         # F_gen[n_mode] = f_tmp.sum(axis=1)
         F_gen[n_mode] = f_tmp.sum(axis=0)
@@ -628,6 +633,7 @@ def solve_hfpi(
     floors_heights = df_floors["Z"].to_numpy()
 
     structural_data.normalize_all_mode_shapes()
+    validate_forces_w_n_floors(forces, structural_data.n_floors)
     normalized_forces = forces.get_scaled_forces(dim_data)
     normalized_forces.fill_missing_floors(structural_data.n_floors)
 
