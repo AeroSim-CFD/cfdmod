@@ -180,7 +180,7 @@ class HFPIDimensionalData(BaseModel):
         return self.base * self.base * self.height * self.dynamic_pressure
 
 
-def read_hfpi_forces(hdf_path: pathlib.Path, scalar_key: str) -> pd.DataFrame:
+def read_hfpi_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
     """Read forces for HFPI from path, with scalar key specified"""
     df_force = pd.read_hdf(hdf_path)
     req_keys = ["time_normalized"]
@@ -243,9 +243,9 @@ class HFPIForcesData(BaseModel):
 
     @classmethod
     def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path):
-        cf_x = read_hfpi_forces(cf_x_h5, "FX")
-        cf_y = read_hfpi_forces(cf_y_h5, "FY")
-        cm_z = read_hfpi_forces(cm_z_h5, "MZ")
+        cf_x = read_hfpi_forces(cf_x_h5)
+        cf_y = read_hfpi_forces(cf_y_h5)
+        cm_z = read_hfpi_forces(cm_z_h5)
         if len(cf_x) != len(cf_y) or len(cf_x) != len(cm_z):
             raise ValueError(
                 f"Length of forces data don't match. Paths {cf_x_h5, cf_y_h5, cm_z_h5}"
@@ -401,13 +401,14 @@ def compute_generalized_forces(
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
             k_use = str(n_floor) if use_string else int(n_floor) 
-            f_tmp[n_floor] = (
+            f_tmp[n_floor, :] = (
                 cf_x[k_use] * df_phi["DX"].iloc[n_floor]
                 + cf_y[k_use] * df_phi["DY"].iloc[n_floor]
                 + cm_z[k_use] * df_phi["RZ"].iloc[n_floor]
             )
         # F_gen[n_mode] = f_tmp.sum(axis=1)
         F_gen[n_mode] = f_tmp.sum(axis=0)
+    # print(F_gen)
     df_forces_gen = pd.DataFrame(F_gen)
     return df_forces_gen
 
@@ -649,7 +650,8 @@ def solve_hfpi(
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
-        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        # gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
         all_real_displacements.append(real_displacement)
 
