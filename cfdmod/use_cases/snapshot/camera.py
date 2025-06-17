@@ -164,6 +164,7 @@ def clip(mesh, clip_box: TransformationConfig):
         y_length=clip_box.scale[1],
         z_length=clip_box.scale[2],
     )
+    transform(clip_cube, clip_box)
     return mesh.clip_box(clip_cube, invert=False)
 
 
@@ -196,33 +197,41 @@ def create_feature_edges(mesh):
 
 
 def create_labels(mesh, projection_config: ProjectionConfig, labels_config: LabelsConfig):
-    bounds = mesh.bounds
+    bounds = list(mesh.bounds)
 
     spacing_x, spacing_y = labels_config.spacing
     padding_left, padding_right, padding_bottom, padding_top = labels_config.padding
 
-    size_x = bounds[1] - bounds[0]
-    size_y = bounds[3] - bounds[2]
+    x_min = bounds[0] + padding_left
+    x_max = bounds[1] - padding_right
+    y_min = bounds[2] + padding_bottom
+    y_max = bounds[3] - padding_top
 
-    padding_left = min(size_x / 2, padding_left)
-    padding_right = min(size_x / 2, padding_right)
-    padding_bottom = min(size_y / 2, padding_bottom)
-    padding_top = min(size_y / 2, padding_top)
+    size_x = x_max - x_min
+    size_y = y_max - y_min
 
-    num_divisions_x = max(
-        round((size_x - (padding_left + padding_right)) / spacing_x),
-        1,
-    )
-    num_divisions_y = max(
-        round((size_y - (padding_bottom + padding_top)) / spacing_y),
-        1,
-    )
+    if size_x < spacing_x:
+        x_targets = [bounds[0] + (bounds[1] - bounds[0]) / 2]
+    else:
+        num_divisions_x = int(size_x // spacing_x)
+        num_points_x = num_divisions_x + 1
+        total_spacing_x = spacing_x * num_divisions_x
+        center_x = (x_min + x_max) / 2
+        x_start = center_x - total_spacing_x / 2
+        x_end = center_x + total_spacing_x / 2
+        x_targets = np.linspace(x_start, x_end, num_points_x)
 
-    spacing_x = max((size_x - (padding_left + padding_right)) / num_divisions_x, 1)
-    spacing_y = max((size_y - (padding_bottom + padding_top)) / num_divisions_y, 1)
+    if size_y < spacing_y:
+        y_targets = [bounds[2] + (bounds[3] - bounds[2]) / 2]
+    else:
+        num_divisions_y = int(size_y // spacing_y)
+        num_points_y = num_divisions_y + 1
+        total_spacing_y = spacing_y * num_divisions_y
+        center_y = (y_min + y_max) / 2
+        y_start = center_y - total_spacing_y / 2
+        y_end = center_y + total_spacing_y / 2
+        y_targets = np.linspace(y_start, y_end, num_points_y)
 
-    x_targets = np.arange(bounds[0] + padding_left, bounds[1] - padding_right + 1e-3, spacing_x)
-    y_targets = np.arange(bounds[2] + padding_bottom, bounds[3] - padding_top + 1e-3, spacing_y)
     z_level = bounds[5]
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
