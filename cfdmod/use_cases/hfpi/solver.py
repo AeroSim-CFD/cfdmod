@@ -75,7 +75,9 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
     """Normalize mode shapes for HFPI"""
 
     nodes = df_floors
-    M_pav = nodes["M"] * (df_phi["DX"] ** 2 + df_phi["DY"] ** 2 + (nodes["R"] * df_phi["RZ"]) ** 2)
+    dx, dy, rz = [df_phi[k].to_numpy() for k in ("DX", "DY", "RZ")]
+    m, r = nodes["M"].to_numpy(), nodes["R"].to_numpy()
+    M_pav = m * (dx ** 2 + dy ** 2 + (r * rz) ** 2)
     M_gen = sum(M_pav)
     return df_phi / (M_gen**0.5)
 
@@ -115,23 +117,28 @@ class HFPIStructuralData(BaseModel):
         df_phi_floors = []
         for p in phi_floors_csvs:
             df = read_hfpi_floor_phi(p)
-            if len(df) != len(df_floors):
-                raise ValueError(
-                    f"Floor phi data at {p} has different number of floors than the floors csv at {floors_csv}. "
-                    "Make sure that all phi and floor CSVs match the number of floors"
-                )
             df_phi_floors.append(df)
-        if len(df_modes) < len(df_phi_floors):
-            raise ValueError(
-                "Less modes than phi data for it provided. Check if the floors used are correct."
-            )
 
-        return HFPIStructuralData(
+        struct_data = HFPIStructuralData(
             df_modes=df_modes,
             df_floors=df_floors,
             df_modal_shapes=df_phi_floors,
             max_active_modes=max_active_modes,
         )
+        struct_data.validate_dfs()
+        return struct_data
+
+    def validate_dfs(self):
+        for i, df in enumerate(self.df_modal_shapes):
+            if len(df) != len(self.df_floors):
+                raise ValueError(
+                    f"Floor phi data (index {i}) has different number of floors than the floors csv. "
+                    "Make sure that all phi and floor CSVs match the number of floors"
+                )
+        if len(self.df_modes) < len(self.df_modal_shapes):
+            raise ValueError(
+                "Less modes than phi data for it provided. Check if the floors used are correct."
+            )
 
     def normalize_all_mode_shapes(self):
         """Normalize mode shapes for HFPI. Alters the `df_phi_floors`"""
@@ -476,9 +483,10 @@ def compute_mode_real_displacement(
     disp["z"] = np.zeros((n_samples, n_floors))
 
     for n_floor in range(n_floors):
-        disp["x"][:, n_floor] = gen_mode_displacement * df_mode_phi["DX"][n_floor]
-        disp["y"][:, n_floor] = gen_mode_displacement * df_mode_phi["DY"][n_floor]
-        disp["z"][:, n_floor] = gen_mode_displacement * df_mode_phi["RZ"][n_floor]
+        df_floor = df_mode_phi.iloc[n_floor]
+        disp["x"][:, n_floor] = gen_mode_displacement * df_floor["DX"]
+        disp["y"][:, n_floor] = gen_mode_displacement * df_floor["DY"]
+        disp["z"][:, n_floor] = gen_mode_displacement * df_floor["RZ"]
 
     return disp
 
@@ -553,6 +561,7 @@ class HFPIResults(BaseModel):
     static_results: StaticResults
 
     def save(self, filename: pathlib.Path):
+        filename.parent.mkdir(exist_ok=True, parents=True)
         with open(filename, "wb") as f:
             pickle.dump(self, f)
 

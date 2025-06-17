@@ -6,6 +6,7 @@ from cfdmod.logger import logger
 import time
 from typing import Callable, TypeVar, Literal
 from collections import defaultdict
+import math
 
 from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
@@ -23,22 +24,53 @@ class WindAnalysis(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    directional_velocity_multiplier: dict[float, float]
-    directional_roughness_cats: pd.DataFrame
+    # Pandas with keys: wind_direction, catI, catII, catIII, catIV, catV, Kd
+    # Kd is optional and defaults to read, it defaults to one
+    directional_data: pd.DataFrame
+
+    @classmethod
+    def build(cls, data_csv: pathlib.Path):
+        df = pd.read_csv(data_csv, index_col=None)
+        req_keys = ["wind_direction","I","II","III","IV","V"]
+        if not solver._validate_keys_df(df, req_keys):
+            raise KeyError("Not all required keys are in wind CSV. "
+                           f"Required ones are: {req_keys}, found {list(df.columns)}")
+        if("Kd" not in df.columns):
+            df["Kd"] = 1
+        df = df[req_keys + ["Kd"]]
+        df.sort_values(by=["wind_direction"], inplace=True)
+        return WindAnalysis(directional_data=df)
 
     def S2(self, direction: float):
         # parameters from NBR 6123, mean speed of 10min
         Fr = 0.69
         p = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
         b = {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50}
+        
+        df = self.directional_data
+        row = df.loc[df["wind_direction"] == direction].squeeze()
+        sum_p = sum(row[k] * p[k] for k in p.keys())
+        sum_b = sum(row[k] * b[k] for k in b.keys())
+        return sum_b
 
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
+    
+    def height_velocity(self, height: float, direction: float):
+        z_0 = 0.05     # Roughness length for open terrain (m)
+        v_b = 28       # Basic wind speed (m/s)
+        c_0 = 1.0      # Orography factor
+        # Eurocode's kr for z0 = 0.05
+        k_r = 0.19     # Approximate kr for open terrain
+        # Compute roughness factor and final wind speed
+        c_r = k_r * math.log(height / z_0)
+
+        return c_r * c_0 * v_b
 
     def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
         ...
         # Just for test
-        return 15+recurrence_period * 0.6
+        return self.height_velocity(height, direction) * self.S2(direction) * self.S3(recurrence_period)
 
 
 class DimensionSpecs(BaseModel):
