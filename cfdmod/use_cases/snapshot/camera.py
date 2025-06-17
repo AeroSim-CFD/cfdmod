@@ -1,9 +1,8 @@
-import pathlib
 
 import numpy as np
 import pyvista as pv
-from cfdmod.logger import logger
 
+from cfdmod.logger import logger
 from cfdmod.use_cases.snapshot.config import (
     LabelsConfig,
     LegendConfig,
