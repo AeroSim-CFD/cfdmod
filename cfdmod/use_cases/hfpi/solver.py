@@ -81,7 +81,7 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
     m, r = nodes["M"].to_numpy(), nodes["R"].to_numpy()
     M_pav = m * (dx**2 + dy**2 + (r * rz) ** 2)
     M_gen = sum(M_pav)
-    if(M_gen > 0):
+    if M_gen > 0:
         df_phi[["DX", "DY", "RZ"]] /= M_gen**0.5
     else:
         df_phi[["DX", "DY", "RZ"]] = 0
@@ -460,9 +460,10 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
     Returns displacement for time series for given mode
     """
     t_eval = np.arange(0, len(gen_force) * dt, dt)
-    
+
     from scipy.interpolate import interp1d
-    f_func = interp1d(t_eval, gen_force, kind='linear', fill_value='extrapolate')
+
+    f_func = interp1d(t_eval, gen_force, kind="linear", fill_value="extrapolate")
 
     # System definition
     def system(t, y):
@@ -483,11 +484,7 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
 
     # Solve the ODE
     sol = integrate.solve_ivp(
-        system,
-        (t_eval[0], t_eval[-1]),
-        [x0, v0],
-        t_eval=t_eval,
-        method="RK45"
+        system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method="RK45"
     )
     return sol.y[0]
 
@@ -609,13 +606,27 @@ class HFPIResults(BaseModel):
     def global_moments_static_eq(self):
         return _get_global_dct(self.moments_static_eq)
 
-    def get_acceleration(self) -> np.ndarray:
+    def get_displacement_w_rotation(self, pos: tuple[float, float]) -> dict[str, np.ndarray]:
+        r = (pos[0] ** 2 + pos[1] ** 2) ** 0.5
+        theta = np.arctan2(pos[1], pos[0])
+
+        x = pos[0] + np.sin(theta+np.pi/2) * r * self.displacement["z"]
+        y = pos[1] + np.cos(theta+np.pi/2) * r * self.displacement["z"]
+
+        return {"x": x, "y": y}
+
+    def get_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> np.ndarray:
+        """Get acceleration from given floor, considering radius for Z"""
         acceleration = {}
         dt = self.delta_t
+        
+        disp_full = {"x": self.displacement["x"].copy(), "y": self.displacement["y"].copy()}
+        disp_rot = self.get_displacement_w_rotation(pos)
+        disp_full["x"] += disp_rot["x"]
+        disp_full["y"] += disp_rot["y"]
+        
         for axis in ["x", "y"]:
-            disp = self.displacement[axis]
-            # Suppose last floor has the greatest acceleration
-            disp = disp[:, -1]
+            disp = disp_full[axis][:, floor]
             n = len(disp)
             acc = np.zeros(n)
             # Central difference for internal points
@@ -629,8 +640,8 @@ class HFPIResults(BaseModel):
 
         return scalar_acceleration
 
-    def get_max_acceleration(self) -> float:
-        return self.get_acceleration().max()
+    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> float:
+        return self.get_acceleration(pos, floor).max()
 
     def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
         return _get_stats_dct(self.forces_static_eq, stats_type)

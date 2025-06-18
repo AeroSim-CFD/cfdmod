@@ -242,12 +242,12 @@ class HFPIFullResults(BaseModel):
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
 
-    def get_max_acceleration(self):
-        return max(res.get_max_acceleration() for res in self.results.values())
+    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
+        return max(res.get_max_acceleration(pos, floor) for res in self.results.values())
 
-    def get_max_acceleration_by_recurrence_period(self):
+    def get_max_acceleration_by_recurrence_period(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
         res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration() for k, r in res.items()}
+        return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
 
     def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
         dcts = [v.get_stats_global_forces_static_eq(stats_type) for k, v in self.results.items()]
