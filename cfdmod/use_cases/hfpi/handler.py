@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import pathlib
 import itertools
-from cfdmod.logger import logger
-import time
-from typing import Callable, TypeVar, Literal
-from collections import defaultdict
-import math
-
-from pydantic import BaseModel, ConfigDict, Field
-import pandas as pd
 import pathlib
+import time
+from collections import defaultdict
 from multiprocessing import Pool, cpu_count
+from typing import Callable, Literal, TypeVar
 
-import numpy as np
+import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field
+
+from cfdmod.logger import logger
 from cfdmod.use_cases.hfpi import solver
 
 T = TypeVar("T")
@@ -32,11 +29,13 @@ class WindAnalysis(BaseModel):
     @classmethod
     def build(cls, data_csv: pathlib.Path, V0: float):
         df = pd.read_csv(data_csv, index_col=None)
-        req_keys = ["wind_direction","I","II","III","IV","V"]
+        req_keys = ["wind_direction", "I", "II", "III", "IV", "V"]
         if not solver._validate_keys_df(df, req_keys):
-            raise KeyError("Not all required keys are in wind CSV. "
-                           f"Required ones are: {req_keys}, found {list(df.columns)}")
-        if("Kd" not in df.columns):
+            raise KeyError(
+                "Not all required keys are in wind CSV. "
+                f"Required ones are: {req_keys}, found {list(df.columns)}"
+            )
+        if "Kd" not in df.columns:
             df["Kd"] = 1
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
@@ -47,12 +46,12 @@ class WindAnalysis(BaseModel):
         Fr = 0.69
         p = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
         b = {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50}
-        
+
         df = self.directional_data
         row = df.loc[df["wind_direction"] == direction].squeeze()
         sum_p = sum(row[k] * p[k] for k in p.keys())
         sum_b = sum(row[k] * b[k] for k in b.keys())
-        return Fr*sum_b*(height/10)**sum_p
+        return Fr * sum_b * (height / 10) ** sum_p
 
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
@@ -61,10 +60,10 @@ class WindAnalysis(BaseModel):
         df = self.directional_data
         row = df.loc[df["wind_direction"] == direction].squeeze()
         V0 = self.V0
-        kd = row['Kd']
+        kd = row["Kd"]
         S2 = self.S2(height, direction)
         S3 = self.S3(recurrence_period)
-        return V0*kd*S2*S3
+        return V0 * kd * S2 * S3
 
 
 class DimensionSpecs(BaseModel):
@@ -169,7 +168,9 @@ class HFPIAnalysisHandler(BaseModel):
             pool.map(_wrapper_solve_hfpi_case, args)
 
 
-def _get_global_stats_dct_float(dcts: list[dict[str, float]], stats_type: Literal["min", "max", "mean"]) -> dict[str, float]:
+def _get_global_stats_dct_float(
+    dcts: list[dict[str, float]], stats_type: Literal["min", "max", "mean"]
+) -> dict[str, float]:
     grouped: dict[str, list[float]] = defaultdict(list)
 
     for d in dcts:
@@ -185,8 +186,10 @@ def _get_global_stats_dct_float(dcts: list[dict[str, float]], stats_type: Litera
         elif stats_type == "mean":
             result[k] = sum(values) / len(values)
         else:
-            raise ValueError(f"Invalid stats_type: {stats_type!r}. Must be 'min', 'max', or 'mean'.")
-    
+            raise ValueError(
+                f"Invalid stats_type: {stats_type!r}. Must be 'min', 'max', or 'mean'."
+            )
+
     return result
 
 
@@ -251,16 +254,22 @@ class HFPIFullResults(BaseModel):
         return _get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.static_results.get_stats_global_forces_static(stats_type) for k, v in self.results.items()]
+        dcts = [
+            v.static_results.get_stats_global_forces_static(stats_type)
+            for k, v in self.results.items()
+        ]
         return _get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.static_results.get_stats_global_moments_static(stats_type) for k, v in self.results.items()]
+        dcts = [
+            v.static_results.get_stats_global_moments_static(stats_type)
+            for k, v in self.results.items()
+        ]
         return _get_global_stats_dct_float(dcts, stats_type)
 
     def get_global_peaks_by_direction(self) -> dict[str, dict[str, pd.DataFrame]]:
         """Get global peaks per direction of results
-        
+
         Returns results as [load_type] = DataFrame["direction", stats_type]
 
         load_type = "forces_static", "moments_static", "forces_static_eq", "moments_static_eq"
@@ -268,7 +277,6 @@ class HFPIFullResults(BaseModel):
         """
         res = self.join_by_direction()
 
-        s = ["min", "max"]
         axis = ["x", "y", "z"]
 
         # Dict as [load_type][(stats_type, direction)] = value

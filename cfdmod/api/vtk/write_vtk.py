@@ -1,9 +1,9 @@
 import pathlib
-from typing import Sequence, Literal
+from typing import Literal, Sequence
 
 import pandas as pd
-from lnas import LnasGeometry
 import vtk
+from lnas import LnasGeometry
 
 from cfdmod.utils import create_folders_for_file
 
@@ -82,7 +82,9 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
     return polyData
 
 
-def merge_polydata(polydata_list: Sequence[vtk.vtkPolyData | vtk.vtkAppendPolyData]) -> vtk.vtkAppendPolyData:
+def merge_polydata(
+    polydata_list: Sequence[vtk.vtkPolyData | vtk.vtkAppendPolyData],
+) -> vtk.vtkAppendPolyData:
     """Merges a list of polydata into a vtkAppendPolyData
 
     Args:
@@ -118,7 +120,9 @@ def read_polydata(file_path: pathlib.Path) -> vtk.vtkPolyData:
     return polydata
 
 
-def write_polydata(output_filename: pathlib.Path, poly_data: vtk.vtkPolyData | vtk.vtkAppendPolyData):
+def write_polydata(
+    output_filename: pathlib.Path, poly_data: vtk.vtkPolyData | vtk.vtkAppendPolyData
+):
     """Writes a polydata object to file output
 
     Args:
@@ -150,10 +154,12 @@ def drop_all_scalars_except(polydata: vtk.vtkPolyData, scalar: str) -> None:
         cell_data.RemoveArray(name)
 
 
-def envelope_vtks(polydatas: list[vtk.vtkPolyData], scalar: str, stats: Literal["min", "max"]) -> vtk.vtkPolyData:
-    if stats not in {"min", "max"}: 
+def envelope_vtks(
+    polydatas: list[vtk.vtkPolyData], scalar: str, stats: Literal["min", "max"]
+) -> vtk.vtkPolyData:
+    if stats not in {"min", "max"}:
         raise ValueError("stats must be 'min' or 'max'")
-    if(len(polydatas) == 0):
+    if len(polydatas) == 0:
         raise ValueError("Empty input list")
 
     # Start with a deep copy of the first polydata

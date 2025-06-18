@@ -1,13 +1,12 @@
-
 from __future__ import annotations
 
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
+
 from cfdmod.use_cases.hfpi import solver
+
 
 def plot_force_spectrum(
     forces_data: solver.HFPIForcesData,
@@ -33,7 +32,11 @@ def plot_force_spectrum(
         (freq, PSD) = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
         PSD = PSD * freq / (np.std(global_force) ** 2)
         ax.loglog(
-            freq, gaussian_filter(PSD, sigma=sigma), color=coef_style[f_name], label=f_name, alpha=0.8,
+            freq,
+            gaussian_filter(PSD, sigma=sigma),
+            color=coef_style[f_name],
+            label=f_name,
+            alpha=0.8,
         )
         ax.loglog([df_mode["frequency"], df_mode["frequency"]], [1e-5, 1e1], color="black")
         ax.set_ylim(1e-4, 1e1)
@@ -44,6 +47,7 @@ def plot_force_spectrum(
         ax.legend(loc="lower left", frameon=False)
 
     return fig, ax
+
 
 def plot_displacement(
     displacement_dict: dict[str, np.ndarray],
@@ -59,8 +63,8 @@ def plot_displacement(
     x_avg = x_disp.mean()
     y_avg = y_disp.mean()
 
-    ax.set_xlim(-plot_limit+x_avg, plot_limit+x_avg)
-    ax.set_ylim(-plot_limit+y_avg, plot_limit+y_avg)
+    ax.set_xlim(-plot_limit + x_avg, plot_limit + x_avg)
+    ax.set_ylim(-plot_limit + y_avg, plot_limit + y_avg)
     ax.set_ylabel("y [m]")
     ax.set_xlabel("x [m]")
 
@@ -72,18 +76,19 @@ def plot_displacement(
     bin_size = n_samples // 80
 
     for n_bin in range(n_bins):
-        alpha = min_alpha + n_bin / n_bins * (max_alpha-min_alpha)
+        alpha = min_alpha + n_bin / n_bins * (max_alpha - min_alpha)
         start = bin_size * n_bin
-        end = bin_size * (n_bin + 1) if n_bin != bin_size -1 else -1
+        end = bin_size * (n_bin + 1) if n_bin != bin_size - 1 else -1
 
         ax.plot(
-            x_disp[start : end],
-            y_disp[start : end],
+            x_disp[start:end],
+            y_disp[start:end],
             color="b",
             alpha=alpha,
         )
 
     return fig, ax
+
 
 def set_plt_style():
     plt.style.use("seaborn-v0_8-whitegrid")

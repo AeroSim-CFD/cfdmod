@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pathlib
-
-from pydantic import BaseModel, ConfigDict
-from typing import Literal
-import pandas as pd
-import numpy as np
-from scipy import integrate
 import pickle
+from typing import Literal
+
+import numpy as np
+import pandas as pd
+from pydantic import BaseModel, ConfigDict
+from scipy import integrate
 
 
 def _validate_keys_df(df: pd.DataFrame, keys: list[str]):
@@ -77,9 +77,9 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
     nodes = df_floors
     dx, dy, rz = [df_phi[k].to_numpy() for k in ("DX", "DY", "RZ")]
     m, r = nodes["M"].to_numpy(), nodes["R"].to_numpy()
-    M_pav = m * (dx ** 2 + dy ** 2 + (r * rz) ** 2)
+    M_pav = m * (dx**2 + dy**2 + (r * rz) ** 2)
     M_gen = sum(M_pav)
-    df_phi[["DX", "DY", "RZ"]] /= (M_gen**0.5)
+    df_phi[["DX", "DY", "RZ"]] /= M_gen**0.5
 
 
 class HFPIStructuralData(BaseModel):
@@ -306,12 +306,14 @@ def get_moments_from_force(force: dict[str, np.ndarray], floor_heights: np.ndarr
     return moments
 
 
-def _get_stats_dct(dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"]) -> dict[str, np.ndarray] | dict[str, float]:
-    if(stats_type == "max"):
+def _get_stats_dct(
+    dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"]
+) -> dict[str, np.ndarray] | dict[str, float]:
+    if stats_type == "max":
         return {k: v.max(axis=0) for k, v in dct.items()}
-    elif(stats_type == "min"):
+    elif stats_type == "min":
         return {k: v.min(axis=0) for k, v in dct.items()}
-    elif(stats_type == "mean"):
+    elif stats_type == "mean":
         return {k: v.mean(axis=0) for k, v in dct.items()}
     raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
 
@@ -351,12 +353,15 @@ class StaticResults(BaseModel):
     def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
         return _get_stats_dct(self.global_moments_static, stats_type)
 
+
 def validate_forces_w_n_floors(forces: HFPIForcesData, n_floors: int):
-    for name, df in [("Cfx",forces.cf_x), ("Cfy", forces.cf_y), ("Cmz",forces.cm_z)]:
+    for name, df in [("Cfx", forces.cf_x), ("Cfy", forces.cf_y), ("Cmz", forces.cm_z)]:
         cols = df.columns
         for k in range(n_floors):
-            if(int(k) not in cols and str(k) not in cols):
-                raise KeyError(f"Coefficient {name} doesn't have all floors available. Nº of floors: {n_floors}; Columns found: {cols}")
+            if int(k) not in cols and str(k) not in cols:
+                raise KeyError(
+                    f"Coefficient {name} doesn't have all floors available. Nº of floors: {n_floors}; Columns found: {cols}"
+                )
 
 
 def solve_static_forces(
@@ -400,7 +405,7 @@ def compute_generalized_forces(
         df_phi = structural_data.df_modal_shapes[n_mode]
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
-            k_use = str(n_floor) if use_string else int(n_floor) 
+            k_use = str(n_floor) if use_string else int(n_floor)
             f_tmp[n_floor, :] = (
                 cf_x[k_use] * df_phi["DX"].iloc[n_floor]
                 + cf_y[k_use] * df_phi["DY"].iloc[n_floor]
