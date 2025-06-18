@@ -25,9 +25,10 @@ class WindAnalysis(BaseModel):
     # Kd is optional and defaults to read, it defaults to one
     directional_data: pd.DataFrame
     V0: float
+    U_H_overwrite: float | None = None
 
     @classmethod
-    def build(cls, data_csv: pathlib.Path, V0: float):
+    def build(cls, data_csv: pathlib.Path, V0: float, U_H_overwrite: float | None = None):
         df = pd.read_csv(data_csv, index_col=None)
         req_keys = ["wind_direction", "I", "II", "III", "IV", "V"]
         if not solver._validate_keys_df(df, req_keys):
@@ -39,7 +40,7 @@ class WindAnalysis(BaseModel):
             df["Kd"] = 1
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
-        return WindAnalysis(directional_data=df, V0=V0)
+        return WindAnalysis(directional_data=df, V0=V0, U_H_overwrite=U_H_overwrite)
 
     def S2(self, height: float, direction: float):
         # parameters from NBR 6123, mean speed of 10min
@@ -57,6 +58,9 @@ class WindAnalysis(BaseModel):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
     def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
+        if(self.U_H_overwrite is not None):
+            return self.U_H_overwrite
+
         df = self.directional_data
         row = df.loc[df["wind_direction"] == direction].squeeze()
         V0 = self.V0

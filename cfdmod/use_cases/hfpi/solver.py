@@ -40,17 +40,19 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
 def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
-    Z, XR, YR, M, I, R: height, center of rotation, mass, moment of inertia and rotation arm
+    Z, XR, YR, M, I: height, center of rotation, mass, moment of inertia
     """
 
     df = pd.read_csv(csv_path, index_col=None)
     # "XG", "YG", "I"
-    req_keys = ["Z", "XR", "YR", "M", "I", "R"]
+    req_keys = ["Z", "XR", "YR", "M", "I"]
     if not _validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
         )
     df = df[req_keys]
+    # Radius of gyration
+    df["R"] = (df["I"] / df["M"]) ** 0.5
     df.sort_values(by="Z", inplace=True)
     return df
 
@@ -79,7 +81,10 @@ def normalize_mode_shapes(df_floors: pd.DataFrame, df_phi: pd.DataFrame):
     m, r = nodes["M"].to_numpy(), nodes["R"].to_numpy()
     M_pav = m * (dx**2 + dy**2 + (r * rz) ** 2)
     M_gen = sum(M_pav)
-    df_phi[["DX", "DY", "RZ"]] /= M_gen**0.5
+    if(M_gen > 0):
+        df_phi[["DX", "DY", "RZ"]] /= M_gen**0.5
+    else:
+        df_phi[["DX", "DY", "RZ"]] = 0
 
 
 class HFPIStructuralData(BaseModel):
