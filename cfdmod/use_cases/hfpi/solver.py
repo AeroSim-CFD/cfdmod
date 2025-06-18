@@ -610,8 +610,8 @@ class HFPIResults(BaseModel):
         r = (pos[0] ** 2 + pos[1] ** 2) ** 0.5
         theta = np.arctan2(pos[1], pos[0])
 
-        x = pos[0] + np.sin(theta+np.pi/2) * r * self.displacement["z"]
-        y = pos[1] + np.cos(theta+np.pi/2) * r * self.displacement["z"]
+        x = pos[0] + np.sin(theta + np.pi / 2) * r * self.displacement["z"]
+        y = pos[1] + np.cos(theta + np.pi / 2) * r * self.displacement["z"]
 
         return {"x": x, "y": y}
 
@@ -619,12 +619,12 @@ class HFPIResults(BaseModel):
         """Get acceleration from given floor, considering radius for Z"""
         acceleration = {}
         dt = self.delta_t
-        
+
         disp_full = {"x": self.displacement["x"].copy(), "y": self.displacement["y"].copy()}
         disp_rot = self.get_displacement_w_rotation(pos)
         disp_full["x"] += disp_rot["x"]
         disp_full["y"] += disp_rot["y"]
-        
+
         for axis in ["x", "y"]:
             disp = disp_full[axis][:, floor]
             n = len(disp)

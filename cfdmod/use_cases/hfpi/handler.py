@@ -58,7 +58,7 @@ class WindAnalysis(BaseModel):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
     def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
-        if(self.U_H_overwrite is not None):
+        if self.U_H_overwrite is not None:
             return self.U_H_overwrite
 
         df = self.directional_data
@@ -245,7 +245,9 @@ class HFPIFullResults(BaseModel):
     def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
         return max(res.get_max_acceleration(pos, floor) for res in self.results.values())
 
-    def get_max_acceleration_by_recurrence_period(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
+    def get_max_acceleration_by_recurrence_period(
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+    ):
         res = self.join_by_recurrence_period()
         return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
 
