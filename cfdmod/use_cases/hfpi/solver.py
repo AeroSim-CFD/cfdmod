@@ -455,21 +455,34 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
     Returns displacement for time series for given mode
     """
     t_eval = np.arange(0, len(gen_force) * dt, dt)
+    
+    from scipy.interpolate import interp1d
+    f_func = interp1d(t_eval, gen_force, kind='linear', fill_value='extrapolate')
 
+    # System definition
     def system(t, y):
-        i = min(int(t / dt), len(gen_force) - 1)  # Clamp to valid index
-        F_t = gen_force[i]
+        F_t = f_func(t)
         x, v = y
+        # x1 = pos
+        # x2 = vel
+        # x1' = x2
+        # x2' = F(t)−2xi.w_p x1 − w_p^2 x1
         dxdt = v
-        dvdt = -2 * xi * wp * v - x + F_t
+        dvdt = F_t - 2 * xi * wp * v - wp**2 * x
         return [dxdt, dvdt]
 
+    # Initial condition estimation
     x0 = gen_force.mean() / (wp**2)
     df = (gen_force[1:] - gen_force[:-1]).mean() / dt
     v0 = df / (2 * xi * wp) if xi * wp != 0 else 0.0
 
+    # Solve the ODE
     sol = integrate.solve_ivp(
-        system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method="RK45"
+        system,
+        (t_eval[0], t_eval[-1]),
+        [x0, v0],
+        t_eval=t_eval,
+        method="RK45"
     )
     return sol.y[0]
 
@@ -655,8 +668,8 @@ def solve_hfpi(
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
-        # gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
-        gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        # gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
         all_real_displacements.append(real_displacement)
 
