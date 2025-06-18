@@ -1,23 +1,14 @@
 import pathlib
-from typing import Sequence
+from typing import Sequence, Literal
 
 import pandas as pd
 from lnas import LnasGeometry
-from vtk import (
-    vtkAppendPolyData,
-    vtkCellArray,
-    vtkFloatArray,
-    vtkIdList,
-    vtkPoints,
-    vtkPolyData,
-    vtkXMLPolyDataReader,
-    vtkXMLPolyDataWriter,
-)
+import vtk
 
 from cfdmod.utils import create_folders_for_file
 
 
-def _mkVtkIdList(it) -> vtkIdList:
+def _mkVtkIdList(it) -> vtk.vtkIdList:
     """Makes a vtkIdList from a Python iterable. I'm kinda surprised that
      this is necessary, since I assumed that this kind of thing would
      have been built into the wrapper and happen transparently, but it
@@ -27,16 +18,16 @@ def _mkVtkIdList(it) -> vtkIdList:
         it (Iterable): A python iterable.
 
     Returns:
-        vtkIdList: A vtkIdList
+        vtk.vtkIdList: A vtkIdList
     """
-    vil = vtkIdList()
+    vil = vtk.vtkIdList()
     for i in it:
         vil.InsertNextId(int(i))
     return vil
 
 
-def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtkPolyData:
-    """Creates a vtkPolyData for cell data combined with mesh description
+def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk.vtkPolyData:
+    """Creates a vtk.vtkPolyData for cell data combined with mesh description
 
     Args:
         data (pd.DataFrame): Compiled cell data. It supports table and matrix data formats.
@@ -45,12 +36,12 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
         mesh (LnasGeometry): Mesh description
 
     Returns:
-        vtkPolyData: Extracted polydata
+        vtk.vtkPolyData: Extracted polydata
     """
     # We'll create the building blocks of polydata including data attributes.
-    polyData = vtkPolyData()
-    points = vtkPoints()
-    polys = vtkCellArray()
+    polyData = vtk.vtkPolyData()
+    points = vtk.vtkPoints()
+    polys = vtk.vtkCellArray()
 
     # Load the point, cell, and data attributes.
     for i, xi in enumerate(mesh.vertices):
@@ -72,7 +63,7 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
         scalars_lbls = data["scalar"]
         point_idx = [int(c) for c in data.columns if c != "scalar"]
     for scalar_index, scalar_lbl in enumerate(scalars_lbls):
-        scalars = vtkFloatArray()
+        scalars = vtk.vtkFloatArray()
         scalars.SetName(scalar_lbl)
         scalar_data = None
 
@@ -91,16 +82,16 @@ def create_polydata_for_cell_data(data: pd.DataFrame, mesh: LnasGeometry) -> vtk
     return polyData
 
 
-def merge_polydata(polydata_list: Sequence[vtkPolyData | vtkAppendPolyData]) -> vtkAppendPolyData:
+def merge_polydata(polydata_list: Sequence[vtk.vtkPolyData | vtk.vtkAppendPolyData]) -> vtk.vtkAppendPolyData:
     """Merges a list of polydata into a vtkAppendPolyData
 
     Args:
-        polydata_list (list[vtkPolyData]): List of vtkPolyData
+        polydata_list (Sequence[vtk.vtkPolyData | vtk.vtkAppendPolyData]): List of vtkPolyData
 
     Returns:
-        vtkAppendPolyData: Appended polydata object
+        vtk.vtkAppendPolyData: Appended polydata object
     """
-    append_poly_data = vtkAppendPolyData()
+    append_poly_data = vtk.vtkAppendPolyData()
 
     for polydata in polydata_list:
         append_poly_data.AddInputData(polydata)
@@ -109,7 +100,7 @@ def merge_polydata(polydata_list: Sequence[vtkPolyData | vtkAppendPolyData]) -> 
     return append_poly_data
 
 
-def read_polydata(file_path: pathlib.Path) -> vtkPolyData:
+def read_polydata(file_path: pathlib.Path) -> vtk.vtkPolyData:
     """Reads polydata from file
 
     Args:
@@ -118,7 +109,7 @@ def read_polydata(file_path: pathlib.Path) -> vtkPolyData:
     Returns:
         vtkPolyData: Read polydata
     """
-    reader = vtkXMLPolyDataReader()
+    reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(file_path)
     reader.Update()
 
@@ -127,19 +118,62 @@ def read_polydata(file_path: pathlib.Path) -> vtkPolyData:
     return polydata
 
 
-def write_polydata(output_filename: pathlib.Path, poly_data: vtkPolyData | vtkAppendPolyData):
+def write_polydata(output_filename: pathlib.Path, poly_data: vtk.vtkPolyData | vtk.vtkAppendPolyData):
     """Writes a polydata object to file output
 
     Args:
         output_filename (pathlib.Path): Output file path
-        poly_data (vtkPolyData | vtkAppendPolyData): Polydata object
+        poly_data (vtk.vtkPolyData | vtk.vtkAppendPolyData): Polydata object
     """
-    writer = vtkXMLPolyDataWriter()
+    writer = vtk.vtkXMLPolyDataWriter()
     create_folders_for_file(output_filename)
     writer.SetFileName(output_filename.as_posix())
-    if isinstance(poly_data, vtkPolyData):
+    if isinstance(poly_data, vtk.vtkPolyData):
         writer.SetInputData(poly_data)
     else:
         writer.SetInputData(poly_data.GetOutput())
     writer.SetDataModeToAscii()
     writer.Write()
+
+
+def drop_all_scalars_except(polydata: vtk.vtkPolyData, scalar: str) -> None:
+    """Removes all cell scalar arrays from polydata except the one named `scalar`."""
+
+    cell_data = polydata.GetCellData()
+    names_to_remove = [
+        cell_data.GetArrayName(i)
+        for i in range(cell_data.GetNumberOfArrays())
+        if cell_data.GetArrayName(i) != scalar
+    ]
+
+    for name in names_to_remove:
+        cell_data.RemoveArray(name)
+
+
+def envelope_vtks(polydatas: list[vtk.vtkPolyData], scalar: str, stats: Literal["min", "max"]) -> vtk.vtkPolyData:
+    if stats not in {"min", "max"}: 
+        raise ValueError("stats must be 'min' or 'max'")
+    if(len(polydatas) == 0):
+        raise ValueError("Empty input list")
+
+    # Start with a deep copy of the first polydata
+    envelope_polydata = vtk.vtkPolyData()
+    envelope_polydata.DeepCopy(polydatas[0])
+
+    # Extract the scalar array from the envelope copy (this will be updated)
+    envelope_array = envelope_polydata.GetCellData().GetArray(scalar)
+    n_cells = envelope_polydata.GetNumberOfCells()
+
+    # Loop through all other polydata
+    for polydata in polydatas[1:]:
+        other_array = polydata.GetCellData().GetArray(scalar)
+        for i in range(n_cells):
+            current_val = envelope_array.GetValue(i)
+            new_val = other_array.GetValue(i)
+            if stats == "max":
+                envelope_array.SetValue(i, max(current_val, new_val))
+            elif stats == "min":
+                envelope_array.SetValue(i, min(current_val, new_val))
+
+    envelope_array.Modified()
+    return envelope_polydata
