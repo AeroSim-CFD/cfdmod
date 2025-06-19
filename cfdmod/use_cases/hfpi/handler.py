@@ -273,7 +273,7 @@ class HFPIFullResults(BaseModel):
         ]
         return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_global_peaks_by_direction(self) -> dict[str, dict[str, pd.DataFrame]]:
+    def get_global_peaks_by_direction(self) -> dict[str, pd.DataFrame]:
         """Get global peaks per direction of results
 
         Returns results as [load_type] = DataFrame["direction", stats_type]
