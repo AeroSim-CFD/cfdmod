@@ -8,15 +8,14 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.utils import read_yaml
 
-PROJECTION_CASES = Literal["x_plus", "x_minus", "y_plus", "y_minus"]
-
-
-class Projections(Enum):
-    x_plus = ("x_plus", (0, -90, 0))
-    x_minus = ("x_minus", (0, 90, 0))
-    y_plus = ("y_plus", (-90, 0, 0))
-    y_minus = ("y_minus", (90, 0, 0))
-
+class ImageConfig(BaseModel):
+    name: str = Field(..., title="Image label", description="Label of the output image")
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
+    )
+    projections: dict[str, ProjectionConfig] = Field(
+        ..., title="Projections", description="Projections in the image"
+    )
 
 class CropConfig(BaseModel):
     width_ratio: float = Field(
@@ -33,11 +32,60 @@ class CropConfig(BaseModel):
         gt=0,
         le=1,
     )
-    watermark_path: Optional[str] = Field(
-        None, title="Watermark path", description="Path for the image to be used as watermark"
+
+class OverlayImageConfig(BaseModel):
+    image_path: pathlib.Path = Field(
+        ..., title="overlay image path", description="Path for the image to be overlayed on the snapshot"
     )
+    position: tuple[float,float] = Field(        
+        (0, 0),
+        title="Position of image overlay",
+        description="Coordinates where the image will be overlayed",
+    )
+    angle: float = Field(        
+        0,
+        title="Image rotation angle",
+        description="Angle of rotation of image",
+    )
+    scale: float = Field(        
+        1,
+        title="Image reescale",
+        description="Scale to be applied on the image before overlaying",
+    )
+    transparency: float = Field(
+        0,
+        title="Image transparency",
+        description="Image transparency to be applied before overlaying. 1=fully transparent",
+    )
+    
+    @field_validator("image_path", mode="before")
+    def normalize_path(cls, v: str|pathlib.Path) -> pathlib.Path:
+        if isinstance(v, str):
+            return pathlib.Path(v)
+        if isinstance(v, pathlib.Path):
+            return v
+        raise ValueError("Image path must be a string or pathlib.Path")
 
-
+class OverlayTextConfig(BaseModel):
+    text: str = Field(
+        ..., title="overlay image path", description="Path for the image to be overlayed on the snapshot"
+    )
+    position: tuple[float,float] = Field(        
+        (0, 0),
+        title="Position of image overlay",
+        description="Coordinates where the image will be overlayed",
+    )
+    angle: float = Field(        
+        0,
+        title="Text rotation angle",
+        description="Angle of rotation of text in z axis",
+    )
+    font_size: float = Field(        
+        12,
+        title="Font size",
+        description="Size of the font of the text to be overlayed",
+    )
+    
 class TransformationConfig(BaseModel):
     translate: tuple[float, float, float] = Field(
         (0, 0, 0),
@@ -68,37 +116,24 @@ class LegendConfig(BaseModel):
 
 class CameraConfig(BaseModel):
     zoom: float = Field(1, title="Camera zoom", gt=0)
-    offset_position: tuple[float, float, float] = Field(
-        (0, 0, 0),
+    offset_position: tuple[float, float] = Field(
+        (0, 0),
         title="Camera position offset",
         description="Value for offsetting the camera position",
     )
     view_up: tuple[float, float, float] = Field(
-        (1, 0, 0), title="Camera view up", description="Camera view up direction vector"
+        (0, 1, 0), title="Camera view up", description="Camera view up direction vector"
     )
     window_size: tuple[int, int] = Field(
         (800, 800), title="Window size", description="Height and width of the rendering window"
     )
-    crop: CropConfig = Field(
-        CropConfig(), title="Crop configuration", description="Parameters for cropping"
-    )
 
-
-class ImageConfig(BaseModel):
-    name: str = Field(..., title="Image label", description="Label of the output image")
-    legend_config: LegendConfig = Field(
-        ..., title="Legend configuration", description="Image legend configuration"
-    )
-    projections: dict[str, PartialProjectionConfig] = Field(
-        ..., title="Projections", description="Projections in the image"
-    )
-
-
-class LabelsConfig(BaseModel):
+class ValueTagsConfig(BaseModel):
     spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
     padding: tuple[float, float, float, float] = Field(
         ..., description="Padding (left, right, bottom, top)"
     )
+    z_offset: float = Field(default=0, title="Negative z offset for plane where closest points in mesh will be searched", gt=0)
 
     @field_validator("spacing", mode="before")
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
@@ -112,7 +147,7 @@ class LabelsConfig(BaseModel):
     def normalize_padding(cls, v: Union[float, tuple]) -> tuple[float, float, float, float]:
         if isinstance(v, (int, float)):
             return (float(v), float(v), float(v), float(v))
-        if isinstance(v, tuple):
+        if isinstance(v, list) or isinstance(v, tuple):
             if len(v) == 2:
                 return (float(v[0]), float(v[0]), float(v[1]), float(v[1]))
             if len(v) == 4:
@@ -148,44 +183,35 @@ class ProjectionConfig(BaseModel):
         description="Path to the polydata file",
     )
     scalar: str = Field(
-        ...,
+        None,
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
-    labels_config: LabelsConfig | None = Field(..., title="", description="")
+    values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
     clip_box: TransformationConfig = Field(
-        ...,
+        None,
         title="ClipBox configuration",
         description="Parameters for clipbox",
     )
     transformation: TransformationConfig = Field(
-        ...,
+        default_factory=TransformationConfig,
         title="Transformation components",
         description="Parameters to represent the transformation of the body in the projection",
     )
 
 
-class PartialProjectionConfig(BaseModel):
-    file_path: pathlib.Path = Field(
-        ...,
-        title="Polydata file path",
-        description="Path to the polydata file",
-    )
-    scalar: str = Field(
-        ...,
-        title="Scalar field",
-        description="Label of the scalar to set active on the projection",
-    )
-    labels_config: LabelsConfig | None = Field(..., title="", description="")
-
-
 class SnapshotConfig(BaseModel):
-    name: str = Field(..., title="Snapshot name", description="The name of the snapshot")
-    legend_config: LegendConfig = Field(
-        ..., title="Legend configuration", description="Image legend configuration"
-    )
     projections: dict[str, ProjectionConfig] = Field(
         ..., title="Labels configuration", description="Parameters for the projection labels"
+    )
+    images_overlay: list[OverlayImageConfig] = Field(
+        None, title="Images to overlay", description="List of images to be overlayed on the snapshot"
+    )
+    text_overlay: list[OverlayTextConfig] = Field(
+        None, title="Text to overlay", description="List of textes to be overlayed on the snapshot"
+    )
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
     )
     colormap: ColormapConfig = Field(
         ..., title="Colormap configuration", description="Parameters for colormap"
@@ -193,9 +219,15 @@ class SnapshotConfig(BaseModel):
     camera: CameraConfig = Field(
         ..., title="Camera configuration", description="Parameters for setting up the camera"
     )
+    image_crop: CropConfig = Field(
+        None, title="Crop configuration", description="Parameters for cropping"
+    )
+
 
     @classmethod
-    def from_file(cls, filename: pathlib.Path) -> SnapshotConfig:
+    def from_file(cls, filename: str|pathlib.Path) -> SnapshotConfig:
+        if isinstance(filename, str):
+            filename = pathlib.Path(filename)
         yaml_vals = read_yaml(filename)
         cfg = cls(**yaml_vals)
 
