@@ -110,7 +110,6 @@ def take_snapshot(
     
     if snapshot_config.images_overlay is not None:
         for image_overlay_config in snapshot_config.images_overlay:
-            print(image_overlay_config)
             paste_overlay_image(
                 main_image_path=image_path,
                 image_to_overlay_config=image_overlay_config
@@ -298,6 +297,7 @@ def create_value_tags(
 
     points = mesh.points[closest_point_ids]
     values = mesh.point_data[projection_config.scalar][closest_point_ids]
-    labels = [f"{v:.2f}" for v in values]
+    dp = value_tags_config.decimal_places
+    labels = [f"{v:.{dp}f}" for v in values]
 
     return points, labels

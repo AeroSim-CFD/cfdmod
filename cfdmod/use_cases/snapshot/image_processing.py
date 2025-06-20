@@ -47,7 +47,6 @@ def paste_overlay_image(
     main_image = Image.open(main_image_path)
     image_to_overlay_path = image_to_overlay_config.image_path
     image_to_overlay = Image.open(image_to_overlay_path)
-    print(image_to_overlay)
     #scale
     scale = image_to_overlay_config.scale
     (width, height) = (image_to_overlay.width, image_to_overlay.height)

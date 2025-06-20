@@ -133,7 +133,8 @@ class ValueTagsConfig(BaseModel):
     padding: tuple[float, float, float, float] = Field(
         ..., description="Padding (left, right, bottom, top)"
     )
-    z_offset: float = Field(default=0, title="Negative z offset for plane where closest points in mesh will be searched", gt=0)
+    z_offset: float = Field(default=0, title = "Values tag search plane z offset", description="Negative z offset for plane where closest points in mesh will be searched", gt=0)
+    decimal_places: int = Field(default=2, title="Decimal places", description="Precision of results to be marked on tags", gt=0)
 
     @field_validator("spacing", mode="before")
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:

@@ -5,6 +5,7 @@ projections:
     values_tag_config:
       spacing: 0
       padding: 0
+      decimal_places: 5
     transformation:
       translate: [0, 0, 0]
       rotate: [0, 0, 0]
