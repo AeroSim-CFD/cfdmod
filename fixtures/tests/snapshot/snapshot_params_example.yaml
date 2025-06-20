@@ -2,7 +2,7 @@ projections:
   top_projection:
     file_path: ""
     scalar: ""
-    labels_config:
+    values_tag_config:
       spacing: 0
       padding: 0
     transformation:
@@ -12,7 +12,7 @@ projections:
   front_projection:
     file_path: ""
     scalar: ""
-    labels_config:
+    values_tag_config:
       spacing: 0
       padding: 0
     clip_box:
@@ -22,7 +22,7 @@ projections:
   back_projection:
     file_path: ""
     scalar: ""
-    labels_config:
+    values_tag_config:
       spacing: 0
       padding: 0
     transformation:
@@ -32,7 +32,7 @@ projections:
   right_projection:
     file_path: ""
     scalar: ""
-    labels_config:
+    values_tag_config:
       spacing: 0
       padding: 0
     clip_box:
@@ -46,7 +46,7 @@ projections:
   left_projection:
     file_path: ""
     scalar: ""
-    labels_config:
+    values_tag_config:
       spacing: 0
       padding: 0
     clip_box:
