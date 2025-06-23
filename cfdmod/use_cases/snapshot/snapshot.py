@@ -1,22 +1,23 @@
-import numpy as np
-import pyvista as pv
 import pathlib
 
+import numpy as np
+import pyvista as pv
+
 from cfdmod.logger import logger
-from cfdmod.use_cases.snapshot.config import (
-    ValueTagsConfig,
+from cfdmod.use_cases.snapshot.config import (  # Projections,
     LegendConfig,
+    OverlayTextConfig,
     ProjectionConfig,
-    # Projections,
     SnapshotConfig,
     TransformationConfig,
-    OverlayTextConfig,
+    ValueTagsConfig,
 )
 from cfdmod.use_cases.snapshot.image_processing import (
-    paste_overlay_image, 
-    display_image,
     crop_image,
+    display_image,
+    paste_overlay_image,
 )
+
 
 def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
     """Calculates mesh center
@@ -35,7 +36,7 @@ def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
 
 
 def take_snapshot(
-    image_path: pathlib.Path|str,
+    image_path: pathlib.Path | str,
     snapshot_config: SnapshotConfig,
 ):
     """Use pyvista renderer to take a snapshot
@@ -74,17 +75,19 @@ def take_snapshot(
     for projection in snapshot_config.projections:
         projection_config = snapshot_config.projections[projection]
         add_mesh_projection_to_screenshot(
-            plotter=plotter, 
-            projection_config=projection_config, 
-            colomap_lookup_table=lut, 
+            plotter=plotter,
+            projection_config=projection_config,
+            colomap_lookup_table=lut,
             scalar_bar_args=sargs,
-            legend_config=snapshot_config.legend_config
+            legend_config=snapshot_config.legend_config,
         )
 
     combined_bounding_box = get_combined_bounding_box(plotter)
     if snapshot_config.text_overlay is not None:
         for text_overlay_config in snapshot_config.text_overlay:
-            add_text_overlay_to_screenshot(plotter, text_overlay_config, scene_borders = combined_bounding_box)    
+            add_text_overlay_to_screenshot(
+                plotter, text_overlay_config, scene_borders=combined_bounding_box
+            )
 
     plotter.camera_position = "xy"
     plotter.camera.SetParallelProjection(True)
@@ -93,7 +96,7 @@ def take_snapshot(
     plotter.camera.zoom(snapshot_config.camera.zoom)
     camera = plotter.camera
     camera_offset = np.array(snapshot_config.camera.offset_position)
-    
+
     focal_point = list(camera.GetFocalPoint())
     focal_point[0] -= camera_offset[0]
     focal_point[1] -= camera_offset[1]
@@ -102,31 +105,30 @@ def take_snapshot(
     camera_position[0] -= camera_offset[0]
     camera_position[1] -= camera_offset[1]
     camera.SetPosition(camera_position)
-    
+
     camera.reset_clipping_range()
-    
+
     plotter.screenshot(image_path)
     plotter.close()
-    
+
     if snapshot_config.images_overlay is not None:
         for image_overlay_config in snapshot_config.images_overlay:
             paste_overlay_image(
-                main_image_path=image_path,
-                image_to_overlay_config=image_overlay_config
+                main_image_path=image_path, image_to_overlay_config=image_overlay_config
             )
-    
+
     if snapshot_config.image_crop is not None:
         crop_image(image_path=image_path, crop_cfg=snapshot_config.image_crop)
-    
+
     display_image(image_path)
 
 
 def add_mesh_projection_to_screenshot(
-    plotter: pv.Plotter, 
-    projection_config: ProjectionConfig, 
-    colomap_lookup_table: pv.LookupTable, 
+    plotter: pv.Plotter,
+    projection_config: ProjectionConfig,
+    colomap_lookup_table: pv.LookupTable,
     scalar_bar_args: dict,
-    legend_config: LegendConfig
+    legend_config: LegendConfig,
 ):
     mesh = pv.read(projection_config.file_path)
     if projection_config.clip_box is not None:
@@ -134,30 +136,26 @@ def add_mesh_projection_to_screenshot(
         if all(dimension > 0 for dimension in clip_box.scale):
             mesh = clip_mesh(mesh, clip_box)
             if mesh.n_cells == 0:
-                logger.warning(
-                    f"The clip box in projection is cropping the model completely."
-                )
+                logger.warning("The clip box in projection is cropping the model completely.")
                 return
     transform_mesh(mesh, projection_config.transformation)
-    
-    #move mesh to z=0 for better control of image
+
+    # move mesh to z=0 for better control of image
     center = mesh.center
-    mesh = mesh.translate([0,0,-center[2]])
+    mesh = mesh.translate([0, 0, -center[2]])
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
         mesh = mesh.cell_data_to_point_data()
         plotter.add_mesh(
-            mesh, 
-            lighting=False, 
-            cmap=colomap_lookup_table, 
-            scalar_bar_args=scalar_bar_args, 
-            nan_color=colomap_lookup_table.nan_color
+            mesh,
+            lighting=False,
+            cmap=colomap_lookup_table,
+            scalar_bar_args=scalar_bar_args,
+            nan_color=colomap_lookup_table.nan_color,
         )
 
-        contours = create_contours(
-            mesh, projection_config.scalar, legend_config
-        )
+        contours = create_contours(mesh, projection_config.scalar, legend_config)
         plotter.add_mesh(contours, color="grey", line_width=1)
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
@@ -180,11 +178,15 @@ def add_mesh_projection_to_screenshot(
     feature_edge = create_feature_edges(mesh)
     plotter.add_mesh(feature_edge, color="black", line_width=1)
 
+
 def get_combined_bounding_box(plotter: pv.Plotter) -> np.ndarray:
     b = plotter.bounds
-    return np.array([[b[0],b[1]],[b[2],b[3]],[b[4],b[5]]])
+    return np.array([[b[0], b[1]], [b[2], b[3]], [b[4], b[5]]])
 
-def add_text_overlay_to_screenshot(plotter: pv.Plotter, text_config: OverlayTextConfig, scene_borders: np.ndarray[3,2]):
+
+def add_text_overlay_to_screenshot(
+    plotter: pv.Plotter, text_config: OverlayTextConfig, scene_borders: np.ndarray[3, 2]
+):
     """Adds a text to the screenshot
 
     Args:
@@ -195,14 +197,17 @@ def add_text_overlay_to_screenshot(plotter: pv.Plotter, text_config: OverlayText
     position = text_config.position
     font_size = text_config.font_size
     angle = text_config.angle
-    
+
     center = scene_borders.mean(axis=1)
-    
+
     text_obj = pv.Text3D(text, depth=0.1)
     text_obj = text_obj.scale(font_size)
     text_obj = text_obj.rotate_z(angle)
-    text_obj = text_obj.translate((center[0]+position[0],center[1]+position[1],scene_borders[2,1]+1)) #text 100m over geometries at z=0
+    text_obj = text_obj.translate(
+        (center[0] + position[0], center[1] + position[1], scene_borders[2, 1] + 1)
+    )  # text 100m over geometries at z=0
     plotter.add_mesh(text_obj, color="black")
+
 
 def clip_mesh(mesh: pv.DataSet, clip_box: TransformationConfig) -> pv.UnstructuredGrid:
     clip_cube = pv.Cube(
@@ -244,9 +249,7 @@ def create_feature_edges(mesh: pv.DataSet) -> pv.DataSet:
 
 
 def create_value_tags(
-    mesh: pv.DataSet, 
-    projection_config: ProjectionConfig, 
-    value_tags_config: ValueTagsConfig
+    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig
 ) -> tuple[np.ndarray, pv.DataSetAttributes]:
     bounds = list(mesh.bounds)
 
@@ -262,7 +265,7 @@ def create_value_tags(
     size_y = y_max - y_min
 
     if size_x < spacing_x:
-        x_targets = [( bounds[0] + bounds[1] ) / 2]
+        x_targets = [(bounds[0] + bounds[1]) / 2]
     else:
         num_divisions_x = int(size_x // spacing_x)
         num_points_x = num_divisions_x + 1
@@ -273,7 +276,7 @@ def create_value_tags(
         x_targets = np.linspace(x_start, x_end, num_points_x)
 
     if size_y < spacing_y:
-        y_targets = [( bounds[2] + bounds[3] ) / 2]
+        y_targets = [(bounds[2] + bounds[3]) / 2]
     else:
         num_divisions_y = int(size_y // spacing_y)
         num_points_y = num_divisions_y + 1
@@ -283,7 +286,7 @@ def create_value_tags(
         y_end = center_y + total_spacing_y / 2
         y_targets = np.linspace(y_start, y_end, num_points_y)
 
-    z_level = bounds[5]-value_tags_config.z_offset
+    z_level = bounds[5] - value_tags_config.z_offset
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))

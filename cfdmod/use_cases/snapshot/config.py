@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import pathlib
-from enum import Enum
-from typing import Literal, Optional, Union
+from typing import Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.utils import read_yaml
+
 
 class ImageConfig(BaseModel):
     name: str = Field(..., title="Image label", description="Label of the output image")
@@ -16,6 +16,7 @@ class ImageConfig(BaseModel):
     projections: dict[str, ProjectionConfig] = Field(
         ..., title="Projections", description="Projections in the image"
     )
+
 
 class CropConfig(BaseModel):
     width_ratio: float = Field(
@@ -33,21 +34,24 @@ class CropConfig(BaseModel):
         le=1,
     )
 
+
 class OverlayImageConfig(BaseModel):
     image_path: pathlib.Path = Field(
-        ..., title="overlay image path", description="Path for the image to be overlayed on the snapshot"
+        ...,
+        title="overlay image path",
+        description="Path for the image to be overlayed on the snapshot",
     )
-    position: tuple[float,float] = Field(        
+    position: tuple[float, float] = Field(
         (0, 0),
         title="Position of image overlay",
         description="Coordinates where the image will be overlayed",
     )
-    angle: float = Field(        
+    angle: float = Field(
         0,
         title="Image rotation angle",
         description="Angle of rotation of image",
     )
-    scale: float = Field(        
+    scale: float = Field(
         1,
         title="Image reescale",
         description="Scale to be applied on the image before overlaying",
@@ -57,35 +61,39 @@ class OverlayImageConfig(BaseModel):
         title="Image transparency",
         description="Image transparency to be applied before overlaying. 1=fully transparent",
     )
-    
+
     @field_validator("image_path", mode="before")
-    def normalize_path(cls, v: str|pathlib.Path) -> pathlib.Path:
+    def normalize_path(cls, v: str | pathlib.Path) -> pathlib.Path:
         if isinstance(v, str):
             return pathlib.Path(v)
         if isinstance(v, pathlib.Path):
             return v
         raise ValueError("Image path must be a string or pathlib.Path")
 
+
 class OverlayTextConfig(BaseModel):
     text: str = Field(
-        ..., title="overlay image path", description="Path for the image to be overlayed on the snapshot"
+        ...,
+        title="overlay image path",
+        description="Path for the image to be overlayed on the snapshot",
     )
-    position: tuple[float,float] = Field(        
+    position: tuple[float, float] = Field(
         (0, 0),
         title="Position of image overlay",
         description="Coordinates where the image will be overlayed",
     )
-    angle: float = Field(        
+    angle: float = Field(
         0,
         title="Text rotation angle",
         description="Angle of rotation of text in z axis",
     )
-    font_size: float = Field(        
+    font_size: float = Field(
         12,
         title="Font size",
         description="Size of the font of the text to be overlayed",
     )
-    
+
+
 class TransformationConfig(BaseModel):
     translate: tuple[float, float, float] = Field(
         (0, 0, 0),
@@ -128,13 +136,24 @@ class CameraConfig(BaseModel):
         (800, 800), title="Window size", description="Height and width of the rendering window"
     )
 
+
 class ValueTagsConfig(BaseModel):
     spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
     padding: tuple[float, float, float, float] = Field(
         ..., description="Padding (left, right, bottom, top)"
     )
-    z_offset: float = Field(default=0, title = "Values tag search plane z offset", description="Negative z offset for plane where closest points in mesh will be searched", gt=0)
-    decimal_places: int = Field(default=2, title="Decimal places", description="Precision of results to be marked on tags", gt=0)
+    z_offset: float = Field(
+        default=0,
+        title="Values tag search plane z offset",
+        description="Negative z offset for plane where closest points in mesh will be searched",
+        gt=0,
+    )
+    decimal_places: int = Field(
+        default=2,
+        title="Decimal places",
+        description="Precision of results to be marked on tags",
+        gt=0,
+    )
 
     @field_validator("spacing", mode="before")
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
@@ -206,7 +225,9 @@ class SnapshotConfig(BaseModel):
         ..., title="Labels configuration", description="Parameters for the projection labels"
     )
     images_overlay: list[OverlayImageConfig] = Field(
-        None, title="Images to overlay", description="List of images to be overlayed on the snapshot"
+        None,
+        title="Images to overlay",
+        description="List of images to be overlayed on the snapshot",
     )
     text_overlay: list[OverlayTextConfig] = Field(
         None, title="Text to overlay", description="List of textes to be overlayed on the snapshot"
@@ -224,9 +245,8 @@ class SnapshotConfig(BaseModel):
         None, title="Crop configuration", description="Parameters for cropping"
     )
 
-
     @classmethod
-    def from_file(cls, filename: str|pathlib.Path) -> SnapshotConfig:
+    def from_file(cls, filename: str | pathlib.Path) -> SnapshotConfig:
         if isinstance(filename, str):
             filename = pathlib.Path(filename)
         yaml_vals = read_yaml(filename)
