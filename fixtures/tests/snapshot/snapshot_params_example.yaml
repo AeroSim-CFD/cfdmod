@@ -1,0 +1,96 @@
+projections:
+  top_projection:
+    file_path: ""
+    scalar: ""
+    values_tag_config:
+      spacing: 0
+      padding: 0
+      decimal_places: 5
+    transformation:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [1, 1, 1]
+  front_projection:
+    file_path: ""
+    scalar: ""
+    values_tag_config:
+      spacing: 0
+      padding: 0
+    clip_box:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [0, 0, 0]
+  back_projection:
+    file_path: ""
+    scalar: ""
+    values_tag_config:
+      spacing: 0
+      padding: 0
+    transformation:
+      translate: [-360, 0, 0]
+      rotate: [90, 270, 90]
+      scale: [1, 1, 1]
+  right_projection:
+    file_path: ""
+    scalar: ""
+    values_tag_config:
+      spacing: 0
+      padding: 0
+    clip_box:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [0, 0, 0]
+    transformation:
+      translate: [0, -110, 0]
+      rotate: [90, 0, 0]
+      scale: [1, 1, 1]
+  left_projection:
+    file_path: ""
+    scalar: ""
+    values_tag_config:
+      spacing: 0
+      padding: 0
+    clip_box:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [0, 0, 0]
+    transformation:
+      translate: [0, 110, 0]
+      rotate: [90, 180, 0]
+      scale: [1, 1, 1]
+images_overlay:
+  - image_path: ../../../../fixtures/tests/snapshot/axis_icon.png
+    position: [1000,500]
+    scale: 1.5
+    transparency: 0
+    angle: -90
+text_overlay:
+  - text: test
+    position: [0,0]
+    font_size: 12
+    angle: 90
+  - text: Textão longo e com espaços
+    position: [-300,200]
+    font_size: 12
+    angle: 0
+  - text: Textão grande
+    position: [300,-200]
+    font_size: 100
+    angle: 0
+colormap:
+  range_of_values: []
+  n_divs: 3
+legend_config:
+  label: ""
+  range: [0, 0]
+  n_divs: 3
+camera:
+  zoom: 2
+  offset_position: [0, 0]
+  view_up: [0, 1, 0]
+  window_size: [1920, 1080]
+image_crop:
+    width_ratio: 0.75
+    height_ratio: 1
+
+

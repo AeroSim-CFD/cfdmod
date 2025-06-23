@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import pathlib
-from enum import Enum
-from typing import Literal, Optional
+from typing import Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from cfdmod.utils import read_yaml
 
-PROJECTION_CASES = Literal["x_plus", "x_minus", "y_plus", "y_minus"]
 
-
-class Projections(Enum):
-    x_plus = ("x_plus", (0, -90, 0))
-    x_minus = ("x_minus", (0, 90, 0))
-    y_plus = ("y_plus", (-90, 0, 0))
-    y_minus = ("y_minus", (90, 0, 0))
+class ImageConfig(BaseModel):
+    name: str = Field(..., title="Image label", description="Label of the output image")
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
+    )
+    projections: dict[str, ProjectionConfig] = Field(
+        ..., title="Projections", description="Projections in the image"
+    )
 
 
 class CropConfig(BaseModel):
@@ -33,48 +33,150 @@ class CropConfig(BaseModel):
         gt=0,
         le=1,
     )
-    watermark_path: Optional[str] = Field(
-        None, title="Watermark path", description="Path for the image to be used as watermark"
+
+
+class OverlayImageConfig(BaseModel):
+    image_path: pathlib.Path = Field(
+        ...,
+        title="overlay image path",
+        description="Path for the image to be overlayed on the snapshot",
+    )
+    position: tuple[float, float] = Field(
+        (0, 0),
+        title="Position of image overlay",
+        description="Coordinates where the image will be overlayed",
+    )
+    angle: float = Field(
+        0,
+        title="Image rotation angle",
+        description="Angle of rotation of image",
+    )
+    scale: float = Field(
+        1,
+        title="Image reescale",
+        description="Scale to be applied on the image before overlaying",
+    )
+    transparency: float = Field(
+        0,
+        title="Image transparency",
+        description="Image transparency to be applied before overlaying. 1=fully transparent",
+    )
+
+    @field_validator("image_path", mode="before")
+    def normalize_path(cls, v: str | pathlib.Path) -> pathlib.Path:
+        if isinstance(v, str):
+            return pathlib.Path(v)
+        if isinstance(v, pathlib.Path):
+            return v
+        raise ValueError("Image path must be a string or pathlib.Path")
+
+
+class OverlayTextConfig(BaseModel):
+    text: str = Field(
+        ...,
+        title="overlay image path",
+        description="Path for the image to be overlayed on the snapshot",
+    )
+    position: tuple[float, float] = Field(
+        (0, 0),
+        title="Position of image overlay",
+        description="Coordinates where the image will be overlayed",
+    )
+    angle: float = Field(
+        0,
+        title="Text rotation angle",
+        description="Angle of rotation of text in z axis",
+    )
+    font_size: float = Field(
+        12,
+        title="Font size",
+        description="Size of the font of the text to be overlayed",
+    )
+
+
+class TransformationConfig(BaseModel):
+    translate: tuple[float, float, float] = Field(
+        (0, 0, 0),
+        title="Translate vector",
+        description="Vector representing the translation",
+    )
+    rotate: tuple[float, float, float] = Field(
+        (0, 0, 0),
+        title="Rotate vector",
+        description="Vector representing the rotation",
+    )
+    scale: tuple[float, float, float] = Field(
+        (1, 1, 1),
+        title="Scale vector",
+        description="Vector representing the scale",
+    )
+
+
+class LegendConfig(BaseModel):
+    label: str = Field(..., title="Legend name", description="The name of the legend in the image")
+    range: tuple[float, float] = Field(
+        ..., title="Legend range values", description="Range of values in legend"
+    )
+    n_divs: int = Field(
+        ..., title="Number of divisions", description="Number of divisions in legend"
     )
 
 
 class CameraConfig(BaseModel):
     zoom: float = Field(1, title="Camera zoom", gt=0)
-    offset_position: tuple[float, float, float] = Field(
-        (0, 0, 0),
+    offset_position: tuple[float, float] = Field(
+        (0, 0),
         title="Camera position offset",
         description="Value for offsetting the camera position",
     )
     view_up: tuple[float, float, float] = Field(
-        (1, 0, 0), title="Camera view up", description="Camera view up direction vector"
+        (0, 1, 0), title="Camera view up", description="Camera view up direction vector"
     )
     window_size: tuple[int, int] = Field(
         (800, 800), title="Window size", description="Height and width of the rendering window"
     )
-    crop: CropConfig = Field(
-        CropConfig(), title="Crop configuration", description="Parameters for cropping"
-    )
 
 
-class ImageConfig(BaseModel):
-    scalar_label: str = Field(
-        ..., title="Scalar label", description="Label of the scalar to set active on the snapshot"
+class ValueTagsConfig(BaseModel):
+    spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
+    padding: tuple[float, float, float, float] = Field(
+        ..., description="Padding (left, right, bottom, top)"
     )
-    image_label: str = Field(..., title="Image label", description="Label of the output image")
+    z_offset: float = Field(
+        default=0,
+        title="Values tag search plane z offset",
+        description="Negative z offset for plane where closest points in mesh will be searched",
+        gt=0,
+    )
+    decimal_places: int = Field(
+        default=2,
+        title="Decimal places",
+        description="Precision of results to be marked on tags",
+        gt=0,
+    )
 
+    @field_validator("spacing", mode="before")
+    def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
+        if isinstance(v, (int, float)):
+            return (float(v), float(v))
+        if isinstance(v, tuple) and len(v) == 2:
+            return tuple(map(float, v))
+        raise ValueError("spacing must be a float or a 2-tuple of floats")
 
-class PolydataConfig(BaseModel):
-    file_path: str = Field(
-        ..., title="Polydata file path", description="Path to the polydata file"
-    )
-    images: list[ImageConfig] = Field(
-        ...,
-        title="Image list parameters",
-        description="Parameters for generating images for polydata",
-    )
+    @field_validator("padding", mode="before")
+    def normalize_padding(cls, v: Union[float, tuple]) -> tuple[float, float, float, float]:
+        if isinstance(v, (int, float)):
+            return (float(v), float(v), float(v), float(v))
+        if isinstance(v, list) or isinstance(v, tuple):
+            if len(v) == 2:
+                return (float(v[0]), float(v[0]), float(v[1]), float(v[1]))
+            if len(v) == 4:
+                return tuple(map(float, v))
+        raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
 
 
 class ColormapConfig(BaseModel):
+    style: str = "contour"
     n_divs: int = Field(
         None, title="Number of divisions", description="Colormap divisions", ge=3, le=15
     )
@@ -95,33 +197,43 @@ class ColormapConfig(BaseModel):
 
 
 class ProjectionConfig(BaseModel):
-    model_config = ConfigDict(use_enum_values=True)
-    offset: float = Field(
-        10,
-        title="Offset value",
-        description="Value for offsetting each projection from the center projection",
-        ge=0,
+    file_path: pathlib.Path = Field(
+        ...,
+        title="Polydata file path",
+        description="Path to the polydata file",
     )
-    axis: list[PROJECTION_CASES] = Field(
-        ["x_plus", "x_minus", "y_plus", "y_minus"],
-        title="Projection axis",
-        description="Select which axis are included in the projections.",
+    scalar: str = Field(
+        None,
+        title="Scalar field",
+        description="Label of the scalar to set active on the projection",
     )
-    rotation: tuple[float, float, float] = Field(
-        (0, 0, 0),
-        title="Rotation vector",
-        description="Vector to rotate the body for setting up the projection",
+    values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
+    clip_box: TransformationConfig = Field(
+        None,
+        title="ClipBox configuration",
+        description="Parameters for clipbox",
+    )
+    transformation: TransformationConfig = Field(
+        default_factory=TransformationConfig,
+        title="Transformation components",
+        description="Parameters to represent the transformation of the body in the projection",
     )
 
 
 class SnapshotConfig(BaseModel):
-    polydata: list[PolydataConfig] = Field(
-        ...,
-        title="List of polydata configuration",
-        description="Parameters for polydata used in the snapshot",
+    projections: dict[str, ProjectionConfig] = Field(
+        ..., title="Labels configuration", description="Parameters for the projection labels"
     )
-    projection: ProjectionConfig = Field(
-        ..., title="Projection configuration", description="Parameters for the projections"
+    images_overlay: list[OverlayImageConfig] = Field(
+        None,
+        title="Images to overlay",
+        description="List of images to be overlayed on the snapshot",
+    )
+    text_overlay: list[OverlayTextConfig] = Field(
+        None, title="Text to overlay", description="List of textes to be overlayed on the snapshot"
+    )
+    legend_config: LegendConfig = Field(
+        ..., title="Legend configuration", description="Image legend configuration"
     )
     colormap: ColormapConfig = Field(
         ..., title="Colormap configuration", description="Parameters for colormap"
@@ -129,9 +241,14 @@ class SnapshotConfig(BaseModel):
     camera: CameraConfig = Field(
         ..., title="Camera configuration", description="Parameters for setting up the camera"
     )
+    image_crop: CropConfig = Field(
+        None, title="Crop configuration", description="Parameters for cropping"
+    )
 
     @classmethod
-    def from_file(cls, filename: pathlib.Path) -> SnapshotConfig:
+    def from_file(cls, filename: str | pathlib.Path) -> SnapshotConfig:
+        if isinstance(filename, str):
+            filename = pathlib.Path(filename)
         yaml_vals = read_yaml(filename)
         cfg = cls(**yaml_vals)
 
