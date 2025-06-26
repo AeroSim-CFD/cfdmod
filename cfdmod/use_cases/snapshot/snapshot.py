@@ -83,11 +83,10 @@ def take_snapshot(
         )
 
     combined_bounding_box = get_combined_bounding_box(plotter)
-    if snapshot_config.text_overlay is not None:
-        for text_overlay_config in snapshot_config.text_overlay:
-            add_text_overlay_to_screenshot(
-                plotter, text_overlay_config, scene_borders=combined_bounding_box
-            )
+    for text_overlay_config in snapshot_config.text_overlay:
+        add_text_overlay_to_screenshot(
+            plotter, text_overlay_config, scene_borders=combined_bounding_box
+        )
 
     plotter.camera_position = "xy"
     plotter.camera.SetParallelProjection(True)
@@ -111,11 +110,10 @@ def take_snapshot(
     plotter.screenshot(image_path)
     plotter.close()
 
-    if snapshot_config.images_overlay is not None:
-        for image_overlay_config in snapshot_config.images_overlay:
-            paste_overlay_image(
-                main_image_path=image_path, image_to_overlay_config=image_overlay_config
-            )
+    for image_overlay_config in snapshot_config.images_overlay:
+        paste_overlay_image(
+            main_image_path=image_path, image_to_overlay_config=image_overlay_config
+        )
 
     if snapshot_config.image_crop is not None:
         crop_image(image_path=image_path, crop_cfg=snapshot_config.image_crop)

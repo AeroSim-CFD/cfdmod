@@ -202,19 +202,19 @@ class ProjectionConfig(BaseModel):
         title="Polydata file path",
         description="Path to the polydata file",
     )
-    scalar: str = Field(
+    scalar: str | None = Field(
         None,
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
     values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
-    clip_box: TransformationConfig = Field(
+    clip_box: TransformationConfig | None = Field(
         None,
         title="ClipBox configuration",
         description="Parameters for clipbox",
     )
     transformation: TransformationConfig = Field(
-        default_factory=TransformationConfig,
+        TransformationConfig(),
         title="Transformation components",
         description="Parameters to represent the transformation of the body in the projection",
     )
@@ -225,12 +225,12 @@ class SnapshotConfig(BaseModel):
         ..., title="Labels configuration", description="Parameters for the projection labels"
     )
     images_overlay: list[OverlayImageConfig] = Field(
-        None,
+        [],
         title="Images to overlay",
         description="List of images to be overlayed on the snapshot",
     )
     text_overlay: list[OverlayTextConfig] = Field(
-        None, title="Text to overlay", description="List of textes to be overlayed on the snapshot"
+        [], title="Text to overlay", description="List of textes to be overlayed on the snapshot"
     )
     legend_config: LegendConfig = Field(
         ..., title="Legend configuration", description="Image legend configuration"
@@ -238,10 +238,10 @@ class SnapshotConfig(BaseModel):
     colormap: ColormapConfig = Field(
         ..., title="Colormap configuration", description="Parameters for colormap"
     )
-    camera: CameraConfig = Field(
+    camera: CameraConfig | None = Field(
         ..., title="Camera configuration", description="Parameters for setting up the camera"
     )
-    image_crop: CropConfig = Field(
+    image_crop: CropConfig | None = Field(
         None, title="Crop configuration", description="Parameters for cropping"
     )
 
