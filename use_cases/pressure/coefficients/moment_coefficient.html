@@ -1,0 +1,963 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Moment Coefficient &#8212; AeroSim CFDmod</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'use_cases/pressure/coefficients/moment_coefficient';</script>
+    <link rel="icon" href="../../../_static/favicon.svg"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Generate moment coefficients" href="calculate_Cm.html" />
+    <link rel="prev" title="Generate force coefficients" href="calculate_Cf.html" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  
+    <!-- Plausible -->
+    <script defer data-domain="aerosim.io" src="https://plausible.io/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"></script>
+    <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+    
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_display.png" class="logo__image only-light" alt="AeroSim CFDmod - Home"/>
+    <script>document.write(`<img src="../../../_static/logo_display.png" class="logo__image only-dark" alt="AeroSim CFDmod - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Use Cases</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../altimetry/index.html">Altimetry</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../loft/index.html">Loft</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../s1/index.html">S1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../roughness_gen/index.html">Roughness Elements</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">Pressure</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../statistics.html">Statistics</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">Coefficients</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="pressure_coefficient.html">Pressure Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_cp.html">Transform cp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="shape_coefficient.html">Shape Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="force_coefficient.html">Force Coefficient</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">Moment Coefficient</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="time_normalization.html">Time Normalization</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../snapshot/index.html">Snapshot</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Analysis</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../analysis/inflow/index.html">Inflow</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Others</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../../_sources/use_cases/pressure/coefficients/moment_coefficient.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Moment Coefficient</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#definition">Definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#use-case">Use Case</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#artifacts">Artifacts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-format">Data format</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="moment-coefficient">
+<h1>Moment Coefficient<a class="headerlink" href="#moment-coefficient" title="Link to this heading">#</a></h1>
+<p>The <strong>Moment Coefficient</strong>, <span class="math notranslate nohighlight">\(C_M\)</span>, is a dimensionless parameter that provides a generalized representation of the <strong>resultant moment</strong> experienced by an object within a fluid flow.
+It offers a means to evaluate the <strong>cumulative effect</strong> of pressure coefficients, <span class="math notranslate nohighlight">\(c_p\)</span> across different regions of an object’s surface and how these pressures translate into aerodynamic moment forces.</p>
+<p><span class="math notranslate nohighlight">\(C_M\)</span> is a fundamental tool for <strong>torsional effects</strong> for the design and analysis of aerodynamic components.</p>
+<section id="definition">
+<h2>Definition<a class="headerlink" href="#definition" title="Link to this heading">#</a></h2>
+<p>Similarly to the force coefficient, this coefficient is defined as a resulting moment coefficient of a <strong>body</strong>.</p>
+<p>It is defined as a sum of the resulting moment for each triangle of each surface of the body:</p>
+<div class="math notranslate nohighlight">
+\[\vec{C_{M}} = \frac{\sum \vec{M_{res}}}{q V_{nom}} = \frac{\sum \vec{r_o} \times \vec{f_{i}}}{q V_{nom}}\]</div>
+<div class="math notranslate nohighlight">
+\[\vec{f_i} = c_{pi} q \vec{A_i}\]</div>
+<div class="math notranslate nohighlight">
+\[\vec{C_{M}} = \frac{\sum (\vec{r_o} \times \vec{A_i}) c_{pi}}{V_{nom}}\]</div>
+<p>The position vector <span class="math notranslate nohighlight">\(r_o\)</span> is defined for each triangle, from a common arbitrary points <span class="math notranslate nohighlight">\(o\)</span>. One can also define it for each axis direction:</p>
+<div class="math notranslate nohighlight">
+\[C_{M_x} = \frac{\sum M_{res_x}}{q V_{nom}} = \frac{\sum (r_{oy} A_{iz} - r_{oz} A_{iy}) c_{pi}}{V_{nom}}\]</div>
+<div class="math notranslate nohighlight">
+\[C_{M_y} = \frac{\sum M_{res_y}}{q V_{nom}} = \frac{\sum (r_{oz} A_{ix} - r_{ox} A_{iz}) c_{pi}}{V_{nom}}\]</div>
+<div class="math notranslate nohighlight">
+\[C_{M_z} = \frac{\sum M_{res_z}}{q V_{nom}} = \frac{\sum (r_{ox} A_{iy} - r_{oy} A_{ix}) c_{pi}}{V_{nom}}\]</div>
+<p>We define the nominal volume ($V_{nom}$) as a <strong>user input</strong>.
+This is done to let the user define how they want to calculate its value.
+For example, considering a rectangular tall building:</p>
+<a class="reference internal image-reference" href="../../../_images/building.png"><img alt="../../../_images/building.png" class="align-center" src="../../../_images/building.png" style="width: 45%;" />
+</a>
+<p>The nominal volume could be calculated with:</p>
+<div class="math notranslate nohighlight">
+\[V_{nom} = b h l\]</div>
+</section>
+<section id="use-case">
+<h2>Use Case<a class="headerlink" href="#use-case" title="Link to this heading">#</a></h2>
+<p>A common application of the moment coefficient requires sectioning the body in <strong>different sub-bodies</strong>.
+To do so, the same logic applied to the force coefficient is used to <strong>determine the respective sub-body</strong> of each of the body’s triangles.
+If its center lies inside the sub-body volume, then it belongs to it.</p>
+<p>The result is a sectionated body in different <strong>sub-bodies for each interval</strong>.
+When sectioning the body, the respective nominal volume should be the same as the sub-body nominal volume.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Check out the <a class="reference external" href="./definitions.rst">definitions</a> section for more information about <strong>surface, body and sub-body</strong> definitions.</p>
+</div>
+<p>Like the other coefficients, we can apply statistical analysis to the moment coefficient.</p>
+<p>By definition, the moment coefficient is a <strong>property of a body</strong>.</p>
+<p>It is used for <strong>primary and secondary structures design</strong>, such as <strong>canopies</strong>.
+It can also be used for evaluating the resultant wind torsional effect over a <strong>building</strong> or the <strong>building paviments</strong>.
+It can be seen as the <strong>resulting torsion effect</strong> of the wind induced stress over a body.</p>
+</section>
+<section id="artifacts">
+<h2>Artifacts<a class="headerlink" href="#artifacts" title="Link to this heading">#</a></h2>
+<p>In order to use the moment coefficient module, the user has to provide a <strong>set of artifacts</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>A lnas file</strong>: It contains the information about the mesh.</p></li>
+<li><p><strong>HDF time series</strong>: It contains the pressure coefficient signals indexed by each of the mesh triangles.</p></li>
+<li><p><strong>Parameters file</strong>: It contains the coordinate for the arbitrary point when evaluating the force moment, as well as other configs parameters.</p></li>
+</ol>
+<p>Which outputs the following data:</p>
+<ol class="arabic simple">
+<li><p><strong>Dimensionless time series</strong>: moment coefficient time series for each body.</p></li>
+<li><p><strong>Statistical results</strong>: maximum, minimum, RMS and average values for the moment coefficient time series, for each body.</p></li>
+<li><p><strong>VTK File</strong>: contains the statistical values inside the original mesh (VTK).</p></li>
+</ol>
+<p>An illustration of the moment coefficient module pipeline can be seen below:</p>
+<a class="reference internal image-reference" href="../../../_images/Cm_pipeline.png"><img alt="../../../_images/Cm_pipeline.png" class="align-center" src="../../../_images/Cm_pipeline.png" style="width: 90%;" />
+</a>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
+<p>An example of the parameters file required for calculating the moment coefficient can be seen below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">bodies</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">marquise</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">surfaces</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">list_of_surfaces_of_marquise</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">lanternim</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">surfaces</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">list_of_surfaces_of_lanternim</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">building</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">surfaces</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">building</span><span class="p p-Indicator">]</span>
+<span class="nt">moment_coefficient</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">measurement_1</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">bodies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">marquise</span>
+<span class="w">        </span><span class="nt">lever_origin</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">directions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;x&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;z&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="c1"># Nominal volume to use for calculations</span>
+<span class="w">    </span><span class="nt">nominal_volume</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">statistics</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rms&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;skewness&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;kurtosis&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;min&quot;</span>
+<span class="w">        </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span>
+<span class="w">        </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">    </span><span class="c1"># Apply transformations before indexing the regions</span>
+<span class="w">    </span><span class="nt">transformation</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">translation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">rotation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">fixed_point</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">measurement_2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">bodies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">building</span>
+<span class="w">        </span><span class="nt">lever_origin</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">sub_bodies</span><span class="p">:</span><span class="w"> </span><span class="c1"># Optional, default is the whole body</span>
+<span class="w">          </span><span class="nt">z_intervals</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">20</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">directions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;x&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;z&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="c1"># Nominal volume to use for calculations</span>
+<span class="w">    </span><span class="nt">nominal_volume</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">statistics</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rms&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;skewness&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;kurtosis&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;min&quot;</span>
+<span class="w">        </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stats</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span>
+<span class="w">        </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">method_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">    </span><span class="c1"># Apply transformations before indexing the regions</span>
+<span class="w">    </span><span class="nt">transformation</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">translation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">rotation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">fixed_point</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>To invoke and run the calculation, the following command can be used:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>cfdmod.use_cases.pressure.Cm<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output<span class="w"> </span><span class="o">{</span>OUTPUT_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--cp<span class="w">     </span><span class="o">{</span>CP_SERIES_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--mesh<span class="w">   </span><span class="o">{</span>LNAS_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--config<span class="w"> </span><span class="o">{</span>CONFIG_PATH<span class="o">}</span>
+</pre></div>
+</div>
+<p>Or it can be generated together with the pressure data conversion:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>cfdmod.use_cases.pressure<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--output<span class="w"> </span><span class="o">{</span>OUTPUT_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--cp<span class="w">     </span><span class="o">{</span>CP_SERIES_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--mesh<span class="w">   </span><span class="o">{</span>LNAS_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--config<span class="w"> </span><span class="o">{</span>CONFIG_PATH<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--Cm
+</pre></div>
+</div>
+<p>Another way to run the moment coefficient calculation, is through the <a class="reference internal" href="calculate_Cm.html"><span class="doc">notebook</span></a></p>
+</section>
+<section id="data-format">
+<h2>Data format<a class="headerlink" href="#data-format" title="Link to this heading">#</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The rule for determining the region_idx is based on the <strong>region index and the body name</strong>.
+Input mesh can have multiple bodies, and each of them can be applied a specific zoning/region rule.
+Because of that, region_idx has to be composed by the <strong>zoning region index joined by “-” and the body name</strong>.
+This also guarantee that even if different bodies lie on the same region, the interpreted region for each of them will be different</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information about the normalized time scale (<span class="math notranslate nohighlight">\(t^*\)</span>), check the <a class="reference external" href="./normalization.rst">Normalization section</a></p>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id1">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{mx}(t)\)</span></span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>time_idx/region_idx</p></th>
+<th class="head"><p>Normalized time (<span class="math notranslate nohighlight">\(t^*\)</span>)</p></th>
+<th class="head"><p>0-Body1</p></th>
+<th class="head"><p>1-Body1</p></th>
+<th class="head"><p>0-Body2</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>10000</p></td>
+<td><p>1.25</p></td>
+<td><p>1.15</p></td>
+<td><p>-1.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>11000</p></td>
+<td><p>1.5</p></td>
+<td><p>0.9</p></td>
+<td><p>-1.15</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id2">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{my}(t)\)</span></span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>time_idx/region_idx</p></th>
+<th class="head"><p>Normalized time (<span class="math notranslate nohighlight">\(t^*\)</span>)</p></th>
+<th class="head"><p>0-Body1</p></th>
+<th class="head"><p>1-Body1</p></th>
+<th class="head"><p>0-Body2</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>10000</p></td>
+<td><p>1.25</p></td>
+<td><p>1.15</p></td>
+<td><p>-1.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>11000</p></td>
+<td><p>1.5</p></td>
+<td><p>0.9</p></td>
+<td><p>-1.15</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id3">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{mz}(t)\)</span></span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>time_idx/region_idx</p></th>
+<th class="head"><p>Normalized time (<span class="math notranslate nohighlight">\(t^*\)</span>)</p></th>
+<th class="head"><p>0-Body1</p></th>
+<th class="head"><p>1-Body1</p></th>
+<th class="head"><p>0-Body2</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>10000</p></td>
+<td><p>1.25</p></td>
+<td><p>1.15</p></td>
+<td><p>-1.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>11000</p></td>
+<td><p>1.5</p></td>
+<td><p>0.9</p></td>
+<td><p>-1.15</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id4">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{mx} (stats)\)</span></span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>region_idx</p></th>
+<th class="head"><p>max</p></th>
+<th class="head"><p>min</p></th>
+<th class="head"><p>mean</p></th>
+<th class="head"><p>std</p></th>
+<th class="head"><p>skewness</p></th>
+<th class="head"><p>kurtosis</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0-Body1</p></td>
+<td><p>1.25</p></td>
+<td><p>0.9</p></td>
+<td><p>1.1</p></td>
+<td><p>0.2</p></td>
+<td><p>0.1</p></td>
+<td><p>0.15</p></td>
+</tr>
+<tr class="row-odd"><td><p>1-Body1</p></td>
+<td><p>1.15</p></td>
+<td><p>0.95</p></td>
+<td><p>1.13</p></td>
+<td><p>0.19</p></td>
+<td><p>0.11</p></td>
+<td><p>0.13</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id5">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{my} (stats)\)</span></span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>region_idx</p></th>
+<th class="head"><p>max</p></th>
+<th class="head"><p>min</p></th>
+<th class="head"><p>mean</p></th>
+<th class="head"><p>std</p></th>
+<th class="head"><p>skewness</p></th>
+<th class="head"><p>kurtosis</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0-Body1</p></td>
+<td><p>1.25</p></td>
+<td><p>0.9</p></td>
+<td><p>1.1</p></td>
+<td><p>0.2</p></td>
+<td><p>0.1</p></td>
+<td><p>0.15</p></td>
+</tr>
+<tr class="row-odd"><td><p>1-Body1</p></td>
+<td><p>1.15</p></td>
+<td><p>0.95</p></td>
+<td><p>1.13</p></td>
+<td><p>0.19</p></td>
+<td><p>0.11</p></td>
+<td><p>0.13</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id6">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(C_{mz} (stats)\)</span></span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>region_idx</p></th>
+<th class="head"><p>max</p></th>
+<th class="head"><p>min</p></th>
+<th class="head"><p>mean</p></th>
+<th class="head"><p>std</p></th>
+<th class="head"><p>skewness</p></th>
+<th class="head"><p>kurtosis</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0-Body1</p></td>
+<td><p>1.25</p></td>
+<td><p>0.9</p></td>
+<td><p>1.1</p></td>
+<td><p>0.2</p></td>
+<td><p>0.1</p></td>
+<td><p>0.15</p></td>
+</tr>
+<tr class="row-odd"><td><p>1-Body1</p></td>
+<td><p>1.15</p></td>
+<td><p>0.95</p></td>
+<td><p>1.13</p></td>
+<td><p>0.19</p></td>
+<td><p>0.11</p></td>
+<td><p>0.13</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id7">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(Regions(indexing)\)</span></span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>region_idx</p></th>
+<th class="head"><p>point_idx</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0-Body1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>1-Body1</p></td>
+<td><p>1</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id8">
+<caption><span class="caption-text"><span class="math notranslate nohighlight">\(Regions(definition)\)</span></span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>region_idx</p></th>
+<th class="head"><p>x_min</p></th>
+<th class="head"><p>x_max</p></th>
+<th class="head"><p>y_min</p></th>
+<th class="head"><p>y_max</p></th>
+<th class="head"><p>z_min</p></th>
+<th class="head"><p>z_max</p></th>
+<th class="head"><p>Lx</p></th>
+<th class="head"><p>Ly</p></th>
+<th class="head"><p>Lz</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0-Body1</p></td>
+<td><p>0</p></td>
+<td><p>100</p></td>
+<td><p>0</p></td>
+<td><p>50</p></td>
+<td><p>0</p></td>
+<td><p>20</p></td>
+<td><p>0.5</p></td>
+<td><p>0.8</p></td>
+<td><p>0.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>1-Body1</p></td>
+<td><p>100</p></td>
+<td><p>200</p></td>
+<td><p>0</p></td>
+<td><p>50</p></td>
+<td><p>0</p></td>
+<td><p>20</p></td>
+<td><p>0.5</p></td>
+<td><p>0.8</p></td>
+<td><p>0.1</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="calculate_Cf.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Generate force coefficients</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="calculate_Cm.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Generate moment coefficients</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#definition">Definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#use-case">Use Case</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#artifacts">Artifacts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-format">Data format</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By AeroSim
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023-2025, AeroSim.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+<div class="extra_footer">
+  <a href="https://www.aerosim.io">www.aerosim.io</a>
+</div>
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
