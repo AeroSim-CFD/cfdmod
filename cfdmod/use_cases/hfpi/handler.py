@@ -273,6 +273,22 @@ class HFPIFullResults(BaseModel):
         ]
         return _get_global_stats_dct_float(dcts, stats_type)
 
+    def get_stats_combined_forces(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_forces_combined(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_combined_moments(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_moments_combined(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_combined_global_forces(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_forces_combined(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_combined_global_moments(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_moments_combined(stats_type) for k, v in self.results.items()]
+        return _get_global_stats_dct_float(dcts, stats_type)
+
     def get_global_peaks_by_direction(self) -> dict[str, pd.DataFrame]:
         """Get global peaks per direction of results
 
@@ -291,6 +307,8 @@ class HFPIFullResults(BaseModel):
             "moments_static": {},
             "forces_static_eq": {},
             "moments_static_eq": {},
+            "forces_combined": {},
+            "moments_combined": {},
         }
         for d, r in res.items():
             calls = [
@@ -298,6 +316,8 @@ class HFPIFullResults(BaseModel):
                 ("moments_static", r.get_stats_global_moments_static),
                 ("forces_static_eq", r.get_stats_global_forces_static_eq),
                 ("moments_static_eq", r.get_stats_global_moments_static_eq),
+                ("forces_combined", r.get_stats_combined_global_forces),
+                ("moments_combined", r.get_stats_combined_global_moments),
             ]
             for name, c in calls:
                 min_vals = c("min")
