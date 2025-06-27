@@ -333,14 +333,13 @@ def _get_stats_among_dct(
         raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
     keys = lst_dct[0].keys()
     dct: dict[str, np.ndarray] | dict[str, float] = {}
-    for kk in keys:
+    for k in keys:
         vals = []
         for d in lst_dct:
-            for k in keys:
-                vals.append(d[k])
+            vals.append(d[k])
         arr = np.array(vals)
         func = arr.min if stats_type == "min" else (arr.max if stats_type == "max" else arr.mean)
-        dct[kk] = func(axis=0)
+        dct[k] = func(axis=0)
     return dct
 
 
@@ -676,22 +675,22 @@ class HFPIResults(BaseModel):
     def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
         return _get_stats_dct(self.global_moments_static_eq, stats_type)
 
-    def get_stats_forces_combined(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
         forces_eq = self.get_stats_forces_static_eq(stats_type)
         forces_static = self.static_results.get_stats_forces_static(stats_type)
         return _get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_moments_combined(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
         mom_eq = self.get_stats_moments_static_eq(stats_type)
         mom_static = self.static_results.get_stats_moments_static(stats_type)
         return _get_stats_among_dct([mom_eq, mom_static], stats_type)
 
-    def get_stats_global_forces_combined(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
         forces_eq = self.get_stats_global_forces_static_eq(stats_type)
         forces_static = self.static_results.get_stats_global_forces_static(stats_type)
         return _get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_global_moments_combined(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
         mom_eq = self.get_stats_global_moments_static_eq(stats_type)
         mom_static = self.static_results.get_stats_global_moments_static(stats_type)
         return _get_stats_among_dct([mom_eq, mom_static], stats_type)

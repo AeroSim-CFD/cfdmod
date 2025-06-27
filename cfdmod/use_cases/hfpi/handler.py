@@ -206,6 +206,9 @@ class HFPIFullResults(BaseModel):
         filename = parameters.get_results_filename(self.results_folder)
         self.results[parameters] = solver.HFPIResults.load(filename)
 
+    def __getitem__(self, k: int) -> solver.HFPIResults:
+        return list(self.results.values())[k]
+
     @classmethod
     def load_all_results(cls, parameters: list[HFPICaseParameters], results_folder: pathlib.Path):
         results = cls(results_folder=results_folder)
@@ -273,20 +276,12 @@ class HFPIFullResults(BaseModel):
         ]
         return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_combined_forces(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_forces_combined(stats_type) for k, v in self.results.items()]
+    def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_forces_effective(stats_type) for k, v in self.results.items()]
         return _get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_combined_moments(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_moments_combined(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
-
-    def get_stats_combined_global_forces(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_forces_combined(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
-
-    def get_stats_combined_global_moments(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_moments_combined(stats_type) for k, v in self.results.items()]
+    def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [v.get_stats_global_moments_effective(stats_type) for k, v in self.results.items()]
         return _get_global_stats_dct_float(dcts, stats_type)
 
     def get_global_peaks_by_direction(self) -> dict[str, pd.DataFrame]:
@@ -307,8 +302,8 @@ class HFPIFullResults(BaseModel):
             "moments_static": {},
             "forces_static_eq": {},
             "moments_static_eq": {},
-            "forces_combined": {},
-            "moments_combined": {},
+            "forces_effective": {},
+            "moments_effective": {},
         }
         for d, r in res.items():
             calls = [
@@ -316,8 +311,8 @@ class HFPIFullResults(BaseModel):
                 ("moments_static", r.get_stats_global_moments_static),
                 ("forces_static_eq", r.get_stats_global_forces_static_eq),
                 ("moments_static_eq", r.get_stats_global_moments_static_eq),
-                ("forces_combined", r.get_stats_combined_global_forces),
-                ("moments_combined", r.get_stats_combined_global_moments),
+                ("forces_effective", r.get_stats_effective_global_forces),
+                ("moments_effective", r.get_stats_effective_global_moments),
             ]
             for name, c in calls:
                 min_vals = c("min")
