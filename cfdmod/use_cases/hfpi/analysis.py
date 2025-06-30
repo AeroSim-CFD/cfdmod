@@ -286,3 +286,41 @@ def export_global_stats_per_direction_csv(csv_path: pathlib.Path, stats: dict[st
             k_col = f"{k}_{col}"
             df[k_col] = stats[k][col].to_numpy()
     df.to_csv(csv_path, index=None)
+
+
+def plot_max_acceleration(max_ac: dict[float,float], structure_data: solver.HFPIStructuralData, project_name: str="AeroSim", unit_conversion: float = 1000/9.806, unit_name: str="milli-g"):
+    color_eq = "#DB9B10"
+    color_nbcc = "#2F993A"
+    color_nbr_res = "#A82D2D"
+    color_nbr_com = "#426AC2"
+
+
+    range_freq = [structure_data.df_modes['frequency'].min(), min(structure_data.df_modes['frequency'].max(), 1)]
+    range_NBR_ac_residential = [0.01*4.08*range_freq[1]**-0.445 *unit_conversion, 0.01*4.08*range_freq[0]**-0.445 *unit_conversion]
+    range_NBR_ac_comertial = [0.01*6.12*range_freq[1]**-0.445 *unit_conversion, 0.01*6.12*range_freq[0]**-0.445 *unit_conversion]
+    range_NBCC = [15*(9.806/1000)*unit_conversion, 25*(9.806/1000)*unit_conversion]
+    
+    print(range_NBR_ac_residential, range_NBR_ac_comertial)
+    fig, ax = plt.subplots()
+    
+    ax.plot([1,1],range_NBR_ac_residential,'-',linewidth=4, label=f"NBR 6123 - residential", color=color_nbr_res)
+    ax.plot([0.9,1.1],[range_NBR_ac_residential[0],range_NBR_ac_residential[0]],'-',linewidth=3,color=color_nbr_res)
+    ax.plot([0.9,1.1],[range_NBR_ac_residential[1],range_NBR_ac_residential[1]],'-',linewidth=3,color=color_nbr_res)
+
+    ax.plot([.99,.99],range_NBR_ac_comertial,'-',linewidth=4, label=f"NBR 6123 - comercial", color=color_nbr_com)
+    ax.plot([0.9,1.1],[range_NBR_ac_comertial[0],range_NBR_ac_comertial[0]],'-',linewidth=3,color=color_nbr_com)
+    ax.plot([0.9,1.1],[range_NBR_ac_comertial[1],range_NBR_ac_comertial[1]],'-',linewidth=3,color=color_nbr_com)
+    
+    ax.plot([10,10],range_NBCC,'-',linewidth=4, label=f"NBCC - residential and comercial",color=color_nbcc)
+    ax.plot([9.9,10.1],[range_NBCC[0],range_NBCC[0]],'-',linewidth=3,color=color_nbcc)
+    ax.plot([9.9,10.1],[range_NBCC[1],range_NBCC[1]],'-',linewidth=3,color=color_nbcc)
+    
+    ax.plot(1,max_ac[1.0] *unit_conversion,'o',label=project_name, color=color_eq)
+    ax.plot(10,max_ac[10.0] *unit_conversion,'o', color=color_eq)
+
+    ax.set_ylabel(f'Acceleration [{unit_name}]')
+    ax.set_xlabel('Wind recurrence period')
+    ax.set_title(f"Maximum acceleration")
+    ax.legend()
+    
+    return fig, ax
