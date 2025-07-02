@@ -20,7 +20,8 @@ def get_clean_INMET_file(csv_path: pathlib.Path) -> pd.DataFrame:
     df['u_gust_raw'] = df["VENTO, RAJADA MAXIMA(m/s)"]
     df['wind_direction'] = df["VENTO, DIRECAO HORARIA (gr)(° (gr))"]  % 360
     df = df.drop(columns=['Data Medicao', 'Hora Medicao', "VENTO, VELOCIDADE HORARIA(m/s)", "VENTO, RAJADA MAXIMA(m/s)", "VENTO, DIRECAO HORARIA (gr)(° (gr))", "Unnamed: 5"])
-    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw', 'wind_direction'], how='all')
+    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw'], how='all')
+    df[['u_mean_raw', 'u_gust_raw']] = df[['u_mean_raw', 'u_gust_raw']].fillna(0)
     return df
     
 def get_clean_NCEI_file(csv_path: pathlib.Path) -> pd.DataFrame:
@@ -32,35 +33,53 @@ def get_clean_NCEI_file(csv_path: pathlib.Path) -> pd.DataFrame:
     df['u_gust_raw'] = df["OC1"].str[0:4].astype(float) / 10
     df['wind_direction'] = df["WND"].str[0:3].astype(int) % 360
     df = df.drop(columns=['STATION', 'DATE', "SOURCE", "REPORT_TYPE", "CALL_SIGN", "QUALITY_CONTROL", "OC1", "WND"])
-    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw', 'wind_direction'], how='all')
+    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw'], how='all')
+    # df[['u_mean_raw', 'u_gust_raw']] = df[['u_mean_raw', 'u_gust_raw']].fillna(0)
+    mask_invalid_mean = (df['u_mean_raw']==999.9)
+    df.loc[mask_invalid_mean, 'u_mean_raw'] = np.nan
+    mask_invalid_gust = (df['u_gust_raw']==999.9)
+    df.loc[mask_invalid_gust, 'u_gust_raw'] = np.nan
     return df
     
     
 def validate_table(data: pd.DataFrame):
     error = False
     # check if gust > mean
-    if data[data['u_mean_raw']>data['u_gust_raw']].sum().sum() > 0:
+    if data[data['u_mean_raw']>data['u_gust_raw']].shape[0] > 0:
         print("There are mean values greater than gust values")
         error = True
     # check if there are invalid angles:
-    if data[ (data['wind_direction']<0) | (data['wind_direction']>360) ].sum().sum() > 0:
+    if data[ (data['wind_direction']<0) | (data['wind_direction']>360) ].shape[0] > 0:
         print("There are angles outside the range [0,360]")
         error = True
     # check if there are absurd velocities:
-    if data[ (data['u_mean_raw']<0) | (data['u_mean_raw']>70) | (data['u_gust_raw']<0) | (data['u_gust_raw']>70) ].sum().sum() > 0:
+    if data[ (data['u_mean_raw']<0) | (data['u_mean_raw']>70) | (data['u_gust_raw']<0) | (data['u_gust_raw']>70) ].shape[0] > 0:
         print("There are velocities outside the range [0,70]m/s")
         error = True
     if not error:
         print("The table has no invalid rows")
     # visualize mean
     fig, ax = plt.subplots(3,1,figsize=(30,15))
+    if 'station' in data.columns:
+        fig.suptitle(f"station: {data['station'].unique()[0]}")
     ax[0].plot(pd.to_datetime(data['datetime']), data['u_mean_raw'],'.')
     ax[0].set_title('Mean velocity')
     ax[1].plot(pd.to_datetime(data['datetime']), data['u_gust_raw'],'.')
     ax[1].set_title('Gust velocity')
     ax[2].plot(pd.to_datetime(data['datetime']), data['wind_direction'],'.')
     ax[2].set_title('Wind direction')
+    plt.show()
 
+def plot_pdfs(data: pd.DataFrame):
+    fig, ax = plt.subplots(1,3,figsize=(30,10))
+    ax[0].hist(data['u_mean_raw'], bins=100)
+    ax[0].set_title('Mean velocity')
+    ax[1].hist(data['u_gust_raw'], bins=100)
+    ax[1].set_title('Gust velocity')
+    ax[2].hist(data['wind_direction'],bins=100)
+    ax[2].set_title('Wind direction')
+    plt.show()
+    
     
 def remove_date_ranges(data: pd.DataFrame, ranges_to_remove: list[tuple[str,str]]|list[tuple[pd.Timestamp,pd.Timestamp]]) -> pd.DataFrame:
     ranges_to_remove = [pd.to_datetime(range) for range in ranges_to_remove]
@@ -69,6 +88,13 @@ def remove_date_ranges(data: pd.DataFrame, ranges_to_remove: list[tuple[str,str]
     for start, end in ranges_to_remove:
         remove_mask |= ((datetime >= start) & (datetime < end))
     print("Number of values removed: ", remove_mask.sum())
+    return data[~ remove_mask].copy()
+
+def remove_wind_direction(data: pd.DataFrame, wind_directions_to_remove: list[int]) -> pd.DataFrame:
+    eps = 1
+    remove_mask = pd.Series(False, index=data.index)
+    for wind_direction in wind_directions_to_remove:
+        remove_mask |= (data['wind_direction']-wind_direction).abs() <= eps
     return data[~ remove_mask].copy()
 
 
