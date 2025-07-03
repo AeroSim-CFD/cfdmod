@@ -72,11 +72,11 @@ def validate_table(data: pd.DataFrame):
 
 def plot_pdfs(data: pd.DataFrame):
     fig, ax = plt.subplots(1,3,figsize=(30,10))
-    ax[0].hist(data['u_mean_raw'], bins=100)
+    ax[0].hist(data['u_mean_raw'], bins='auto')
     ax[0].set_title('Mean velocity')
-    ax[1].hist(data['u_gust_raw'], bins=100)
+    ax[1].hist(data['u_gust_raw'], bins='auto')
     ax[1].set_title('Gust velocity')
-    ax[2].hist(data['wind_direction'],bins=100)
+    ax[2].hist(data['wind_direction'],bins='auto')
     ax[2].set_title('Wind direction')
     plt.show()
     
