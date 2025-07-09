@@ -5,6 +5,6 @@ This modules provides classes and functions for running HFPI (high frequency pre
 integrations), processing and saving the results.
 """
 
-__all__ = ["analysis", "handler", "solver"]
+__all__ = ["analysis", "handler", "dynamic"]
 
-from . import analysis, handler, solver
+from . import analysis, dynamic, handler

@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import itertools
 import pathlib
+import pickle
 import time
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from typing import Callable, Literal, TypeVar
 
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 
 from cfdmod.logger import logger
-from cfdmod.use_cases.hfpi import solver
+from cfdmod.use_cases.hfpi import common, dynamic, static
 
 T = TypeVar("T")
 
@@ -31,7 +33,7 @@ class WindAnalysis(BaseModel):
     def build(cls, data_csv: pathlib.Path, V0: float, U_H_overwrite: float | None = None):
         df = pd.read_csv(data_csv, index_col=None)
         req_keys = ["wind_direction", "I", "II", "III", "IV", "V"]
-        if not solver._validate_keys_df(df, req_keys):
+        if not common.validate_keys_df(df, req_keys):
             raise KeyError(
                 "Not all required keys are in wind CSV. "
                 f"Required ones are: {req_keys}, found {list(df.columns)}"
@@ -83,50 +85,62 @@ class HFPICaseParameters(BaseModel, frozen=True):
     direction: float
     xi: float
     recurrence_period: float
+    structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
 
     def get_results_filename(self, base_folder: pathlib.Path):
         return base_folder / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}.pickle"
 
 
-def solve_hfpi_case(hfpi_analysis: HFPIAnalysisHandler, parameters: HFPICaseParameters):
+def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters):
     """Solve HFPI for system and save it to disk"""
 
-    t0 = time.time()
-    logger.info(f"Solving HFPI for: {parameters.json()}")
     hfpi_params = hfpi_analysis.generate_hfpi_solver_params(parameters)
-    hfpi_results = solver.solve_hfpi(
+    floors_heights = hfpi_params.structural_data.df_floors["Z"].to_numpy()
+
+    t0 = time.time()
+    logger.info(f"Solving static for: {parameters.model_dump_json()}")
+    static_results = static.solve_static_forces(
+        forces=hfpi_params.forces, dim_data=hfpi_params.dim_data, floors_heights=floors_heights
+    )
+    logger.info(f"Solved static in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
+
+    logger.info(f"Solving HFPI for: {parameters.model_dump_json()}")
+    hfpi_results = dynamic.solve_hfpi(
         structural_data=hfpi_params.structural_data,
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
+        xi=parameters.xi,
     )
-    logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.json()}!")
+    logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
+    res = ResultType(static_res=static_results, dynamic_res=hfpi_results)
     path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
-    hfpi_results.save(path_save)
+    res.save(path_save)
+
     logger.info(f"Saved HFPI results to {path_save.as_posix()}")
     return hfpi_results
 
 
-def _wrapper_solve_hfpi_case(args: tuple[HFPIAnalysisHandler, HFPICaseParameters]):
+def _wrapper_solve_hfpi_case(args: tuple[MultipleAnalysisHandler, HFPICaseParameters]):
     return solve_hfpi_case(args[0], args[1])
 
 
 class _HFPIParams(BaseModel):
-    structural_data: solver.HFPIStructuralData
-    dim_data: solver.HFPIDimensionalData
-    forces: solver.HFPIForcesData
+    structural_data: dynamic.HFPIStructuralData
+    dim_data: static.DimensionalData
+    forces: static.StaticForcesData
+    xi: float
 
 
-class HFPIAnalysisHandler(BaseModel):
+class MultipleAnalysisHandler(BaseModel):
     """Full analysis for an HFPI case"""
 
     wind_analytics: WindAnalysis
     dimensions: DimensionSpecs
-    structural_data: solver.HFPIStructuralData
-    directional_forces: dict[float, solver.HFPIForcesData]
+    directional_forces: dict[float, static.StaticForcesData]
     save_folder: pathlib.Path
 
-    results: dict[HFPICaseParameters, solver.HFPIResults] = Field(default_factory=dict)
+    results: dict[HFPICaseParameters, ResultType] = Field(default_factory=dict)
 
     def generate_hfpi_solver_params(self, parameters: HFPICaseParameters):
         forces = self.directional_forces[parameters.direction]
@@ -137,27 +151,33 @@ class HFPIAnalysisHandler(BaseModel):
         U_h = self.wind_analytics.get_U_H(
             dim.height, parameters.direction, parameters.recurrence_period
         )
-        dim_data = solver.HFPIDimensionalData(
+        dim_data = static.DimensionalData(
             U_H=U_h,
-            xi=parameters.xi,
             base=dim.base,
             height=dim.height,
         )
 
         return _HFPIParams(
-            structural_data=self.structural_data,
+            structural_data=parameters.structural_data,
             forces=forces,
             dim_data=dim_data,
+            xi=parameters.xi,
         )
 
     def generate_combined_parameters(
-        self, *, directions: list[float], xis: list[float], recurrence_periods: list[float]
+        self,
+        *,
+        structural_data: dynamic.HFPIStructuralData,
+        directions: list[float],
+        xis: list[float],
+        recurrence_periods: list[float],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
                 direction=direction,
                 xi=xi,
                 recurrence_period=period,
+                structural_data=structural_data,
             )
             for direction, xi, period in itertools.product(*[directions, xis, recurrence_periods])
         ]
@@ -171,120 +191,129 @@ class HFPIAnalysisHandler(BaseModel):
         with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)
 
-
-def _get_global_stats_dct_float(
-    dcts: list[dict[str, float]], stats_type: Literal["min", "max", "mean"]
-) -> dict[str, float]:
-    grouped: dict[str, list[float]] = defaultdict(list)
-
-    for d in dcts:
-        for k, v in d.items():
-            grouped[k].append(v)
-
-    result: dict[str, float] = {}
-    for k, values in grouped.items():
-        if stats_type == "min":
-            result[k] = min(values)
-        elif stats_type == "max":
-            result[k] = max(values)
-        elif stats_type == "mean":
-            result[k] = sum(values) / len(values)
-        else:
-            raise ValueError(
-                f"Invalid stats_type: {stats_type!r}. Must be 'min', 'max', or 'mean'."
+    def solve_static(self, floors_height: np.ndarray, H: float, recurrence_period: float = 50):
+        analysis_results = {}
+        for direction in self.directional_forces:
+            forces = self.directional_forces[direction]
+            U_h = self.wind_analytics.get_U_H(
+                height=H, direction=direction, recurrence_period=recurrence_period
             )
-
-    return result
-
-
-class HFPIFullResults(BaseModel):
-    results_folder: pathlib.Path
-
-    results: dict[HFPICaseParameters, solver.HFPIResults] = Field(default_factory=dict)
-
-    def load_result(self, parameters: HFPICaseParameters):
-        filename = parameters.get_results_filename(self.results_folder)
-        self.results[parameters] = solver.HFPIResults.load(filename)
-
-    def __getitem__(self, k: int) -> solver.HFPIResults:
-        return list(self.results.values())[k]
-
-    @classmethod
-    def load_all_results(cls, parameters: list[HFPICaseParameters], results_folder: pathlib.Path):
-        results = cls(results_folder=results_folder)
-        for p in parameters:
-            results.load_result(p)
-        return results
-
-    def join_by(self, callback: Callable[[HFPICaseParameters], T]) -> dict[T, HFPIFullResults]:
-        joined_values = {}
-        for p in self.results:
-            key = callback(p)
-            if key not in joined_values:
-                joined_values[key] = []
-            joined_values[key].append((p, self.results[p]))
-        return {
-            k: HFPIFullResults(
-                results_folder=self.results_folder, results={p: r for p, r in res_list}
+            dim_data = static.DimensionalData(
+                U_H=U_h, height=self.dimensions.height, base=self.dimensions.base
             )
-            for k, res_list in joined_values.items()
-        }
+            res = static.solve_static_forces(
+                forces=forces, dim_data=dim_data, floors_heights=floors_height
+            )
+            analysis_results[direction] = ResultType(static_res=res, dynamic_res=None)
 
-    def join_by_recurrence_period(self):
-        return self.join_by(lambda params: params.recurrence_period)
+        return DirectionalAnalysisResults(results=analysis_results)
 
-    def join_by_xi(self):
-        return self.join_by(lambda params: params.xi)
 
-    def join_by_direction(self):
-        return self.join_by(lambda params: params.direction)
-
-    def filter_by_xi(self, xi: float):
-        return self.join_by_xi()[xi]
-
-    def filter_by_recurrence_period(self, recurrence_period: float):
-        return self.join_by_recurrence_period()[recurrence_period]
-
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
-        return max(res.get_max_acceleration(pos, floor) for res in self.results.values())
-
-    def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1
-    ):
-        res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
-
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_forces_static_eq(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
-
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_moments_static_eq(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
+class ResultType(BaseModel):
+    static_res: static.StaticResults
+    dynamic_res: dynamic.HFPIResults | None
 
     def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
         dcts = [
-            v.static_results.get_stats_global_forces_static(stats_type)
+            v.static_res.get_stats_global_forces_static(stats_type)
             for k, v in self.results.items()
         ]
-        return _get_global_stats_dct_float(dcts, stats_type)
+        return common.get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
         dcts = [
-            v.static_results.get_stats_global_moments_static(stats_type)
+            v.static_res.get_stats_global_moments_static(stats_type)
             for k, v in self.results.items()
         ]
-        return _get_global_stats_dct_float(dcts, stats_type)
+        return common.get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
+        forces_eq = self.dynamic_res.get_stats_forces_static_eq(stats_type)
+        forces_static = self.static_res.get_stats_forces_static(stats_type)
+        return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
+
+    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
+        mom_eq = self.dynamic_res.get_stats_moments_static_eq(stats_type)
+        mom_static = self.static_res.get_stats_moments_static(stats_type)
+        return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
+
+    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
+        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(stats_type)
+        forces_static = self.static_res.get_stats_global_forces_static(stats_type)
+        return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
+
+    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
+        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(stats_type)
+        mom_static = self.static_res.get_stats_global_moments_static(stats_type)
+        return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
+
+    def save(self, filename: pathlib.Path):
+        filename.parent.mkdir(exist_ok=True, parents=True)
+        with open(filename, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, filename: pathlib.Path):
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+
+
+class DirectionalAnalysisResults(BaseModel):
+    results: dict[float, ResultType] = Field(default_factory=dict)
+
+    def join_by_direction(self):
+        return {d: DirectionalAnalysisResults(results={d: res}) for d, res in self.results.items()}
+
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [
+            v.static_res.get_stats_global_forces_static(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [
+            v.static_res.get_stats_global_moments_static(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [
+            v.dynamic_res.get_stats_global_forces_static_eq(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
+
+    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+        dcts = [
+            v.dynamic_res.get_stats_global_moments_static_eq(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_forces_effective(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
+        dcts = [
+            v.dynamic_res.get_stats_global_forces_effective(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [v.get_stats_global_moments_effective(stats_type) for k, v in self.results.items()]
-        return _get_global_stats_dct_float(dcts, stats_type)
+        dcts = [
+            v.dynamic_res.get_stats_global_moments_effective(stats_type)
+            for k, v in self.results.items()
+        ]
+        return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_global_peaks_by_direction(self) -> dict[str, pd.DataFrame]:
+    def get_global_peaks_by_direction(
+        self,
+        variable_types: list[Literal["static", "hfpi", "effective"]] = [
+            "static",
+            "hfpi",
+            "effective",
+        ],
+    ) -> dict[str, pd.DataFrame]:
         """Get global peaks per direction of results
 
         Returns results as [load_type] = DataFrame["direction", stats_type]
@@ -295,26 +324,28 @@ class HFPIFullResults(BaseModel):
         res = self.join_by_direction()
 
         axis = ["x", "y", "z"]
+        vars_use: list[str] = []
+        if "static" in variable_types:
+            vars_use.extend(["forces_static", "moments_static"])
+        if "hfpi" in variable_types:
+            vars_use.extend(["forces_static_eq", "moments_static_eq"])
+        if "effective" in variable_types:
+            vars_use.extend(["forces_effective", "moments_effective"])
 
         # Dict as [load_type][(stats_type, direction)] = value
-        joined_res: dict[str, dict[tuple[str, float], float]] = {
-            "forces_static": {},
-            "moments_static": {},
-            "forces_static_eq": {},
-            "moments_static_eq": {},
-            "forces_effective": {},
-            "moments_effective": {},
-        }
+        joined_res: dict[str, dict[tuple[str, float], float]] = {k: {} for k in vars_use}
+
         for d, r in res.items():
-            calls = [
-                ("forces_static", r.get_stats_global_forces_static),
-                ("moments_static", r.get_stats_global_moments_static),
-                ("forces_static_eq", r.get_stats_global_forces_static_eq),
-                ("moments_static_eq", r.get_stats_global_moments_static_eq),
-                ("forces_effective", r.get_stats_effective_global_forces),
-                ("moments_effective", r.get_stats_effective_global_moments),
-            ]
-            for name, c in calls:
+            calls = {
+                "forces_static": r.get_stats_global_forces_static,
+                "moments_static": r.get_stats_global_moments_static,
+                "forces_static_eq": r.get_stats_global_forces_static_eq,
+                "moments_static_eq": r.get_stats_global_moments_static_eq,
+                "forces_effective": r.get_stats_effective_global_forces,
+                "moments_effective": r.get_stats_effective_global_moments,
+            }
+            for name in vars_use:
+                c = calls[name]
                 min_vals = c("min")
                 max_vals = c("max")
                 mean_vals = c("mean")
@@ -337,3 +368,63 @@ class HFPIFullResults(BaseModel):
             dct_dfs[k] = pd.DataFrame(dct)
 
         return dct_dfs
+
+    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
+        return max(
+            res.dynamic_res.get_max_acceleration(pos, floor) for res in self.results.values()
+        )
+
+    def get_max_acceleration_by_recurrence_period(
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+    ):
+        res = self.join_by_recurrence_period()
+        return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
+
+
+class HFPIAnalysisResults(DirectionalAnalysisResults):
+    results_folder: pathlib.Path
+
+    results: dict[HFPICaseParameters, ResultType] = Field(default_factory=dict)  # type: ignore
+
+    def load_result(self, parameters: HFPICaseParameters):
+        filename = parameters.get_results_filename(self.results_folder)
+        self.results[parameters] = ResultType.load(filename)
+
+    def __getitem__(self, k: int) -> ResultType:
+        return list(self.results.values())[k]
+
+    @classmethod
+    def load_all_results(cls, parameters: list[HFPICaseParameters], results_folder: pathlib.Path):
+        results = cls(results_folder=results_folder)
+        for p in parameters:
+            results.load_result(p)
+        return results
+
+    def join_by(self, callback: Callable[[HFPICaseParameters], T]) -> dict[T, HFPIAnalysisResults]:
+        joined_values = {}
+        for p in self.results:
+            key = callback(p)
+            if key not in joined_values:
+                joined_values[key] = []
+            joined_values[key].append((p, self.results[p]))
+        return {
+            k: HFPIAnalysisResults(
+                results_folder=self.results_folder, results={p: r for p, r in res_list}
+            )
+            for k, res_list in joined_values.items()
+        }
+
+    def join_by_recurrence_period(self):
+        return self.join_by(lambda params: params.recurrence_period)
+
+    def join_by_xi(self):
+        return self.join_by(lambda params: params.xi)
+
+    def join_by_direction(self):
+        return self.join_by(lambda params: params.direction)
+
+    def filter_by_xi(self, xi: float):
+        return self.join_by_xi()[xi]
+
+    def filter_by_recurrence_period(self, recurrence_period: float):
+        return self.join_by_recurrence_period()[recurrence_period]

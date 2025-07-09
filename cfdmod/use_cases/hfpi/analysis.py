@@ -10,7 +10,7 @@ import scipy
 from matplotlib.ticker import FuncFormatter
 from scipy.ndimage import gaussian_filter
 
-from cfdmod.use_cases.hfpi import solver
+from cfdmod.use_cases.hfpi import dynamic
 
 plot_style = {
     "AeroSim": {
@@ -38,8 +38,8 @@ def set_plt_style():
 
 
 def plot_force_spectrum(
-    forces_data: solver.HFPIForcesData,
-    structure_data: solver.HFPIStructuralData,
+    forces_data: dynamic.HFPIForcesData,
+    structure_data: dynamic.HFPIStructuralData,
     *,
     plot_mz: bool = True,
     sigma: float = 2,
@@ -83,7 +83,7 @@ def plot_force_spectrum(
 def plot_force_spectrum_np(
     ax,
     forces_dct: dict[str, np.ndarray],
-    structure_data: solver.HFPIStructuralData,
+    structure_data: dynamic.HFPIStructuralData,
     *,
     delta_t: float,
     plot_mz: bool = True,
@@ -211,7 +211,13 @@ def plot_global_stats_results(
 
 
 def plot_global_stats_per_direction(
-    stats: dict[str, pd.DataFrame], unit_conversion: float = 1 / 1e6, unit_name: str = "MN"
+    stats: dict[str, pd.DataFrame],
+    unit_conversion: float = 1 / 1e6,
+    unit_name: str = "MN",
+    variable_types: list[Literal["static", "hfpi"]] = [
+        "static",
+        "hfpi",
+    ],
 ):
     """"""
     fig, axs = plt.subplots(3, 2, figsize=(10, 12), sharey="row")
@@ -222,7 +228,7 @@ def plot_global_stats_per_direction(
     ticks = max(30, directions[1] - directions[0])
 
     color_static = "#333333"
-    color_eq = "#DB9B10"
+    color_eq = "#E69F00"
 
     k = "forces_static"
     uf = f"{unit_name}"
@@ -252,18 +258,22 @@ def plot_global_stats_per_direction(
         style_global_stats_plot(
             fig, axs[ij], scalar_name=f"F{d}", unit=uf, ticks_interval=ticks, max_dir=max_dir
         )
-        plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
-        plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
-        axs[ij].plot([0, 360], [0, 0], color="black", alpha=0.2)
+        axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
+        if "static" in variable_types:
+            plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
+        if "hfpi" in variable_types:
+            plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
 
     k = "moments_static"
     for d, ij in [("x", (1, 0)), ("y", (1, 1)), ("z", (2, 0))]:
         style_global_stats_plot(
             fig, axs[ij], scalar_name=f"M{d}", unit=um, ticks_interval=ticks, max_dir=max_dir
         )
-        plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
-        plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
-        axs[ij].plot([0, 360], [0, 0], color="black", alpha=0.2)
+        axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
+        if "static" in variable_types:
+            plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
+        if "hfpi" in variable_types:
+            plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
 
     axs[2, 0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
     axs[2, 0].plot([0, 360], [0, 0], color="black", alpha=0.2)
@@ -288,39 +298,98 @@ def export_global_stats_per_direction_csv(csv_path: pathlib.Path, stats: dict[st
     df.to_csv(csv_path, index=None)
 
 
-def plot_max_acceleration(max_ac: dict[float,float], structure_data: solver.HFPIStructuralData, project_name: str="AeroSim", unit_conversion: float = 1000/9.806, unit_name: str="milli-g"):
-    color_eq = "#DB9B10"
+def plot_max_acceleration(
+    max_ac: dict[float, float],
+    structure_data: dynamic.HFPIStructuralData,
+    project_name: str = "AeroSim",
+    unit_conversion: float = 1000 / 9.806,
+    unit_name: str = "milli-g",
+):
+    color_eq = "#E69F00"
     color_nbcc = "#2F993A"
     color_nbr_res = "#A82D2D"
     color_nbr_com = "#426AC2"
 
+    range_freq = [
+        structure_data.df_modes["frequency"].min(),
+        min(structure_data.df_modes["frequency"].max(), 1),
+    ]
+    range_NBR_ac_residential = [
+        0.01 * 4.08 * range_freq[1] ** -0.445 * unit_conversion,
+        0.01 * 4.08 * range_freq[0] ** -0.445 * unit_conversion,
+    ]
+    range_NBR_ac_comertial = [
+        0.01 * 6.12 * range_freq[1] ** -0.445 * unit_conversion,
+        0.01 * 6.12 * range_freq[0] ** -0.445 * unit_conversion,
+    ]
+    range_NBCC = [15 * (9.806 / 1000) * unit_conversion, 25 * (9.806 / 1000) * unit_conversion]
 
-    range_freq = [structure_data.df_modes['frequency'].min(), min(structure_data.df_modes['frequency'].max(), 1)]
-    range_NBR_ac_residential = [0.01*4.08*range_freq[1]**-0.445 *unit_conversion, 0.01*4.08*range_freq[0]**-0.445 *unit_conversion]
-    range_NBR_ac_comertial = [0.01*6.12*range_freq[1]**-0.445 *unit_conversion, 0.01*6.12*range_freq[0]**-0.445 *unit_conversion]
-    range_NBCC = [15*(9.806/1000)*unit_conversion, 25*(9.806/1000)*unit_conversion]
-    
     print(range_NBR_ac_residential, range_NBR_ac_comertial)
     fig, ax = plt.subplots()
-    
-    ax.plot([1,1],range_NBR_ac_residential,'-',linewidth=4, label=f"NBR 6123 - residential", color=color_nbr_res)
-    ax.plot([0.9,1.1],[range_NBR_ac_residential[0],range_NBR_ac_residential[0]],'-',linewidth=3,color=color_nbr_res)
-    ax.plot([0.9,1.1],[range_NBR_ac_residential[1],range_NBR_ac_residential[1]],'-',linewidth=3,color=color_nbr_res)
 
-    ax.plot([.99,.99],range_NBR_ac_comertial,'-',linewidth=4, label=f"NBR 6123 - comercial", color=color_nbr_com)
-    ax.plot([0.9,1.1],[range_NBR_ac_comertial[0],range_NBR_ac_comertial[0]],'-',linewidth=3,color=color_nbr_com)
-    ax.plot([0.9,1.1],[range_NBR_ac_comertial[1],range_NBR_ac_comertial[1]],'-',linewidth=3,color=color_nbr_com)
-    
-    ax.plot([10,10],range_NBCC,'-',linewidth=4, label=f"NBCC - residential and comercial",color=color_nbcc)
-    ax.plot([9.9,10.1],[range_NBCC[0],range_NBCC[0]],'-',linewidth=3,color=color_nbcc)
-    ax.plot([9.9,10.1],[range_NBCC[1],range_NBCC[1]],'-',linewidth=3,color=color_nbcc)
-    
-    ax.plot(1,max_ac[1.0] *unit_conversion,'o',label=project_name, color=color_eq)
-    ax.plot(10,max_ac[10.0] *unit_conversion,'o', color=color_eq)
+    ax.plot(
+        [1, 1],
+        range_NBR_ac_residential,
+        "-",
+        linewidth=4,
+        label=f"NBR 6123 - residential",
+        color=color_nbr_res,
+    )
+    ax.plot(
+        [0.9, 1.1],
+        [range_NBR_ac_residential[0], range_NBR_ac_residential[0]],
+        "-",
+        linewidth=3,
+        color=color_nbr_res,
+    )
+    ax.plot(
+        [0.9, 1.1],
+        [range_NBR_ac_residential[1], range_NBR_ac_residential[1]],
+        "-",
+        linewidth=3,
+        color=color_nbr_res,
+    )
 
-    ax.set_ylabel(f'Acceleration [{unit_name}]')
-    ax.set_xlabel('Wind recurrence period')
+    ax.plot(
+        [0.99, 0.99],
+        range_NBR_ac_comertial,
+        "-",
+        linewidth=4,
+        label=f"NBR 6123 - comercial",
+        color=color_nbr_com,
+    )
+    ax.plot(
+        [0.9, 1.1],
+        [range_NBR_ac_comertial[0], range_NBR_ac_comertial[0]],
+        "-",
+        linewidth=3,
+        color=color_nbr_com,
+    )
+    ax.plot(
+        [0.9, 1.1],
+        [range_NBR_ac_comertial[1], range_NBR_ac_comertial[1]],
+        "-",
+        linewidth=3,
+        color=color_nbr_com,
+    )
+
+    ax.plot(
+        [10, 10],
+        range_NBCC,
+        "-",
+        linewidth=4,
+        label=f"NBCC - residential and comercial",
+        color=color_nbcc,
+    )
+    ax.plot([9.9, 10.1], [range_NBCC[0], range_NBCC[0]], "-", linewidth=3, color=color_nbcc)
+    ax.plot([9.9, 10.1], [range_NBCC[1], range_NBCC[1]], "-", linewidth=3, color=color_nbcc)
+
+    ax.plot(1, max_ac[1.0] * unit_conversion, "o", label=project_name, color=color_eq)
+    ax.plot(10, max_ac[10.0] * unit_conversion, "o", color=color_eq)
+
+    ax.set_ylabel(f"Acceleration [{unit_name}]")
+    ax.set_xlabel("Wind recurrence period")
     ax.set_title(f"Maximum acceleration")
     ax.legend()
-    
+
     return fig, ax
