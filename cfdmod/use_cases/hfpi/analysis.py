@@ -218,6 +218,7 @@ def plot_global_stats_per_direction(
         "static",
         "hfpi",
     ],
+    xticks: float = 30,
 ):
     """"""
     fig, axs = plt.subplots(3, 2, figsize=(10, 12), sharey="row")
@@ -225,7 +226,6 @@ def plot_global_stats_per_direction(
 
     directions = stats["forces_static"]["direction"].to_numpy()
     max_dir = directions.max()
-    ticks = max(30, directions[1] - directions[0])
 
     color_static = "#333333"
     color_eq = "#E69F00"
@@ -240,12 +240,11 @@ def plot_global_stats_per_direction(
         *,
         scalar_name: str,
         unit: str,
-        ticks_interval: float = 45,
         max_dir: float = 350,
     ):
         # ax.set_xlabel("Wind Direction (degrees)")
         ax.set_ylabel(f"{scalar_name} ({unit})", weight="bold")
-        ax.set_xticks(np.arange(0, max_dir + 1, ticks_interval))
+        ax.set_xticks(np.arange(0, max_dir + 1, xticks))
         ax.set_xlim(0 - 1, max_dir + 1)
         ax.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.0f}°"))
         # ax.set_title(f"{scalar_name}", weight="bold")
@@ -256,7 +255,7 @@ def plot_global_stats_per_direction(
 
     for d, ij in [("x", (0, 0)), ("y", (0, 1))]:
         style_global_stats_plot(
-            fig, axs[ij], scalar_name=f"F{d}", unit=uf, ticks_interval=ticks, max_dir=max_dir
+            fig, axs[ij], scalar_name=f"F{d}", unit=uf, max_dir=max_dir
         )
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
@@ -267,7 +266,7 @@ def plot_global_stats_per_direction(
     k = "moments_static"
     for d, ij in [("x", (1, 0)), ("y", (1, 1)), ("z", (2, 0))]:
         style_global_stats_plot(
-            fig, axs[ij], scalar_name=f"M{d}", unit=um, ticks_interval=ticks, max_dir=max_dir
+            fig, axs[ij], scalar_name=f"M{d}", unit=um, max_dir=max_dir
         )
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
