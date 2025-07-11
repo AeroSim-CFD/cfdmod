@@ -59,14 +59,16 @@ class WindAnalysis(BaseModel):
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
-    def get_U_H(self, height: float, direction: float, recurrence_period: float) -> float:
+    def get_U_H(
+        self, height: float, direction: float, recurrence_period: float, use_kd: bool = True
+    ) -> float:
         if self.U_H_overwrite is not None:
             return self.U_H_overwrite
 
         df = self.directional_data
         row = df.loc[df["wind_direction"] == direction].squeeze()
         V0 = self.V0
-        kd = row["Kd"]
+        kd = row["Kd"] if use_kd else 1
         S2 = self.S2(height, direction)
         S3 = self.S3(recurrence_period)
         return V0 * kd * S2 * S3
@@ -85,6 +87,7 @@ class HFPICaseParameters(BaseModel, frozen=True):
     direction: float
     xi: float
     recurrence_period: float
+    use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
 
     def get_results_filename(self, base_folder: pathlib.Path):
@@ -149,7 +152,10 @@ class MultipleAnalysisHandler(BaseModel):
 
         dim = self.dimensions
         U_h = self.wind_analytics.get_U_H(
-            dim.height, parameters.direction, parameters.recurrence_period
+            dim.height,
+            parameters.direction,
+            parameters.recurrence_period,
+            use_kd=parameters.use_kd,
         )
         dim_data = static.DimensionalData(
             U_H=U_h,
@@ -159,8 +165,8 @@ class MultipleAnalysisHandler(BaseModel):
 
         return _HFPIParams(
             structural_data=parameters.structural_data,
-            forces=forces,
             dim_data=dim_data,
+            forces=forces,
             xi=parameters.xi,
         )
 
@@ -170,16 +176,20 @@ class MultipleAnalysisHandler(BaseModel):
         structural_data: dynamic.HFPIStructuralData,
         directions: list[float],
         xis: list[float],
+        use_kd: list[bool],
         recurrence_periods: list[float],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
                 direction=direction,
-                xi=xi,
                 recurrence_period=period,
+                use_kd=kd,
+                xi=xi,
                 structural_data=structural_data,
             )
-            for direction, xi, period in itertools.product(*[directions, xis, recurrence_periods])
+            for direction, xi, kd, period in itertools.product(
+                *[directions, xis, use_kd, recurrence_periods]
+            )
         ]
         return cases_parameters
 
@@ -191,12 +201,12 @@ class MultipleAnalysisHandler(BaseModel):
         with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)
 
-    def solve_static(self, floors_height: np.ndarray, H: float, recurrence_period: float = 50):
+    def solve_static(self, floors_height: np.ndarray, H: float, recurrence_period: float = 50, use_kd: bool = False):
         analysis_results = {}
         for direction in self.directional_forces:
             forces = self.directional_forces[direction]
             U_h = self.wind_analytics.get_U_H(
-                height=H, direction=direction, recurrence_period=recurrence_period
+                height=H, direction=direction, recurrence_period=recurrence_period, use_kd=use_kd,
             )
             dim_data = static.DimensionalData(
                 U_H=U_h, height=self.dimensions.height, base=self.dimensions.base
