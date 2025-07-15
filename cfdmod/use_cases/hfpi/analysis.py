@@ -291,7 +291,7 @@ def plot_floor_by_floor_mean_peaks(
         for dct_data, key, mark, label_n in zip((mean_vals, max_vals, min_vals), keys, markers, labels):
             ax.plot(
                 dct_data[component] * unit_conversion,
-                np.arange(0, len(dct_data[component])+1),
+                np.arange(0, len(dct_data[component])),
                 marker=mark,
                 label=r"$ \bf{AeroSim}$" + label_n,
                 fillstyle="none",
