@@ -36,12 +36,12 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
 def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
-    Z, XR, YR, M, I: height, center of rotation, mass, moment of inertia
+    Z, M, I: height, center of rotation, mass, moment of inertia
     """
 
     df = pd.read_csv(csv_path, index_col=None)
-    # "XG", "YG", "I"
-    req_keys = ["Z", "XR", "YR", "M", "I"]
+    # "XG", "YG", "XR", "YR", "I", "R"
+    req_keys = ["Z", "M", "I"]
     if not common.validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
