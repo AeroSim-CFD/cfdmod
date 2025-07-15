@@ -24,7 +24,7 @@ def fill_forces_floors(forces_df: pd.DataFrame, n_floors: int):
     for i in range(n_floors):
         if i in floors:
             continue
-        forces_df[i] = 0
+        forces_df[str(i)] = 0
 
 
 def get_stats_dct(
