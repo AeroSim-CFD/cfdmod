@@ -40,7 +40,7 @@ class DimensionalData(BaseModel):
         return self.base * self.base * self.height * self.dynamic_pressure
 
 
-def read_hfpi_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
+def read_static_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
     """Read forces for HFPI from path, with scalar key specified"""
     df_force = pd.read_hdf(hdf_path)
     req_keys = ["time_normalized"]
@@ -48,7 +48,19 @@ def read_hfpi_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI Forces HDF {hdf_path.as_posix()}. Found only keys {df_force.columns}"
         )
+
+    # Remove points that are not in any area (-1 label)
+    col_neg = next(iter(k for k in df_force.columns if isinstance(k, str) and k.startswith('-1')), None)
+    if(col_neg is not None):
+        df_force.drop(columns=[col_neg], inplace=True)
+
     return df_force
+
+def remove_suffix_static_forces(df_forces: pd.DataFrame):
+    """Remove the suffixes for static forces in df_forces"""
+    columns = list(df_forces.columns)
+    rename_colums = {k: k.split("-")[0] for k in columns if "-" in k and k != "time_normalized"}
+    df_forces.rename(columns=rename_colums, inplace=True)
 
 
 def scale_forces(
@@ -95,14 +107,18 @@ class StaticForcesData(BaseModel):
         return self.cf_x[k][1] - self.cf_x[k][0]
 
     @classmethod
-    def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path):
-        cf_x = read_hfpi_forces(cf_x_h5)
-        cf_y = read_hfpi_forces(cf_y_h5)
-        cm_z = read_hfpi_forces(cm_z_h5)
+    def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path, remove_suffix: bool = False):
+        cf_x = read_static_forces(cf_x_h5)
+        cf_y = read_static_forces(cf_y_h5)
+        cm_z = read_static_forces(cm_z_h5)
         if len(cf_x) != len(cf_y) or len(cf_x) != len(cm_z):
             raise ValueError(
                 f"Length of forces data don't match. Paths {cf_x_h5, cf_y_h5, cm_z_h5}"
             )
+
+        if(remove_suffix):
+            for df in (cf_x, cf_y, cm_z):
+                remove_suffix_static_forces(df)
 
         return StaticForcesData(
             cf_x=cf_x,
