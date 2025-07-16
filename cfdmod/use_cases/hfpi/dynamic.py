@@ -225,7 +225,7 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
 
     Returns displacement for time series for given mode
     """
-    end_step = len(gen_force)-1 * dt
+    end_step = (len(gen_force)-1) * dt
     t_eval = np.linspace(0, end_step, len(gen_force))
 
     from scipy.interpolate import interp1d
@@ -439,7 +439,7 @@ def solve_hfpi(
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
-        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
+        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi)
         # gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
         all_real_displacements.append(real_displacement)
