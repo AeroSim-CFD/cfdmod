@@ -225,7 +225,8 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
 
     Returns displacement for time series for given mode
     """
-    t_eval = np.arange(0, len(gen_force) * dt, dt)
+    end_step = len(gen_force)-1 * dt
+    t_eval = np.linspace(0, end_step, len(gen_force))
 
     from scipy.interpolate import interp1d
 
