@@ -100,8 +100,13 @@ class HFPICaseParameters(BaseModel, frozen=True):
         )
 
 
-def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters):
+def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters, overwrite: bool = True):
     """Solve HFPI for system and save it to disk"""
+    
+    path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
+    if(path_save.exists() and not overwrite):
+        logger.info(f"Case {parameters.model_dump_json()} already has file saved, skipping it.")
+        return
 
     hfpi_params = hfpi_analysis.generate_hfpi_solver_params(parameters)
     floors_heights = hfpi_params.structural_data.df_floors["Z"].to_numpy()
@@ -123,15 +128,14 @@ def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICase
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
     res = ResultType(static_res=static_results, dynamic_res=hfpi_results)
-    path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
     res.save(path_save)
 
     logger.info(f"Saved HFPI results to {path_save.as_posix()}")
     return hfpi_results
 
 
-def _wrapper_solve_hfpi_case(args: tuple[MultipleAnalysisHandler, HFPICaseParameters]):
-    return solve_hfpi_case(args[0], args[1])
+def _wrapper_solve_hfpi_case(args: tuple[MultipleAnalysisHandler, HFPICaseParameters, bool]):
+    return solve_hfpi_case(args[0], args[1], args[2])
 
 
 class _HFPIParams(BaseModel):
@@ -199,8 +203,8 @@ class MultipleAnalysisHandler(BaseModel):
         ]
         return cases_parameters
 
-    def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None):
-        args = [(self, param) for param in parameters]
+    def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None, overwrite: bool = True):
+        args = [(self, param, overwrite) for param in parameters]
 
         n_proc = cpu_count()
         if max_workers is not None:
