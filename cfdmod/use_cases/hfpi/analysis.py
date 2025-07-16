@@ -19,6 +19,8 @@ plot_style = {
     },
 }
 
+Languages = Literal["pt-br", "en"]
+
 
 def plot_force_spectrum(
     forces_data: dynamic.HFPIForcesData,
@@ -157,10 +159,11 @@ def plot_global_stats_results(
     direction: Literal["x", "y", "z"],
     *,
     color: str,
-    is_dynamic: bool,
+    txt_lg: str,
     plot_mean: bool,
     plot_peaks: bool,
     unit_conversion: float = 1 / 1e6,
+    language: Languages = "en",
     **plot_kwargs,
 ):
     d = direction
@@ -172,7 +175,7 @@ def plot_global_stats_results(
     kwargs["markerfacecolor"] = "none"
     kwargs["markeredgecolor"] = color
     kwargs["markeredgewidth"] = 1.5
-    txt_lg = "static equivalent" if is_dynamic else "static"
+    # txt_lg = "static equivalent" if is_dynamic else "static"
 
     if plot_peaks:
         ax.plot(
@@ -190,25 +193,29 @@ def plot_global_stats_results(
             **kwargs,
         )
     if plot_mean:
-        ax.plot(df["direction"], df[f"mean_{d}"] * unit_conversion, "-", label="Mean", **kwargs)
+        mean_txt = "Mean" if language == "en" else "Média"
+        ax.plot(df["direction"], df[f"mean_{d}"] * unit_conversion, "-", label=mean_txt, **kwargs)
 
 
 def plot_global_stats_per_direction(
-    stats: dict[str, pd.DataFrame],
+    stats_xis: dict[float, dict[str, pd.DataFrame]],
     unit_conversion: float = 1 / 1e6,
     unit_name: str = "MN",
     variable_types: list[Literal["static", "hfpi"]] = ["static", "hfpi"],
     xticks: float = 30,
+    language: Languages = "pt-br",
 ):
-    """"""
+    """Plot global values for statistics of results"""
+
     fig, axs = plt.subplots(3, 2, figsize=(10, 12), sharey="row")
     axs[2, 1].set_visible(False)
 
-    directions = stats["forces_static"]["direction"].to_numpy()
+    stats_ex = next(iter(stats_xis.values()))
+    directions = stats_ex["forces_static"]["direction"].to_numpy()
     max_dir = directions.max()
 
     color_static = "#333333"
-    color_eq = "#E69F00"
+    colors_eq = ["#E69F00", "#E66B00", "#BC00DD","#0097DD"]
 
     k = "forces_static"
     uf = f"{unit_name}"
@@ -229,9 +236,12 @@ def plot_global_stats_per_direction(
         ax.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.0f}°"))
         # ax.set_title(f"{scalar_name}", weight="bold")
 
+    text_sta = "estático" if language == "pt-br" else "static"
+    text_dyn = "estático equivalente" if language == "pt-br" else "static equivalent"
+
     kwargs = dict(plot_peaks=True, unit_conversion=unit_conversion)
-    kwargs_dyn = kwargs | dict(is_dynamic=True, plot_mean=False, color=color_eq)
-    kwargs_stat = kwargs | dict(is_dynamic=False, plot_mean=True, color=color_static)
+    kwargs_dyn = [kwargs | dict(txt_lg=fr"{text_dyn}, $\xi={xi*100:.2f}$%", plot_mean=False, color=colors_eq[i], language=language, alpha=0.9) for i, xi in enumerate(stats_xis.keys())]
+    kwargs_stat = kwargs | dict(txt_lg=f"{text_sta}", plot_mean=True, color=color_static, language=language)
 
     for d, ij in [("x", (0, 0)), ("y", (0, 1))]:
         style_global_stats_plot(
@@ -239,9 +249,10 @@ def plot_global_stats_per_direction(
         )
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
-            plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
+            plot_global_stats_results(axs[ij], stats_ex[k], d, **kwargs_stat)
         if "hfpi" in variable_types:
-            plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
+            for i, (xi, stats) in enumerate(stats_xis.items()):
+                plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn[i])
 
     k = "moments_static"
     for d, ij in [("x", (1, 0)), ("y", (1, 1)), ("z", (2, 0))]:
@@ -250,9 +261,10 @@ def plot_global_stats_per_direction(
         )
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
-            plot_global_stats_results(axs[ij], stats[k], d, **kwargs_stat)
+            plot_global_stats_results(axs[ij], stats_ex[k], d, **kwargs_stat)
         if "hfpi" in variable_types:
-            plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn)
+            for i, (xi, stats) in enumerate(stats_xis.items()):
+                plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn[i])
 
     axs[2, 0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
     axs[2, 0].plot([0, 360], [0, 0], color="black", alpha=0.2)
