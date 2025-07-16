@@ -378,6 +378,7 @@ def plot_max_acceleration(
         linewidth=4,
         label=f"NBR 6123 - residential",
         color=color_nbr_res,
+        alpha=0.8,
     )
     ax.plot(
         [0.9, 1.1],
@@ -385,6 +386,7 @@ def plot_max_acceleration(
         "-",
         linewidth=3,
         color=color_nbr_res,
+        alpha=0.8,
     )
     ax.plot(
         [0.9, 1.1],
@@ -392,6 +394,7 @@ def plot_max_acceleration(
         "-",
         linewidth=3,
         color=color_nbr_res,
+        alpha=0.8,
     )
 
     ax.plot(
@@ -401,6 +404,7 @@ def plot_max_acceleration(
         linewidth=4,
         label=f"NBR 6123 - comercial",
         color=color_nbr_com,
+        alpha=0.8,
     )
     ax.plot(
         [0.9, 1.1],
@@ -408,6 +412,7 @@ def plot_max_acceleration(
         "-",
         linewidth=3,
         color=color_nbr_com,
+        alpha=0.8,
     )
     ax.plot(
         [0.9, 1.1],
@@ -415,6 +420,7 @@ def plot_max_acceleration(
         "-",
         linewidth=3,
         color=color_nbr_com,
+        alpha=0.8,
     )
 
     ax.plot(
@@ -424,12 +430,12 @@ def plot_max_acceleration(
         linewidth=4,
         label=f"NBCC - residential and comercial",
         color=color_nbcc,
+        alpha=0.8,
     )
-    ax.plot([9.9, 10.1], [range_NBCC[0], range_NBCC[0]], "-", linewidth=3, color=color_nbcc)
-    ax.plot([9.9, 10.1], [range_NBCC[1], range_NBCC[1]], "-", linewidth=3, color=color_nbcc)
+    ax.plot([9.9, 10.1], [range_NBCC[0], range_NBCC[0]], "-", linewidth=3, color=color_nbcc, alpha=0.8)
+    ax.plot([9.9, 10.1], [range_NBCC[1], range_NBCC[1]], "-", linewidth=3, color=color_nbcc, alpha=0.8)
 
-    ax.plot(1, max_ac[1.0] * unit_conversion, "o", label=project_name, color=color_eq)
-    ax.plot(10, max_ac[10.0] * unit_conversion, "o", color=color_eq)
+    ax.plot(list(max_ac.keys()), np.array(list(max_ac.values())) * unit_conversion, "o", label=project_name, color=color_eq)
 
     ax.set_ylabel(f"Acceleration [{unit_name}]")
     ax.set_xlabel("Wind recurrence period")
