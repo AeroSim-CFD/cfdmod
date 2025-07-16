@@ -319,18 +319,14 @@ class DirectionalAnalysisResults(BaseModel):
         return common.get_global_stats_dct_float(dcts, stats_type)
 
     def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [
-            v.dynamic_res.get_stats_global_forces_effective(stats_type)
-            for k, v in self.results.items()
-        ]
-        return common.get_global_stats_dct_float(dcts, stats_type)
+        dct_static = self.get_stats_global_forces_static(stats_type)
+        dct_dyn = self.get_stats_global_forces_static_eq(stats_type)
+        return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
     def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"]):
-        dcts = [
-            v.dynamic_res.get_stats_global_moments_effective(stats_type)
-            for k, v in self.results.items()
-        ]
-        return common.get_global_stats_dct_float(dcts, stats_type)
+        dct_static = self.get_stats_global_moments_static(stats_type)
+        dct_dyn = self.get_stats_global_moments_static_eq(stats_type)
+        return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
     def get_global_peaks_by_direction(
         self,
