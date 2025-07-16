@@ -195,9 +195,10 @@ class MultipleAnalysisHandler(BaseModel):
 
     def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None):
         args = [(self, param) for param in parameters]
-        # Avoid RAM explosion
-        n_lim_workers = 10
-        n_proc = min(n_lim_workers, max_workers or cpu_count())
+
+        n_proc = cpu_count()
+        if(max_workers is not None):
+            n_proc = max_workers
         with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)
 
