@@ -442,11 +442,17 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def join_by_xi(self):
         return self.join_by(lambda params: params.xi)
 
+    def join_by_kd(self):
+        return self.join_by(lambda params: params.use_kd)
+
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
 
     def filter_by_xi(self, xi: float):
         return self.join_by_xi()[xi]
+
+    def filter_by_kd(self, kd: bool):
+        return self.join_by_kd()[kd]
 
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
