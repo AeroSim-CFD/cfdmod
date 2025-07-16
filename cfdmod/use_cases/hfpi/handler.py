@@ -90,8 +90,14 @@ class HFPICaseParameters(BaseModel, frozen=True):
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
 
+    def __hash__(self):
+        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd))
+
     def get_results_filename(self, base_folder: pathlib.Path):
-        return base_folder / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}.pickle"
+        return (
+            base_folder
+            / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}.pickle"
+        )
 
 
 def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters):
@@ -197,17 +203,26 @@ class MultipleAnalysisHandler(BaseModel):
         args = [(self, param) for param in parameters]
 
         n_proc = cpu_count()
-        if(max_workers is not None):
+        if max_workers is not None:
             n_proc = max_workers
         with Pool(processes=n_proc) as pool:
             pool.map(_wrapper_solve_hfpi_case, args)
 
-    def solve_static(self, floors_height: np.ndarray, H: float, recurrence_period: float = 50, use_kd: bool = False):
+    def solve_static(
+        self,
+        floors_height: np.ndarray,
+        H: float,
+        recurrence_period: float = 50,
+        use_kd: bool = False,
+    ):
         analysis_results = {}
         for direction in self.directional_forces:
             forces = self.directional_forces[direction]
             U_h = self.wind_analytics.get_U_H(
-                height=H, direction=direction, recurrence_period=recurrence_period, use_kd=use_kd,
+                height=H,
+                direction=direction,
+                recurrence_period=recurrence_period,
+                use_kd=use_kd,
             )
             dim_data = static.DimensionalData(
                 U_H=U_h, height=self.dimensions.height, base=self.dimensions.base
