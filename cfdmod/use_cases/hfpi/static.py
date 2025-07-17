@@ -25,7 +25,7 @@ class DimensionalData(BaseModel):
 
     @property
     def CST(self):
-        return min(self.base, self.height) / self.U_H
+        return self.base / self.U_H
 
     @property
     def time_normalization_factor(self):
