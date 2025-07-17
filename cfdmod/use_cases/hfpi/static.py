@@ -120,6 +120,10 @@ class StaticForcesData(BaseModel):
             for df in (cf_x, cf_y, cm_z):
                 remove_suffix_static_forces(df)
 
+        # Normalize time to start at 0
+        for df in (cf_x, cf_y, cm_z):
+            df["time_normalized"] -= df["time_normalized"].min()
+
         return StaticForcesData(
             cf_x=cf_x,
             cf_y=cf_y,
