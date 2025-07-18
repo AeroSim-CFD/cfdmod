@@ -94,12 +94,12 @@ class HFPIStructuralData(BaseModel):
     # list of modal shapes. Each shape has components of displacement X and Y and rotation Z.
     df_modal_shapes: list[pd.DataFrame]
 
-    max_active_modes: int
+    active_modes: list
     is_normalized: bool = False
 
     @property
     def n_modes(self):
-        return min(self.max_active_modes, len(self.df_modes))
+        return len(self.active_modes)
 
     @property
     def n_floors(self):
@@ -112,6 +112,7 @@ class HFPIStructuralData(BaseModel):
         floors_csv: pathlib.Path,
         phi_floors_csvs: list[pathlib.Path],
         max_active_modes: int = 1000,
+        inactive_modes: list = [],
     ):
         df_modes = read_hfpi_modes(modes_csv)
         df_floors = read_hfpi_floors_data(floors_csv)
@@ -120,11 +121,18 @@ class HFPIStructuralData(BaseModel):
             df = read_hfpi_floor_phi(p)
             df_phi_floors.append(df)
 
+        modes = list(df_modes['mode'])
+        inactive_modes = [m-1 for m in inactive_modes] #normalize from 1 index to 0 index
+        if max_active_modes < df_modes.shape[0]:
+            modes_to_deactivate = [m for m in range(max_active_modes-1:df_modes.shape[0])]
+            inactive_modes = list(set(inactive_modes)+set(modes_to_deactivate))
+        active_modes = [m-1 for m in modes if m not in inactive_modes]
+
         struct_data = HFPIStructuralData(
             df_modes=df_modes,
             df_floors=df_floors,
             df_modal_shapes=df_phi_floors,
-            max_active_modes=max_active_modes,
+            active_modes=active_modes
         )
         struct_data.validate_dfs()
         return struct_data
@@ -429,13 +437,13 @@ def solve_hfpi(
     normalized_forces.fill_missing_floors(structural_data.n_floors)
 
     generalized_forces = compute_generalized_forces(normalized_forces, structural_data)
-    n_modes = structural_data.n_modes
     dt = normalized_forces.delta_t
+
 
     all_real_displacements = []
     all_static_eq_force = []
 
-    for n_mode in range(n_modes):
+    for n_mode in structural_data.active_modes:
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
