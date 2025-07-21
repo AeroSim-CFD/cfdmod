@@ -124,7 +124,7 @@ class HFPIStructuralData(BaseModel):
         modes = list(df_modes['mode'])
         inactive_modes = [m-1 for m in inactive_modes] #normalize from 1 index to 0 index
         if max_active_modes < df_modes.shape[0]:
-            modes_to_deactivate = [m for m in range(max_active_modes-1:df_modes.shape[0])]
+            modes_to_deactivate = [m for m in range(max_active_modes-1, df_modes.shape[0])]
             inactive_modes = list(set(inactive_modes)+set(modes_to_deactivate))
         active_modes = [m-1 for m in modes if m not in inactive_modes]
 
@@ -378,8 +378,8 @@ class HFPIResults(BaseModel):
 
         return {"x": x, "y": y}
 
-    def get_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> np.ndarray:
-        """Get acceleration from given floor, considering radius for Z"""
+    def get_acceleration(self, pos: tuple[float, float] = (0, 0)) -> np.ndarray:
+        """Get acceleration considering position for radius (moment in Z)"""
         acceleration = {}
         dt = self.delta_t
 
@@ -389,9 +389,8 @@ class HFPIResults(BaseModel):
         disp_full["y"] += disp_rot["y"]
 
         for axis in ["x", "y"]:
-            disp = disp_full[axis][:, floor]
-            n = len(disp)
-            acc = np.zeros(n)
+            disp = disp_full[axis][:]
+            acc = np.zeros_like(disp, dtype=np.float32)
             # Central difference for internal points
             acc[1:-1] = (disp[2:] - 2 * disp[1:-1] + disp[:-2]) / dt**2
             # Forward/backward difference for boundaries
@@ -403,8 +402,15 @@ class HFPIResults(BaseModel):
 
         return scalar_acceleration
 
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> float:
-        return self.get_acceleration(pos, floor).max()
+    def get_floor_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> np.ndarray:
+        """Get acceleration from given floor, considering radius for Z"""
+        return self.get_acceleration(pos=pos)[:, floor]
+
+    def get_max_acceleration_per_floor(self, pos: tuple[float, float] = (0, 0)) -> np.ndarray:
+        return self.get_acceleration(pos=pos).max(axis=0)
+
+    def get_floor_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> float:
+        return self.get_floor_acceleration(pos=pos, floor=floor).max()
 
     def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
         return common.get_stats_dct(self.forces_static_eq, stats_type)
