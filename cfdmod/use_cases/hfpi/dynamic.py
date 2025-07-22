@@ -197,32 +197,6 @@ def compute_generalized_forces(
     return df_forces_gen
 
 
-def solve_euler_backwards(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
-    """Solve generalized displacement for a mode with Euler Backwards method
-
-    gen_force: history series of generaliized force for one particular mode.
-    dt: timestep
-    wp: mode frequency (radians/sec)
-    xi: dissipation (1%-2%)
-
-    Returns displacement for time series for given mode
-    """
-
-    gf = gen_force
-    n_samples = len(gen_force)
-    gp = np.full((n_samples + 2), gf.mean() / (wp**2))
-    # gp = np.full((n_samples + 2), 0)
-
-    a = 2 - 2 * xi * wp * dt - (wp**2) * (dt**2)
-    b = -1 + 2 * xi * wp * dt
-    c = dt**2
-
-    # displacement
-    for t in range(2, n_samples + 2):
-        gp[t] = a * gp[t - 1] + b * gp[t - 2] + c * gf[t - 2]
-    return gp[2:]
-
-
 def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
     """Solve generalized displacement for a mode with Euler Backwards method
 
@@ -371,9 +345,10 @@ class HFPIResults(BaseModel):
     def get_displacement_w_rotation(self, pos: tuple[float, float]) -> dict[str, np.ndarray]:
         r = (pos[0] ** 2 + pos[1] ** 2) ** 0.5
         theta = np.arctan2(pos[1], pos[0])
+        disp_z = theta + self.displacement["z"]
 
-        x = pos[0] + np.sin(theta + np.pi / 2) * r * self.displacement["z"]
-        y = pos[1] + np.cos(theta + np.pi / 2) * r * self.displacement["z"]
+        x = np.cos(disp_z) * r
+        y = np.sin(disp_z) * r
 
         return {"x": x, "y": y}
 
@@ -455,12 +430,12 @@ def solve_hfpi(
         gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi)
         # gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
-        all_real_displacements.append(real_displacement)
+        # all_real_displacements.append(real_displacement)
 
-        static_eq_mode = compute_mode_static_equivalent_force(
-            gen_displacement, df_phi, df_floors, wp
-        )
-        all_static_eq_force.append(static_eq_mode)
+        # static_eq_mode = compute_mode_static_equivalent_force(
+        #     gen_displacement, df_phi, df_floors, wp
+        # )
+        # all_static_eq_force.append(static_eq_mode)
 
     displacement = combine_modes(all_real_displacements)
 
