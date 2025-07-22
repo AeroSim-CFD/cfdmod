@@ -397,7 +397,7 @@ class DirectionalAnalysisResults(BaseModel):
 
     def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
         return max(
-            res.dynamic_res.get_max_acceleration(pos, floor) for res in self.results.values()
+            res.dynamic_res.get_floor_max_acceleration(pos, floor) for res in self.results.values()
         )
 
     def get_max_acceleration_by_recurrence_period(
