@@ -428,14 +428,13 @@ def solve_hfpi(
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
         gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi)
-        # gen_displacement = solve_euler_backwards(generalized_forces[n_mode].to_numpy(), dt, wp, xi)
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
-        # all_real_displacements.append(real_displacement)
+        all_real_displacements.append(real_displacement)
 
-        # static_eq_mode = compute_mode_static_equivalent_force(
-        #     gen_displacement, df_phi, df_floors, wp
-        # )
-        # all_static_eq_force.append(static_eq_mode)
+        static_eq_mode = compute_mode_static_equivalent_force(
+            gen_displacement, df_phi, df_floors, wp
+        )
+        all_static_eq_force.append(static_eq_mode)
 
     displacement = combine_modes(all_real_displacements)
 
