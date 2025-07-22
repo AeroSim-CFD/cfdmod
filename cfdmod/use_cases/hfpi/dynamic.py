@@ -124,9 +124,10 @@ class HFPIStructuralData(BaseModel):
         modes = list(df_modes['mode'])
         inactive_modes = [m-1 for m in inactive_modes] #normalize from 1 index to 0 index
         if max_active_modes < df_modes.shape[0]:
-            modes_to_deactivate = [m for m in range(max_active_modes-1:df_modes.shape[0])]
-            inactive_modes = list(set(inactive_modes)+set(modes_to_deactivate))
-        active_modes = [m-1 for m in modes if m not in inactive_modes]
+            modes_to_deactivate = [m for m in range(max_active_modes-1,df_modes.shape[0])]
+            inactive_modes = inactive_modes + modes_to_deactivate
+        modes = [m-1 for m in modes] #normalize from 1 index to 0 index
+        active_modes = [m for m in modes if m not in inactive_modes]
 
         struct_data = HFPIStructuralData(
             df_modes=df_modes,
@@ -175,12 +176,11 @@ def compute_generalized_forces(
 
     F_gen: dict[int, np.ndarray] = {}
     n_floors = structural_data.n_floors
-    n_modes = structural_data.n_modes
     n_samples = forces.n_samples
 
     cf_x, cf_y, cm_z = forces.cf_x, forces.cf_y, forces.cm_z
     use_string = "0" in forces.cf_x.columns
-    for n_mode in range(n_modes):
+    for n_mode in structural_data.active_modes:
         df_phi = structural_data.df_modal_shapes[n_mode]
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
@@ -353,7 +353,6 @@ class HFPIResults(BaseModel):
 
     delta_t: float
     xi: float
-    n_modes: int
     floors_heights: np.ndarray
 
     # data as ["x", "y", "z"] = time series
@@ -465,7 +464,6 @@ def solve_hfpi(
     return HFPIResults(
         delta_t=dt,
         xi=xi,
-        n_modes=n_modes,
         floors_heights=floors_heights,
         displacement=displacement,
         forces_static_eq=force_static_eq,
