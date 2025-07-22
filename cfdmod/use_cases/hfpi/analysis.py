@@ -443,3 +443,102 @@ def plot_max_acceleration(
     ax.legend()
 
     return fig, ax
+
+def plot_acceleration_floor_by_floor(
+    acc: np.ndarray,
+    structure_data: dynamic.HFPIStructuralData,
+    *,
+    project_name: str = "AeroSim",
+    unit_conversion: float = 1000 / 9.806,
+    unit_name: str = "milli-g",
+    language="en",
+    plot_nbcc: bool = False,
+    plot_nbr: bool = False,
+    plot_melbourne: bool = False,
+    melbourne_years: int = 10,
+):
+    color_eq = "#E69F00"
+    color_nbcc = "#2F993A"
+    color_nbr_res = "#A82D2D"
+    color_nbr_com = "#426AC2"
+    color_melbourne = "#A20DDD"
+
+    fig, ax = plt.subplots()
+
+    range_freq = [
+        structure_data.df_modes["frequency"].min(),
+        min(structure_data.df_modes["frequency"].max(), 1),
+    ]
+
+    texts = {
+        "nbcc": {
+            "en": "NBCC - residential and comercial",
+            "pt-br": "NBCC - residencial e comercial",
+        },
+        "nbr_res": {"en": "NBR 6123 - residential", "pt-br": "NBR 6123 - residencial"},
+        "nbr_com": {"en": "NBR 6123 - comercial", "pt-br": "NBR 6123 - comercial"},
+        "melbourne": {"en": "Melbourne (1992)", "pt-br": "Melbourne (1992)"},
+    }
+
+    kwargs_codes = dict(alpha=0.15, linewidth=2)
+    if plot_nbr:
+        range_NBR_ac_residential = [
+            0.01 * 4.08 * range_freq[1] ** -0.445 * unit_conversion,
+            0.01 * 4.08 * range_freq[0] ** -0.445 * unit_conversion,
+        ]
+        range_NBR_ac_comertial = [
+            0.01 * 6.12 * range_freq[1] ** -0.445 * unit_conversion,
+            0.01 * 6.12 * range_freq[0] ** -0.445 * unit_conversion,
+        ]
+        ax.axvspan(
+            range_NBR_ac_comertial[0],
+            range_NBR_ac_comertial[1],
+            label=texts["nbr_com"][language],
+            color=color_nbr_com,
+            **kwargs_codes,
+        )
+        ax.axvspan(
+            range_NBR_ac_residential[0],
+            range_NBR_ac_residential[1],
+            label=texts["nbr_res"][language],
+            color=color_nbr_res,
+            **kwargs_codes,
+        )
+    if plot_nbcc:
+        range_NBCC = [
+            15 * (9.806 / 1000) * unit_conversion,
+            25 * (9.806 / 1000) * unit_conversion,
+        ]
+        ax.axvspan(
+            range_NBCC[0],
+            range_NBCC[1],
+            label=texts["nbcc"][language],
+            color=color_nbcc,
+            **kwargs_codes,
+        )
+    if plot_melbourne:
+        range_melbourne = [
+            unit_conversion
+            * np.sqrt(2 * np.log(600 * range_freq[1]))
+            * (0.68 + np.log(melbourne_years) / 5)
+            * np.exp(-3.65 - 0.41 * np.log(range_freq[1])),
+            unit_conversion
+            * np.sqrt(2 * np.log(600 * range_freq[0]))
+            * (0.68 + np.log(melbourne_years) / 5)
+            * np.exp(-3.65 - 0.41 * np.log(range_freq[0])),
+        ]
+        ax.axvspan(
+            range_melbourne[0],
+            range_melbourne[1],
+            label=texts["melbourne"][language],
+            color=color_melbourne,
+            **kwargs_codes,
+        )
+    pavements = np.arange(len(acc))
+    ax.plot(acc * unit_conversion, pavements, "o", label=project_name, color=color_eq)
+    ax.legend()
+    ax.set_xlim(0, ax.get_xlim()[1])
+    ax.set_ylim(0, ax.get_ylim()[1])
+
+
+    return fig, ax
