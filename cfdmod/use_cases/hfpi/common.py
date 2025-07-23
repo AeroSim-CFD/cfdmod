@@ -105,5 +105,5 @@ def rotate_values_xy(values_proj: dict[str, np.ndarray], angle_rot: float):
     values_proj["y"] = across_wind
 
 
-def get_building_angle_rotatt_across_along_wind(wind_direction: float, building_rotation: float):
+def get_building_angle_rotate_across_along_wind(wind_direction: float, building_rotation: float):
     return (wind_direction - building_rotation + 90 + 360) % 360
