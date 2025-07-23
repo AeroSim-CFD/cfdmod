@@ -347,6 +347,10 @@ class HFPIResults(BaseModel):
     forces_static_eq: dict[str, np.ndarray]
     moments_static_eq: dict[str, np.ndarray]
 
+    def rotate_xy(self, angle_rot: float):
+        common.rotate_values_xy(self.forces_static_eq, angle_rot)
+        common.rotate_values_xy(self.moments_static_eq, angle_rot)
+
     @property
     def global_forces_static_eq(self):
         return common.get_global_dct(self.forces_static_eq)

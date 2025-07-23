@@ -186,6 +186,10 @@ class StaticResults(BaseModel):
     def global_moments_static(self):
         return common.get_global_dct(self.moments_static)
 
+    def rotate_xy(self, angle_rot: float):
+        common.rotate_values_xy(self.forces_static, angle_rot)
+        common.rotate_values_xy(self.moments_static, angle_rot)
+
     def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"]):
         return common.get_stats_dct(self.forces_static, stats_type)
 
