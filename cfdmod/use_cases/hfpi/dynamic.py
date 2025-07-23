@@ -32,11 +32,16 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     df.sort_values(by="mode", inplace=True)
     return df
 
+def update_inertial_moment_from_mass_center(df_floors: pd.DataFrame, df_mass_centers: pd.DataFrame):
+    r = (df_mass_centers["XR"] ** 2 + df_mass_centers["YR"] ** 2) ** 0.5
+    df_floors["I"] += df_floors["M"] * r**2
+    df_floors["R"] = (df_floors["I"] / df_floors["M"]) ** 0.5
 
-def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
+def read_hfpi_floors_data(csv_path: pathlib.Path, update_inertial_moments: bool = False) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
     Z, M, I: height, center of rotation, mass, moment of inertia
+    XR, YR required to update inertial moments from mass center
     """
 
     df = pd.read_csv(csv_path, index_col=None)
@@ -46,9 +51,13 @@ def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
         )
-    df = df[req_keys]
     # Radius of gyration
     df["R"] = (df["I"] / df["M"]) ** 0.5
+    if(update_inertial_moments):
+        update_inertial_moment_from_mass_center(df, df)
+
+    df = df[req_keys + ["R"]]
+
     df.sort_values(by="Z", inplace=True)
     return df
 
@@ -105,6 +114,9 @@ class HFPIStructuralData(BaseModel):
     def n_floors(self):
         return len(self.df_floors)
 
+    def update_inertial_moment_from_mass_center(self, df_mass_centers: pd.DataFrame):
+        update_inertial_moment_from_mass_center(self.df_floors, df_mass_centers)
+
     @classmethod
     def build(
         cls,
@@ -113,9 +125,10 @@ class HFPIStructuralData(BaseModel):
         phi_floors_csvs: list[pathlib.Path],
         max_active_modes: int = 1000,
         inactive_modes: list = [],
+        update_inertial_moments: bool = False,
     ):
         df_modes = read_hfpi_modes(modes_csv)
-        df_floors = read_hfpi_floors_data(floors_csv)
+        df_floors = read_hfpi_floors_data(floors_csv, update_inertial_moments=update_inertial_moments)
         df_phi_floors = []
         for p in phi_floors_csvs:
             df = read_hfpi_floor_phi(p)
