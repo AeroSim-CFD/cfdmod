@@ -242,6 +242,11 @@ class MultipleAnalysisHandler(BaseModel):
 class ResultType(BaseModel):
     static_res: static.StaticResults
     dynamic_res: dynamic.HFPIResults | None
+    
+    def rotate_xy(self, angle_rot: float):
+        self.static_res.rotate_xy(angle_rot)
+        if(self.dynamic_res is not None):
+            self.dynamic_res.rotate_xy(angle_rot)
 
     def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
         dcts = [
