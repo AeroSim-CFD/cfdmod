@@ -10,7 +10,7 @@ import scipy
 from matplotlib.ticker import FuncFormatter
 from scipy.ndimage import gaussian_filter
 
-from cfdmod.use_cases.hfpi import dynamic, static
+from cfdmod.use_cases.hfpi import dynamic, static, handler
 
 plot_style = {
     "AeroSim": {
@@ -444,6 +444,7 @@ def plot_max_acceleration(
 
     return fig, ax
 
+
 def plot_acceleration_floor_by_floor(
     acc: np.ndarray,
     structure_data: dynamic.HFPIStructuralData,
@@ -540,5 +541,44 @@ def plot_acceleration_floor_by_floor(
     ax.set_xlim(0, ax.get_xlim()[1])
     ax.set_ylim(0, ax.get_ylim()[1])
 
-
     return fig, ax
+
+
+def get_effective_forces_peak_loads_per_direction(results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806) -> dict[str, pd.DataFrame]:
+    tables = {"Fx": {}, "Fy": {}, "Mz": {}}
+    for wd, res in results.join_by_direction().items():
+        r = next(iter(res.results.values()))
+        fe_min = r.get_stats_forces_effective("min")
+        fe_max = r.get_stats_forces_effective("max")
+        for axis, load_axis in zip(['x','y','z'],['Fx','Fy','Mz']):
+            if abs(fe_min[axis].mean()) > abs(fe_max[axis].mean()):
+                stat_selection = fe_min[axis]
+            else:
+                stat_selection = fe_max[axis]
+            tables[load_axis][f'{int(wd)}'] = stat_selection * unit_conversion
+    tables_df: dict[str, pd.DataFrame] = {}
+    for t in tables:
+        tables_df[t] = pd.DataFrame(tables[t])
+    return tables_df
+
+
+def add_eberick_floor_height_and_pavements(df: pd.DataFrame, floor_height: np.ndarray, pavement_names: list[str]):
+    if(len(floor_height) != len(df) or len(floor_height) != len(pavement_names)):
+        raise ValueError("Incompatible array lengths to set floor height")
+    df["Cota"] = floor_height
+    df["Pavimento"] = pavement_names
+
+
+def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path):
+    """Export floor values to Eberick compatible xlsx
+
+    https://suporte.altoqi.com.br/hc/pt-br/articles/360050991093"""
+
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
+
+    with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+        for key, df in tables.items():
+            cols_order = ["Pavimento", "Cota"]
+            cols_order += sorted([c for c in df.columns if c.isnumeric()], key=lambda k: int(k))
+            df[cols_order].to_excel(writer, sheet_name=tab_names[key], index=False)
