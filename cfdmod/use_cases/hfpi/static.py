@@ -107,7 +107,7 @@ class StaticForcesData(BaseModel):
         return self.cf_x[k][1] - self.cf_x[k][0]
 
     @classmethod
-    def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path, remove_suffix: bool = False):
+    def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path, remove_suffix: bool = False, min_cst_period: float | None = None):
         cf_x = read_static_forces(cf_x_h5)
         cf_y = read_static_forces(cf_y_h5)
         cm_z = read_static_forces(cm_z_h5)
@@ -123,12 +123,35 @@ class StaticForcesData(BaseModel):
         # Normalize time to start at 0
         for df in (cf_x, cf_y, cm_z):
             df["time_normalized"] -= df["time_normalized"].min()
+            df.sort_values("time_normalized", inplace=True)
 
-        return StaticForcesData(
+        res = StaticForcesData(
             cf_x=cf_x,
             cf_y=cf_y,
             cm_z=cm_z,
         )
+        if(min_cst_period is not None):
+            res.filter_by_period(min_cst_period)
+
+        return res
+
+    def filter_by_period(self, min_cst_period: float):
+        """Filter forces to use a minimun period. Used to reduce amount of data"""
+
+        if(min_cst_period <= 0):
+            return
+
+        if(self.is_scaled):
+            raise ValueError("Unable to filter forces already scaled")
+
+        dt = self.delta_t
+        n_divs = int(np.floor(min_cst_period / dt))
+        if(n_divs <= 1):
+            return
+
+        self.cf_x = self.cf_x.iloc[::n_divs].reset_index(drop=True)
+        self.cf_y = self.cf_y.iloc[::n_divs].reset_index(drop=True)
+        self.cm_z = self.cm_z.iloc[::n_divs].reset_index(drop=True)
 
     def get_scaled_forces(self, dim_data: DimensionalData) -> StaticForcesData:
         """Generate HFPI scaled forces data"""
