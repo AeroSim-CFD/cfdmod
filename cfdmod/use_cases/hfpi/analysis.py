@@ -10,7 +10,7 @@ import scipy
 from matplotlib.ticker import FuncFormatter
 from scipy.ndimage import gaussian_filter
 
-from cfdmod.use_cases.hfpi import dynamic, static, handler
+from cfdmod.use_cases.hfpi import dynamic, handler, static
 
 plot_style = {
     "AeroSim": {
@@ -215,7 +215,7 @@ def plot_global_stats_per_direction(
     max_dir = directions.max()
 
     color_static = "#333333"
-    colors_eq = ["#E69F00", "#E66B00", "#BC00DD","#0097DD"]
+    colors_eq = ["#E69F00", "#E66B00", "#BC00DD", "#0097DD"]
 
     k = "forces_static"
     uf = f"{unit_name}"
@@ -240,13 +240,23 @@ def plot_global_stats_per_direction(
     text_dyn = "estático equivalente" if language == "pt-br" else "static equivalent"
 
     kwargs = dict(plot_peaks=True, unit_conversion=unit_conversion)
-    kwargs_dyn = [kwargs | dict(txt_lg=fr"{text_dyn}, $\xi={xi*100:.2f}$%", plot_mean=False, color=colors_eq[i], language=language, alpha=0.9) for i, xi in enumerate(stats_xis.keys())]
-    kwargs_stat = kwargs | dict(txt_lg=f"{text_sta}", plot_mean=True, color=color_static, language=language)
+    kwargs_dyn = [
+        kwargs
+        | dict(
+            txt_lg=rf"{text_dyn}, $\xi={xi*100:.2f}$%",
+            plot_mean=False,
+            color=colors_eq[i],
+            language=language,
+            alpha=0.9,
+        )
+        for i, xi in enumerate(stats_xis.keys())
+    ]
+    kwargs_stat = kwargs | dict(
+        txt_lg=f"{text_sta}", plot_mean=True, color=color_static, language=language
+    )
 
     for d, ij in [("x", (0, 0)), ("y", (0, 1))]:
-        style_global_stats_plot(
-            fig, axs[ij], scalar_name=f"F{d}", unit=uf, max_dir=max_dir
-        )
+        style_global_stats_plot(fig, axs[ij], scalar_name=f"F{d}", unit=uf, max_dir=max_dir)
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
             plot_global_stats_results(axs[ij], stats_ex[k], d, **kwargs_stat)
@@ -256,9 +266,7 @@ def plot_global_stats_per_direction(
 
     k = "moments_static"
     for d, ij in [("x", (1, 0)), ("y", (1, 1)), ("z", (2, 0))]:
-        style_global_stats_plot(
-            fig, axs[ij], scalar_name=f"M{d}", unit=um, max_dir=max_dir
-        )
+        style_global_stats_plot(fig, axs[ij], scalar_name=f"M{d}", unit=um, max_dir=max_dir)
         axs[ij].axhline(y=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         if "static" in variable_types:
             plot_global_stats_results(axs[ij], stats_ex[k], d, **kwargs_stat)
@@ -280,8 +288,8 @@ def plot_floor_by_floor_mean_peaks(
     vals_labels: tuple[str, str, str],
     wind_dir: float,
     x_lims: list[tuple[float, float]],
-    unit_conversion: float = 1 / 1e6, 
-    unit_name: str = "MN", 
+    unit_conversion: float = 1 / 1e6,
+    unit_name: str = "MN",
     y_abs: tuple[float, float] | None,
     **plot_kwargs,
 ):
@@ -295,12 +303,14 @@ def plot_floor_by_floor_mean_peaks(
 
     keys = ["mean", "max", "min"]
     markers = ["o", "^", "v"]
-    labels=[" (media)", " (3s max)", " (3s min)"]
+    labels = [" (media)", " (3s max)", " (3s min)"]
 
     for ax, component, x_lim in zip(axs.flat, ("x", "y", "z"), x_lims):
         ax.axvline(x=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
         ax.set_xlim(x_lim[0], x_lim[1])
-        for dct_data, key, mark, label_n in zip((mean_vals, max_vals, min_vals), keys, markers, labels):
+        for dct_data, key, mark, label_n in zip(
+            (mean_vals, max_vals, min_vals), keys, markers, labels
+        ):
             ax.plot(
                 dct_data[component] * unit_conversion,
                 np.arange(0, len(dct_data[component])),
@@ -308,7 +318,7 @@ def plot_floor_by_floor_mean_peaks(
                 label=r"$ \bf{AeroSim}$" + label_n,
                 fillstyle="none",
                 markeredgecolor=color_use,
-                **plot_style["AeroSim"]["marker"]
+                **plot_style["AeroSim"]["marker"],
             )
 
     if y_abs is not None:
@@ -432,10 +442,20 @@ def plot_max_acceleration(
         color=color_nbcc,
         alpha=0.8,
     )
-    ax.plot([9.9, 10.1], [range_NBCC[0], range_NBCC[0]], "-", linewidth=3, color=color_nbcc, alpha=0.8)
-    ax.plot([9.9, 10.1], [range_NBCC[1], range_NBCC[1]], "-", linewidth=3, color=color_nbcc, alpha=0.8)
+    ax.plot(
+        [9.9, 10.1], [range_NBCC[0], range_NBCC[0]], "-", linewidth=3, color=color_nbcc, alpha=0.8
+    )
+    ax.plot(
+        [9.9, 10.1], [range_NBCC[1], range_NBCC[1]], "-", linewidth=3, color=color_nbcc, alpha=0.8
+    )
 
-    ax.plot(list(max_ac.keys()), np.array(list(max_ac.values())) * unit_conversion, "o", label=project_name, color=color_eq)
+    ax.plot(
+        list(max_ac.keys()),
+        np.array(list(max_ac.values())) * unit_conversion,
+        "o",
+        label=project_name,
+        color=color_eq,
+    )
 
     ax.set_ylabel(f"Acceleration [{unit_name}]")
     ax.set_xlabel("Wind recurrence period")
@@ -544,26 +564,30 @@ def plot_acceleration_floor_by_floor(
     return fig, ax
 
 
-def get_effective_forces_peak_loads_per_direction(results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806) -> dict[str, pd.DataFrame]:
+def get_effective_forces_peak_loads_per_direction(
+    results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806
+) -> dict[str, pd.DataFrame]:
     tables = {"Fx": {}, "Fy": {}, "Mz": {}}
     for wd, res in results.join_by_direction().items():
         r = next(iter(res.results.values()))
         fe_min = r.get_stats_forces_effective("min")
         fe_max = r.get_stats_forces_effective("max")
-        for axis, load_axis in zip(['x','y','z'],['Fx','Fy','Mz']):
+        for axis, load_axis in zip(["x", "y", "z"], ["Fx", "Fy", "Mz"]):
             if abs(fe_min[axis].mean()) > abs(fe_max[axis].mean()):
                 stat_selection = fe_min[axis]
             else:
                 stat_selection = fe_max[axis]
-            tables[load_axis][f'{int(wd)}'] = stat_selection * unit_conversion
+            tables[load_axis][f"{int(wd)}"] = stat_selection * unit_conversion
     tables_df: dict[str, pd.DataFrame] = {}
     for t in tables:
         tables_df[t] = pd.DataFrame(tables[t])
     return tables_df
 
 
-def add_eberick_floor_height_and_pavements(df: pd.DataFrame, floor_height: np.ndarray, pavement_names: list[str]):
-    if(len(floor_height) != len(df) or len(floor_height) != len(pavement_names)):
+def add_eberick_floor_height_and_pavements(
+    df: pd.DataFrame, floor_height: np.ndarray, pavement_names: list[str]
+):
+    if len(floor_height) != len(df) or len(floor_height) != len(pavement_names):
         raise ValueError("Incompatible array lengths to set floor height")
     df["Cota"] = floor_height
     df["Pavimento"] = pavement_names

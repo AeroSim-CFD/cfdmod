@@ -19,7 +19,6 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-
 EUCat = Literal["0", "I", "II", "III", "IV"]
 NBRCat = Literal["I", "II", "III", "IV", "V"]
 

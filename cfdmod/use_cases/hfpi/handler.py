@@ -100,11 +100,13 @@ class HFPICaseParameters(BaseModel, frozen=True):
         )
 
 
-def solve_hfpi_case(hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters, overwrite: bool = True):
+def solve_hfpi_case(
+    hfpi_analysis: MultipleAnalysisHandler, parameters: HFPICaseParameters, overwrite: bool = True
+):
     """Solve HFPI for system and save it to disk"""
-    
+
     path_save = parameters.get_results_filename(hfpi_analysis.save_folder)
-    if(path_save.exists() and not overwrite):
+    if path_save.exists() and not overwrite:
         logger.info(f"Case {parameters.model_dump_json()} already has file saved, skipping it.")
         return
 
@@ -203,7 +205,12 @@ class MultipleAnalysisHandler(BaseModel):
         ]
         return cases_parameters
 
-    def solve_all(self, parameters: list[HFPICaseParameters], max_workers: int | None = None, overwrite: bool = True):
+    def solve_all(
+        self,
+        parameters: list[HFPICaseParameters],
+        max_workers: int | None = None,
+        overwrite: bool = True,
+    ):
         args = [(self, param, overwrite) for param in parameters]
 
         n_proc = cpu_count()
@@ -242,10 +249,10 @@ class MultipleAnalysisHandler(BaseModel):
 class ResultType(BaseModel):
     static_res: static.StaticResults
     dynamic_res: dynamic.HFPIResults | None
-    
+
     def rotate_xy(self, angle_rot: float):
         self.static_res.rotate_xy(angle_rot)
-        if(self.dynamic_res is not None):
+        if self.dynamic_res is not None:
             self.dynamic_res.rotate_xy(angle_rot)
 
     def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):

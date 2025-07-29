@@ -110,15 +110,55 @@ class TransformationConfig(BaseModel):
         title="Scale vector",
         description="Vector representing the scale",
     )
+    fixed_point: tuple[float, float, float] | None = Field(
+        None,
+        title="Fixed point vector",
+        description="Vector representing the origin point of scale and rotation",
+    )
 
 
 class LegendConfig(BaseModel):
     label: str = Field(..., title="Legend name", description="The name of the legend in the image")
-    range: tuple[float, float] = Field(
-        ..., title="Legend range values", description="Range of values in legend"
+    range: tuple[float, float] | None = Field(
+        None, title="Legend range values", description="Range of values in legend"
     )
-    n_divs: int = Field(
-        ..., title="Number of divisions", description="Number of divisions in legend"
+    n_divs: int | None = Field(
+        None, title="Number of divisions", description="Number of divisions in legend"
+    )
+    custom_colorbar: ColormapConfig | None = Field(
+        None,
+        title="Custom colorbar config",
+        description="Manual config of colorbar. Requires assignement of exact divisions and colors to use.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
+        if "custom_colorbar" not in data.keys():
+            if "range" not in data.keys() or "n_divs" not in data.keys():
+                ValueError(
+                    "At least one of the two must be set: (range + n_divs) or (custom_colorbar)."
+                )
+            return data
+        else:
+            data["range"] = (
+                data["custom_colorbar"]["value_edges"][0],
+                data["custom_colorbar"]["value_edges"][-1],
+            )
+            data["n_divs"] = len(data["custom_colorbar"]["colors"])
+            return data
+
+
+class ColormapConfig(BaseModel):
+    value_edges: list[float] = Field(
+        ...,
+        title="Rotate vector",
+        description="Vector representing the rotation",
+    )
+    colors: list[str] = Field(
+        ...,
+        title="List of colors",
+        description="List of custom colors in hex notation",
     )
 
 
@@ -175,27 +215,6 @@ class ValueTagsConfig(BaseModel):
         raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
 
 
-class ColormapConfig(BaseModel):
-    style: str = "contour"
-    n_divs: int = Field(
-        None, title="Number of divisions", description="Colormap divisions", ge=3, le=15
-    )
-    target_step: float = Field(None, title="Target step", description="Colormap target step", gt=0)
-
-    def get_colormap_divs(self, scalar_range: tuple[float, float]) -> int:
-        if self.n_divs is not None:
-            return self.n_divs
-        else:
-            divs = round((scalar_range[1] - scalar_range[0]) / self.target_step)
-            return divs
-
-    @model_validator(mode="after")
-    def exclusive_props(self) -> ColormapConfig:
-        if self.n_divs is not None and self.target_step is not None:
-            raise ValueError("Cannot set both num_steps and target_step")
-        return self
-
-
 class ProjectionConfig(BaseModel):
     file_path: pathlib.Path = Field(
         ...,
@@ -234,9 +253,6 @@ class SnapshotConfig(BaseModel):
     )
     legend_config: LegendConfig = Field(
         ..., title="Legend configuration", description="Image legend configuration"
-    )
-    colormap: ColormapConfig = Field(
-        ..., title="Colormap configuration", description="Parameters for colormap"
     )
     camera: CameraConfig | None = Field(
         ..., title="Camera configuration", description="Parameters for setting up the camera"

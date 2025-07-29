@@ -32,12 +32,18 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     df.sort_values(by="mode", inplace=True)
     return df
 
-def update_inertial_moment_from_mass_center(df_floors: pd.DataFrame, df_mass_centers: pd.DataFrame):
+
+def update_inertial_moment_from_mass_center(
+    df_floors: pd.DataFrame, df_mass_centers: pd.DataFrame
+):
     r = (df_mass_centers["XR"] ** 2 + df_mass_centers["YR"] ** 2) ** 0.5
     df_floors["I"] += df_floors["M"] * r**2
     df_floors["R"] = (df_floors["I"] / df_floors["M"]) ** 0.5
 
-def read_hfpi_floors_data(csv_path: pathlib.Path, update_inertial_moments: bool = False) -> pd.DataFrame:
+
+def read_hfpi_floors_data(
+    csv_path: pathlib.Path, update_inertial_moments: bool = False
+) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
     Z, M, I: height, center of rotation, mass, moment of inertia
@@ -53,7 +59,7 @@ def read_hfpi_floors_data(csv_path: pathlib.Path, update_inertial_moments: bool 
         )
     # Radius of gyration
     df["R"] = (df["I"] / df["M"]) ** 0.5
-    if(update_inertial_moments):
+    if update_inertial_moments:
         update_inertial_moment_from_mass_center(df, df)
 
     df = df[req_keys + ["R"]]
@@ -128,25 +134,27 @@ class HFPIStructuralData(BaseModel):
         update_inertial_moments: bool = False,
     ):
         df_modes = read_hfpi_modes(modes_csv)
-        df_floors = read_hfpi_floors_data(floors_csv, update_inertial_moments=update_inertial_moments)
+        df_floors = read_hfpi_floors_data(
+            floors_csv, update_inertial_moments=update_inertial_moments
+        )
         df_phi_floors = []
         for p in phi_floors_csvs:
             df = read_hfpi_floor_phi(p)
             df_phi_floors.append(df)
 
-        modes = list(df_modes['mode'])
-        inactive_modes = [m-1 for m in inactive_modes] #normalize from 1 index to 0 index
+        modes = list(df_modes["mode"])
+        inactive_modes = [m - 1 for m in inactive_modes]  # normalize from 1 index to 0 index
         if max_active_modes < df_modes.shape[0]:
-            modes_to_deactivate = [m for m in range(max_active_modes-1,df_modes.shape[0])]
+            modes_to_deactivate = [m for m in range(max_active_modes - 1, df_modes.shape[0])]
             inactive_modes = inactive_modes + modes_to_deactivate
-        modes = [m-1 for m in modes] #normalize from 1 index to 0 index
+        modes = [m - 1 for m in modes]  # normalize from 1 index to 0 index
         active_modes = [m for m in modes if m not in inactive_modes]
 
         struct_data = HFPIStructuralData(
             df_modes=df_modes,
             df_floors=df_floors,
             df_modal_shapes=df_phi_floors,
-            active_modes=active_modes
+            active_modes=active_modes,
         )
         struct_data.validate_dfs()
         return struct_data
@@ -220,7 +228,7 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
 
     Returns displacement for time series for given mode
     """
-    end_step = (len(gen_force)-1) * dt
+    end_step = (len(gen_force) - 1) * dt
     t_eval = np.linspace(0, end_step, len(gen_force))
 
     from scipy.interpolate import interp1d
@@ -393,14 +401,18 @@ class HFPIResults(BaseModel):
 
         return scalar_acceleration
 
-    def get_floor_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> np.ndarray:
+    def get_floor_acceleration(
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+    ) -> np.ndarray:
         """Get acceleration from given floor, considering radius for Z"""
         return self.get_acceleration(pos=pos)[:, floor]
 
     def get_max_acceleration_per_floor(self, pos: tuple[float, float] = (0, 0)) -> np.ndarray:
         return self.get_acceleration(pos=pos).max(axis=0)
 
-    def get_floor_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1) -> float:
+    def get_floor_max_acceleration(
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+    ) -> float:
         return self.get_floor_acceleration(pos=pos, floor=floor).max()
 
     def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
@@ -436,7 +448,6 @@ def solve_hfpi(
     generalized_forces = compute_generalized_forces(normalized_forces, structural_data)
     dt = normalized_forces.delta_t
 
-
     all_real_displacements = []
     all_static_eq_force = []
 
@@ -444,7 +455,9 @@ def solve_hfpi(
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
         wp = df_mode["wp"]
-        gen_displacement = solve_runge_kunta(generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi)
+        gen_displacement = solve_runge_kunta(
+            generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi
+        )
         real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
         all_real_displacements.append(real_displacement)
 

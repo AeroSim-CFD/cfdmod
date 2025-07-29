@@ -50,11 +50,14 @@ def read_static_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
         )
 
     # Remove points that are not in any area (-1 label)
-    col_neg = next(iter(k for k in df_force.columns if isinstance(k, str) and k.startswith('-1')), None)
-    if(col_neg is not None):
+    col_neg = next(
+        iter(k for k in df_force.columns if isinstance(k, str) and k.startswith("-1")), None
+    )
+    if col_neg is not None:
         df_force.drop(columns=[col_neg], inplace=True)
 
     return df_force
+
 
 def remove_suffix_static_forces(df_forces: pd.DataFrame):
     """Remove the suffixes for static forces in df_forces"""
@@ -107,7 +110,14 @@ class StaticForcesData(BaseModel):
         return self.cf_x[k][1] - self.cf_x[k][0]
 
     @classmethod
-    def build(cls, cf_x_h5: pathlib.Path, cf_y_h5: pathlib.Path, cm_z_h5: pathlib.Path, remove_suffix: bool = False, min_cst_period: float | None = None):
+    def build(
+        cls,
+        cf_x_h5: pathlib.Path,
+        cf_y_h5: pathlib.Path,
+        cm_z_h5: pathlib.Path,
+        remove_suffix: bool = False,
+        min_cst_period: float | None = None,
+    ):
         cf_x = read_static_forces(cf_x_h5)
         cf_y = read_static_forces(cf_y_h5)
         cm_z = read_static_forces(cm_z_h5)
@@ -116,7 +126,7 @@ class StaticForcesData(BaseModel):
                 f"Length of forces data don't match. Paths {cf_x_h5, cf_y_h5, cm_z_h5}"
             )
 
-        if(remove_suffix):
+        if remove_suffix:
             for df in (cf_x, cf_y, cm_z):
                 remove_suffix_static_forces(df)
 
@@ -130,7 +140,7 @@ class StaticForcesData(BaseModel):
             cf_y=cf_y,
             cm_z=cm_z,
         )
-        if(min_cst_period is not None):
+        if min_cst_period is not None:
             res.filter_by_period(min_cst_period)
 
         return res
@@ -138,15 +148,15 @@ class StaticForcesData(BaseModel):
     def filter_by_period(self, min_cst_period: float):
         """Filter forces to use a minimun period. Used to reduce amount of data"""
 
-        if(min_cst_period <= 0):
+        if min_cst_period <= 0:
             return
 
-        if(self.is_scaled):
+        if self.is_scaled:
             raise ValueError("Unable to filter forces already scaled")
 
         dt = self.delta_t
         n_divs = int(np.floor(min_cst_period / dt))
-        if(n_divs <= 1):
+        if n_divs <= 1:
             return
 
         self.cf_x = self.cf_x.iloc[::n_divs].reset_index(drop=True)

@@ -99,7 +99,7 @@ def rotate_values_xy(values_proj: dict[str, np.ndarray], angle_rot: float):
     cos_theta = np.cos(np.radians(angle_rot))
     sin_theta = np.sin(np.radians(angle_rot))
 
-    along_wind = cos_theta * values_proj["x"] - sin_theta * values_proj["y"] 
+    along_wind = cos_theta * values_proj["x"] - sin_theta * values_proj["y"]
     across_wind = sin_theta * values_proj["x"] + cos_theta * values_proj["y"]
     values_proj["x"] = along_wind
     values_proj["y"] = across_wind

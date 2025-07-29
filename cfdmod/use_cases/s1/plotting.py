@@ -1,10 +1,10 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from typing import Literal
 
-from cfdmod.use_cases.s1 import profile
-from cfdmod.use_cases.plot_config import plot_style
+import matplotlib.pyplot as plt
+import numpy as np
 
+from cfdmod.use_cases.plot_config import plot_style
+from cfdmod.use_cases.s1 import profile
 
 Languages = Literal["pt-br", "en"]
 
@@ -45,6 +45,7 @@ class SectionColors:
         else:
             return "#000000"
 
+
 def set_style_tech():
     plt.style.use("seaborn-whitegrid")
     plt.rcParams["font.family"] = "sans serif"  # "Calibri"
@@ -58,6 +59,7 @@ def set_style_tech():
     plt.rcParams["lines.markeredgecolor"] = "none"
     plt.rcParams["axes.edgecolor"] = "black"
     plt.rcParams["figure.edgecolor"] = "red"
+
 
 def plot_s1(
     S1: dict[str, tuple[np.ndarray, np.ndarray]],
@@ -114,7 +116,7 @@ def plot_s1(
     ax.set_xlim(1 - radius, 1 + radius)
     ax.set_ylim(0, max([height for height in profile_height.values()]))
     return fig, ax
-    
+
 
 def plot_numerical_and_analytical_vel_profile(
     *,
@@ -131,17 +133,20 @@ def plot_numerical_and_analytical_vel_profile(
 ):
     arr_u_num = u_num / u_num_ref
     arr_Iu_num = Iu_num
-    
+
     vel_title = {"pt-br": "Velocidade longitudinal média", "en": "Longitudinal average velocity"}
-    turb_title = {"pt-br": "Intensidade turbulenta longitudinal", "en": "Longitudinal turbulent intensity"}
+    turb_title = {
+        "pt-br": "Intensidade turbulenta longitudinal",
+        "en": "Longitudinal turbulent intensity",
+    }
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5), layout="constrained", sharey=True)
 
     ax[0].plot(arr_u_num, z / H, **plot_style["AeroSim"]["line"])
-    if(cat_eu is not None):
+    if cat_eu is not None:
         arr_u_eu = profile.get_EU_cat_u_profile(z=z, H=H, cat=cat_eu, u_ref=u_ref, Fr=Fr)
         ax[0].plot(arr_u_eu, z / H, **plot_style["EU"]["line"])
-    if(cat_nbr is not None):
+    if cat_nbr is not None:
         arr_u_nbr = profile.get_NBR_cat_u_profile(z=z, H=H, cat=cat_nbr, u_ref=u_ref, Fr=Fr)
         ax[0].plot(arr_u_nbr, z / H, **plot_style["ABNT"]["line"])
     ax[0].set_xlabel(r"$ \overline{u}_x / u_H$")
@@ -154,7 +159,7 @@ def plot_numerical_and_analytical_vel_profile(
     # ax[0].grid()
 
     ax[1].plot(arr_Iu_num, z / H, **plot_style["AeroSim"]["line"])
-    if(cat_eu is not None):
+    if cat_eu is not None:
         arr_Iu_eu = profile.get_EU_cat_Iu_profile(z=z, cat=cat_eu)
         ax[1].plot(arr_Iu_eu, z / H, **plot_style["EU"]["line"])
     ax[1].set_xlabel(r"$ ( \overline{u\prime u\prime} )^{1/2} / \overline{u}_x$")

@@ -4,6 +4,7 @@ import numpy as np
 import pyvista as pv
 
 from cfdmod.logger import logger
+from cfdmod.use_cases.snapshot.colormap import CustomColormapFactory
 from cfdmod.use_cases.snapshot.config import (  # Projections,
     LegendConfig,
     OverlayTextConfig,
@@ -60,17 +61,27 @@ def take_snapshot(
         fmt="%.2f",
         font_family="arial",
         position_x=0.2,
-        position_y=0.0,
+        position_y=0.05,
         width=0.6,
+        height=0.05,
+        vertical=False,
     )
 
-    lut = pv.LookupTable(cmap="turbo")
-    lut.scalar_range = (
-        snapshot_config.legend_config.range[0],
-        snapshot_config.legend_config.range[1],
-    )
-    lut.n_values = snapshot_config.legend_config.n_divs
-    lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
+    if snapshot_config.legend_config.custom_colorbar is None:
+        lut = pv.LookupTable(cmap="turbo")
+        lut.scalar_range = (
+            snapshot_config.legend_config.range[0],
+            snapshot_config.legend_config.range[1],
+        )
+        lut.n_values = snapshot_config.legend_config.n_divs
+        lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
+    else:
+        conf = snapshot_config.legend_config.custom_colorbar
+        color_factory = CustomColormapFactory(value_edges=conf.value_edges, colors=conf.colors)
+        lut = color_factory.get_lookuptable()
+        sargs_modiffy = color_factory.get_scalar_bar_args_modifier()
+        for key in sargs_modiffy:
+            sargs[key] = sargs_modiffy[key]
 
     for projection in snapshot_config.projections:
         projection_config = snapshot_config.projections[projection]
@@ -208,8 +219,9 @@ def add_text_overlay_to_screenshot(
 
 
 def clip_mesh(mesh: pv.DataSet, clip_box: TransformationConfig) -> pv.UnstructuredGrid:
+    center = [0, 0, 0] if clip_box.fixed_point is None else clip_box.fixed_point
     clip_cube = pv.Cube(
-        center=[0, 0, 0],
+        center=center,
         x_length=clip_box.scale[0],
         y_length=clip_box.scale[1],
         z_length=clip_box.scale[2],
@@ -219,19 +231,24 @@ def clip_mesh(mesh: pv.DataSet, clip_box: TransformationConfig) -> pv.Unstructur
 
 
 def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
-    mesh.rotate_x(transformation.rotate[0], point=mesh.center, inplace=True)
-    mesh.rotate_y(transformation.rotate[1], point=mesh.center, inplace=True)
-    mesh.rotate_z(transformation.rotate[2], point=mesh.center, inplace=True)
+    center = mesh.center if transformation.fixed_point is None else transformation.fixed_point
+    mesh.rotate_x(transformation.rotate[0], point=center, inplace=True)
+    mesh.rotate_y(transformation.rotate[1], point=center, inplace=True)
+    mesh.rotate_z(transformation.rotate[2], point=center, inplace=True)
     mesh.translate(transformation.translate, inplace=True)
 
 
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
-    return mesh.contour(
-        np.linspace(
+    if legend_config.custom_colorbar is not None:
+        contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
+    else:
+        contours_to_make = np.linspace(
             legend_config.range[0],
             legend_config.range[1],
             legend_config.n_divs + 1,
-        ),
+        )
+    return mesh.contour(
+        contours_to_make,
         scalars=scalar,
     )
 
