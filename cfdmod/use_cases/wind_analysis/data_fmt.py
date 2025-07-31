@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
 
 from cfdmod.use_cases.wind_analysis.profile import ProfileCalculator_NBR
 
@@ -58,6 +59,9 @@ def validate_table(data: pd.DataFrame):
         error = True
     if not error:
         print("The table has no invalid rows")
+    return not error
+        
+def plot_series(data: pd.DataFrame):      
     # visualize mean
     fig, ax = plt.subplots(3,1,figsize=(30,15))
     if 'station' in data.columns:
@@ -69,26 +73,43 @@ def validate_table(data: pd.DataFrame):
     ax[2].plot(pd.to_datetime(data['datetime']), data['wind_direction'],'.')
     ax[2].set_title('Wind direction')
     plt.show()
+    return fig, ax
 
-def plot_pdfs(data: pd.DataFrame):
+  
+
+def plot_pdfs(data: pd.DataFrame, bins: str|int = 'auto'):
     fig, ax = plt.subplots(1,3,figsize=(30,10))
-    ax[0].hist(data['u_mean_raw'], bins='auto')
+    ax[0].hist(data['u_mean_raw'], bins=bins,density=True,)
     ax[0].set_title('Mean velocity')
-    ax[1].hist(data['u_gust_raw'], bins='auto')
+    ax[1].hist(data['u_gust_raw'], bins=bins, density=True,)
     ax[1].set_title('Gust velocity')
-    ax[2].hist(data['wind_direction'],bins='auto')
+    ax[2].hist(data['wind_direction'],bins=bins, density=True,)
     ax[2].set_title('Wind direction')
     plt.show()
+    return fig, ax
     
     
-def remove_date_ranges(data: pd.DataFrame, ranges_to_remove: list[tuple[str,str]]|list[tuple[pd.Timestamp,pd.Timestamp]]) -> pd.DataFrame:
+def remove_date_ranges(data: pd.DataFrame, ranges_to_remove: list[str, pd.Timestamp, tuple[str,str]]|list[tuple[pd.Timestamp,pd.Timestamp]]) -> pd.DataFrame:
     ranges_to_remove = [pd.to_datetime(range) for range in ranges_to_remove]
     datetime = pd.to_datetime(data['datetime'])
     remove_mask = pd.Series(False, index=data.index)
-    for start, end in ranges_to_remove:
-        remove_mask |= ((datetime >= start) & (datetime < end))
+    for range_to_remove in ranges_to_remove:
+        if isinstance(range_to_remove, tuple) or isinstance(range_to_remove, list):
+            start, end = range_to_remove
+            remove_mask |= ((datetime >= start) & (datetime < end))
+        else:
+            remove_mask |= (datetime == range_to_remove)
     print("Number of values removed: ", remove_mask.sum())
     return data[~ remove_mask].copy()
+
+def select_date_ranges(data: pd.DataFrame, ranges_to_select: list[tuple[str,str]]|list[tuple[pd.Timestamp,pd.Timestamp]]) -> pd.DataFrame:
+    ranges_to_select = [pd.to_datetime(range) for range in ranges_to_select]
+    datetime = pd.to_datetime(data['datetime'])
+    select_mask = pd.Series(False, index=data.index)
+    for start, end in ranges_to_select:
+        select_mask |= ((datetime >= start) & (datetime < end))
+    print("Number of values selected: ", select_mask.sum())
+    return data[select_mask].copy()
 
 def remove_wind_direction(data: pd.DataFrame, wind_directions_to_remove: list[int]) -> pd.DataFrame:
     eps = 1
