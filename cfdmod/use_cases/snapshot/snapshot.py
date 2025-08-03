@@ -49,6 +49,7 @@ def take_snapshot(
     if isinstance(image_path, str):
         image_path = pathlib.Path(image_path)
 
+    pv.global_theme.allow_empty_mesh = True
     plotter = pv.Plotter(window_size=snapshot_config.camera.window_size)
     plotter.enable_parallel_projection()
 
