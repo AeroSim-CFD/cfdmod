@@ -32,17 +32,8 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     df.sort_values(by="mode", inplace=True)
     return df
 
-
-def update_inertial_moment_from_mass_center(
-    df_floors: pd.DataFrame, df_mass_centers: pd.DataFrame
-):
-    r = (df_mass_centers["XR"] ** 2 + df_mass_centers["YR"] ** 2) ** 0.5
-    df_floors["I"] += df_floors["M"] * r**2
-    df_floors["R"] = (df_floors["I"] / df_floors["M"]) ** 0.5
-
-
 def read_hfpi_floors_data(
-    csv_path: pathlib.Path, update_inertial_moments: bool = False
+    csv_path: pathlib.Path
 ) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
@@ -52,15 +43,13 @@ def read_hfpi_floors_data(
 
     df = pd.read_csv(csv_path, index_col=None)
     # "XG", "YG", "XR", "YR", "I", "R"
-    req_keys = ["Z", "M", "I"]
+    req_keys = ["Z", "M", "I","XR", "YR"]
     if not common.validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
         )
     # Radius of gyration
     df["R"] = (df["I"] / df["M"]) ** 0.5
-    if update_inertial_moments:
-        update_inertial_moment_from_mass_center(df, df)
 
     df = df[req_keys + ["R"]]
 
@@ -120,9 +109,6 @@ class HFPIStructuralData(BaseModel):
     def n_floors(self):
         return len(self.df_floors)
 
-    def update_inertial_moment_from_mass_center(self, df_mass_centers: pd.DataFrame):
-        update_inertial_moment_from_mass_center(self.df_floors, df_mass_centers)
-
     @classmethod
     def build(
         cls,
@@ -131,12 +117,9 @@ class HFPIStructuralData(BaseModel):
         phi_floors_csvs: list[pathlib.Path],
         max_active_modes: int = 1000,
         inactive_modes: list = [],
-        update_inertial_moments: bool = False,
     ):
         df_modes = read_hfpi_modes(modes_csv)
-        df_floors = read_hfpi_floors_data(
-            floors_csv, update_inertial_moments=update_inertial_moments
-        )
+        df_floors = read_hfpi_floors_data( floors_csv )
         df_phi_floors = []
         for p in phi_floors_csvs:
             df = read_hfpi_floor_phi(p)
@@ -179,7 +162,6 @@ class HFPIStructuralData(BaseModel):
         [normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_modal_shapes]
         self.is_normalized = True
 
-
 def compute_generalized_forces(
     forces: static.StaticForcesData, structural_data: HFPIStructuralData
 ) -> pd.DataFrame:
@@ -206,10 +188,12 @@ def compute_generalized_forces(
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
             k_use = str(n_floor) if use_string else int(n_floor)
+            CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
+            cm_z_onCM = cm_z[k_use] - common.series_cross_product(CM_pos, cf_x[k_use], cf_y[k_use])
             f_tmp[n_floor, :] = (
                 cf_x[k_use] * df_phi["DX"].iloc[n_floor]
                 + cf_y[k_use] * df_phi["DY"].iloc[n_floor]
-                + cm_z[k_use] * df_phi["RZ"].iloc[n_floor]
+                + cm_z_onCM * df_phi["RZ"].iloc[n_floor]
             )
         # F_gen[n_mode] = f_tmp.sum(axis=1)
         F_gen[n_mode] = f_tmp.sum(axis=0)
@@ -324,7 +308,6 @@ def compute_mode_static_equivalent_force(
         static_eq["x"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DX"]
         static_eq["y"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DY"]
         static_eq["z"][:, n_floor] = gen_mode_displacement * moment_factor * df_floor["RZ"]
-
     return static_eq
 
 
@@ -427,6 +410,51 @@ class HFPIResults(BaseModel):
     def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
         return common.get_stats_dct(self.global_moments_static_eq, stats_type)
 
+def move_displacement_ref_from_CM_to_origin(
+    displacement: dict[str, np.ndarray], 
+    structural_data:  HFPIStructuralData,
+) -> dict[str, np.ndarray]:
+    """ Transforms displacements from the coordinate system of center of mass to original coordinate system.
+        Currently not implemented. Just returns displacement without changes.
+    """
+    # n_floors = structural_data.n_floors
+    # x, y, z = displacement['x'], displacement['y'], displacement['z']
+    # for n_floor in range(n_floors):
+    #     k_use = int(n_floor)
+    #     print(n_floor, "old",y[-1,k_use])
+    #     CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
+    #     CM_R = (CM_pos[0]**2+CM_pos[1]**2)**0.5
+    #     CM_ang = np.atan2(CM_pos[0], CM_pos[1])
+    #     # new_ang = CM_ang + z[:,k_use]
+    #     new_ang = z[:,k_use]
+    #     displacement['x'][:,k_use] = CM_R*np.cos(new_ang) + x[:,k_use]
+    #     displacement['y'][:,k_use] = y[:,k_use] + CM_R*np.sin(new_ang)
+    #     print("new",displacement['y'][-1,k_use], z[-1,k_use], CM_ang)
+    return displacement
+
+def move_loads_ref_from_CM_to_origin(
+    forces: dict[str, np.ndarray], 
+    moments: dict[str, np.ndarray],
+    structural_data:  HFPIStructuralData,
+) -> tuple[dict[str, np.ndarray],dict[str, np.ndarray]]:
+    """Transforms forces and moments of force from the coordinate system of center of mass to original coordinate system.
+
+    Args:
+        forces dict[str, np.ndarray]: dictionary with force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        moments dict[str, np.ndarray]: dictionary with moments of force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        structural_data (HFPIStructuralData): object with structural data
+
+    Returns:
+        tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
+    """
+    n_floors = structural_data.n_floors
+    fx, fy, mz = forces['x'], forces['y'], moments['z']
+    for n_floor in range(n_floors):
+        k_use = int(n_floor)
+        CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
+        moments['z'][:,k_use] = mz[:,k_use] + common.series_cross_product(CM_pos, fx[:,k_use], fy[:,k_use])
+    forces["z"] = moments['z'].copy()
+    return forces, moments
 
 def solve_hfpi(
     *,
@@ -434,7 +462,8 @@ def solve_hfpi(
     dim_data: static.DimensionalData,
     forces: static.StaticForcesData,
     xi: float,
-):
+    return_values_on_origin: bool = True,
+) -> HFPIResults:
     """Solver HFPI (high frequency pressure integration) for given structure and forces conditions"""
 
     df_floors = structural_data.df_floors
@@ -470,6 +499,9 @@ def solve_hfpi(
 
     force_static_eq = combine_modes(all_static_eq_force)
     moments_static_eq = common.get_moments_from_force(force_static_eq, floors_heights)
+    if return_values_on_origin:
+        displacement = move_displacement_ref_from_CM_to_origin(displacement, structural_data)
+        force_static_eq, moments_static_eq = move_loads_ref_from_CM_to_origin(force_static_eq, moments_static_eq, structural_data)
 
     return HFPIResults(
         delta_t=dt,

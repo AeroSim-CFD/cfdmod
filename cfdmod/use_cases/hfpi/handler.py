@@ -17,8 +17,27 @@ from cfdmod.use_cases.hfpi import common, dynamic, static
 
 T = TypeVar("T")
 
-
 class WindAnalysis(BaseModel):
+    """Data for wind analysis and calculation"""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    U_H_overwrite: float | None = None
+
+    @classmethod
+    def build(cls, U_H_overwrite: float):
+        return WindAnalysis(U_H_overwrite=U_H_overwrite)
+
+    def get_U_H(
+        self, height: float|None=None, direction: float|None=None, recurrence_period: float|None=None, use_kd: bool = True
+    ) -> float:
+        if self.U_H_overwrite is not None:
+            return self.U_H_overwrite
+        else:
+            raise NotImplementedError("This class does not implement any calculation for U_H. Instantiate a child class or overwrite U_H")
+
+
+class WindAnalysis_NBR(WindAnalysis):
     """Data for wind analysis and calculation"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -42,7 +61,7 @@ class WindAnalysis(BaseModel):
             df["Kd"] = 1
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
-        return WindAnalysis(directional_data=df, V0=V0, U_H_overwrite=U_H_overwrite)
+        return WindAnalysis_NBR(directional_data=df, V0=V0, U_H_overwrite=U_H_overwrite)
 
     def S2(self, height: float, direction: float):
         # parameters from NBR 6123, mean speed of 10min
@@ -60,7 +79,7 @@ class WindAnalysis(BaseModel):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
     def get_U_H(
-        self, height: float, direction: float, recurrence_period: float, use_kd: bool = True
+        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool = True
     ) -> float:
         if self.U_H_overwrite is not None:
             return self.U_H_overwrite
@@ -72,6 +91,66 @@ class WindAnalysis(BaseModel):
         S2 = self.S2(height, direction)
         S3 = self.S3(recurrence_period)
         return V0 * kd * S2 * S3
+
+class WindAnalysis_EU(WindAnalysis):
+    """Data for wind analysis and calculation for EU standard EN1991"""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    # Pandas with keys: wind_direction, I, II, III, IV, V, Kd
+    # Kd is optional and defaults to read, it defaults to one
+    directional_data: pd.DataFrame
+    Vb: float
+    U_H_overwrite: float | None = None
+
+    @classmethod
+    def build(cls, data_csv: pathlib.Path, Vb: float, U_H_overwrite: float | None = None):
+        df = pd.read_csv(data_csv, index_col=None)
+        req_keys = ["wind_direction", "z0"]
+        if not common.validate_keys_df(df, req_keys):
+            raise KeyError(
+                "Not all required keys are in wind CSV. "
+                f"Required ones are: {req_keys}, found {list(df.columns)}"
+            )
+        if "Kd" not in df.columns:
+            df["Kd"] = 1
+        df = df[req_keys + ["Kd"]]
+        df.sort_values(by=["wind_direction"], inplace=True)
+        return WindAnalysis_EU(directional_data=df, Vb=Vb, U_H_overwrite=U_H_overwrite)
+
+    def kr(self, direction: float):
+        direction = float(direction)
+        df = self.directional_data
+        row = df.loc[df["wind_direction"] == direction].squeeze()
+        return 0.19*(row['z0']/0.05)**0.07
+
+    def c_prob(self, rec_period: float=50) -> float:
+        K=0.2
+        n=0.5
+        p = 1/rec_period
+        return ((1-K*np.log(-np.log(1-p)))/(1-K*np.log(-np.log(0.98))))**n
+    
+    def c_r(self, height: float, direction: float) -> float:
+        direction = float(direction)
+        df = self.directional_data
+        row = df.loc[df["wind_direction"] == direction].squeeze()
+        return self.kr(direction)*np.log(height/row['z0'])
+
+    def get_U_H(
+        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool=True
+    ) -> float:
+        if self.U_H_overwrite is not None:
+            return self.U_H_overwrite
+
+        direction = float(direction)
+        df = self.directional_data
+        row = df.loc[df["wind_direction"] == direction].squeeze()
+        Vb = self.Vb
+        Kd = row["Kd"] if use_kd else 1
+        c_season = 1 # for future implementations, ...maybe 
+        c_r = self.c_r(height, direction)
+        c_prob = self.c_prob(recurrence_period)
+        return (Vb*Kd*c_prob*c_season) * c_r
 
 
 class DimensionSpecs(BaseModel):
@@ -150,7 +229,7 @@ class _HFPIParams(BaseModel):
 class MultipleAnalysisHandler(BaseModel):
     """Full analysis for an HFPI case"""
 
-    wind_analytics: WindAnalysis
+    wind_analysis: WindAnalysis
     dimensions: DimensionSpecs
     directional_forces: dict[float, static.StaticForcesData]
     save_folder: pathlib.Path
@@ -163,7 +242,7 @@ class MultipleAnalysisHandler(BaseModel):
             raise ValueError("Forces should not be scaled before generating HFPI solver")
 
         dim = self.dimensions
-        U_h = self.wind_analytics.get_U_H(
+        U_h = self.wind_analysis.get_U_H(
             dim.height,
             parameters.direction,
             parameters.recurrence_period,
@@ -229,7 +308,7 @@ class MultipleAnalysisHandler(BaseModel):
         analysis_results = {}
         for direction in self.directional_forces:
             forces = self.directional_forces[direction]
-            U_h = self.wind_analytics.get_U_H(
+            U_h = self.wind_analysis.get_U_H(
                 height=H,
                 direction=direction,
                 recurrence_period=recurrence_period,

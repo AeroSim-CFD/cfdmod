@@ -26,6 +26,8 @@ def fill_forces_floors(forces_df: pd.DataFrame, n_floors: int):
             continue
         forces_df[str(i)] = 0
 
+def series_cross_product(arm: np.ndarray, vx: pd.DataFrame|np.ndarray, vy: pd.DataFrame|np.ndarray) -> pd.DataFrame:
+    return arm[0]*vy - arm[1]*vx
 
 def get_stats_dct(
     dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"]

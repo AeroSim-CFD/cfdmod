@@ -5,6 +5,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+import copy
 from pydantic import BaseModel, ConfigDict
 
 from cfdmod.use_cases.hfpi import common
@@ -84,6 +85,7 @@ class StaticForcesData(BaseModel):
     cf_x: pd.DataFrame
     cf_y: pd.DataFrame
     cm_z: pd.DataFrame
+    fixed_point: np.ndarray = np.array([0,0,0])
     is_scaled: bool = False
 
     def get_as_dct(self):
@@ -144,6 +146,13 @@ class StaticForcesData(BaseModel):
             res.filter_by_period(min_cst_period)
 
         return res
+    
+    def transform_fixed_point(self, new_fixed_point: np.ndarrray=np.array([0,0,0]), inplace: bool=True) -> StaticForcesData:
+        obj = self if inplace else copy.deepcopy(self)
+        transf_arm = obj.fixed_point - new_fixed_point
+        col_mul = [k for k in obj.cm_z.columns if not isinstance(k, str) or not k.startswith("time")]
+        obj.cm_z[col_mul] = obj.cm_z[col_mul] + common.series_cross_product(transf_arm, obj.cf_x[col_mul], obj.cf_y[col_mul])
+        return obj
 
     def filter_by_period(self, min_cst_period: float):
         """Filter forces to use a minimun period. Used to reduce amount of data"""
