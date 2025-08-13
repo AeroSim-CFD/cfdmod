@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cfdmod.logger import logger
 from cfdmod.use_cases.hfpi import common, dynamic, static
-from cfdmod.use_cases.analytical.wind_profile import WindProfile
+from cfdmod.use_cases.climate.wind_profile import WindProfile
 
 T = TypeVar("T")
 
