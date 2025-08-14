@@ -39,6 +39,7 @@ def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
 def take_snapshot(
     image_path: pathlib.Path | str,
     snapshot_config: SnapshotConfig,
+    off_screen: bool = False,
 ):
     """Use pyvista renderer to take a snapshot
 
@@ -50,7 +51,7 @@ def take_snapshot(
         image_path = pathlib.Path(image_path)
 
     pv.global_theme.allow_empty_mesh = True
-    plotter = pv.Plotter(window_size=snapshot_config.camera.window_size)
+    plotter = pv.Plotter(window_size=snapshot_config.camera.window_size, off_screen=off_screen)
     plotter.enable_parallel_projection()
 
     sargs = dict(

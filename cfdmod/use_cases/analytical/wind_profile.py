@@ -87,14 +87,14 @@ class WindProfile_NBR(WindProfile):
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
-    def get_U_H(self, height: float, direction: float, recurrence_period: float, time_filter_seconds: float=600) -> float:
+    def get_U_H(self, height: float, direction: float, recurrence_period: float, time_filter_seconds: float=600, use_kd: bool=True) -> float:
         if self.U_H_overwrite is not None:
             return self.U_H_overwrite
 
         df = self.directional_data
         row = df.loc[(df["wind_direction"] - direction).abs().idxmin()].squeeze()
         V0 = self.V0
-        kd = row["Kd"]
+        kd = row["Kd"] if use_kd else 1
         S2 = self.S2(height, direction, time_filter_seconds)
         S3 = self.S3(recurrence_period)
         return V0 * kd * S2 * S3
