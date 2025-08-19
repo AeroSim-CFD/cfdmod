@@ -3,12 +3,7 @@ import pandas as pd
 import pathlib
 from pydantic import BaseModel, ConfigDict, Field
 from cfdmod.use_cases.climate.wind_profile import WindProfile
-
-def _validate_keys_df(df: pd.DataFrame, keys: list[str]):
-    if any(k not in df.columns for k in keys):
-        return False
-    return True
-
+from cfdmod import utils
 
 
 class WindProfile_NBR(WindProfile):
@@ -27,7 +22,7 @@ class WindProfile_NBR(WindProfile):
         df = pd.read_csv(data_csv, index_col=None)
         df = df.fillna(0)
         req_keys = ["wind_direction", "I", "II", "III", "IV", "V"]
-        if not _validate_keys_df(df, req_keys):
+        if not utils.validate_keys_df(df, req_keys):
             raise KeyError(
                 "Not all required keys are in wind CSV. "
                 f"Required ones are: {req_keys}, found {list(df.columns)}"
@@ -37,6 +32,13 @@ class WindProfile_NBR(WindProfile):
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
         return WindProfile_NBR(directional_data=df, V0=V0, U_H_overwrite=U_H_overwrite)
+
+    def get_opencountry_profile(self):
+        directional_data_cat2 = self.directional_data.copy()
+        for cat in ['I','III','IV','V']:
+            directional_data_cat2[cat] = 0
+        directional_data_cat2["II"] = 1
+        return WindProfile(U_H_overwrite=self.U_H_overwrite, directional_data=directional_data_cat2, V0=self.V0)
 
     def p(self, direction: float, time_filter_seconds: int|float):
         validate_time_filter(time_filter_seconds)
@@ -114,7 +116,7 @@ class WindProfile_EU(WindProfile):
     def build(cls, data_csv: pathlib.Path, Vb: float, U_H_overwrite: float | None = None):
         df = pd.read_csv(data_csv, index_col=None)
         req_keys = ["wind_direction", "z0"]
-        if not common.validate_keys_df(df, req_keys):
+        if not utils.validate_keys_df(df, req_keys):
             raise KeyError(
                 "Not all required keys are in wind CSV. "
                 f"Required ones are: {req_keys}, found {list(df.columns)}"
@@ -124,6 +126,11 @@ class WindProfile_EU(WindProfile):
         df = df[req_keys + ["Kd"]]
         df.sort_values(by=["wind_direction"], inplace=True)
         return WindProfile_EU(directional_data=df, Vb=Vb, U_H_overwrite=U_H_overwrite)
+
+    def get_opencountry_profile(self):
+        directional_data_cat2 = self.directional_data.copy()
+        directional_data_cat2["z0"] = 0.05
+        return WindProfile(U_H_overwrite=self.U_H_overwrite, directional_data=directional_data_cat2, Vb=self.Vb)
 
     def kr(self, direction: float):
         direction = float(direction)

@@ -9,7 +9,7 @@ import copy
 from pydantic import BaseModel, ConfigDict
 
 from cfdmod.use_cases.hfpi import common
-
+from cfdmod import utils
 
 class DimensionalData(BaseModel):
     """Analytical data required to analyze a given HFPI model"""
@@ -45,7 +45,7 @@ def read_static_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
     """Read forces for HFPI from path, with scalar key specified"""
     df_force = pd.read_hdf(hdf_path)
     req_keys = ["time_normalized"]
-    if not common.validate_keys_df(df_force, req_keys):
+    if not utils.validate_keys_df(df_force, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI Forces HDF {hdf_path.as_posix()}. Found only keys {df_force.columns}"
         )

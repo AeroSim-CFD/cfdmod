@@ -163,3 +163,9 @@ def convert_matrix_into_dataframe(
     ]
 
     return dataframe
+
+
+def validate_keys_df(df: pd.DataFrame, keys: list[str]):
+    if any(k not in df.columns for k in keys):
+        return False
+    return True

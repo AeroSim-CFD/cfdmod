@@ -91,12 +91,6 @@ def get_global_stats_dct_float(
     return result
 
 
-def validate_keys_df(df: pd.DataFrame, keys: list[str]):
-    if any(k not in df.columns for k in keys):
-        return False
-    return True
-
-
 def rotate_values_xy(values_proj: dict[str, np.ndarray], angle_rot: float):
     cos_theta = np.cos(np.radians(angle_rot))
     sin_theta = np.sin(np.radians(angle_rot))

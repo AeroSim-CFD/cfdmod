@@ -3,8 +3,7 @@ import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
-
-from cfdmod.use_cases.wind_analysis.profile import ProfileCalculator_NBR
+from cfdmod.use_cases.climate.wind_profile import WindProfile
 
 ...
 # Pandas DataFrame must have:
@@ -140,19 +139,11 @@ def add_season_and_period_columns(data: pd.DataFrame) -> pd.DataFrame:
     data.loc[mask_day, 'period'] = 'day'
     data.loc[~mask_day, 'period'] = 'night'
 
-def add_rescaled_velocities_columns(data: pd.DataFrame, station_roughness_path: pathlib.Path, station_mast_height: float=10, filter_time_mean: float=3600, filter_time_gust: float=3):
-    if not station_roughness_path.exists():
-        station_roughness = _get_roughness_table_cat2([30,90,150,210,270,330])
-        profile_station = ProfileCalculator_NBR(directional_data=station_roughness, V0=1)
-    else:
-        station_roughness = pd.read_csv(station_roughness_path)
-        profile_station = ProfileCalculator_NBR.build(data_csv=station_roughness_path, V0=1)
-
+def add_rescaled_velocities_columns(data: pd.DataFrame, station_wind_profile: WindProfile, station_mast_height: float=10, filter_time_mean: float=3600, filter_time_gust: float=3):
     data["u_mean"] = np.nan
     data["u_gust"] = np.nan
-    ref_cat2 = _get_roughness_table_cat2(station_roughness['wind_direction'].to_numpy())
-    profile_cat2 = ProfileCalculator_NBR(directional_data=ref_cat2, V0=1)
-    directions = list(station_roughness['wind_direction'])
+    profile_opencountry = station_wind_profile.get_opencountry_profile()
+    directions = list(station_wind_profile.directional_data['wind_direction'])
     
     direction_cuts = [(d_0+d_1)/2 for d_0, d_1 in zip(directions[:-1], directions[1:])]
     direction_cuts.append(((directions[0]+360)+directions[-1])/2 % 360)
@@ -169,22 +160,13 @@ def add_rescaled_velocities_columns(data: pd.DataFrame, station_roughness_path: 
         if(dir_selection.sum() == 0):
             continue
 
-        multiplier_gust = profile_station.get_U_H(height=station_mast_height, direction=direction, recurrence_period=50, time_filter_seconds=filter_time_gust)
-        multiplier_mean = profile_station.get_U_H(height=station_mast_height, direction=direction, recurrence_period=50, time_filter_seconds=filter_time_mean)
-        multiplier_cat2_mean = profile_cat2.get_U_H(height=10, direction=direction, recurrence_period=50, time_filter_seconds=3600)
+        multiplier_gust = station_wind_profile.get_U_H(height=station_mast_height, direction=direction, recurrence_period=50, time_filter_seconds=filter_time_gust)
+        multiplier_OC_gust = profile_opencountry.get_U_H(height=10, direction=direction, recurrence_period=50, time_filter_seconds=filter_time_gust)
+        multiplier_mean = station_wind_profile.get_U_H(height=station_mast_height, direction=direction, recurrence_period=50, time_filter_seconds=filter_time_mean)
+        multiplier_OC_mean = profile_opencountry.get_U_H(height=10, direction=direction, recurrence_period=50, time_filter_seconds=3600)
 
-        data.loc[dir_selection, 'u_mean'] = data[dir_selection]['u_mean_raw']/multiplier_mean*multiplier_cat2_mean
-        data.loc[dir_selection, 'u_gust'] = data[dir_selection]['u_gust_raw']/multiplier_gust
-
-
-def _get_roughness_table_cat2(wind_directions: list) -> pd.DataFrame:
-    ref_cat2 = pd.DataFrame()
-    ref_cat2['wind_direction'] = wind_directions
-    for cat in ['I', 'III','IV','V']:
-        ref_cat2[cat] = 0    
-    ref_cat2['II'] = 1
-    ref_cat2['Kd'] = 1
-    return ref_cat2
+        data.loc[dir_selection, 'u_mean'] = data[dir_selection]['u_mean_raw']/multiplier_mean*multiplier_OC_mean
+        data.loc[dir_selection, 'u_gust'] = data[dir_selection]['u_gust_raw']/multiplier_gust*multiplier_OC_gust
 
 def separate_by_year(data: pd.DataFrame) -> dict[int, pd.DataFrame]:
     years_col = pd.to_datetime(data['datetime']).dt.year
