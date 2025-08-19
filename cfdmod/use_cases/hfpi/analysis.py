@@ -207,7 +207,8 @@ def plot_global_stats_per_direction(
 ):
     """Plot global values for statistics of results"""
 
-    fig, axs = plt.subplots(3, 2, figsize=(10, 12), sharey="row")
+    # fig, axs = plt.subplots(3, 2, figsize=(10, 12), sharey="row")
+    fig, axs = plt.subplots(3, 2, figsize=(10, 12))
     axs[2, 1].set_visible(False)
 
     stats_ex = next(iter(stats_xis.values()))
