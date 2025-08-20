@@ -1,5 +1,6 @@
 from typing import Callable, Literal, TypeVar
 import pandas as pd
+import numpy as np
 import pathlib
 from pydantic import BaseModel, ConfigDict, Field
 from cfdmod.use_cases.climate.wind_profile import WindProfile
