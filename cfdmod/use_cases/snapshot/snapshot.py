@@ -131,7 +131,8 @@ def take_snapshot(
     if snapshot_config.image_crop is not None:
         crop_image(image_path=image_path, crop_cfg=snapshot_config.image_crop)
 
-    display_image(image_path)
+    if not off_screen:
+        display_image(image_path)
 
 
 def add_mesh_projection_to_screenshot(
