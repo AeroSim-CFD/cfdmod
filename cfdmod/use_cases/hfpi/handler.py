@@ -414,6 +414,10 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
 
+    def join_by_wavelet(self):
+        return self.join_by(lambda params: params.apply_wavelet_filter)
+
+
     def filter_by_xi(self, xi: float):
         return self.join_by_xi()[xi]
 
@@ -422,3 +426,6 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
 
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
+
+    def filter_by_wavelet(self, filter: bool):
+        return self.join_by_wavelet()[filter]
