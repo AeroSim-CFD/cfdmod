@@ -35,6 +35,7 @@ class HFPICaseParameters(BaseModel, frozen=True):
     recurrence_period: float
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
+    apply_wavelet_filter: bool
 
     def __hash__(self):
         return hash((self.direction, self.xi, self.recurrence_period, self.use_kd))
@@ -42,7 +43,7 @@ class HFPICaseParameters(BaseModel, frozen=True):
     def get_results_filename(self, base_folder: pathlib.Path):
         return (
             base_folder
-            / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}.pickle"
+            / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}_wave{self.apply_wavelet_filter}.pickle"
         )
 
 
@@ -72,6 +73,7 @@ def solve_hfpi_case(
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
         xi=parameters.xi,
+        apply_wavelet_filter=parameters.apply_wavelet_filter,
     )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
@@ -136,6 +138,7 @@ class MultipleAnalysisHandler(BaseModel):
         xis: list[float],
         use_kd: list[bool],
         recurrence_periods: list[float],
+        apply_wavelet_filter: list[bool]=[False],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
@@ -144,9 +147,10 @@ class MultipleAnalysisHandler(BaseModel):
                 use_kd=kd,
                 xi=xi,
                 structural_data=structural_data,
+                apply_wavelet_filter=apply_wavelet,
             )
-            for direction, xi, kd, period in itertools.product(
-                *[directions, xis, use_kd, recurrence_periods]
+            for direction, xi, kd, period, apply_wavelet in itertools.product(
+                *[directions, xis, use_kd, recurrence_periods, apply_wavelet_filter]
             )
         ]
         return cases_parameters
