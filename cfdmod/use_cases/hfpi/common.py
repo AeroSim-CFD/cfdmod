@@ -41,6 +41,17 @@ def get_stats_dct(
     raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
 
 
+def get_stats_dct_peak_factor(
+    dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"], peak_factor:float,
+) -> dict[str, np.ndarray] | dict[str, float]:
+    if stats_type == "max":
+        return {k: v.mean(axis=0)+v.std(axis=0)*peak_factor for k, v in dct.items()}
+    elif stats_type == "min":
+        return {k: v.mean(axis=0)-v.std(axis=0)*peak_factor for k, v in dct.items()}
+    elif stats_type == "mean":
+        return {k: v.mean(axis=0) for k, v in dct.items()}
+    raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
+
 def get_stats_among_dct(
     lst_dct: list[dict[str, np.ndarray] | dict[str, float]],
     stats_type: Literal["min", "max", "mean"],

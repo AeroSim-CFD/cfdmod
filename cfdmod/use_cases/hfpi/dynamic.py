@@ -392,25 +392,56 @@ class HFPIResults(BaseModel):
         """Get acceleration from given floor, considering radius for Z"""
         return self.get_acceleration(pos=pos)[:, floor]
 
-    def get_max_acceleration_per_floor(self, pos: tuple[float, float] = (0, 0)) -> np.ndarray:
-        return self.get_acceleration(pos=pos).max(axis=0)
+    def get_max_acceleration_per_floor(self, pos: tuple[float, float] = (0, 0), peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4) -> np.ndarray:
+        if peak_method == "extreme":
+            return self.get_acceleration(pos=pos).max(axis=0)
+        else:
+            acc = self.get_acceleration(pos=pos)
+            return acc.mean(axis=0)+acc.std(axis=0)*peak_factor
 
     def get_floor_max_acceleration(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
     ) -> float:
-        return self.get_floor_acceleration(pos=pos, floor=floor).max()
+        if peak_method == "extreme":
+            return self.get_floor_acceleration(pos=pos, floor=floor).max()
+        else:
+            acc = self.get_floor_acceleration(pos=pos, floor=floor)
+            return acc.mean()+acc.std()*peak_factor
 
-    def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.forces_static_eq, stats_type)
+    def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.forces_static_eq, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.forces_static_eq, stats_type, peak_factor)
 
-    def get_stats_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.moments_static_eq, stats_type)
+    def get_stats_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.moments_static_eq, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.moments_static_eq, stats_type, peak_factor)
 
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_forces_static_eq, stats_type)
 
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_moments_static_eq, stats_type)
+    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_forces_static_eq, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_forces_static_eq, stats_type, peak_factor)
+
+    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_moments_static_eq, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_moments_static_eq, stats_type, peak_factor)
+    
+    # def get_stats_global_forces_static_eq_peak_factor(self, stats_type: Literal["min", "max"], peak_factor: float = 4):
+    #     dict_vals = self.global_moments_static_eq
+    #     result = {}
+    #     for comp, values in dict_vals.items():
+    #         mean = values.mean(axis=0)
+    #         std = values.std(axis=0)
+    #         signal = -1 if stats_type=='min' else 1
+    #         result[comp] = mean + signal*std*peak_factor
+    #     return result
 
 def move_displacement_ref_from_CM_to_origin(
     displacement: dict[str, np.ndarray], 
@@ -464,6 +495,7 @@ def solve_hfpi(
     dim_data: static.DimensionalData,
     forces: static.StaticForcesData,
     xi: float,
+    frequency_multiplier: float,
     return_values_on_origin: bool = True,
     apply_wavelet_filter: bool = False,
     filter_percentage: float =  99.5,
@@ -489,7 +521,7 @@ def solve_hfpi(
     for n_mode in structural_data.active_modes:
         df_mode = structural_data.df_modes.iloc[n_mode]
         df_phi = structural_data.df_modal_shapes[n_mode]
-        wp = df_mode["wp"]
+        wp = df_mode["wp"]*frequency_multiplier
         gen_displacement = solve_runge_kunta(
             generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi
         )
