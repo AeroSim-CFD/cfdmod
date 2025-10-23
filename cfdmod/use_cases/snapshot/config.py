@@ -199,7 +199,7 @@ class ValueTagsConfig(BaseModel):
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
         if isinstance(v, (int, float)):
             return (float(v), float(v))
-        if isinstance(v, tuple) and len(v) == 2:
+        if isinstance(v, tuple) or isinstance(v, list) and len(v) == 2:
             return tuple(map(float, v))
         raise ValueError("spacing must be a float or a 2-tuple of floats")
 
