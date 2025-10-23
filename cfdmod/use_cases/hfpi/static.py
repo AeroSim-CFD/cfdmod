@@ -232,17 +232,30 @@ class StaticResults(BaseModel):
         common.rotate_values_xy(self.forces_static, angle_rot)
         common.rotate_values_xy(self.moments_static, angle_rot)
 
-    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.forces_static, stats_type)
+    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.forces_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.forces_static, stats_type, peak_factor)
 
-    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.moments_static, stats_type)
+    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.moments_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.moments_static, stats_type, peak_factor)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_forces_static, stats_type)
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_forces_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_forces_static, stats_type, peak_factor)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_moments_static, stats_type)
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_moments_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_moments_static, stats_type, peak_factor)
+
 
 
 def validate_forces_w_n_floors(forces: StaticForcesData, n_floors: int):
