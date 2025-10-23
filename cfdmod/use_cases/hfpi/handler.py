@@ -42,16 +42,17 @@ class HFPICaseParameters(BaseModel, frozen=True):
         return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier))
 
     def get_results_filename(self, base_folder: pathlib.Path):
-        if self.frequency_multiplier==1:
-            return (
-                base_folder
-                / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}_wave{self.apply_wavelet_filter}.pickle"
-            )
-        else:
-            return (
-                base_folder
-                / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}_wave{self.apply_wavelet_filter}_freq{self.frequency_multiplier}.pickle"
-            )
+        filename = f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}"
+        if self.apply_wavelet_filter:
+            filename += f"_wave{self.apply_wavelet_filter}"
+        if self.frequency_multiplier!=1:
+            filename += f"_freq{self.frequency_multiplier}"
+        filename += ".pickle"
+    
+        return (
+            base_folder
+            / filename
+        )
 
 
 
