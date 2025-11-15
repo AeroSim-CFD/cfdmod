@@ -226,6 +226,7 @@ class ProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
+    cell_data_to_point_data: bool = Field(True, title="Apply cell_data_to_point_data and contour filters", description="True gives a smooth apearance, False preserves better the separations of Ce and Cf.")
     values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
     clip_box: TransformationConfig | None = Field(
         None,
