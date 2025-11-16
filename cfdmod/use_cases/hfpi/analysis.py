@@ -385,7 +385,7 @@ def plot_max_acceleration(
         structure_data.df_modes["frequency"].min(),
         min(structure_data.df_modes["frequency"].max(), 1),
     ]
-    range_NBR_ac_residential = z[
+    range_NBR_ac_residential = [
         0.01 * 4.08 * range_freq[1] ** -0.445 * unit_conversion,
         0.01 * 4.08 * range_freq[0] ** -0.445 * unit_conversion,
     ]
