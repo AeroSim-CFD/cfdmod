@@ -46,7 +46,7 @@ def get_stats_dct_peak_factor(
 ) -> dict[str, np.ndarray] | dict[str, float]:
 
     resp = {}
-    for k, v in dct.items:
+    for k, v in dct.items():
         mn = v.mean(axis=0)
         rms = (v - mn).std(axis=0)
         if stats_type == "max":

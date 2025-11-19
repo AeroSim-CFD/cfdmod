@@ -619,13 +619,16 @@ def is_float(s):
     except ValueError:
         return False
 
-def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path):
+def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path, coordinate_system: Literal['global','local']='global'):
     """Export floor values to Eberick compatible xlsx
 
     https://suporte.altoqi.com.br/hc/pt-br/articles/360050991093"""
 
     filename.parent.mkdir(parents=True, exist_ok=True)
-    tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
+    if coordinate_system == 'global':
+        tab_names = {"Fx": "Fx", "Fy": "Fy", "Mz": "Mz"}
+    else:
+        tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
 
     with pd.ExcelWriter(filename, engine="openpyxl", mode='w') as writer:
         for key, df in tables.items():
