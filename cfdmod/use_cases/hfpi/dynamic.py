@@ -397,7 +397,8 @@ class HFPIResults(BaseModel):
             return self.get_acceleration(pos=pos).max(axis=0)
         else:
             acc = self.get_acceleration(pos=pos)
-            return acc.mean(axis=0)+acc.std(axis=0)*peak_factor
+            acc_m = acc.mean(axis=0)
+            return acc_m + (acc-acc_m).std(axis=0)*peak_factor
 
     def get_floor_max_acceleration(
         self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4

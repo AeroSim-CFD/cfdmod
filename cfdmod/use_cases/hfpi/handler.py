@@ -380,16 +380,16 @@ class DirectionalAnalysisResults(BaseModel):
 
         return dct_dfs
 
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
+    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         return max(
-            res.dynamic_res.get_floor_max_acceleration(pos, floor) for res in self.results.values()
+            res.dynamic_res.get_floor_max_acceleration(pos, floor, peak_method, peak_factor) for res in self.results.values()
         )
 
     def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1, , peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
     ):
         res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
+        return {k: r.get_max_acceleration(pos, floor, peak_method, peak_factor) for k, r in res.items()}
 
 
 class HFPIAnalysisResults(DirectionalAnalysisResults):
