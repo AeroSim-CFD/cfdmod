@@ -386,7 +386,7 @@ class DirectionalAnalysisResults(BaseModel):
         )
 
     def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1, , peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
     ):
         res = self.join_by_recurrence_period()
         return {k: r.get_max_acceleration(pos, floor, peak_method, peak_factor) for k, r in res.items()}

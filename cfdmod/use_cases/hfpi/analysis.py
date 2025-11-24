@@ -634,4 +634,5 @@ def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pat
         for key, df in tables.items():
             cols_order = ["Pavimento", "Cota"]
             cols_order += sorted([c for c in df.columns if is_float(c)], key=lambda k: float(k))
+            df.sort_values(by='Cota', ascending=False, inplace=True)
             df[cols_order].to_excel(writer, sheet_name=tab_names[key], index=False)
