@@ -199,7 +199,7 @@ class ValueTagsConfig(BaseModel):
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
         if isinstance(v, (int, float)):
             return (float(v), float(v))
-        if isinstance(v, tuple) and len(v) == 2:
+        if isinstance(v, tuple) or isinstance(v, list) and len(v) == 2:
             return tuple(map(float, v))
         raise ValueError("spacing must be a float or a 2-tuple of floats")
 
@@ -226,6 +226,7 @@ class ProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
+    cell_data_to_point_data: bool = Field(True, title="Apply cell_data_to_point_data and contour filters", description="True gives a smooth apearance, False preserves better the separations of Ce and Cf.")
     values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
     clip_box: TransformationConfig | None = Field(
         None,

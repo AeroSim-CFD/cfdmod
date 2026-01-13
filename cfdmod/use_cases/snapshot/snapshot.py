@@ -158,7 +158,11 @@ def add_mesh_projection_to_screenshot(
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
-        mesh = mesh.cell_data_to_point_data()
+        if projection_config.cell_data_to_point_data:
+            mesh = mesh.cell_data_to_point_data()
+            contours = create_contours(mesh, projection_config.scalar, legend_config)
+            plotter.add_mesh(contours, color="grey", line_width=1)
+            
         plotter.add_mesh(
             mesh,
             lighting=False,
@@ -167,8 +171,6 @@ def add_mesh_projection_to_screenshot(
             nan_color=colomap_lookup_table.nan_color,
         )
 
-        contours = create_contours(mesh, projection_config.scalar, legend_config)
-        plotter.add_mesh(contours, color="grey", line_width=1)
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
                 mesh, projection_config, projection_config.values_tag_config

@@ -9,6 +9,7 @@ import pandas as pd
 import scipy
 from matplotlib.ticker import FuncFormatter
 from scipy.ndimage import gaussian_filter
+import math
 
 from cfdmod.use_cases.hfpi import dynamic, handler, static
 
@@ -280,6 +281,19 @@ def plot_global_stats_per_direction(
 
     return fig, axs
 
+def get_xlims(min_vals, max_vals)-> tuple[float,float]:
+    extreme_val = max( abs(min(min_vals)), max(max_vals))*1.5
+    if extreme_val < 1:
+        sieve_size = 1
+    elif extreme_val < 50:
+        sieve_size = 5
+    elif extreme_val < 100:
+        sieve_size = 10
+    else:
+        sieve_size = 50
+    x_lim = math.ceil(extreme_val / sieve_size) * sieve_size
+    return [-x_lim, x_lim]
+
 
 def plot_floor_by_floor_mean_peaks(
     *,
@@ -288,7 +302,7 @@ def plot_floor_by_floor_mean_peaks(
     # Tuple as ("Cfx", "Cfy", "Cmz")
     vals_labels: tuple[str, str, str],
     wind_dir: float,
-    x_lims: list[tuple[float, float]],
+    # x_lims: list[tuple[float, float]]|None=None,
     unit_conversion: float = 1 / 1e6,
     unit_name: str = "MN",
     y_abs: tuple[float, float] | None,
@@ -306,8 +320,9 @@ def plot_floor_by_floor_mean_peaks(
     markers = ["o", "^", "v"]
     labels = [" (media)", " (3s max)", " (3s min)"]
 
-    for ax, component, x_lim in zip(axs.flat, ("x", "y", "z"), x_lims):
+    for ax, component in zip(axs.flat, ("x", "y", "z")):
         ax.axvline(x=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
+        x_lim = get_xlims(min_vals[component]*unit_conversion, max_vals[component]*unit_conversion)
         ax.set_xlim(x_lim[0], x_lim[1])
         for dct_data, key, mark, label_n in zip(
             (mean_vals, max_vals, min_vals), keys, markers, labels
@@ -332,7 +347,7 @@ def plot_floor_by_floor_mean_peaks(
 
     (axs.flat)[0].legend(loc="best", frameon=False, ncol=1, fontsize=10)
 
-    fig.suptitle(f"vento {int(wind_dir)}°", fontweight="bold")
+    fig.suptitle(f"vento {float(wind_dir):.1f}°", fontweight="bold")
     plt.show()
     return fig, axs
 
@@ -473,6 +488,7 @@ def plot_acceleration_floor_by_floor(
     project_name: str = "AeroSim",
     unit_conversion: float = 1000 / 9.806,
     unit_name: str = "milli-g",
+    last_floor: None|int = None,
     language="en",
     plot_nbcc: bool = False,
     plot_nbr: bool = False,
@@ -487,10 +503,9 @@ def plot_acceleration_floor_by_floor(
 
     fig, ax = plt.subplots()
 
-    range_freq = [
-        structure_data.df_modes["frequency"].min(),
-        min(structure_data.df_modes["frequency"].max(), 1),
-    ]
+    natural_freq = structure_data.df_modes["frequency"].min()
+
+
 
     texts = {
         "nbcc": {
@@ -500,28 +515,33 @@ def plot_acceleration_floor_by_floor(
         "nbr_res": {"en": "NBR 6123 - residential", "pt-br": "NBR 6123 - residencial"},
         "nbr_com": {"en": "NBR 6123 - comercial", "pt-br": "NBR 6123 - comercial"},
         "melbourne": {"en": "Melbourne (1992)", "pt-br": "Melbourne (1992)"},
+        'lastfloor': {"en": "Last habitable floor", "pt-br": "Último andar habitável"},
     }
 
-    kwargs_codes = dict(alpha=0.15, linewidth=2)
+
+    if last_floor is not None:
+        ax.axhline(
+            last_floor,
+            color='grey',
+            linestyle='--',
+            label=texts['lastfloor'][language],
+            linewidth=1,
+        )
+
+    kwargs_codes = dict(alpha=1, linewidth=2)
     if plot_nbr:
-        range_NBR_ac_residential = [
-            0.01 * 4.08 * range_freq[1] ** -0.445 * unit_conversion,
-            0.01 * 4.08 * range_freq[0] ** -0.445 * unit_conversion,
-        ]
-        range_NBR_ac_comertial = [
-            0.01 * 6.12 * range_freq[1] ** -0.445 * unit_conversion,
-            0.01 * 6.12 * range_freq[0] ** -0.445 * unit_conversion,
-        ]
-        ax.axvspan(
-            range_NBR_ac_comertial[0],
-            range_NBR_ac_comertial[1],
+        range_NBR_ac_residential = 0.01 * 4.08 * natural_freq ** -0.445 * unit_conversion,
+
+        range_NBR_ac_comertial = 0.01 * 6.12 * natural_freq ** -0.445 * unit_conversion,
+
+        ax.axvline(
+            range_NBR_ac_comertial,
             label=texts["nbr_com"][language],
             color=color_nbr_com,
             **kwargs_codes,
         )
-        ax.axvspan(
-            range_NBR_ac_residential[0],
-            range_NBR_ac_residential[1],
+        ax.axvline(
+            range_NBR_ac_residential,
             label=texts["nbr_res"][language],
             color=color_nbr_res,
             **kwargs_codes,
@@ -539,19 +559,14 @@ def plot_acceleration_floor_by_floor(
             **kwargs_codes,
         )
     if plot_melbourne:
-        range_melbourne = [
+        range_melbourne = (
             unit_conversion
-            * np.sqrt(2 * np.log(600 * range_freq[1]))
+            * np.sqrt(2 * np.log(600 * natural_freq))
             * (0.68 + np.log(melbourne_years) / 5)
-            * np.exp(-3.65 - 0.41 * np.log(range_freq[1])),
-            unit_conversion
-            * np.sqrt(2 * np.log(600 * range_freq[0]))
-            * (0.68 + np.log(melbourne_years) / 5)
-            * np.exp(-3.65 - 0.41 * np.log(range_freq[0])),
-        ]
-        ax.axvspan(
-            range_melbourne[0],
-            range_melbourne[1],
+            * np.exp(-3.65 - 0.41 * np.log(natural_freq))
+        )
+        ax.axvline(
+            range_melbourne,
             label=texts["melbourne"][language],
             color=color_melbourne,
             **kwargs_codes,
@@ -566,8 +581,11 @@ def plot_acceleration_floor_by_floor(
 
 
 def get_effective_forces_peak_loads_per_direction(
-    results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806
+    results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806, get_primary_load: tuple[bool,bool,bool]|bool=True
 ) -> dict[str, pd.DataFrame]:
+    if isinstance(get_primary_load, bool):
+        get_primary_load = (get_primary_load, get_primary_load, get_primary_load)
+    get_primary_load = {ax: c for ax, c in zip(['x','y','z'], get_primary_load)}
     tables = {"Fx": {}, "Fy": {}, "Mz": {}}
     for wd, res in results.join_by_direction().items():
         r = next(iter(res.results.values()))
@@ -575,10 +593,10 @@ def get_effective_forces_peak_loads_per_direction(
         fe_max = r.get_stats_forces_effective("max")
         for axis, load_axis in zip(["x", "y", "z"], ["Fx", "Fy", "Mz"]):
             if abs(fe_min[axis].mean()) > abs(fe_max[axis].mean()):
-                stat_selection = fe_min[axis]
+                stat_selection = fe_min[axis] if get_primary_load[axis] else fe_max[axis]
             else:
-                stat_selection = fe_max[axis]
-            tables[load_axis][f"{int(wd)}"] = stat_selection * unit_conversion
+                stat_selection = fe_max[axis] if get_primary_load[axis] else fe_min[axis]
+            tables[load_axis][f"{float(wd):.1f}"] = stat_selection * unit_conversion
     tables_df: dict[str, pd.DataFrame] = {}
     for t in tables:
         tables_df[t] = pd.DataFrame(tables[t])
@@ -594,16 +612,27 @@ def add_eberick_floor_height_and_pavements(
     df["Pavimento"] = pavement_names
 
 
-def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path):
+def is_float(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path, coordinate_system: Literal['global','local']='global'):
     """Export floor values to Eberick compatible xlsx
 
     https://suporte.altoqi.com.br/hc/pt-br/articles/360050991093"""
 
     filename.parent.mkdir(parents=True, exist_ok=True)
-    tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
+    if coordinate_system == 'global':
+        tab_names = {"Fx": "Fx", "Fy": "Fy", "Mz": "Mz"}
+    else:
+        tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
 
-    with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+    with pd.ExcelWriter(filename, engine="openpyxl", mode='w') as writer:
         for key, df in tables.items():
             cols_order = ["Pavimento", "Cota"]
-            cols_order += sorted([c for c in df.columns if c.isnumeric()], key=lambda k: int(k))
+            cols_order += sorted([c for c in df.columns if is_float(c)], key=lambda k: float(k))
+            df.sort_values(by='Cota', ascending=False, inplace=True)
             df[cols_order].to_excel(writer, sheet_name=tab_names[key], index=False)
