@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 from scipy.stats import weibull_min
+from scipy.special import gamma
+from scipy.optimize import brentq
 import scipy
 
 
@@ -21,8 +23,34 @@ def directional_weibull_fit(data:pd.DataFrame, wind_direction_cuts: list[tuple[f
             continue
         incidence_probability = dir_selection.sum() / valid_selection.sum()
         shape, scale = fit_weibull(data[dir_selection])
-        results[(round(d_0, 2),round(d_1, 2))] = (incidence_probability, shape, scale)
+        # shape, scale = weibull_fit_moments(data[dir_selection]['u_mean'])
+        results[(round(d_0, 2),round(d_1, 2))] = ((incidence_probability, shape, scale), dir_selection.sum())
     return results
+
+def weibull_shape_from_mean_and_std(mean, std):
+    def f(k):
+        return (
+            gamma(1 + 2.0/k) /
+            gamma(1 + 1.0/k)**2
+            - 1.0
+            - (std/mean)**2
+        )
+    return brentq(f, 0.2, 20)
+
+def weibull_scale_from_mean_and_shape(mean, shape):
+    return mean / gamma(1.0 + 1.0 / shape)
+
+def weibull_fit_moments(data):
+    data = np.asarray(data)
+    data = data[data > 0]  # recommended for wind data
+
+    mean = data.mean()
+    std = data.std(ddof=0)
+
+    shape = weibull_shape_from_mean_and_std(mean,std)
+    scale = weibull_scale_from_mean_and_shape(mean, shape)
+
+    return shape, scale
 
 def fit_weibull(data: pd.DataFrame) -> tuple[float, float, list[float]]:
     """Fit weibull max values using raw data and the specifications for it
@@ -53,14 +81,15 @@ def plot_weibull_pdf(data: list, shape: float, scale: float, bins: int|str='auto
     x = np.linspace(0, max(data), 100)
     weibull_pdf = weibull_min.pdf(x, shape, scale=scale, loc=0)
 
-    plt.hist(data,bins=bins, density=True, alpha=0.5, label="Empirical data")
-    plt.plot(x, weibull_pdf, 'r-', label='weibull fit')
+    fig, ax = plt.subplots()
+    ax.hist(data,bins=bins, density=True, alpha=0.5, label="Empirical data")
+    ax.plot(x, weibull_pdf, 'r-', label='weibull fit')
 
     plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
     # Plot aesthetics
-    plt.xlabel('Mean velocity [m/s]')
-    plt.ylabel('Probability density')
+    ax.set_xlabel('Mean velocity [m/s]')
+    ax.set_ylabel('Probability density')
     plt.grid(True)
-    plt.legend()
-    plt.show()
+    ax.legend()
+    return fig, ax
     

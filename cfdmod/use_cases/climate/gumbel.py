@@ -29,7 +29,8 @@ def fit_gumbel_BR_MIS(data: pd.DataFrame, events_per_year: int=4, reduced_variat
         Fits by linear regression with classical Gumbel method (wrong, but conservative)
     """
     reduced_variates, selected_peaks = get_storm_peaks(data, events_per_year, reduced_variate_cut_point)
-    reduced_variates = get_reduced_variate(selected_peaks, reescale_multiple=events_per_year)
+    # reduced_variates = get_reduced_variate(selected_peaks, reescale_multiple=events_per_year)
+    reduced_variates = get_reduced_variate(selected_peaks, reescale_multiple=1) #weird behavior with events>1
     a, U, _, *_ = scipy.stats.linregress(reduced_variates, selected_peaks)
     # return U+np.log(events_per_year)*a, a, selected_peaks
     return U+np.log(events_per_year)*a, a, selected_peaks
@@ -98,30 +99,33 @@ def plot_gumbel_regression(list_of_maxima: list, U: float, a: float, events_per_
     Fi = ((i) / (n+1))**events_per_year
     Yi = -np.log(-np.log(Fi))
 
-    plt.scatter(Yi, list_of_maxima, label='Empirical data')
-    plt.plot(Yi, Yi*a + U, 'r-', label='Gumbel fit')
+    fig, ax = plt.subplots()
+    ax.scatter(Yi, list_of_maxima, label='Empirical data')
+    ax.plot(Yi, Yi*a + U, 'r-', label='Gumbel fit')
 
     # Plot aesthetics
-    plt.xlabel(r'Reduced Variate $\left(\frac{V-U}{a} \right)$')
-    plt.ylabel('Peak gust speeds [m/s]')
-    plt.grid(True)
-    plt.legend()
-    plt.show()
+    ax.set_xlabel(r'Reduced Variate $\left(\frac{V-U}{a} \right)$')
+    ax.set_ylabel('Peak gust speeds [m/s]')
+    ax.grid(True)
+    ax.legend()
+    return fig, ax
+    
     
 
 
-def plot_gumbel_pdf(list_of_maxima: list, U: float, a: float, events_per_year: int=4):
+def plot_gumbel_pdf(list_of_maxima: list, U: float, a: float, events_per_year: int=4, bins='auto'):
     x = np.linspace(min(list_of_maxima) - 2, max(list_of_maxima) + 2, 100)
     gumbel_pdf = gumbel_r.pdf(x, loc=U-np.log(events_per_year)*a, scale=a)
 
-    plt.hist(list_of_maxima,bins='auto', density=True, alpha=0.5, label="Empirical data")
-    plt.plot(x, gumbel_pdf, 'r-', label='Gumbel fit')
+    fig, ax = plt.subplots()
+    ax.hist(list_of_maxima,bins=bins, density=True, alpha=0.5, label="Empirical data")
+    ax.plot(x, gumbel_pdf, 'r-', label='Gumbel fit')
 
     plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
     # Plot aesthetics
-    plt.xlabel('Velocidade de rajada de 3s [m/s]')
-    plt.ylabel('Probability density')
-    plt.grid(True)
-    plt.legend()
-    plt.show()
+    ax.set_xlabel('Velocidade de rajada de 3s [m/s]')
+    ax.set_ylabel('Probability density')
+    ax.grid(True)
+    ax.legend()
+    return fig, ax
     

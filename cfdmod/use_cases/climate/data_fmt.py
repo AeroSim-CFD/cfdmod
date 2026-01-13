@@ -2,44 +2,45 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
-from cfdmod.use_cases.climate.wind_profile import WindProfile
+from cfdmod.use_cases.analytical.wind_profile import WindProfile
 
-...
-# Pandas DataFrame must have:
-# Vavg
-# dir
-# Vgust
-# time
-
-def get_clean_INMET_file(csv_path: pathlib.Path) -> pd.DataFrame:
+def break_INMET_columns(data: pd.DataFrame) -> pd.DataFrame:
     """Clean wind data from INMET (Instituto Nacional de Meteorologia) source and separate by year"""
-    df = pd.read_csv(csv_path, header=9, sep=';')
-    df['datetime'] = df.apply(lambda row: f"{row['Data Medicao']}T{int(row['Hora Medicao'])//100:02}:00:00", axis=1)
-    df['u_mean_raw'] = df["VENTO, VELOCIDADE HORARIA(m/s)"]
-    df['u_gust_raw'] = df["VENTO, RAJADA MAXIMA(m/s)"]
-    df['wind_direction'] = df["VENTO, DIRECAO HORARIA (gr)(° (gr))"]  % 360
-    df = df.drop(columns=['Data Medicao', 'Hora Medicao', "VENTO, VELOCIDADE HORARIA(m/s)", "VENTO, RAJADA MAXIMA(m/s)", "VENTO, DIRECAO HORARIA (gr)(° (gr))", "Unnamed: 5"])
-    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw'], how='all')
-    df[['u_mean_raw', 'u_gust_raw']] = df[['u_mean_raw', 'u_gust_raw']].fillna(0)
-    return df
+    data["Hora Medicao"] = data["Hora Medicao"].astype("Int64") #handles NaN problems
+    data['datetime'] = data.apply(lambda row: f"{row['Data Medicao']}T{row['Hora Medicao']//100:02}:00:00", axis=1)
+    data['u_mean_raw'] = data["VENTO, VELOCIDADE HORARIA(m/s)"]
+    data['u_gust_raw'] = data["VENTO, RAJADA MAXIMA(m/s)"]
+    data['wind_direction'] = data["VENTO, DIRECAO HORARIA (gr)(° (gr))"]  % 360
+    data = data.drop(columns=['Data Medicao', 'Hora Medicao', "VENTO, VELOCIDADE HORARIA(m/s)", "VENTO, RAJADA MAXIMA(m/s)", "VENTO, DIRECAO HORARIA (gr)(° (gr))", "Unnamed: 5"])
+    return data
     
-def get_clean_NCEI_file(csv_path: pathlib.Path) -> pd.DataFrame:
+def break_NCEI_columns(data: pd.DataFrame) -> pd.DataFrame:
     """Clean wind data from NCEI (National Centers for Environmental Information) source and separate stations"""
-    df = pd.read_csv(csv_path)
-    df['station'] = df['STATION'].astype(str).str[0:5]
-    df['datetime'] = df['DATE']
-    df['u_mean_raw'] = df["WND"].str[8:12].astype(float) / 10
-    df['u_gust_raw'] = df["OC1"].str[0:4].astype(float) / 10
-    df['wind_direction'] = df["WND"].str[0:3].astype(int) % 360
-    df = df.drop(columns=['STATION', 'DATE', "SOURCE", "REPORT_TYPE", "CALL_SIGN", "QUALITY_CONTROL", "OC1", "WND"])
-    df = df.dropna(subset=['u_mean_raw', 'u_gust_raw'], how='all')
-    # df[['u_mean_raw', 'u_gust_raw']] = df[['u_mean_raw', 'u_gust_raw']].fillna(0)
-    mask_invalid_mean = (df['u_mean_raw']==999.9)
-    df.loc[mask_invalid_mean, 'u_mean_raw'] = np.nan
-    mask_invalid_gust = (df['u_gust_raw']==999.9)
-    df.loc[mask_invalid_gust, 'u_gust_raw'] = np.nan
-    return df
+    data['station'] = data['STATION'].astype(str).str[0:5]
+    data['datetime'] = data['DATE']
+    columns_to_drop = ['STATION','DATE']
+    
+    def break_col(df, old_col, new_col, col_start, col_end, astype, multiplier, null_indicator):
+        df[new_col] = df[old_col].str[col_start:col_end+1].astype(astype) * multiplier
+        df[f'{new_col}_quality'] = df[old_col].str[col_end+2].astype("Int64") #there is always a ',' character between the value and its quality indicator
+        mask_invalid_row = (df[new_col]==null_indicator)
+        df.loc[mask_invalid_row, new_col] = np.nan
+        return df
+
+    for old_col, new_col, col_start, col_end, astype, multiplier, null_indicator in zip(
+        ['WND', 'wind_direction', 0, 2, 'Int64', 1, 999],
+        ['WND', 'u_mean_raw', 8, 11, 'float', 1/10, 999.9],
+        ['OC1', 'u_gust_raw', 0, 3, 'float', 1/10, 999.9],
+        ['TMP', 'temperature', 0, 4, 'float', 1/10, 999.9],
+        ['DEW', 'dew_point', 0, 4,'float', 1/10, 999.9],
+    ):
+        if old_col in data.columns:
+            data = break_col(data, old_col, new_col, col_start, col_end, astype, multiplier, null_indicator)
+            columns_to_drop.append(old_col)
+        else:
+            data[[new_col,f'{new_col}_quality']] = np.nan
+    data = data.drop(columns=list(set(columns_to_drop)))
+    return data
     
     
 def validate_table(data: pd.DataFrame):
@@ -65,26 +66,25 @@ def plot_series(data: pd.DataFrame):
     fig, ax = plt.subplots(3,1,figsize=(30,15))
     if 'station' in data.columns:
         fig.suptitle(f"station: {data['station'].unique()[0]}")
-    ax[0].plot(pd.to_datetime(data['datetime']), data['u_mean_raw'],'.')
+    markersize=1.75
+    ax[0].plot(pd.to_datetime(data['datetime']), data['u_mean_raw'],'.', markersize=markersize)
     ax[0].set_title('Mean velocity')
-    ax[1].plot(pd.to_datetime(data['datetime']), data['u_gust_raw'],'.')
+    ax[1].plot(pd.to_datetime(data['datetime']), data['u_gust_raw'],'.', markersize=markersize)
     ax[1].set_title('Gust velocity')
-    ax[2].plot(pd.to_datetime(data['datetime']), data['wind_direction'],'.')
+    ax[2].plot(pd.to_datetime(data['datetime']), data['wind_direction'],'.', markersize=markersize)
     ax[2].set_title('Wind direction')
-    plt.show()
     return fig, ax
 
   
 
-def plot_pdfs(data: pd.DataFrame, bins: str|int = 'auto'):
+def plot_pdfs(data: pd.DataFrame, bins_mean: str|int = 'auto', bins_gust: str|int = 'auto'):
     fig, ax = plt.subplots(1,3,figsize=(30,10))
-    ax[0].hist(data['u_mean_raw'], bins=bins,density=True,)
+    ax[0].hist(data['u_mean_raw'], bins=bins_mean,density=True,)
     ax[0].set_title('Mean velocity')
-    ax[1].hist(data['u_gust_raw'], bins=bins, density=True,)
+    ax[1].hist(data['u_gust_raw'], bins=bins_gust, density=True,)
     ax[1].set_title('Gust velocity')
-    ax[2].hist(data['wind_direction'],bins=bins, density=True,)
+    ax[2].hist(data['wind_direction'],bins=bins_mean, density=True,)
     ax[2].set_title('Wind direction')
-    plt.show()
     return fig, ax
     
     
@@ -99,7 +99,7 @@ def remove_date_ranges(data: pd.DataFrame, ranges_to_remove: list[str, pd.Timest
         else:
             remove_mask |= (datetime == range_to_remove)
     print("Number of values removed: ", remove_mask.sum())
-    return data[~ remove_mask].copy()
+    return data[~ remove_mask]
 
 def select_date_ranges(data: pd.DataFrame, ranges_to_select: list[tuple[str,str]]|list[tuple[pd.Timestamp,pd.Timestamp]]) -> pd.DataFrame:
     ranges_to_select = [pd.to_datetime(range) for range in ranges_to_select]
@@ -108,14 +108,17 @@ def select_date_ranges(data: pd.DataFrame, ranges_to_select: list[tuple[str,str]
     for start, end in ranges_to_select:
         select_mask |= ((datetime >= start) & (datetime < end))
     print("Number of values selected: ", select_mask.sum())
-    return data[select_mask].copy()
+    return data[select_mask]
 
 def remove_wind_direction(data: pd.DataFrame, wind_directions_to_remove: list[int]) -> pd.DataFrame:
-    eps = 1
     remove_mask = pd.Series(False, index=data.index)
     for wind_direction in wind_directions_to_remove:
-        remove_mask |= (data['wind_direction']-wind_direction).abs() <= eps
-    return data[~ remove_mask].copy()
+        remove_mask |= data['wind_direction']==wind_direction
+    return data[~ remove_mask]
+
+def remove_invalid_rows(data: pd.DataFrame, column: str) -> pd.DataFrame:
+    remove_mask = data[f'{column}_quality'].isin([2,3,6,7])
+    return data[~ remove_mask]
 
 
 def add_season_and_period_columns(data: pd.DataFrame) -> pd.DataFrame:
