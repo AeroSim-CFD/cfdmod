@@ -4,6 +4,7 @@ import numpy as np
 import pyvista as pv
 
 from cfdmod.logger import logger
+from cfdmod.use_cases.snapshot.colormap import CustomColormapFactory
 from cfdmod.use_cases.snapshot.config import (  # Projections,
     LegendConfig,
     OverlayTextConfig,
@@ -38,6 +39,7 @@ def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:
 def take_snapshot(
     image_path: pathlib.Path | str,
     snapshot_config: SnapshotConfig,
+    off_screen: bool = False,
 ):
     """Use pyvista renderer to take a snapshot
 
@@ -48,7 +50,8 @@ def take_snapshot(
     if isinstance(image_path, str):
         image_path = pathlib.Path(image_path)
 
-    plotter = pv.Plotter(window_size=snapshot_config.camera.window_size)
+    pv.global_theme.allow_empty_mesh = True
+    plotter = pv.Plotter(window_size=snapshot_config.camera.window_size, off_screen=off_screen)
     plotter.enable_parallel_projection()
 
     sargs = dict(
@@ -60,17 +63,27 @@ def take_snapshot(
         fmt="%.2f",
         font_family="arial",
         position_x=0.2,
-        position_y=0.0,
+        position_y=0.05,
         width=0.6,
+        height=0.05,
+        vertical=False,
     )
 
-    lut = pv.LookupTable(cmap="turbo")
-    lut.scalar_range = (
-        snapshot_config.legend_config.range[0],
-        snapshot_config.legend_config.range[1],
-    )
-    lut.n_values = snapshot_config.legend_config.n_divs
-    lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
+    if snapshot_config.legend_config.custom_colorbar is None:
+        lut = pv.LookupTable(cmap="turbo")
+        lut.scalar_range = (
+            snapshot_config.legend_config.range[0],
+            snapshot_config.legend_config.range[1],
+        )
+        lut.n_values = snapshot_config.legend_config.n_divs
+        lut.SetNanColor(1.0, 1.0, 1.0, 1.0)
+    else:
+        conf = snapshot_config.legend_config.custom_colorbar
+        color_factory = CustomColormapFactory(value_edges=conf.value_edges, colors=conf.colors)
+        lut = color_factory.get_lookuptable()
+        sargs_modiffy = color_factory.get_scalar_bar_args_modifier()
+        for key in sargs_modiffy:
+            sargs[key] = sargs_modiffy[key]
 
     for projection in snapshot_config.projections:
         projection_config = snapshot_config.projections[projection]
@@ -118,7 +131,8 @@ def take_snapshot(
     if snapshot_config.image_crop is not None:
         crop_image(image_path=image_path, crop_cfg=snapshot_config.image_crop)
 
-    display_image(image_path)
+    if not off_screen:
+        display_image(image_path)
 
 
 def add_mesh_projection_to_screenshot(
@@ -144,21 +158,29 @@ def add_mesh_projection_to_screenshot(
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
-        mesh_point = mesh.cell_data_to_point_data()
-        plotter.add_mesh(
-            mesh_point,
-            lighting=False,
-            cmap=colomap_lookup_table,
-            scalar_bar_args=scalar_bar_args,
-            nan_color=colomap_lookup_table.nan_color,
-        )
+        if projection_config.cell_data_to_point_data:
+            mesh_point = mesh.cell_data_to_point_data()
+            contours = create_contours(mesh_point, projection_config.scalar, legend_config)
+            plotter.add_mesh(contours, color="grey", line_width=1)
+            plotter.add_mesh(
+                mesh_point,
+                lighting=False,
+                cmap=colomap_lookup_table,
+                scalar_bar_args=scalar_bar_args,
+                nan_color=colomap_lookup_table.nan_color,
+            )
+        else:
+            plotter.add_mesh(
+                mesh,
+                lighting=False,
+                cmap=colomap_lookup_table,
+                scalar_bar_args=scalar_bar_args,
+                nan_color=colomap_lookup_table.nan_color,
+            )
 
-        # Contours is only available for point data
-        contours = create_contours(mesh_point, projection_config.scalar, legend_config)
-        plotter.add_mesh(contours, color="grey", line_width=1)
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
-                mesh, projection_config, projection_config.values_tag_config
+                mesh, projection_config, projection_config.values_tag_config, is_cell=True
             )
             plotter.add_point_labels(
                 points=points,
@@ -209,8 +231,9 @@ def add_text_overlay_to_screenshot(
 
 
 def clip_mesh(mesh: pv.DataSet, clip_box: TransformationConfig) -> pv.UnstructuredGrid:
+    center = [0, 0, 0] if clip_box.fixed_point is None else clip_box.fixed_point
     clip_cube = pv.Cube(
-        center=[0, 0, 0],
+        center=center,
         x_length=clip_box.scale[0],
         y_length=clip_box.scale[1],
         z_length=clip_box.scale[2],
@@ -220,19 +243,24 @@ def clip_mesh(mesh: pv.DataSet, clip_box: TransformationConfig) -> pv.Unstructur
 
 
 def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
-    mesh.rotate_x(transformation.rotate[0], point=mesh.center, inplace=True)
-    mesh.rotate_y(transformation.rotate[1], point=mesh.center, inplace=True)
-    mesh.rotate_z(transformation.rotate[2], point=mesh.center, inplace=True)
+    center = mesh.center if transformation.fixed_point is None else transformation.fixed_point
+    mesh.rotate_x(transformation.rotate[0], point=center, inplace=True)
+    mesh.rotate_y(transformation.rotate[1], point=center, inplace=True)
+    mesh.rotate_z(transformation.rotate[2], point=center, inplace=True)
     mesh.translate(transformation.translate, inplace=True)
 
 
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
-    return mesh.contour(
-        np.linspace(
+    if legend_config.custom_colorbar is not None:
+        contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
+    else:
+        contours_to_make = np.linspace(
             legend_config.range[0],
             legend_config.range[1],
             legend_config.n_divs + 1,
-        ),
+        )
+    return mesh.contour(
+        contours_to_make,
         scalars=scalar,
     )
 

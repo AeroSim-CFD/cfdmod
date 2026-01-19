@@ -163,3 +163,22 @@ def convert_matrix_into_dataframe(
     ]
 
     return dataframe
+
+
+def validate_keys_df(df: pd.DataFrame, keys: list[str]):
+    if any(k not in df.columns for k in keys):
+        return False
+    return True
+
+
+def read_df(df_path: pathlib.Path) -> pd.DataFrame:
+    np_ls = []
+
+    with pd.HDFStore(df_path, mode="r") as np_file:
+        keys = np_file.keys()
+        for store_group in keys:
+            df_chunk = pd.read_hdf(np_file, key=store_group)
+            np_ls.append(df_chunk)
+
+    df_inst = pd.concat(np_ls)
+    return df_inst
