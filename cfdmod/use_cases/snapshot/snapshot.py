@@ -328,7 +328,7 @@ def create_value_tags(
                 closest_mesh_ids.append(closest_point_id)
 
         points = cells[closest_mesh_ids]
-        values = mesh.point_data[projection_config.scalar][closest_mesh_ids]
+        values = mesh.cell_data[projection_config.scalar][closest_mesh_ids]
         return points, values
     
     def find_pts():
