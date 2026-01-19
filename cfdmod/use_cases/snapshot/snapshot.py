@@ -317,20 +317,21 @@ def create_value_tags(
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
-    
+
     def find_cells():
+        nonlocal mesh, target_points
         cells = np.array([c.center for c in mesh.cell])
         closest_mesh_ids = []
         for pt in target_points:
-            closest_point_id = mesh.find_closest_cell(pt)
-            closest_pt = mesh.points[closest_point_id]
+            closest_cell_id = mesh.find_closest_cell(pt)
+            closest_pt = cells[closest_cell_id]
             if np.linalg.norm(pt - closest_pt) < 10:
-                closest_mesh_ids.append(closest_point_id)
+                closest_mesh_ids.append(closest_cell_id)
 
         points = cells[closest_mesh_ids]
         values = mesh.cell_data[projection_config.scalar][closest_mesh_ids]
         return points, values
-    
+
     def find_pts():
         nonlocal mesh, target_points
         closest_mesh_ids = []
