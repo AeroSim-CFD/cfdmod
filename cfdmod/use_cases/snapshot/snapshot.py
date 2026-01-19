@@ -144,16 +144,17 @@ def add_mesh_projection_to_screenshot(
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
-        mesh = mesh.cell_data_to_point_data()
+        mesh_point = mesh.cell_data_to_point_data()
         plotter.add_mesh(
-            mesh,
+            mesh_point,
             lighting=False,
             cmap=colomap_lookup_table,
             scalar_bar_args=scalar_bar_args,
             nan_color=colomap_lookup_table.nan_color,
         )
 
-        contours = create_contours(mesh, projection_config.scalar, legend_config)
+        # Contours is only available for point data
+        contours = create_contours(mesh_point, projection_config.scalar, legend_config)
         plotter.add_mesh(contours, color="grey", line_width=1)
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
@@ -247,8 +248,8 @@ def create_feature_edges(mesh: pv.DataSet) -> pv.DataSet:
 
 
 def create_value_tags(
-    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig
-) -> tuple[np.ndarray, pv.DataSetAttributes]:
+    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig, is_cell: bool = True,
+) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
 
     spacing_x, spacing_y = value_tags_config.spacing
@@ -288,16 +289,37 @@ def create_value_tags(
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
+    
+    def find_cells():
+        cells = np.array([c.center for c in mesh.cell])
+        closest_mesh_ids = []
+        for pt in target_points:
+            closest_point_id = mesh.find_closest_cell(pt)
+            closest_pt = mesh.points[closest_point_id]
+            if np.linalg.norm(pt - closest_pt) < 10:
+                closest_mesh_ids.append(closest_point_id)
 
-    closest_point_ids = []
-    for pt in target_points:
-        closest_point_id = mesh.find_closest_point(pt)
-        closest_pt = mesh.points[closest_point_id]
-        if np.linalg.norm(pt - closest_pt) < 10:
-            closest_point_ids.append(closest_point_id)
+        points = cells[closest_mesh_ids]
+        values = mesh.point_data[projection_config.scalar][closest_mesh_ids]
+        return points, values
+    
+    def find_pts():
+        nonlocal mesh, target_points
+        closest_mesh_ids = []
+        for pt in target_points:
+            closest_point_id = mesh.find_closest_point(pt)
+            closest_pt = mesh.points[closest_point_id]
+            if np.linalg.norm(pt - closest_pt) < 10:
+                closest_mesh_ids.append(closest_point_id)
 
-    points = mesh.points[closest_point_ids]
-    values = mesh.point_data[projection_config.scalar][closest_point_ids]
+        points = mesh.points[closest_mesh_ids]
+        values = mesh.point_data[projection_config.scalar][closest_mesh_ids]
+        return points, values
+
+    if(is_cell):
+        points, values = find_cells()
+    else:
+        points, values = find_pts()
     dp = value_tags_config.decimal_places
     labels = [f"{v:.{dp}f}" for v in values]
 
