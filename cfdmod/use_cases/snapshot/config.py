@@ -178,12 +178,12 @@ class CameraConfig(BaseModel):
 
 
 class ValueTagsConfig(BaseModel):
-    spacing: tuple[float, float]|None = Field(description="Spacing (x, y)")
+    spacing: tuple[float, float]|None = Field(None, description="Spacing (x, y)")
     padding: tuple[float, float, float, float]|None = Field(
-        description="Padding (left, right, bottom, top)"
+        None, description="Padding (left, right, bottom, top)"
     )
-    x: tuple[float]|None = Field(description="Exact positions in x. Relative to bounding box of transformed mesh.")
-    y: tuple[float]|None = Field(description="Exact positions in y. Relative to bounding box of transformed mesh.")
+    x: tuple[float]|None = Field(None, description="Exact positions in x. Relative to bounding box of transformed mesh.")
+    y: tuple[float]|None = Field(None, description="Exact positions in y. Relative to bounding box of transformed mesh.")
 
     z_offset: float = Field(
         default=0,
