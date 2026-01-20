@@ -177,7 +177,17 @@ class CameraConfig(BaseModel):
     )
 
 
-class ValueTagsConfig(BaseModel):
+class CoordinatesConfig(BaseModel):
+    x: tuple[float]
+    y: tuple[float]
+    z_offset: float = Field(
+        default=0,
+        title="Values tag search plane z offset",
+        description="Negative z offset for plane where closest points in mesh will be searched",
+        gt=0,
+    )
+
+class FloatingCoordinateConfig(BaseModel):
     spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
     padding: tuple[float, float, float, float] = Field(
         ..., description="Padding (left, right, bottom, top)"
@@ -188,13 +198,7 @@ class ValueTagsConfig(BaseModel):
         description="Negative z offset for plane where closest points in mesh will be searched",
         gt=0,
     )
-    decimal_places: int = Field(
-        default=2,
-        title="Decimal places",
-        description="Precision of results to be marked on tags",
-        gt=0,
-    )
-
+    
     @field_validator("spacing", mode="before")
     def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
         if isinstance(v, (int, float)):
@@ -213,6 +217,33 @@ class ValueTagsConfig(BaseModel):
             if len(v) == 4:
                 return tuple(map(float, v))
         raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
+
+class ValueTagsConfig(BaseModel):
+    floating_coordinates: FloatingCoordinateConfig | None =  Field(
+        description='Floating xyz specification based on padding and spacing'
+    )
+    exact_coordinates: CoordinatesConfig | None = Field(
+        description='Exact xyz coordinates of points in TRANSFORMED mesh position, relative to bounding box'
+    )
+    decimal_places: int = Field(
+        default=2,
+        title="Decimal places",
+        description="Precision of results to be marked on tags",
+        gt=0,
+    )
+    
+    @model_validator(mode="before")
+    @classmethod
+    def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
+        if ("floating_coordinates" not in data.keys()) and ("exact_coordinates" not in data.keys()):
+            ValueError(
+                "At least one of the two must be set: (floating_coordinates) or (exact_coordinates)."
+            )
+            return data
+        else:
+            return data
+
+
 
 
 class ProjectionConfig(BaseModel):

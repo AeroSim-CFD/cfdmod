@@ -12,6 +12,7 @@ from cfdmod.use_cases.snapshot.config import (  # Projections,
     SnapshotConfig,
     TransformationConfig,
     ValueTagsConfig,
+    CoordinatesConfig
 )
 from cfdmod.use_cases.snapshot.image_processing import (
     crop_image,
@@ -152,9 +153,9 @@ def add_mesh_projection_to_screenshot(
                 return
     transform_mesh(mesh, projection_config.transformation)
 
-    # move mesh to z=0 for better control of image
-    center = mesh.center
-    mesh = mesh.translate([0, 0, -center[2]])
+    # move all meshes to z=0 for better control of camera
+    bounds = mesh.bounds
+    mesh = mesh.translate([0, 0, -bounds[5]])
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
@@ -249,7 +250,6 @@ def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
     mesh.rotate_z(transformation.rotate[2], point=center, inplace=True)
     mesh.translate(transformation.translate, inplace=True)
 
-
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
     if legend_config.custom_colorbar is not None:
         contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
@@ -279,41 +279,48 @@ def create_value_tags(
     mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig, is_cell: bool = True,
 ) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
-
-    spacing_x, spacing_y = value_tags_config.spacing
-    padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
-
-    x_min = bounds[0] + padding_left
-    x_max = bounds[1] - padding_right
-    y_min = bounds[2] + padding_bottom
-    y_max = bounds[3] - padding_top
-
-    size_x = x_max - x_min
-    size_y = y_max - y_min
-
-    if size_x < spacing_x:
-        x_targets = [(bounds[0] + bounds[1]) / 2]
+    if value_tags_config.exact_coordinates is not None:
+        exact_value_tag_config = value_tags_config.exact_coordinates
+        x_targets = [v+bounds[0] for v in exact_value_tag_config.x]
+        y_targets = [v+bounds[2] for v in exact_value_tag_config.y]
+        z_level = bounds[5] - exact_value_tag_config.z_offset
     else:
-        num_divisions_x = int(size_x // spacing_x)
-        num_points_x = num_divisions_x + 1
-        total_spacing_x = spacing_x * num_divisions_x
-        center_x = (x_min + x_max) / 2
-        x_start = center_x - total_spacing_x / 2
-        x_end = center_x + total_spacing_x / 2
-        x_targets = np.linspace(x_start, x_end, num_points_x)
+        float_value_tag_config = value_tags_config.floating_coordinates
+        
+        spacing_x, spacing_y = float_value_tag_config.spacing
+        padding_left, padding_right, padding_bottom, padding_top = float_value_tag_config.padding
 
-    if size_y < spacing_y:
-        y_targets = [(bounds[2] + bounds[3]) / 2]
-    else:
-        num_divisions_y = int(size_y // spacing_y)
-        num_points_y = num_divisions_y + 1
-        total_spacing_y = spacing_y * num_divisions_y
-        center_y = (y_min + y_max) / 2
-        y_start = center_y - total_spacing_y / 2
-        y_end = center_y + total_spacing_y / 2
-        y_targets = np.linspace(y_start, y_end, num_points_y)
+        x_min = bounds[0] + padding_left
+        x_max = bounds[1] - padding_right
+        y_min = bounds[2] + padding_bottom
+        y_max = bounds[3] - padding_top
 
-    z_level = bounds[5] - value_tags_config.z_offset
+        size_x = x_max - x_min
+        size_y = y_max - y_min
+
+        if size_x < spacing_x:
+            x_targets = [(bounds[0] + bounds[1]) / 2]
+        else:
+            num_divisions_x = int(size_x // spacing_x)
+            num_points_x = num_divisions_x + 1
+            total_spacing_x = spacing_x * num_divisions_x
+            center_x = (x_min + x_max) / 2
+            x_start = center_x - total_spacing_x / 2
+            x_end = center_x + total_spacing_x / 2
+            x_targets = np.linspace(x_start, x_end, num_points_x)
+
+        if size_y < spacing_y:
+            y_targets = [(bounds[2] + bounds[3]) / 2]
+        else:
+            num_divisions_y = int(size_y // spacing_y)
+            num_points_y = num_divisions_y + 1
+            total_spacing_y = spacing_y * num_divisions_y
+            center_y = (y_min + y_max) / 2
+            y_start = center_y - total_spacing_y / 2
+            y_end = center_y + total_spacing_y / 2
+            y_targets = np.linspace(y_start, y_end, num_points_y)
+
+        z_level = bounds[5] - float_value_tag_config.z_offset
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
