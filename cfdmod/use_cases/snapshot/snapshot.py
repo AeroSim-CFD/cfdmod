@@ -12,7 +12,6 @@ from cfdmod.use_cases.snapshot.config import (  # Projections,
     SnapshotConfig,
     TransformationConfig,
     ValueTagsConfig,
-    CoordinatesConfig
 )
 from cfdmod.use_cases.snapshot.image_processing import (
     crop_image,
