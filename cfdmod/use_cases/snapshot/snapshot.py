@@ -279,16 +279,12 @@ def create_value_tags(
     mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig, is_cell: bool = True,
 ) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
-    if value_tags_config.exact_coordinates is not None:
-        exact_value_tag_config = value_tags_config.exact_coordinates
-        x_targets = [v+bounds[0] for v in exact_value_tag_config.x]
-        y_targets = [v+bounds[2] for v in exact_value_tag_config.y]
-        z_level = bounds[5] - exact_value_tag_config.z_offset
+    if value_tags_config.x is not None:
+        x_targets = [v+bounds[0] for v in value_tags_config.x]
+        y_targets = [v+bounds[2] for v in value_tags_config.y]
     else:
-        float_value_tag_config = value_tags_config.floating_coordinates
-        
-        spacing_x, spacing_y = float_value_tag_config.spacing
-        padding_left, padding_right, padding_bottom, padding_top = float_value_tag_config.padding
+        spacing_x, spacing_y = value_tags_config.spacing
+        padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
 
         x_min = bounds[0] + padding_left
         x_max = bounds[1] - padding_right
@@ -319,8 +315,8 @@ def create_value_tags(
             y_start = center_y - total_spacing_y / 2
             y_end = center_y + total_spacing_y / 2
             y_targets = np.linspace(y_start, y_end, num_points_y)
-
-        z_level = bounds[5] - float_value_tag_config.z_offset
+    
+    z_level = bounds[5] - value_tags_config.z_offset
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))

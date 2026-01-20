@@ -177,54 +177,21 @@ class CameraConfig(BaseModel):
     )
 
 
-class CoordinatesConfig(BaseModel):
-    x: tuple[float]
-    y: tuple[float]
-    z_offset: float = Field(
-        default=0,
-        title="Values tag search plane z offset",
-        description="Negative z offset for plane where closest points in mesh will be searched",
-        gt=0,
-    )
-
-class FloatingCoordinateConfig(BaseModel):
-    spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
-    padding: tuple[float, float, float, float] = Field(
-        ..., description="Padding (left, right, bottom, top)"
-    )
-    z_offset: float = Field(
-        default=0,
-        title="Values tag search plane z offset",
-        description="Negative z offset for plane where closest points in mesh will be searched",
-        gt=0,
-    )
-    
-    @field_validator("spacing", mode="before")
-    def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
-        if isinstance(v, (int, float)):
-            return (float(v), float(v))
-        if isinstance(v, tuple) or isinstance(v, list) and len(v) == 2:
-            return tuple(map(float, v))
-        raise ValueError("spacing must be a float or a 2-tuple of floats")
-
-    @field_validator("padding", mode="before")
-    def normalize_padding(cls, v: Union[float, tuple]) -> tuple[float, float, float, float]:
-        if isinstance(v, (int, float)):
-            return (float(v), float(v), float(v), float(v))
-        if isinstance(v, list) or isinstance(v, tuple):
-            if len(v) == 2:
-                return (float(v[0]), float(v[0]), float(v[1]), float(v[1]))
-            if len(v) == 4:
-                return tuple(map(float, v))
-        raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
-
 class ValueTagsConfig(BaseModel):
-    floating_coordinates: FloatingCoordinateConfig | None =  Field(
-        description='Floating xyz specification based on padding and spacing'
+    spacing: tuple[float, float]|None = Field(description="Spacing (x, y)")
+    padding: tuple[float, float, float, float]|None = Field(
+        description="Padding (left, right, bottom, top)"
     )
-    exact_coordinates: CoordinatesConfig | None = Field(
-        description='Exact xyz coordinates of points in TRANSFORMED mesh position, relative to bounding box'
+    x: tuple[float]|None = Field(description="Exact positions in x. Relative to bounding box of transformed mesh.")
+    y: tuple[float]|None = Field(description="Exact positions in y. Relative to bounding box of transformed mesh.")
+
+    z_offset: float = Field(
+        default=0,
+        title="Values tag search plane z offset",
+        description="Negative z offset for plane where closest points in mesh will be searched",
+        gt=0,
     )
+
     decimal_places: int = Field(
         default=2,
         title="Decimal places",
@@ -235,14 +202,43 @@ class ValueTagsConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
-        if ("floating_coordinates" not in data.keys()) and ("exact_coordinates" not in data.keys()):
+        cols = data.keys()
+        if ("x" in cols) or (("y" in cols)) and not (("x" in cols) and (("y" in cols))):
             ValueError(
-                "At least one of the two must be set: (floating_coordinates) or (exact_coordinates)."
+                "Exact position set for x or y, but one is empty. Both must be specified."
             )
-            return data
-        else:
-            return data
+        elif (("x" in cols) and (("y" in cols))):
+            # exact has precedence over floating
+            data['spacing'] = None
+            data['padding'] = None
+        elif ("spacing" in cols) or (("padding" in cols)) and not (("spacing" in cols) and (("padding" in cols))):
+            ValueError(
+                "Floating position set for spacing or padding, but one is empty. Both must be specified."
+            )
+        return data
 
+    @field_validator("spacing", mode="before")
+    def normalize_spacing(cls, v: Union[float, tuple]|None) -> tuple[float, float]:
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return (float(v), float(v))
+        if isinstance(v, tuple) or isinstance(v, list) and len(v) == 2:
+            return tuple(map(float, v))
+        raise ValueError("spacing must be a float or a 2-tuple of floats")
+
+    @field_validator("padding", mode="before")
+    def normalize_padding(cls, v: Union[float, tuple]|None) -> tuple[float, float, float, float]:
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return (float(v), float(v), float(v), float(v))
+        if isinstance(v, list) or isinstance(v, tuple):
+            if len(v) == 2:
+                return (float(v[0]), float(v[0]), float(v[1]), float(v[1]))
+            if len(v) == 4:
+                return tuple(map(float, v))
+        raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
 
 
 
