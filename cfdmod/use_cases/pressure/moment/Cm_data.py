@@ -15,7 +15,7 @@ from cfdmod.use_cases.pressure.geometry import (
     tabulate_geometry_data,
 )
 from cfdmod.use_cases.pressure.moment.Cm_config import CmConfig
-from cfdmod.use_cases.pressure.moment.Cm_geom import add_lever_arm_to_geometry_df
+from cfdmod.api.geometry.transformation_config import TransformationConfig
 from cfdmod.use_cases.pressure.output import CommonOutput
 from cfdmod.use_cases.pressure.zoning.body_config import BodyDefinition
 from cfdmod.use_cases.pressure.zoning.processing import (
@@ -23,6 +23,89 @@ from cfdmod.use_cases.pressure.zoning.processing import (
     combine_stats_data_with_mesh,
 )
 from cfdmod.utils import convert_dataframe_into_matrix
+
+
+def add_lever_arm_to_geometry_df(
+    geom_data: GeometryData,
+    transformation: TransformationConfig,
+    lever_origin: tuple[float, float, float],
+    geometry_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Adds a value for the lever arm for each point for moment calculations
+
+    Args:
+        geom_data (GeometryData): Geometry data object
+        transformation (TransformationConfig): Transformation config to apply to the geometry
+        lever_origin (tuple[float, float, float]): Origin of the lever after the geometry is transformed
+        geometry_df (pd.DataFrame): Dataframe with geometric properties
+
+    Returns:
+        pd.DataFrame: Merged geometry_df with lever arm lengths
+    """
+    transformed_body = geom_data.mesh.copy()
+    transformed_body.apply_transformation(transformation.get_geometry_transformation())
+    centroids = np.mean(transformed_body.triangle_vertices, axis=1)
+
+    position_df = _get_lever_relative_position_df(
+        centroids=centroids, lever_origin=lever_origin, geometry_idx=geom_data.triangles_idxs
+    )
+    result = pd.merge(geometry_df, position_df, on="point_idx", how="left")
+
+    return result
+
+
+def _get_lever_relative_position_df(
+    centroids: np.ndarray, lever_origin: tuple[float, float, float], geometry_idx: np.ndarray
+) -> pd.DataFrame:
+    """Creates a Dataframe with the relative position for each triangle
+
+    Args:
+        centroids (np.ndarray): Array of triangle centroids
+        lever_origin (tuple[float, float, float]): Coordinate of the lever origin
+        geometry_idx (np.ndarray): Indexes of the triangles of the body
+
+    Returns:
+        pd.DataFrame: Relative position dataframe
+    """
+    position_df = pd.DataFrame()
+    position_df["rx"] = centroids[:, 0] - lever_origin[0]
+    position_df["ry"] = centroids[:, 1] - lever_origin[1]
+    position_df["rz"] = centroids[:, 2] - lever_origin[2]
+    position_df["point_idx"] = geometry_idx
+
+    return position_df
+
+
+def get_representative_volume(
+    input_mesh: LnasGeometry, point_idx: np.ndarray
+) -> tuple[tuple[float, float, float], float]:
+    """Calculates the representative volume from the bounding box of a given mesh
+
+    Args:
+        input_mesh (LnasGeometry): Input LNAS mesh
+        point_idx (np.ndarray): Array of triangle indices of each sub region
+
+    Returns:
+        tuple[tuple[float, float, float], float]: Tuple containing:
+            Lengths tuple (Lx, Ly, Lz) and representative volume value
+    """
+    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
+
+    Lx = x_max - x_min
+    Ly = y_max - y_min
+    Lz = z_max - z_min
+
+    # Threshold to avoid big coefficients
+    Lx = 1 if Lx < 1 else Lx
+    Ly = 1 if Ly < 1 else Ly
+    Lz = 1 if Lz < 1 else Lz
+
+    V_rep = Lx * Ly * Lz
+
+    return (Lx, Ly, Lz), V_rep
 
 
 def process_Cm(
@@ -208,10 +291,37 @@ def transform_Cm(
         .reset_index()
     )
 
-    Cm_data["Cmx"] = Cm_data["Mx"] / nominal_volume
-    Cm_data["Cmy"] = Cm_data["My"] / nominal_volume
-    Cm_data["Cmz"] = Cm_data["Mz"] / nominal_volume
+    if nominal_volume > 0:
+        Cm_data["Cmx"] = Cm_data["Mx"] / nominal_volume
+        Cm_data["Cmy"] = Cm_data["My"] / nominal_volume
+        Cm_data["Cmz"] = Cm_data["Mz"] / nominal_volume
 
-    Cm_data.drop(columns=["Mx", "My", "Mz"], inplace=True)
+        Cm_data.drop(columns=["Mx", "My", "Mz"], inplace=True)
+    else:
+        region_group_by = geometry_df.groupby(["region_idx"])
+        representative_volume = {}
+
+        for region_idx, region_points in region_group_by:
+            region_points_idx = region_points.point_idx.to_numpy()
+            (Lx, Ly, Lz), V_rep = get_representative_volume(
+                input_mesh=geometry, point_idx=region_points_idx
+            )
+
+            representative_volume[region_idx[0]] = {}
+            representative_volume[region_idx[0]]["V_rep"] = V_rep
+            representative_volume[region_idx[0]]["Lx"] = Lx
+            representative_volume[region_idx[0]]["Ly"] = Ly
+            representative_volume[region_idx[0]]["Lz"] = Lz
+
+        rep_df = pd.DataFrame.from_dict(representative_volume, orient="index").reset_index()
+        rep_df = rep_df.rename(columns={"index": "region_idx"})
+
+        Cm_data = pd.merge(Cm_data, rep_df, on="region_idx")
+
+        Cm_data["Cmx"] = Cm_data["Mx"] / Cm_data["V_rep"]
+        Cm_data["Cmy"] = Cm_data["My"] / Cm_data["V_rep"]
+        Cm_data["Cmz"] = Cm_data["Mz"] / Cm_data["V_rep"]
+
+        Cm_data.drop(columns=["Mx", "My", "Mz", "V_rep"], inplace=True)
 
     return Cm_data
