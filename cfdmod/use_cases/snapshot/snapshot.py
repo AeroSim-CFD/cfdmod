@@ -152,28 +152,35 @@ def add_mesh_projection_to_screenshot(
                 return
     transform_mesh(mesh, projection_config.transformation)
 
-    # move mesh to z=0 for better control of image
-    center = mesh.center
-    mesh = mesh.translate([0, 0, -center[2]])
+    # move all meshes to z=0 for better control of camera
+    bounds = mesh.bounds
+    mesh = mesh.translate([0, 0, -bounds[5]])
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
         if projection_config.cell_data_to_point_data:
-            mesh = mesh.cell_data_to_point_data()
-            contours = create_contours(mesh, projection_config.scalar, legend_config)
+            mesh_point = mesh.cell_data_to_point_data()
+            contours = create_contours(mesh_point, projection_config.scalar, legend_config)
             plotter.add_mesh(contours, color="grey", line_width=1)
-            
-        plotter.add_mesh(
-            mesh,
-            lighting=False,
-            cmap=colomap_lookup_table,
-            scalar_bar_args=scalar_bar_args,
-            nan_color=colomap_lookup_table.nan_color,
-        )
+            plotter.add_mesh(
+                mesh_point,
+                lighting=False,
+                cmap=colomap_lookup_table,
+                scalar_bar_args=scalar_bar_args,
+                nan_color=colomap_lookup_table.nan_color,
+            )
+        else:
+            plotter.add_mesh(
+                mesh,
+                lighting=False,
+                cmap=colomap_lookup_table,
+                scalar_bar_args=scalar_bar_args,
+                nan_color=colomap_lookup_table.nan_color,
+            )
 
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
-                mesh, projection_config, projection_config.values_tag_config
+                mesh, projection_config, projection_config.values_tag_config, is_cell=True
             )
             plotter.add_point_labels(
                 points=points,
@@ -242,7 +249,6 @@ def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
     mesh.rotate_z(transformation.rotate[2], point=center, inplace=True)
     mesh.translate(transformation.translate, inplace=True)
 
-
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
     if legend_config.custom_colorbar is not None:
         contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
@@ -269,57 +275,82 @@ def create_feature_edges(mesh: pv.DataSet) -> pv.DataSet:
 
 
 def create_value_tags(
-    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig
-) -> tuple[np.ndarray, pv.DataSetAttributes]:
+    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig, is_cell: bool = True,
+) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
-
-    spacing_x, spacing_y = value_tags_config.spacing
-    padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
-
-    x_min = bounds[0] + padding_left
-    x_max = bounds[1] - padding_right
-    y_min = bounds[2] + padding_bottom
-    y_max = bounds[3] - padding_top
-
-    size_x = x_max - x_min
-    size_y = y_max - y_min
-
-    if size_x < spacing_x:
-        x_targets = [(bounds[0] + bounds[1]) / 2]
+    if value_tags_config.x is not None:
+        x_targets = [v+bounds[0] for v in value_tags_config.x]
+        y_targets = [v+bounds[2] for v in value_tags_config.y]
     else:
-        num_divisions_x = int(size_x // spacing_x)
-        num_points_x = num_divisions_x + 1
-        total_spacing_x = spacing_x * num_divisions_x
-        center_x = (x_min + x_max) / 2
-        x_start = center_x - total_spacing_x / 2
-        x_end = center_x + total_spacing_x / 2
-        x_targets = np.linspace(x_start, x_end, num_points_x)
+        spacing_x, spacing_y = value_tags_config.spacing
+        padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
 
-    if size_y < spacing_y:
-        y_targets = [(bounds[2] + bounds[3]) / 2]
-    else:
-        num_divisions_y = int(size_y // spacing_y)
-        num_points_y = num_divisions_y + 1
-        total_spacing_y = spacing_y * num_divisions_y
-        center_y = (y_min + y_max) / 2
-        y_start = center_y - total_spacing_y / 2
-        y_end = center_y + total_spacing_y / 2
-        y_targets = np.linspace(y_start, y_end, num_points_y)
+        x_min = bounds[0] + padding_left
+        x_max = bounds[1] - padding_right
+        y_min = bounds[2] + padding_bottom
+        y_max = bounds[3] - padding_top
 
+        size_x = x_max - x_min
+        size_y = y_max - y_min
+
+        if size_x < spacing_x:
+            x_targets = [(bounds[0] + bounds[1]) / 2]
+        else:
+            num_divisions_x = int(size_x // spacing_x)
+            num_points_x = num_divisions_x + 1
+            total_spacing_x = spacing_x * num_divisions_x
+            center_x = (x_min + x_max) / 2
+            x_start = center_x - total_spacing_x / 2
+            x_end = center_x + total_spacing_x / 2
+            x_targets = np.linspace(x_start, x_end, num_points_x)
+
+        if size_y < spacing_y:
+            y_targets = [(bounds[2] + bounds[3]) / 2]
+        else:
+            num_divisions_y = int(size_y // spacing_y)
+            num_points_y = num_divisions_y + 1
+            total_spacing_y = spacing_y * num_divisions_y
+            center_y = (y_min + y_max) / 2
+            y_start = center_y - total_spacing_y / 2
+            y_end = center_y + total_spacing_y / 2
+            y_targets = np.linspace(y_start, y_end, num_points_y)
+    
     z_level = bounds[5] - value_tags_config.z_offset
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
     target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
 
-    closest_point_ids = []
-    for pt in target_points:
-        closest_point_id = mesh.find_closest_point(pt)
-        closest_pt = mesh.points[closest_point_id]
-        if np.linalg.norm(pt - closest_pt) < 10:
-            closest_point_ids.append(closest_point_id)
+    def find_cells():
+        nonlocal mesh, target_points
+        cells = np.array([c.center for c in mesh.cell])
+        closest_mesh_ids = []
+        for pt in target_points:
+            closest_cell_id = mesh.find_closest_cell(pt)
+            closest_pt = cells[closest_cell_id]
+            if np.linalg.norm(pt - closest_pt) < 10:
+                closest_mesh_ids.append(closest_cell_id)
 
-    points = mesh.points[closest_point_ids]
-    values = mesh.point_data[projection_config.scalar][closest_point_ids]
+        points = cells[closest_mesh_ids]
+        values = mesh.cell_data[projection_config.scalar][closest_mesh_ids]
+        return points, values
+
+    def find_pts():
+        nonlocal mesh, target_points
+        closest_mesh_ids = []
+        for pt in target_points:
+            closest_point_id = mesh.find_closest_point(pt)
+            closest_pt = mesh.points[closest_point_id]
+            if np.linalg.norm(pt - closest_pt) < 10:
+                closest_mesh_ids.append(closest_point_id)
+
+        points = mesh.points[closest_mesh_ids]
+        values = mesh.point_data[projection_config.scalar][closest_mesh_ids]
+        return points, values
+
+    if(is_cell):
+        points, values = find_cells()
+    else:
+        points, values = find_pts()
     dp = value_tags_config.decimal_places
     labels = [f"{v:.{dp}f}" for v in values]
 
