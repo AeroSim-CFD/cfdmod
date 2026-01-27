@@ -18,6 +18,38 @@ from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
 from cfdmod.utils import create_folders_for_file, save_yaml
 
+import h5py
+
+def add_cp2xdmf(
+    *,
+    xdmf_body: pathlib.Path,
+    xdmf_reference: pathlib.Path | None,
+    reference_vel: float,
+    fluid_density: float,
+):
+    with h5py.File(xdmf_body, mode="a") as f_body:
+        grp_abs = f_body["pressure"]
+        grp_cp = f_body.require_group("cp")
+        keys = list(grp_abs.keys())
+
+        if xdmf_reference is None:
+            for k in keys:
+                p_body = grp_abs[k]
+                cp = (p_body) / (0.5 * fluid_density * reference_vel**2)
+                if k in grp_cp:
+                    del grp_cp[k]
+                grp_cp[k] = cp
+            return
+
+        with h5py.File(xdmf_reference) as f_atm:
+            grp_atm = f_atm[f"pressure"]
+            for k in keys:
+                p_body = grp_abs[k]
+                p_ref = grp_atm[k][0]
+                cp = (p_body - p_ref) / (0.5 * fluid_density * reference_vel**2)
+                if k in grp_cp:
+                    del grp_cp[k]
+                grp_cp[k] = cp
 
 def transform_to_cp(
     *,
