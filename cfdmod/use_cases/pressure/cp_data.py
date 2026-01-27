@@ -22,17 +22,27 @@ import h5py
 
 def add_cp2xdmf(
     *,
-    xdmf_body: pathlib.Path,
-    xdmf_reference: pathlib.Path | None,
+    body_h5: pathlib.Path,
+    atm_probe_h5: pathlib.Path | None,
     reference_vel: float,
     fluid_density: float,
 ):
-    with h5py.File(xdmf_body, mode="a") as f_body:
+    """Add pressure coefficient (Cp) to H5 compatible with XDMF format
+
+    Args:
+        body_h5 (pathlib.Path): path to .h5 file for body's pressure time series
+        atm_probe_h5 (pathlib.Path | None): path to .h5 file for atmospheric pressure probe.
+            If None consider constant atmospheric pressure of 0.
+        reference_vel (float): reference velocity to use
+        fluid_density (float): fluid density to use
+    """
+
+    with h5py.File(body_h5, mode="a") as f_body:
         grp_abs = f_body["pressure"]
         grp_cp = f_body.require_group("cp")
         keys = list(grp_abs.keys())
 
-        if xdmf_reference is None:
+        if atm_probe_h5 is None:
             for k in keys:
                 p_body = grp_abs[k]
                 cp = (p_body) / (0.5 * fluid_density * reference_vel**2)
@@ -41,7 +51,7 @@ def add_cp2xdmf(
                 grp_cp[k] = cp
             return
 
-        with h5py.File(xdmf_reference) as f_atm:
+        with h5py.File(atm_probe_h5) as f_atm:
             grp_atm = f_atm[f"pressure"]
             for k in keys:
                 p_body = grp_abs[k]
