@@ -6,9 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "AeroSim CFDmod"
-copyright = "2023-2025, AeroSim"
+project = "AeroSim Docs"
+copyright = "2021-2026, AeroSim"
 author = "AeroSim"
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -25,6 +26,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "myst_parser",
     "nbsphinx",
+    "shibuya",
 ]
 
 source_suffix = [".rst", ".md"]
@@ -37,7 +39,7 @@ todo_include_todos = True
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_book_theme"
+html_theme = "shibuya"
 
 html_favicon = "_static/favicon.svg"
 html_title = "AeroSim CFDmod"
@@ -51,10 +53,18 @@ html_context = {
 
 # Theme options
 html_theme_options = {}
-
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
-html_logo = "_static/img/logo_display.png"
+
 html_theme_options = {
     "extra_footer": '<a href="https://www.aerosim.io">www.aerosim.io</a>',
+    "nav_links": [
+        {"title": "Home", "url": "https://docs.aerosim.io"},
+        {"title": "Nassu", "url": "https://docs.aerosim.io/nassu"},
+        {"title": "CFDMod", "url": "https://docs.aerosim.io/cfdmod"},
+        {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
+    ],
+    "light_logo": "_static/img/logo_display.png",
+    "dark_logo": "_static/img/white_logo.png",
 }
