@@ -58,13 +58,14 @@ html_css_files = ["custom.css"]
 
 
 html_theme_options = {
-    "extra_footer": '<a href="https://www.aerosim.io">www.aerosim.io</a>',
     "nav_links": [
-        {"title": "Home", "url": "https://docs.aerosim.io"},
+        {"title": "Docs", "url": "https://docs.aerosim.io"},
         {"title": "Nassu", "url": "https://docs.aerosim.io/nassu"},
         {"title": "CFDMod", "url": "https://docs.aerosim.io/cfdmod"},
         {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
     ],
+    "nav_links_align": "center",
     "light_logo": "_static/img/logo_display.png",
     "dark_logo": "_static/img/white_logo.png",
+    "logo_target": "https://aerosim.io",
 }
