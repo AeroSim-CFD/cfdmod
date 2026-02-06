@@ -35,6 +35,57 @@ bibtex_bibfiles = ["_refs/refs.bib"]
 # Include TODOs (check https://www.sphinx-doc.org/en/master/usage/extensions/todo.html)
 todo_include_todos = True
 
+# -- nbsphinx configuration --------------------------------------------------
+# Never execute notebooks during build
+nbsphinx_execute = "never"
+
+# Configure nbsphinx for dark mode support
+nbsphinx_prolog = r"""
+{% set docname = env.doc2path(env.docname, base=None) %}
+
+.. raw:: html
+
+    <style>
+        /* Estilos base para notebooks */
+        div.nbinput, div.nboutput {
+            margin: 1em 0;
+            border-radius: 4px;
+        }
+        
+        div.nbinput .prompt, div.nboutput .prompt {
+            min-width: 11ex;
+            padding: 0.4em;
+            font-family: monospace;
+        }
+        
+        /* Dark mode support for notebooks */
+        html[data-theme="dark"] div.nbinput,
+        html[data-theme="dark"] div.nboutput {
+            border: 1px solid #333;
+        }
+        
+        html[data-theme="dark"] .nbinput .highlight,
+        html[data-theme="dark"] .nboutput .highlight {
+            background-color: #1e1e1e !important;
+        }
+        html[data-theme="dark"] .highlight pre {
+            color: #d4d4d4 !important;
+        }
+        /* Light mode support for notebooks */
+        html[data-theme="light"] .nbinput .highlight,
+        html[data-theme="light"] .nboutput .highlight {
+            background-color: #f5f5f5 !important;
+        }
+        html[data-theme="light"] .highlight pre {
+            color: #24292e !important;
+        }
+    </style>
+"""
+
+# Additional nbsphinx options
+nbsphinx_requirejs_path = ""
+nbsphinx_requirejs_options = {}
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
