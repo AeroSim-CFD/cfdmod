@@ -103,17 +103,17 @@ html_context = {
 }
 
 # Theme options
-html_theme_options = {}
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
 
 html_theme_options = {
     "nav_links": [
-        {"title": "Docs", "url": "https://docs.aerosim.io"},
+        {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
         {"title": "Nassu", "url": "https://docs.aerosim.io/nassu"},
         {"title": "CFDMod", "url": "https://docs.aerosim.io/cfdmod"},
-        {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
+        {"title": "Validation", "url": "https://docs.aerosim.io/validation-docs"},
+        {"title": "Docs", "url": "https://docs.aerosim.io"},
     ],
     "nav_links_align": "center",
     "light_logo": "_static/img/logo_display.png",
