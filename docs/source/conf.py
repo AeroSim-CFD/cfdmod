@@ -109,11 +109,10 @@ html_css_files = ["custom.css"]
 
 html_theme_options = {
     "nav_links": [
-        {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
+        {"title": "AeroSim", "url": "https://docs.aerosim.io/"},
         {"title": "Nassu", "url": "https://docs.aerosim.io/nassu"},
         {"title": "CFDMod", "url": "https://docs.aerosim.io/cfdmod"},
         {"title": "Validation", "url": "https://docs.aerosim.io/validation"},
-        {"title": "Docs", "url": "https://docs.aerosim.io"},
     ],
     "nav_links_align": "center",
     "light_logo": "_static/img/logo_display.png",
