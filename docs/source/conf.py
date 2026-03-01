@@ -112,7 +112,7 @@ html_theme_options = {
         {"title": "AeroSim", "url": "https://docs.aerosim.io/aerosim"},
         {"title": "Nassu", "url": "https://docs.aerosim.io/nassu"},
         {"title": "CFDMod", "url": "https://docs.aerosim.io/cfdmod"},
-        {"title": "Validation", "url": "https://docs.aerosim.io/validation-docs"},
+        {"title": "Validation", "url": "https://docs.aerosim.io/validation"},
         {"title": "Docs", "url": "https://docs.aerosim.io"},
     ],
     "nav_links_align": "center",
