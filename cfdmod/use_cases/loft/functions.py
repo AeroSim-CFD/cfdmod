@@ -138,23 +138,30 @@ def generate_loft_triangles(
     mesh_center: np.ndarray,
     loft_z_pos: float,
 ) -> lnas.LnasGeometry:
-    """Generates STL of loft
+    """Generates loft triangles using circular projection.
 
-    Note that terrain and loft vertices are assumed to be ordered and aligned correctly
+    Each border vertex is projected radially outward from mesh_center to the
+    circle of loft_radius in the XY plane, then set to loft_z_pos in Z.
 
     Args:
-        border_profile (np.ndarray): Vertices in terrain
-        loft_vertices (np.ndarray): Vertices generated for loft
+        vertices (np.ndarray): All mesh vertices [n, 3]
+        edges (np.ndarray): Border edge vertex index pairs [m, 2]
+        loft_radius (float): Radius of the target projection circle
+        mesh_center (np.ndarray): Center of the mesh [3]
+        loft_z_pos (float): Target Z height for projected vertices
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Tuple with loft surface triangles and normals
+        lnas.LnasGeometry: Loft surface geometry
     """
 
-    def get_distance_from_center_in_the_projection_direction(
-        vertices: np.ndarray, mesh_center: np.ndarray, projection_diretion: np.ndarray
-    ) -> np.ndarray:
-        vert_dir_from_center = vertices - mesh_center
-        return np.dot(vert_dir_from_center, projection_diretion)
+    def project_to_circle(verts: np.ndarray) -> np.ndarray:
+        xy_dir = verts[:, :2] - mesh_center[:2]
+        norms = np.linalg.norm(xy_dir, axis=1, keepdims=True)
+        unit_dir = xy_dir / norms
+        projected = np.empty_like(verts)
+        projected[:, :2] = mesh_center[:2] + loft_radius * unit_dir
+        projected[:, 2] = loft_z_pos
+        return projected
 
     def normal_of_triangles(triangles: np.ndarray) -> np.ndarray:
         v0 = triangles[:, 0, :].squeeze()
@@ -164,80 +171,45 @@ def generate_loft_triangles(
         v = v2 - v0
         return np.cross(u, v)
 
-    num_edges_on_border = edges.shape[0]
-    vertices_on_boder_id = edges.reshape(num_edges_on_border * 2)
-    vertices_on_border = vertices[vertices_on_boder_id, :]
-    loft_distantce_start = np.max(
-        get_distance_from_center_in_the_projection_direction(
-            vertices=vertices_on_border,
-            mesh_center=mesh_center,
-            projection_diretion=projection_diretion,
-        )
-    )
-    loft_distantce_end = loft_distantce_start + loft_length
+    edge_verts_0 = vertices[edges[:, 0]]
+    edge_verts_1 = vertices[edges[:, 1]]
 
-    edge_verts = []
-    edge_verts.append(vertices[edges[:, 0]])
-    edge_verts.append(vertices[edges[:, 1]])
-    edge_verts_projection = []
-    for vertices in edge_verts:
-        distance_of_vertices_from_center = get_distance_from_center_in_the_projection_direction(
-            vertices=vertices,
-            mesh_center=mesh_center,
-            projection_diretion=projection_diretion,
-        )
-        distance_to_project = loft_distantce_end - distance_of_vertices_from_center
+    edge_proj_0 = project_to_circle(edge_verts_0)
+    edge_proj_1 = project_to_circle(edge_verts_1)
 
-        projected_vertices = vertices + distance_to_project[:, np.newaxis] * projection_diretion
-        projected_vertices[:, 2] = loft_z_pos
-        edge_verts_projection.append(projected_vertices)
-
-    triangles_0 = np.stack([edge_verts[0], edge_verts[1], edge_verts_projection[1]], axis=1)
-    triangles_1 = np.stack(
-        [edge_verts[0], edge_verts_projection[1], edge_verts_projection[0]], axis=1
-    )
+    triangles_0 = np.stack([edge_verts_0, edge_verts_1, edge_proj_1], axis=1)
+    triangles_1 = np.stack([edge_verts_0, edge_proj_1, edge_proj_0], axis=1)
     full_triangles = np.concatenate([triangles_0, triangles_1], axis=0)
     full_normals = normal_of_triangles(full_triangles)
-    mask_inverted_nomals = (full_normals[:, 2]).squeeze() < 0
+    mask_inverted_normals = (full_normals[:, 2]).squeeze() < 0
     corrected_triangles = full_triangles.copy()
-    corrected_triangles[mask_inverted_nomals, 0, :] = full_triangles[mask_inverted_nomals, 1, :]
-    corrected_triangles[mask_inverted_nomals, 1, :] = full_triangles[mask_inverted_nomals, 0, :]
+    corrected_triangles[mask_inverted_normals, 0, :] = full_triangles[mask_inverted_normals, 1, :]
+    corrected_triangles[mask_inverted_normals, 1, :] = full_triangles[mask_inverted_normals, 0, :]
     corrected_normals = normal_of_triangles(corrected_triangles)
 
     lnas_geom = lnas.LnasFormat.from_triangles(triangles=corrected_triangles, normals=corrected_normals).geometry
+
     return lnas_geom
 
 
 def generate_loft_surface(
     geom: lnas.LnasGeometry,
-    projection_angle_rad: float,
     loft_radius: float,
     loft_z_pos: float,
 ) -> lnas.LnasGeometry:
-    """Generate loft surface (triangles and normals)
+    """Generate loft surface using circular projection.
+
+    Each border vertex is projected radially outward to loft_radius from the
+    mesh center and lowered to loft_z_pos.
 
     Args:
-        triangle_vertices (np.ndarray): Mesh triangle vertices
-        projection_diretion (np.ndarray): Direction of loft projection
-        loft_length (float): Minimum length of loft
-        loft_z_pos (float): Target z position
-        filter_radius (float): Internal filter radius to ignore edges
+        geom (lnas.LnasGeometry): Input terrain geometry
+        loft_radius (float): Radius of the target projection circle
+        loft_z_pos (float): Target Z height for loft base
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Loft triangles and normals
+        lnas.LnasGeometry: Loft surface geometry
     """
-
-    geom = geom.copy()
-    center = np.array(
-        [
-            (geom.triangle_vertices[:, 0].max() + geom.triangle_vertices[:, 0].min()) / 2,
-            (geom.triangle_vertices[:, 1].max() + geom.triangle_vertices[:, 1].min()) / 2,
-            (geom.triangle_vertices[:, 2].max() + geom.triangle_vertices[:, 2].min()) / 2,
-        ]
-    )
-
-    transf = lnas.transformations.TransformationsMatrix(angle=np.array((0, 0, projection_angle_rad)), fixed_point=center)
-    geom.apply_transformation(transf=transf)
 
     flattened_vertices, tri_index_matrix = flatten_vertices_and_get_triangles_as_list_of_indexes(
         triangle_vertices=geom.triangle_vertices,
