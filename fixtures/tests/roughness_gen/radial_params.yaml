@@ -1,0 +1,11 @@
+element_params:
+  height: 2
+  width: 6
+r_start: 300.0
+r_end: 3000.0
+radial_spacing: 16.0
+arc_spacing: 40.0
+ring_offset_distance: 3.0
+center: [0.0, 0.0]
+surfaces:
+  terrain: "./fixtures/tests/loft/terrain.stl"
