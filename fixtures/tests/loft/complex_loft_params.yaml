@@ -1,0 +1,5 @@
+cases:
+  longer_loft:
+    loft_radius: 3000
+    mesh_element_size: 25.0
+    upwind_elevation: 100

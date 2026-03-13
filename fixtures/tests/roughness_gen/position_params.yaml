@@ -1,6 +1,6 @@
 element_params:
-  height: 5
-  width: 5
+  height: 2
+  width: 6
 spacing_params:
   spacing: [20, 20] # Spacing indexed by axis (X=0, Y=1)
   line_offset: 10

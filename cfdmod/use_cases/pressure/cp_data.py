@@ -18,6 +18,48 @@ from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
 from cfdmod.utils import create_folders_for_file, save_yaml
 
+import h5py
+
+def add_cp2xdmf(
+    *,
+    body_h5: pathlib.Path,
+    atm_probe_h5: pathlib.Path | None,
+    reference_vel: float,
+    fluid_density: float,
+):
+    """Add pressure coefficient (Cp) to H5 compatible with XDMF format
+
+    Args:
+        body_h5 (pathlib.Path): path to .h5 file for body's pressure time series
+        atm_probe_h5 (pathlib.Path | None): path to .h5 file for atmospheric pressure probe.
+            If None consider constant atmospheric pressure of 0.
+        reference_vel (float): reference velocity to use
+        fluid_density (float): fluid density to use
+    """
+
+    with h5py.File(body_h5, mode="a") as f_body:
+        grp_abs = f_body["pressure"]
+        grp_cp = f_body.require_group("cp")
+        keys = list(grp_abs.keys())
+
+        if atm_probe_h5 is None:
+            for k in keys:
+                p_body = grp_abs[k]
+                cp = (p_body) / (0.5 * fluid_density * reference_vel**2)
+                if k in grp_cp:
+                    del grp_cp[k]
+                grp_cp[k] = cp
+            return
+
+        with h5py.File(atm_probe_h5) as f_atm:
+            grp_atm = f_atm[f"pressure"]
+            for k in keys:
+                p_body = grp_abs[k]
+                p_ref = grp_atm[k][0]
+                cp = (p_body - p_ref) / (0.5 * fluid_density * reference_vel**2)
+                if k in grp_cp:
+                    del grp_cp[k]
+                grp_cp[k] = cp
 
 def transform_to_cp(
     *,
@@ -27,6 +69,7 @@ def transform_to_cp(
     fluid_density: float,
     macroscopic_type: Literal["pressure", "rho"],
     characteristic_length: float,
+    time_scale_multiplier: float,
     columns_drop: list[str] | None = None,
     columns_process: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -64,7 +107,7 @@ def transform_to_cp(
 
     df_cp = pd.DataFrame(result.T, columns=columns_process)
     df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
-        characteristic_length / reference_vel
+        characteristic_length / reference_vel * time_scale_multiplier
     )
 
     return df_cp
@@ -113,6 +156,7 @@ def process_single_raw_group(
                 body_data=body_df,
                 reference_vel=cp_config.simul_U_H,
                 fluid_density=cp_config.fluid_density,
+                time_scale_multiplier=cp_config.time_scale_multiplier,
                 macroscopic_type=cp_config.macroscopic_type,
                 characteristic_length=cp_config.simul_characteristic_length,
                 columns_drop=columns_drop,
