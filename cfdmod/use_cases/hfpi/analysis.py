@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter 
+import matplotlib
 from scipy.ndimage import gaussian_filter
 import math
 
 from cfdmod.use_cases.hfpi import dynamic, handler, static
+from sympy import comp
 
 plot_style = {
     "AeroSim": {
@@ -484,40 +486,49 @@ def plot_max_acceleration(
 def plot_acceleration_floor_by_floor(
     acc: np.ndarray,
     structure_data: dynamic.HFPIStructuralData,
+    rec_period: float,
     *,
     project_name: str = "AeroSim",
     unit_conversion: float = 1000 / 9.806,
     unit_name: str = "milli-g",
-    last_floor: None|int = None,
+    last_floor: int|None = None,
     language="en",
-    plot_nbcc: bool = False,
-    plot_nbr: bool = False,
-    plot_melbourne: bool = False,
-    melbourne_years: int = 10,
+    standards_to_use: list[Literal['nbr_com','nbr_res','nbcc_res','nbcc_com','melbourne']] = ['melbourne'], 
 ):
     color_eq = "#E69F00"
-    color_nbcc = "#2F993A"
+    color_nbcc_res = "#2F993A"
+    color_nbcc_com = "#124711"
     color_nbr_res = "#A82D2D"
     color_nbr_com = "#426AC2"
     color_melbourne = "#A20DDD"
 
+    #avoid problems of underspecification of criteria type
+    def filter_only_valid_standards_by_rec_period(standards_to_use, rec_period):
+        compatibilities = {'nbr_com': 1,'nbr_res': 1,'nbcc_res': 10,'nbcc_com': 10}
+        valid_standards = []
+        for std in standards_to_use:
+            if std == 'melbourne': #always valid
+                valid_standards.append(std)
+                continue
+            if compatibilities[std] == rec_period:
+                valid_standards.append(std)
+        return valid_standards
+    
+    standards_to_use = filter_only_valid_standards_by_rec_period(standards_to_use, rec_period)
+    if len(standards_to_use) == 0: #if no valid standard remained, use melbourne
+        standards_to_use.append('melbourne')
+
     fig, ax = plt.subplots()
 
     natural_freq = structure_data.df_modes["frequency"].min()
-
-
-
     texts = {
-        "nbcc": {
-            "en": "NBCC - residential and comercial",
-            "pt-br": "NBCC - residencial e comercial",
-        },
+        "nbcc_res": {"en": "NBCC - residential", "pt-br": "NBCC - residencial"},
+        "nbcc_com": {"en": "NBCC - comercial", "pt-br": "NBCC - comercial"},
         "nbr_res": {"en": "NBR 6123 - residential", "pt-br": "NBR 6123 - residencial"},
         "nbr_com": {"en": "NBR 6123 - comercial", "pt-br": "NBR 6123 - comercial"},
         "melbourne": {"en": "Melbourne (1992)", "pt-br": "Melbourne (1992)"},
         'lastfloor': {"en": "Last habitable floor", "pt-br": "Último andar habitável"},
     }
-
 
     if last_floor is not None:
         ax.axhline(
@@ -528,41 +539,58 @@ def plot_acceleration_floor_by_floor(
             linewidth=1,
         )
 
-    kwargs_codes = dict(alpha=1, linewidth=2)
-    if plot_nbr:
-        range_NBR_ac_residential = 0.01 * 4.08 * natural_freq ** -0.445 * unit_conversion,
-
-        range_NBR_ac_comertial = 0.01 * 6.12 * natural_freq ** -0.445 * unit_conversion,
-
+    kwargs_codes = dict(linewidth=2)
+    def plot_nbr_comertial(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+        range_NBR_ac_comertial = 0.01 * 6.12 * natural_freq ** -0.445 * unit_conversion
         ax.axvline(
             range_NBR_ac_comertial,
             label=texts["nbr_com"][language],
             color=color_nbr_com,
             **kwargs_codes,
         )
+        return fig, ax
+    def plot_nbr_residential(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+        range_NBR_ac_residential = 0.01 * 4.08 * natural_freq ** -0.445 * unit_conversion
         ax.axvline(
             range_NBR_ac_residential,
             label=texts["nbr_res"][language],
             color=color_nbr_res,
             **kwargs_codes,
         )
-    if plot_nbcc:
+        return fig, ax
+    def plot_nbcc_comertial(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+        range_NBCC = [
+            20 * (9.806 / 1000) * unit_conversion,
+            25 * (9.806 / 1000) * unit_conversion,
+        ]
+        ax.axvline(
+            range_NBCC[0],
+            range_NBCC[1],
+            label=texts["nbcc_com"][language],
+            color=color_nbcc_com,
+            alpha=0.25,
+            **kwargs_codes,
+        )
+        return fig, ax
+    def plot_nbcc_residential(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
         range_NBCC = [
             15 * (9.806 / 1000) * unit_conversion,
-            25 * (9.806 / 1000) * unit_conversion,
+            18 * (9.806 / 1000) * unit_conversion,
         ]
         ax.axvspan(
             range_NBCC[0],
             range_NBCC[1],
-            label=texts["nbcc"][language],
-            color=color_nbcc,
+            label=texts["nbcc_res"][language],
+            color=color_nbcc_res,
+            alpha=0.25,
             **kwargs_codes,
         )
-    if plot_melbourne:
+        return fig, ax
+    def plot_melbourne(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
         range_melbourne = (
             unit_conversion
             * np.sqrt(2 * np.log(600 * natural_freq))
-            * (0.68 + np.log(melbourne_years) / 5)
+            * (0.68 + np.log(rec_period) / 5)
             * np.exp(-3.65 - 0.41 * np.log(natural_freq))
         )
         ax.axvline(
@@ -571,6 +599,19 @@ def plot_acceleration_floor_by_floor(
             color=color_melbourne,
             **kwargs_codes,
         )
+        return fig, ax
+
+    plotter_assignment = {
+        "nbcc_res": plot_nbcc_residential,
+        "nbcc_com": plot_nbcc_comertial,
+        "nbr_res": plot_nbr_residential,
+        "nbr_com": plot_nbr_comertial,
+        "melbourne": plot_melbourne,
+    }
+
+    for std in standards_to_use:
+        fig, ax = plotter_assignment[std](fig, ax)
+
     pavements = np.arange(len(acc))
     ax.plot(acc * unit_conversion, pavements, "o", label=project_name, color=color_eq)
     ax.legend()
