@@ -141,7 +141,9 @@ Split `main.py` into two parts:
 
 - `run.py` (or a `run()` function) - pure Python orchestration, takes config objects and
   returns results. No argparse, no file I/O assumptions.
-- `cli.py` - thin argparse wrapper that calls `run()`.
+- `cli.py` - thin typer app that calls `run()`. All CLI modules must use typer instead
+  of argparse. Typer leverages type annotations directly, keeping CLI definitions concise
+  and consistent with the rest of the codebase.
 
 Example (loft):
 ```python
@@ -150,10 +152,19 @@ def generate_loft(params: LoftParams, geom: LnasGeometry) -> LnasGeometry:
     ...
 
 # loft/cli.py
-def main(*args):
-    args = get_args_process(*args)
-    params = LoftParams.from_file(args.config)
-    geom = LnasFormat.from_file(args.surface).geometry
+import typer
+import pathlib
+
+app = typer.Typer()
+
+@app.command()
+def main(
+    config: pathlib.Path = typer.Option(..., help="Path to loft config file"),
+    surface: pathlib.Path = typer.Option(..., help="Path to STL surface file"),
+    output: pathlib.Path = typer.Option(..., help="Output path"),
+):
+    params = LoftParams.from_file(config)
+    geom = LnasFormat.from_file(surface).geometry
     result = generate_loft(params, geom)
     ...
 ```
