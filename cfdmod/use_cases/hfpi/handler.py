@@ -14,143 +14,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cfdmod.logger import logger
 from cfdmod.use_cases.hfpi import common, dynamic, static
+from cfdmod.use_cases.climate.wind_profile import WindProfile
 
 T = TypeVar("T")
 
-class WindAnalysis(BaseModel):
-    """Data for wind analysis and calculation"""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    U_H_overwrite: float | None = None
-
-    @classmethod
-    def build(cls, U_H_overwrite: float):
-        return WindAnalysis(U_H_overwrite=U_H_overwrite)
-
-    def get_U_H(
-        self, height: float|None=None, direction: float|None=None, recurrence_period: float|None=None, use_kd: bool = True
-    ) -> float:
-        if self.U_H_overwrite is not None:
-            return self.U_H_overwrite
-        else:
-            raise NotImplementedError("This class does not implement any calculation for U_H. Instantiate a child class or overwrite U_H")
-
-
-class WindAnalysis_NBR(WindAnalysis):
-    """Data for wind analysis and calculation"""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    # Pandas with keys: wind_direction, I, II, III, IV, V, Kd
-    # Kd is optional and defaults to read, it defaults to one
-    directional_data: pd.DataFrame
-    V0: float
-    U_H_overwrite: float | None = None
-
-    @classmethod
-    def build(cls, data_csv: pathlib.Path, V0: float, U_H_overwrite: float | None = None):
-        df = pd.read_csv(data_csv, index_col=None)
-        req_keys = ["wind_direction", "I", "II", "III", "IV", "V"]
-        if not common.validate_keys_df(df, req_keys):
-            raise KeyError(
-                "Not all required keys are in wind CSV. "
-                f"Required ones are: {req_keys}, found {list(df.columns)}"
-            )
-        if "Kd" not in df.columns:
-            df["Kd"] = 1
-        df = df[req_keys + ["Kd"]]
-        df.sort_values(by=["wind_direction"], inplace=True)
-        return WindAnalysis_NBR(directional_data=df, V0=V0, U_H_overwrite=U_H_overwrite)
-
-    def S2(self, height: float, direction: float):
-        # parameters from NBR 6123, mean speed of 10min
-        Fr = 0.69
-        p = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
-        b = {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50}
-
-        df = self.directional_data
-        row = df.loc[df["wind_direction"] == direction].squeeze()
-        sum_p = sum(row[k] * p[k] for k in p.keys())
-        sum_b = sum(row[k] * b[k] for k in b.keys())
-        return Fr * sum_b * (height / 10) ** sum_p
-
-    def S3(self, recurrence_period: float):
-        return 0.54 * (0.994 / recurrence_period) ** -0.157
-
-    def get_U_H(
-        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool = True
-    ) -> float:
-        if self.U_H_overwrite is not None:
-            return self.U_H_overwrite
-
-        df = self.directional_data
-        row = df.loc[df["wind_direction"] == direction].squeeze()
-        V0 = self.V0
-        kd = row["Kd"] if use_kd else 1
-        S2 = self.S2(height, direction)
-        S3 = self.S3(recurrence_period)
-        return V0 * kd * S2 * S3
-
-class WindAnalysis_EU(WindAnalysis):
-    """Data for wind analysis and calculation for EU standard EN1991"""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    # Pandas with keys: wind_direction, I, II, III, IV, V, Kd
-    # Kd is optional and defaults to read, it defaults to one
-    directional_data: pd.DataFrame
-    Vb: float
-    U_H_overwrite: float | None = None
-
-    @classmethod
-    def build(cls, data_csv: pathlib.Path, Vb: float, U_H_overwrite: float | None = None):
-        df = pd.read_csv(data_csv, index_col=None)
-        req_keys = ["wind_direction", "z0"]
-        if not common.validate_keys_df(df, req_keys):
-            raise KeyError(
-                "Not all required keys are in wind CSV. "
-                f"Required ones are: {req_keys}, found {list(df.columns)}"
-            )
-        if "Kd" not in df.columns:
-            df["Kd"] = 1
-        df = df[req_keys + ["Kd"]]
-        df.sort_values(by=["wind_direction"], inplace=True)
-        return WindAnalysis_EU(directional_data=df, Vb=Vb, U_H_overwrite=U_H_overwrite)
-
-    def kr(self, direction: float):
-        direction = float(direction)
-        df = self.directional_data
-        row = df.loc[df["wind_direction"] == direction].squeeze()
-        return 0.19*(row['z0']/0.05)**0.07
-
-    def c_prob(self, rec_period: float=50) -> float:
-        K=0.2
-        n=0.5
-        p = 1/rec_period
-        return ((1-K*np.log(-np.log(1-p)))/(1-K*np.log(-np.log(0.98))))**n
-    
-    def c_r(self, height: float, direction: float) -> float:
-        direction = float(direction)
-        df = self.directional_data
-        row = df.loc[df["wind_direction"] == direction].squeeze()
-        return self.kr(direction)*np.log(height/row['z0'])
-
-    def get_U_H(
-        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool=True
-    ) -> float:
-        if self.U_H_overwrite is not None:
-            return self.U_H_overwrite
-
-        direction = float(direction)
-        df = self.directional_data
-        row = df.loc[df["wind_direction"] == direction].squeeze()
-        Vb = self.Vb
-        Kd = row["Kd"] if use_kd else 1
-        c_season = 1 # for future implementations, ...maybe 
-        c_r = self.c_r(height, direction)
-        c_prob = self.c_prob(recurrence_period)
-        return (Vb*Kd*c_prob*c_season) * c_r
 
 
 class DimensionSpecs(BaseModel):
@@ -165,18 +32,28 @@ class HFPICaseParameters(BaseModel, frozen=True):
 
     direction: float
     xi: float
+    frequency_multiplier: float = 1
     recurrence_period: float
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
+    apply_wavelet_filter: bool
 
     def __hash__(self):
-        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd))
+        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier))
 
     def get_results_filename(self, base_folder: pathlib.Path):
+        filename = f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}"
+        if self.apply_wavelet_filter:
+            filename += f"_wave{self.apply_wavelet_filter}"
+        if self.frequency_multiplier!=1:
+            filename += f"_freq{self.frequency_multiplier}"
+        filename += ".pickle"
+    
         return (
             base_folder
-            / f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}.pickle"
+            / filename
         )
+
 
 
 def solve_hfpi_case(
@@ -205,6 +82,8 @@ def solve_hfpi_case(
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
         xi=parameters.xi,
+        apply_wavelet_filter=parameters.apply_wavelet_filter,
+        frequency_multiplier=parameters.frequency_multiplier,
     )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
@@ -229,7 +108,7 @@ class _HFPIParams(BaseModel):
 class MultipleAnalysisHandler(BaseModel):
     """Full analysis for an HFPI case"""
 
-    wind_analysis: WindAnalysis
+    wind_analysis: WindProfile
     dimensions: DimensionSpecs
     directional_forces: dict[float, static.StaticForcesData]
     save_folder: pathlib.Path
@@ -268,7 +147,9 @@ class MultipleAnalysisHandler(BaseModel):
         directions: list[float],
         xis: list[float],
         use_kd: list[bool],
+        frequency_multipliers: list[float],
         recurrence_periods: list[float],
+        apply_wavelet_filter: list[bool]=[False],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
@@ -277,9 +158,11 @@ class MultipleAnalysisHandler(BaseModel):
                 use_kd=kd,
                 xi=xi,
                 structural_data=structural_data,
+                apply_wavelet_filter=apply_wavelet,
+                frequency_multiplier=frequency_multiplier,
             )
-            for direction, xi, kd, period in itertools.product(
-                *[directions, xis, use_kd, recurrence_periods]
+            for direction, xi, kd, period, apply_wavelet, frequency_multiplier in itertools.product(
+                *[directions, xis, use_kd, recurrence_periods, apply_wavelet_filter, frequency_multipliers]
             )
         ]
         return cases_parameters
@@ -334,39 +217,49 @@ class ResultType(BaseModel):
         if self.dynamic_res is not None:
             self.dynamic_res.rotate_xy(angle_rot)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type)
+            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type)
+            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
-        forces_eq = self.dynamic_res.get_stats_forces_static_eq(stats_type)
-        forces_static = self.static_res.get_stats_forces_static(stats_type)
+    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces_static = self.static_res.get_stats_forces_static(stats_type, peak_method, peak_factor)
+        if self.dynamic_res is None:
+            return forces_static
+        forces_eq = self.dynamic_res.get_stats_forces_static_eq(stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
-        mom_eq = self.dynamic_res.get_stats_moments_static_eq(stats_type)
-        mom_static = self.static_res.get_stats_moments_static(stats_type)
+    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        mom_static = self.static_res.get_stats_moments_static(stats_type, peak_method, peak_factor)
+        if self.dynamic_res is None:
+            return mom_static
+        mom_eq = self.dynamic_res.get_stats_moments_static_eq(stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
 
-    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"]):
-        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(stats_type)
-        forces_static = self.static_res.get_stats_global_forces_static(stats_type)
+    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces_static = self.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+        if self.dynamic_res is None:
+            return forces_static
+        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"]):
-        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(stats_type)
-        mom_static = self.static_res.get_stats_global_moments_static(stats_type)
+    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        mom_static = self.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+        if self.dynamic_res is None:
+            return mom_static
+        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
+
+
 
     def save(self, filename: pathlib.Path):
         filename.parent.mkdir(exist_ok=True, parents=True)
@@ -385,42 +278,42 @@ class DirectionalAnalysisResults(BaseModel):
     def join_by_direction(self):
         return {d: DirectionalAnalysisResults(results={d: res}) for d, res in self.results.items()}
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type)
+            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type)
+            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.dynamic_res.get_stats_global_forces_static_eq(stats_type)
+            v.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.dynamic_res.get_stats_global_moments_static_eq(stats_type)
+            v.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dct_static = self.get_stats_global_forces_static(stats_type)
-        dct_dyn = self.get_stats_global_forces_static_eq(stats_type)
+        dct_dyn = self.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
-    def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"]):
+    def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dct_static = self.get_stats_global_moments_static(stats_type)
-        dct_dyn = self.get_stats_global_moments_static_eq(stats_type)
+        dct_dyn = self.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
     def get_global_peaks_by_direction(
@@ -430,6 +323,7 @@ class DirectionalAnalysisResults(BaseModel):
             "hfpi",
             "effective",
         ],
+        peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4,
     ) -> dict[str, pd.DataFrame]:
         """Get global peaks per direction of results
 
@@ -463,9 +357,9 @@ class DirectionalAnalysisResults(BaseModel):
             }
             for name in vars_use:
                 c = calls[name]
-                min_vals = c("min")
-                max_vals = c("max")
-                mean_vals = c("mean")
+                min_vals = c("min", peak_method, peak_factor)
+                max_vals = c("max", peak_method, peak_factor)
+                mean_vals = c("mean", peak_method, peak_factor)
                 for ax in axis:
                     joined_res[name][f"min_{ax}", d] = min_vals[ax]
                     joined_res[name][f"max_{ax}", d] = max_vals[ax]
@@ -486,16 +380,16 @@ class DirectionalAnalysisResults(BaseModel):
 
         return dct_dfs
 
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1):
+    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         return max(
-            res.dynamic_res.get_floor_max_acceleration(pos, floor) for res in self.results.values()
+            res.dynamic_res.get_floor_max_acceleration(pos, floor, peak_method, peak_factor) for res in self.results.values()
         )
 
     def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
     ):
         res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration(pos, floor) for k, r in res.items()}
+        return {k: r.get_max_acceleration(pos, floor, peak_method, peak_factor) for k, r in res.items()}
 
 
 class HFPIAnalysisResults(DirectionalAnalysisResults):
@@ -543,6 +437,14 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
 
+    def join_by_wavelet(self):
+        return self.join_by(lambda params: params.apply_wavelet_filter)
+    
+    def join_by_frequency_multiplier(self):
+        return self.join_by(lambda params: params.frequency_multiplier)
+        
+
+
     def filter_by_xi(self, xi: float):
         return self.join_by_xi()[xi]
 
@@ -551,3 +453,9 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
 
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
+
+    def filter_by_wavelet(self, filter: bool):
+        return self.join_by_wavelet()[filter]
+    
+    def filter_by_frequency_multiplier(self, filter: bool):
+        return self.join_by_frequency_multiplier()[filter]

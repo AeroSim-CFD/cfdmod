@@ -1,12 +1,11 @@
 [project]
 name = "aerosim-cfdmod"
-version = "1.1.5"
+version = "1.2.0"
 description = "Tools for analysis of CFD cases"
 authors = [
     { name = "Waine Oliveira Jr", email = "waine@aerosim.io" },
-    { name = "Pablo Penas", email = "pablo@aerosim.io" },
 ]
-requires-python = "~=3.10"
+requires-python = ">=3.10"
 readme = "README.md"
 license = "Apache-2.0"
 dependencies = [
@@ -22,6 +21,7 @@ dependencies = [
     "aerosim-lnas>=0.6.0,<0.7",
     "filelock>=3.17.0",
     "openpyxl>=3.1.5",
+    "h5py>=3.15.1",
 ]
 
 [project.optional-dependencies]

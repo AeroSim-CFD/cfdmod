@@ -6,10 +6,7 @@ from cfdmod.use_cases.loft.functions import (
     find_borders,
     flatten_vertices_and_get_triangles_as_list_of_indexes,
     generate_loft_triangles,
-    get_angle_between,
     remove_edges_of_internal_holes,
-    remove_edges_oposite_to_loft_direction,
-    remove_edges_too_aligned_with_projection_direction,
 )
 
 
@@ -46,30 +43,17 @@ def triangle_indices(triangle_vertices):
 
 
 def test_find_border(nx, ny, triangle_indices):
-    border_edges = find_borders(triangles_vertices=triangle_indices)
+    border_edges = find_borders(triangle_vertices=triangle_indices)
     expected_edge_count = (nx + ny) * 2
 
     assert len(border_edges) == expected_edge_count
 
 
-def test_angle_between():
-    vec1 = np.array([1, 0, 0])
-    vec2 = np.array([0, 1, 0])
-    vec3 = np.array([1, 1, 0])
-    vec4 = np.array([-1, -1, 0])
-
-    assert abs(get_angle_between(vec1, vec2) - 90) < 1e-10
-    assert abs(get_angle_between(vec1, vec3) - 45) < 1e-10
-    assert abs(get_angle_between(vec1, vec4) - 135) < 1e-10
-    assert abs(get_angle_between(vec2, vec3) - 45) < 1e-10
-
-
 def test_loft_surface(triangle_vertices):
-    projection_diretion = np.array([1, 0, 0])
     flattened_vertices, tri_index_matrix = flatten_vertices_and_get_triangles_as_list_of_indexes(
         triangle_vertices=triangle_vertices
     )
-    border_edges = find_borders(triangles_vertices=tri_index_matrix)
+    border_edges = find_borders(triangle_vertices=tri_index_matrix)
     border_edges = remove_edges_of_internal_holes(
         vertices=flattened_vertices,
         edges=border_edges,
@@ -83,25 +67,14 @@ def test_loft_surface(triangle_vertices):
         ]
     )
 
-    border_edges = remove_edges_oposite_to_loft_direction(
+    loft_geom = generate_loft_triangles(
         vertices=flattened_vertices,
         edges=border_edges,
-        mesh_center=center,
-        projection_diretion=projection_diretion,
-    )
-
-    border_edges = remove_edges_too_aligned_with_projection_direction(
-        vertices=flattened_vertices,
-        edges=border_edges,
-        projection_diretion=projection_diretion,
-        angle_tolerance=45,
-    )
-
-    loft_tri, loft_normals = generate_loft_triangles(
-        vertices=flattened_vertices,
-        edges=border_edges,
-        projection_diretion=projection_diretion,
-        loft_length=100,
-        loft_z_pos=1,
+        loft_radius=20.0,
+        loft_z_pos=0.0,
         mesh_center=center,
     )
+
+    assert loft_geom is not None
+    assert loft_geom.triangle_vertices.shape[1] == 3
+    assert loft_geom.triangle_vertices.shape[2] == 3

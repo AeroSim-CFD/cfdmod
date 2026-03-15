@@ -9,7 +9,7 @@ import copy
 from pydantic import BaseModel, ConfigDict
 
 from cfdmod.use_cases.hfpi import common
-
+from cfdmod import utils
 
 class DimensionalData(BaseModel):
     """Analytical data required to analyze a given HFPI model"""
@@ -45,7 +45,7 @@ def read_static_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
     """Read forces for HFPI from path, with scalar key specified"""
     df_force = pd.read_hdf(hdf_path)
     req_keys = ["time_normalized"]
-    if not common.validate_keys_df(df_force, req_keys):
+    if not utils.validate_keys_df(df_force, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI Forces HDF {hdf_path.as_posix()}. Found only keys {df_force.columns}"
         )
@@ -232,17 +232,30 @@ class StaticResults(BaseModel):
         common.rotate_values_xy(self.forces_static, angle_rot)
         common.rotate_values_xy(self.moments_static, angle_rot)
 
-    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.forces_static, stats_type)
+    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.forces_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.forces_static, stats_type, peak_factor)
 
-    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.moments_static, stats_type)
+    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.moments_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.moments_static, stats_type, peak_factor)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_forces_static, stats_type)
+    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_forces_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_forces_static, stats_type, peak_factor)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"]):
-        return common.get_stats_dct(self.global_moments_static, stats_type)
+    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        if peak_method=="extreme":
+            return common.get_stats_dct(self.global_moments_static, stats_type)
+        else:
+            return common.get_stats_dct_peak_factor(self.global_moments_static, stats_type, peak_factor)
+
 
 
 def validate_forces_w_n_floors(forces: StaticForcesData, n_floors: int):

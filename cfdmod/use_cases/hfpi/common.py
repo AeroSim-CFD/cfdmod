@@ -41,6 +41,24 @@ def get_stats_dct(
     raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
 
 
+def get_stats_dct_peak_factor(
+    dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"], peak_factor:float,
+) -> dict[str, np.ndarray] | dict[str, float]:
+
+    resp = {}
+    for k, v in dct.items():
+        mn = v.mean(axis=0)
+        rms = (v - mn).std(axis=0)
+        if stats_type == "max":
+            resp[k] = mn + rms*peak_factor
+        elif stats_type == "min":
+            resp[k] = mn - rms*peak_factor
+        elif stats_type == "mean":
+            resp[k] = mn
+        else:
+            raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
+    return resp
+
 def get_stats_among_dct(
     lst_dct: list[dict[str, np.ndarray] | dict[str, float]],
     stats_type: Literal["min", "max", "mean"],
@@ -89,12 +107,6 @@ def get_global_stats_dct_float(
             )
 
     return result
-
-
-def validate_keys_df(df: pd.DataFrame, keys: list[str]):
-    if any(k not in df.columns for k in keys):
-        return False
-    return True
 
 
 def rotate_values_xy(values_proj: dict[str, np.ndarray], angle_rot: float):

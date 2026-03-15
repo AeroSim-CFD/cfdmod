@@ -178,33 +178,59 @@ class CameraConfig(BaseModel):
 
 
 class ValueTagsConfig(BaseModel):
-    spacing: tuple[float, float] = Field(..., description="Spacing (x, y)")
-    padding: tuple[float, float, float, float] = Field(
-        ..., description="Padding (left, right, bottom, top)"
+    spacing: tuple[float, float]|None = Field(None, description="Spacing (x, y)")
+    padding: tuple[float, float, float, float]|None = Field(
+        None, description="Padding (left, right, bottom, top)"
     )
+    x: list[float]|None = Field(None, description="Exact positions in x. Relative to bounding box of transformed mesh.")
+    y: list[float]|None = Field(None, description="Exact positions in y. Relative to bounding box of transformed mesh.")
+
     z_offset: float = Field(
         default=0,
         title="Values tag search plane z offset",
         description="Negative z offset for plane where closest points in mesh will be searched",
         gt=0,
     )
+
     decimal_places: int = Field(
         default=2,
         title="Decimal places",
         description="Precision of results to be marked on tags",
         gt=0,
     )
+    
+    @model_validator(mode="before")
+    @classmethod
+    def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
+        cols = data.keys()
+        if ("x" in cols) or (("y" in cols)) and not (("x" in cols) and (("y" in cols))):
+            ValueError(
+                "Exact position set for x or y, but one is empty. Both must be specified."
+            )
+        elif (("x" in cols) and (("y" in cols))):
+            # exact has precedence over floating
+            data['spacing'] = None
+            data['padding'] = None
+        elif ("spacing" in cols) or (("padding" in cols)) and not (("spacing" in cols) and (("padding" in cols))):
+            ValueError(
+                "Floating position set for spacing or padding, but one is empty. Both must be specified."
+            )
+        return data
 
     @field_validator("spacing", mode="before")
-    def normalize_spacing(cls, v: Union[float, tuple]) -> tuple[float, float]:
+    def normalize_spacing(cls, v: Union[float, tuple]|None) -> tuple[float, float]:
+        if v is None:
+            return None
         if isinstance(v, (int, float)):
             return (float(v), float(v))
-        if isinstance(v, tuple) and len(v) == 2:
+        if isinstance(v, tuple) or isinstance(v, list) and len(v) == 2:
             return tuple(map(float, v))
         raise ValueError("spacing must be a float or a 2-tuple of floats")
 
     @field_validator("padding", mode="before")
-    def normalize_padding(cls, v: Union[float, tuple]) -> tuple[float, float, float, float]:
+    def normalize_padding(cls, v: Union[float, tuple]|None) -> tuple[float, float, float, float]:
+        if v is None:
+            return None
         if isinstance(v, (int, float)):
             return (float(v), float(v), float(v), float(v))
         if isinstance(v, list) or isinstance(v, tuple):
@@ -213,6 +239,7 @@ class ValueTagsConfig(BaseModel):
             if len(v) == 4:
                 return tuple(map(float, v))
         raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
+
 
 
 class ProjectionConfig(BaseModel):
@@ -226,6 +253,7 @@ class ProjectionConfig(BaseModel):
         title="Scalar field",
         description="Label of the scalar to set active on the projection",
     )
+    cell_data_to_point_data: bool = Field(True, title="Apply cell_data_to_point_data and contour filters", description="True gives a smooth apearance, False preserves better the separations of Ce and Cf.")
     values_tag_config: ValueTagsConfig | None = Field(None, title="", description="")
     clip_box: TransformationConfig | None = Field(
         None,
