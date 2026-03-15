@@ -24,6 +24,39 @@ from cfdmod.use_cases.pressure.zoning.processing import (
 from cfdmod.utils import convert_dataframe_into_matrix
 
 
+def get_representative_areas(
+    input_mesh: LnasGeometry, point_idx: np.ndarray
+) -> tuple[tuple[float, float, float], ...]:
+    """Calculates the representative areas from the bounding box of a given mesh
+
+    Args:
+        input_mesh (LnasGeometry): Input LNAS mesh
+        point_idx (np.ndarray): Array of triangle indices of each sub region
+
+    Returns:
+        tuple[float, float, float]: Representative areas tuple ((Lx, Ly, Lz), (Ax, Ay, Az))
+    """
+    geom_verts = input_mesh.triangle_vertices[point_idx].reshape(-1, 3)
+    x_min, x_max = geom_verts[:, 0].min(), geom_verts[:, 0].max()
+    y_min, y_max = geom_verts[:, 1].min(), geom_verts[:, 1].max()
+    z_min, z_max = geom_verts[:, 2].min(), geom_verts[:, 2].max()
+
+    Lx = x_max - x_min
+    Ly = y_max - y_min
+    Lz = z_max - z_min
+
+    # Threshold to avoid big coefficients
+    Lx = 1 if Lx < 1 else Lx
+    Ly = 1 if Ly < 1 else Ly
+    Lz = 1 if Lz < 1 else Lz
+
+    Ax = Ly * Lz
+    Ay = Lx * Lz
+    Az = Lx * Ly
+
+    return (Lx, Ly, Lz), (Ax, Ay, Az)
+
+
 def process_Cf(
     mesh: LnasFormat,
     cfg: CfConfig,
@@ -194,10 +227,37 @@ def transform_Cf(
         .reset_index()
     )
 
-    Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
-    Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
-    Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area
+    if(nominal_area > 0):
+        Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
+        Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
+        Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area
+        Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
+    else:
+        region_group_by = geometry_df.groupby(["region_idx"])
+        representative_areas = {}
 
-    Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
+        for region_idx, region_points in region_group_by:
+            region_points_idx = region_points.point_idx.to_numpy()
+            (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
+                input_mesh=geometry, point_idx=region_points_idx
+            )
+
+            representative_areas[region_idx[0]] = {}
+            representative_areas[region_idx[0]]["ATx"] = Ax
+            representative_areas[region_idx[0]]["ATy"] = Ay
+            representative_areas[region_idx[0]]["ATz"] = Az
+            representative_areas[region_idx[0]]["Lx"] = Lx
+            representative_areas[region_idx[0]]["Ly"] = Ly
+            representative_areas[region_idx[0]]["Lz"] = Lz
+
+        rep_df = pd.DataFrame.from_dict(representative_areas, orient="index").reset_index()
+        rep_df = rep_df.rename(columns={"index": "region_idx"})
+        Cf_data = pd.merge(Cf_data, rep_df, on="region_idx")
+
+        Cf_data["Cfx"] = Cf_data["Fx"] / Cf_data["ATx"]
+        Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
+        Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
+
+        Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
 
     return Cf_data

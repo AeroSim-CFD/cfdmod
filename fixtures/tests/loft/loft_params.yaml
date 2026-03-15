@@ -1,17 +1,14 @@
 cases:
   default:
-    loft_length: 1200
+    loft_radius: 2500
     mesh_element_size: 25.0
-    wind_source_angle: 0
     upwind_elevation: 780
   longer_loft:
-    loft_length: 1500
+    loft_radius: 2800
     mesh_element_size: 25.0
-    wind_source_angle: 270
     upwind_elevation: 780
   inherit_loft:
-    loft_length: 2000
+    loft_radius: 3300
   inherit_element_size:
-    loft_length: 2000
-    wind_source_angle: 270
+    loft_radius: 3300
     upwind_elevation: 800

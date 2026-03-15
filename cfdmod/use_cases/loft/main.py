@@ -2,15 +2,12 @@ import argparse
 import pathlib
 from dataclasses import dataclass
 
+import lnas
 import numpy as np
 
 from cfdmod.api.geometry.STL import export_stl, read_stl
 from cfdmod.logger import logger
-from cfdmod.use_cases.loft.functions import (
-    apply_remeshing,
-    generate_loft_surface,
-    rotate_vector_around_z,
-)
+from cfdmod.use_cases.loft.functions import generate_loft_surface
 from cfdmod.use_cases.loft.parameters import LoftCaseConfig
 
 
@@ -63,35 +60,24 @@ def main(*args):
     output_path = pathlib.Path(args_use.output)
 
     cfg = LoftCaseConfig.from_file(cfg_file)
-    triangles, _ = read_stl(mesh_path)
+    geom = lnas.LnasFormat.from_file(mesh_path).geometry
 
     for case_lbl, loft_params in cfg.cases.items():
         if case_lbl == "default":
             continue
         logger.info(f"Generating loft for {case_lbl}...")
-        wind_source_direction = rotate_vector_around_z(
-            np.array(cfg.reference_direction, dtype=np.float32), loft_params.wind_source_angle
+        loft_geom = generate_loft_surface(
+            geom=geom,
+            loft_radius=loft_params.loft_radius,
+            loft_z_pos=loft_params.upwind_elevation,
         )
-        loft_directions = {
-            "upwind": -np.array(wind_source_direction),
-            "downwind": np.array(wind_source_direction),
-        }
-        for side, direction in loft_directions.items():
-            loft_tri, loft_normals = generate_loft_surface(
-                triangle_vertices=triangles,
-                projection_diretion=direction,
-                loft_length=loft_params.loft_length,
-                loft_z_pos=loft_params.upwind_elevation,
-                cutoff_angle_projection=loft_params.cutoff_angle_projection,
-            )
-            export_stl(
-                output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                loft_tri,
-                loft_normals,
-            )
-            apply_remeshing(
-                element_size=loft_params.mesh_element_size,
-                mesh_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
-                output_path=output_path / f"{case_lbl}" / f"{side}_loft.stl",
-            )
+        loft_tris = loft_geom.triangle_vertices
+        u = loft_tris[:, 1] - loft_tris[:, 0]
+        v = loft_tris[:, 2] - loft_tris[:, 0]
+        loft_normals = np.cross(u, v)
+        export_stl(
+            output_path / f"{case_lbl}" / "loft.stl",
+            loft_tris,
+            loft_normals,
+        )
         logger.info(f"Generated loft for {case_lbl}!")
