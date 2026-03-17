@@ -59,7 +59,7 @@ To invoke and run the conversion, the following command can be used:
 
 .. code-block:: Bash
 
-   uv run python -m cfdmod.use_cases.pressure \
+   uv run python -m cfdmod.pressure \
       --output {OUTPUT_PATH} \
       --p      {PRESS_SERIES_PATH} \
       --s      {STATIC_PRESS_PATH} \

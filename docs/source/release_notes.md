@@ -1,5 +1,18 @@
 # Release Notes
 
+## v2.0.0
+
+API-first refactoring for library usability.
+
+- Exposed public `cfdmod/__init__.py` with ~66 symbols directly importable
+- Added `to_dict()` and `to_yaml()` to all config models
+- Split `main.py` into `run.py` (pure Python) and `cli.py` (typer) for loft and roughness
+- Renamed `api/` to `io/` (I/O helpers) and `config/` (base config classes)
+- Flattened `use_cases/` to top-level domain modules (e.g. `cfdmod.loft`, `cfdmod.roughness`)
+- `roughness_gen` module renamed to `roughness`
+- Added `cfdmod.notebook_utils` with `mesh_summary`, `show_config`, `load_lnas` helpers
+- Backward-compatibility shims retained in `api/` and `use_cases/` for existing scripts
+
 ## v1.1.2
 
 - Automated CI/CD workflow

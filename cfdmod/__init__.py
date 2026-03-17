@@ -63,6 +63,10 @@ __all__ = [
     "HashableConfig",
     "read_stl",
     "export_stl",
+    # Notebook utils
+    "mesh_summary",
+    "show_config",
+    "load_lnas",
 ]
 
 from cfdmod.loft import LoftParams, LoftCaseConfig, generate_loft_surface
@@ -106,3 +110,4 @@ from cfdmod.analytical import WindProfile_NBR, WindProfile_EU
 from cfdmod.analysis.inflow import NormalizationParameters, InflowData
 from cfdmod.config import HashableConfig
 from cfdmod.io import read_stl, export_stl
+from cfdmod.notebook_utils import mesh_summary, show_config, load_lnas

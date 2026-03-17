@@ -1,6 +1,6 @@
 [project]
 name = "aerosim-cfdmod"
-version = "1.2.0"
+version = "2.0.0"
 description = "Tools for analysis of CFD cases"
 authors = [
     { name = "Waine Oliveira Jr", email = "waine@aerosim.io" },
@@ -46,6 +46,9 @@ vtk = [
     "vtk>=9.2.6,<10",
     "pyvista>=0.44,<0.45",
 ]
+
+[project.scripts]
+cfdmod = "cfdmod.__main__:app"
 
 [project.urls]
 Homepage = "https://github.com/AeroSim-CFD/cfdmod"

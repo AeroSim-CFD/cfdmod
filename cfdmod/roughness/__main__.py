@@ -1,6 +1,4 @@
-import sys
-
-from cfdmod.roughness.main import main
+from cfdmod.roughness.cli import app
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    app()
