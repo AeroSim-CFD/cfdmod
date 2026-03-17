@@ -1,6 +1,4 @@
-import sys
-
-from cfdmod.pressure.main import main
+from cfdmod.pressure.cli import app
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    app()

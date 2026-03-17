@@ -1,3 +1,5 @@
+"""Path manager classes for the pressure module output directory layout."""
+
 import pathlib
 import shutil
 from typing import ClassVar
@@ -13,7 +15,6 @@ class PathManagerBase(BaseModel):
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
     )
-
     direction_label: str = Field(
         "", title="Direction of coefficient", description="Direction of coefficient"
     )
@@ -34,16 +35,25 @@ class PathManagerBase(BaseModel):
             / f"{self._FOLDERNAME}{self.direction_label}.time_series.h5"
         )
 
-    def get_vtp_path(self, cfg_lbl: str) -> pathlib.Path:
+    def get_timeseries_xdmf_path(self, cfg_lbl: str) -> pathlib.Path:
+        """Return path for the temporal XDMF alongside each coefficient timeseries H5."""
         return (
             self.output_path
             / self._FOLDERNAME
             / cfg_lbl
-            / f"{self._FOLDERNAME}{self.direction_label}.stats.vtp"
+            / f"{self._FOLDERNAME}{self.direction_label}.time_series.xdmf"
         )
 
     def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.config.yaml"
+
+    def get_results_h5_path(self) -> pathlib.Path:
+        """Return path for the combined stats H5 (results.h5) shared across all coefficients."""
+        return self.output_path / "results.h5"
+
+    def get_results_xdmf_path(self) -> pathlib.Path:
+        """Return path for the combined stats XDMF (results.xdmf) shared across all coefficients."""
+        return self.output_path / "results.xdmf"
 
 
 class PathManagerBody(PathManagerBase):
@@ -85,9 +95,6 @@ class CePathManager(PathManagerBody):
 class CpPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "cp"
 
-    def get_grouped_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "time_series.grouped.h5"
-
 
 def copy_input_artifacts(
     cfg_path: pathlib.Path,
@@ -102,8 +109,10 @@ def copy_input_artifacts(
     shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
     shutil.copy(mesh_path, path_manager.output_path / "input_cp" / mesh_path.name)
     shutil.copy(
-        static_data_path, path_manager.output_path / "input_cp" / "data" / static_data_path.name
+        static_data_path,
+        path_manager.output_path / "input_cp" / "data" / static_data_path.name,
     )
     shutil.copy(
-        body_data_path, path_manager.output_path / "input_cp" / "data" / body_data_path.name
+        body_data_path,
+        path_manager.output_path / "input_cp" / "data" / body_data_path.name,
     )

@@ -1,19 +1,18 @@
+"""Tests for shape coefficient (Ce) functions."""
+
 import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
-from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.pressure.shape.Ce_config import CeConfig, ZoningConfig
-from cfdmod.pressure.shape.Ce_data import (
-    calculate_statistics,
+from cfdmod.pressure.functions import calculate_statistics, process_surfaces, transform_Ce
+from cfdmod.pressure.geometry import (
+    GeometryData,
     get_region_definition_dataframe,
-    process_surfaces,
-    transform_Ce,
+    tabulate_geometry_data,
 )
-from cfdmod.pressure.statistics import BasicStatisticModel
-from cfdmod.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.pressure.parameters import BasicStatisticModel, CeConfig, ZoningConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
 
@@ -45,9 +44,9 @@ def matrix_cp_data(cp_data):
 
 @pytest.fixture()
 def zoning():
-    zoning = ZoningModel(x_intervals=[0, 5, 10])
-    zoning.offset_limits(0.1)
-    yield zoning
+    z = ZoningModel(x_intervals=[0, 5, 10])
+    z.offset_limits(0.1)
+    yield z
 
 
 def test_get_region_definition_dataframe(mesh, zoning):
@@ -56,11 +55,10 @@ def test_get_region_definition_dataframe(mesh, zoning):
     }
     region_df = get_region_definition_dataframe(geom_dict)
 
-    assert [
-        f"{i}-{sfc_id}" in region_df["region_idx"]
+    assert all(
+        f"{i}-sfc1" in region_df["region_idx"].values
         for i in range(len(zoning.get_regions()))
-        for sfc_id in geom_dict.keys()
-    ]
+    )
 
 
 def test_transform_Ce(matrix_cp_data, zoning, mesh, cp_data):
@@ -75,9 +73,7 @@ def test_transform_Ce(matrix_cp_data, zoning, mesh, cp_data):
     )
     ce_data = transform_Ce(matrix_cp_data, geometry_df, mesh)
 
-    assert (
-        len(ce_data) == cp_data["time_normalized"].nunique() * cp_data.point_idx.nunique()
-    )  # Three timesteps x 2 triangle
+    assert len(ce_data) == cp_data["time_normalized"].nunique() * geometry_df["region_idx"].nunique()
     assert "Ce" in ce_data.columns
 
 
@@ -88,7 +84,7 @@ def test_process_surfaces(mesh, zoning):
     region_data = convert_dataframe_into_matrix(
         pd.DataFrame(
             {
-                "region_idx": [0, 0, 0, 0, 1, 1, 1, 1],
+                "region_idx": ["0-sfc1", "0-sfc1", "0-sfc1", "0-sfc1", "1-sfc1", "1-sfc1", "1-sfc1", "1-sfc1"],
                 "time_normalized": [0, 1, 2, 3, 0, 1, 2, 3],
                 "Ce": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
             }
@@ -111,7 +107,7 @@ def test_process_surfaces(mesh, zoning):
     ce_stats = calculate_statistics(
         historical_data=region_data, statistics_to_apply=cfg.statistics
     )
-    processed_sfcs, processed_df = process_surfaces(
+    processed_sfcs, _indexing_df = process_surfaces(
         geometry_dict=geom_dict, cfg=cfg, ce_stats=ce_stats
     )
 

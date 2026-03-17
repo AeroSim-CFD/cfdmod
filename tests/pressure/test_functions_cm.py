@@ -1,18 +1,20 @@
+"""Tests for moment coefficient (Cm) functions."""
+
 import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
+from cfdmod.pressure.functions import add_lever_arm_to_geometry_df, transform_Cm
 from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.pressure.moment.Cm_data import add_lever_arm_to_geometry_df, transform_Cm
-from cfdmod.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.pressure.parameters import ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
 
 @pytest.fixture()
 def body_data():
-    body_data = pd.DataFrame(
+    data = pd.DataFrame(
         {
             "cp": [0.1, 0.2, 0.3, 0.4],
             "time_normalized": [0, 0, 1, 1],
@@ -20,7 +22,7 @@ def body_data():
         }
     )
     yield convert_dataframe_into_matrix(
-        body_data, row_data_label="time_normalized", value_data_label="cp"
+        data, row_data_label="time_normalized", value_data_label="cp"
     )
 
 
@@ -50,14 +52,14 @@ def geometry_df(geom_data, body_geom):
 
 
 def test_add_lever_arm(geom_data, geometry_df):
-    geometry_df = add_lever_arm_to_geometry_df(
+    result_df = add_lever_arm_to_geometry_df(
         geom_data=geom_data,
         transformation=TransformationConfig(),
         lever_origin=[0, 0, 10],
         geometry_df=geometry_df,
     )
 
-    assert all([f"r{dir}" in geometry_df.columns for dir in ["x", "y", "z"]])
+    assert all(f"r{d}" in result_df.columns for d in ["x", "y", "z"])
 
 
 def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
@@ -67,9 +69,9 @@ def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
         lever_origin=[0, 0, 10],
         geometry_df=geometry_df,
     )
-    Cm_data = transform_Cm(
+    cm_data = transform_Cm(
         raw_cp=body_data, geometry_df=geometry_df, geometry=body_geom, nominal_volume=10
     )
 
-    assert Cm_data.notna().all().all()
-    assert all([f"Cm{dir}" in Cm_data.columns for dir in ["x", "y", "z"]])
+    assert cm_data.notna().all().all()
+    assert all(f"Cm{d}" in cm_data.columns for d in ["x", "y", "z"])

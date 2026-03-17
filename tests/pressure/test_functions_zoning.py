@@ -1,13 +1,12 @@
+"""Tests for zoning/indexing functions."""
+
 import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasGeometry
 
-from cfdmod.pressure.zoning.processing import (
-    combine_stats_data_with_mesh,
-    get_indexing_mask,
-)
-from cfdmod.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.pressure.functions import combine_stats_data_with_mesh, get_indexing_mask
+from cfdmod.pressure.parameters import ZoningModel
 
 
 @pytest.fixture()

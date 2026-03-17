@@ -81,19 +81,23 @@ from cfdmod.roughness import (
     linear_pattern,
     radial_pattern,
 )
-from cfdmod.pressure.base_config import BasePressureConfig
-from cfdmod.pressure.cp_config import CpConfig, CpCaseConfig
-from cfdmod.pressure.cp_data import process_cp
-from cfdmod.pressure.force import CfConfig, CfCaseConfig, process_Cf
-from cfdmod.pressure.moment import CmConfig, CmCaseConfig, process_Cm
-from cfdmod.pressure.shape import CeConfig, CeCaseConfig
-from cfdmod.pressure.shape.Ce_data import process_Ce
-from cfdmod.pressure.zoning import (
+from cfdmod.pressure.parameters import (
+    BasePressureConfig,
+    CpConfig,
+    CpCaseConfig,
+    CfConfig,
+    CfCaseConfig,
+    CmConfig,
+    CmCaseConfig,
+    CeConfig,
+    CeCaseConfig,
     ZoningModel,
     BodyDefinition,
     BodyConfig,
     MomentBodyConfig,
 )
+from cfdmod.pressure.functions import process_Cf, process_Cm, process_Ce
+from cfdmod.pressure.run import run_cp as process_cp
 from cfdmod.s1 import (
     Profile,
     EUCat,

@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from cfdmod.pressure.extreme_values import (
+from cfdmod.pressure.functions import (
     fit_gumbel_model,
     gumbel_extreme_values,
     moving_average_extreme_values,
     peak_extreme_values,
 )
-from cfdmod.pressure.statistics import (
+from cfdmod.pressure.parameters import (
     ExtremeGumbelParamsModel,
     ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,

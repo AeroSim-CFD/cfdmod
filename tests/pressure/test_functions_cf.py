@@ -1,20 +1,20 @@
+"""Tests for force coefficient (Cf) functions."""
+
 import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
-from cfdmod.pressure.force.Cf_data import transform_Cf
+from cfdmod.pressure.functions import transform_Cf, calculate_statistics
 from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.pressure.statistics import BasicStatisticModel
-from cfdmod.pressure.zoning.processing import calculate_statistics
-from cfdmod.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.pressure.parameters import BasicStatisticModel, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
 
 @pytest.fixture()
 def cp_data():
-    cp_data = pd.DataFrame(
+    data = pd.DataFrame(
         {
             "point_idx": [0, 0, 0, 1, 1, 1],
             "cp": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
@@ -22,7 +22,7 @@ def cp_data():
         }
     )
     yield convert_dataframe_into_matrix(
-        cp_data, row_data_label="time_normalized", value_data_label="cp"
+        data, row_data_label="time_normalized", value_data_label="cp"
     )
 
 
@@ -38,7 +38,6 @@ def test_transform_to_Cf(body_geom, cp_data):
         mesh=body_geom, zoning_to_use=ZoningModel(), triangles_idxs=np.array([0, 1])
     )
     geometry_dict = {"body": geom_data}
-
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
         mesh_areas=body_geom.areas,
@@ -47,10 +46,8 @@ def test_transform_to_Cf(body_geom, cp_data):
     )
     cf_data = transform_Cf(cp_data, geometry_df, body_geom, nominal_area=10)
 
-    assert (
-        len(cf_data) == cp_data.time_normalized.nunique() * geometry_df.region_idx.nunique()
-    )  # Three timesteps x 1 region
-    assert all([f"Cf{var}" in cf_data.columns for var in ["x", "y", "z"]])
+    assert len(cf_data) == cp_data.time_normalized.nunique() * geometry_df.region_idx.nunique()
+    assert all(f"Cf{var}" in cf_data.columns for var in ["x", "y", "z"])
 
 
 def test_liquid_coefficients(body_geom):
@@ -71,13 +68,13 @@ def test_liquid_coefficients(body_geom):
         geometry_negative.vertices + geometry_negative.vertices_normals * 0.1
     )
     upper_mesh.join(lnas_fmts=[lower_mesh], surfaces_suffixes=["_lower"])
+
     geom_data = GeometryData(
         mesh=upper_mesh.geometry,
         zoning_to_use=ZoningModel(),
         triangles_idxs=np.array([0, 1, 2, 3]),
     )
     geometry_dict = {"body": geom_data}
-
     geometry_df = tabulate_geometry_data(
         geom_dict=geometry_dict,
         mesh_areas=upper_mesh.geometry.areas,

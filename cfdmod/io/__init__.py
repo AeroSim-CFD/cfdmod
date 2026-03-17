@@ -11,6 +11,17 @@ __all__ = [
     "write_polydata",
     "read_polydata",
     "merge_polydata",
+    # XDMF+H5
+    "get_pressure_keys",
+    "filter_keys_by_range",
+    "read_step",
+    "read_timeseries_meta",
+    "write_timeseries_step",
+    "write_timeseries_meta",
+    "write_timeseries_geometry",
+    "write_temporal_xdmf",
+    "write_stats_field",
+    "write_stats_xdmf",
 ]
 
 from cfdmod.io.geometry.STL import read_stl, export_stl
@@ -27,4 +38,16 @@ from cfdmod.io.vtk.write_vtk import (
     write_polydata,
     read_polydata,
     merge_polydata,
+)
+from cfdmod.io.xdmf import (
+    get_pressure_keys,
+    filter_keys_by_range,
+    read_step,
+    read_timeseries_meta,
+    write_timeseries_step,
+    write_timeseries_meta,
+    write_timeseries_geometry,
+    write_temporal_xdmf,
+    write_stats_field,
+    write_stats_xdmf,
 )

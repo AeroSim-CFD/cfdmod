@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cfdmod.pressure.statistics import (
+from cfdmod.pressure.parameters import (
     BasicStatisticModel,
     ExtremeAbsoluteParamsModel,
     ExtremeGumbelParamsModel,
@@ -11,7 +11,7 @@ from cfdmod.pressure.statistics import (
     MeanEquivalentParamsModel,
     ParameterizedStatisticModel,
 )
-from cfdmod.pressure.zoning.processing import calculate_statistics
+from cfdmod.pressure.functions import calculate_statistics
 from cfdmod.utils import convert_dataframe_into_matrix
 
 
