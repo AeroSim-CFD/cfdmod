@@ -18,6 +18,7 @@
 
 - **No Unicode or special characters** in any file (notebooks, scripts, YAML, markdown).
   Use plain ASCII only: `->` not arrows, `x` not multiplication sign, `u_mean` not Greek letters, `^2` not superscripts.
+  For equations in legends, feel free to use Latex notation for equations and special symbols in Latex representation.
 - **No inline comments in python3 -c "..." terminal commands** (shell escaping issues).
 - Python >= 3.10; formatting with black + isort; linting with ruff.
 - Configuration via YAML + Pydantic v2 `BaseModel` with `from_file(path)` classmethods.
@@ -169,6 +170,8 @@ def main(
     ...
 ```
 
+Also create a global app (`__main__.py`) that uses all other typer apps as instances, for `cfdmod` main
+
 #### 3. Expose a clean top-level __init__.py
 
 ```python
@@ -223,6 +226,11 @@ Adopt consistent conventions:
 Create `cfdmod/notebook_utils.py` (or `cfdmod/viz.py`) with:
 - Quick-plot helpers for common outputs (loft surface, roughness layout, Cp maps)
 - Convenience loaders that return ready-to-use objects from a file path
+
+#### 8. Update documentation and notebook examples with new API structure
+
+Updated text and files at `docs/`. For the images, prefer to avoid using images to represent flux and use other textual representation.
+
 
 ---
 
