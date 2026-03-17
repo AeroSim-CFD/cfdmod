@@ -3,12 +3,12 @@ from pathlib import Path
 
 from json_schema_for_humans.generate import generate_from_filename
 
-from cfdmod.use_cases.loft.parameters import LoftCaseConfig
-from cfdmod.use_cases.pressure.cp_config import CpCaseConfig
-from cfdmod.use_cases.pressure.force.Cf_config import CfCaseConfig
-from cfdmod.use_cases.pressure.moment.Cm_config import CmCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_config import CeCaseConfig
-from cfdmod.use_cases.roughness_gen.parameters import GenerationParams, PositionParams
+from cfdmod.loft.parameters import LoftCaseConfig
+from cfdmod.pressure.cp_config import CpCaseConfig
+from cfdmod.pressure.force.Cf_config import CfCaseConfig
+from cfdmod.pressure.moment.Cm_config import CmCaseConfig
+from cfdmod.pressure.shape.Ce_config import CeCaseConfig
+from cfdmod.roughness.parameters import GenerationParams, PositionParams
 
 
 class GlobalSchema(

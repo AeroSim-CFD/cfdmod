@@ -65,8 +65,8 @@ __all__ = [
     "export_stl",
 ]
 
-from cfdmod.use_cases.loft import LoftParams, LoftCaseConfig, generate_loft_surface
-from cfdmod.use_cases.roughness_gen import (
+from cfdmod.loft import LoftParams, LoftCaseConfig, generate_loft_surface
+from cfdmod.roughness import (
     ElementParams,
     SpacingParams,
     BoundingBox,
@@ -77,20 +77,20 @@ from cfdmod.use_cases.roughness_gen import (
     linear_pattern,
     radial_pattern,
 )
-from cfdmod.use_cases.pressure.base_config import BasePressureConfig
-from cfdmod.use_cases.pressure.cp_config import CpConfig, CpCaseConfig
-from cfdmod.use_cases.pressure.cp_data import process_cp
-from cfdmod.use_cases.pressure.force import CfConfig, CfCaseConfig, process_Cf
-from cfdmod.use_cases.pressure.moment import CmConfig, CmCaseConfig, process_Cm
-from cfdmod.use_cases.pressure.shape import CeConfig, CeCaseConfig
-from cfdmod.use_cases.pressure.shape.Ce_data import process_Ce
-from cfdmod.use_cases.pressure.zoning import (
+from cfdmod.pressure.base_config import BasePressureConfig
+from cfdmod.pressure.cp_config import CpConfig, CpCaseConfig
+from cfdmod.pressure.cp_data import process_cp
+from cfdmod.pressure.force import CfConfig, CfCaseConfig, process_Cf
+from cfdmod.pressure.moment import CmConfig, CmCaseConfig, process_Cm
+from cfdmod.pressure.shape import CeConfig, CeCaseConfig
+from cfdmod.pressure.shape.Ce_data import process_Ce
+from cfdmod.pressure.zoning import (
     ZoningModel,
     BodyDefinition,
     BodyConfig,
     MomentBodyConfig,
 )
-from cfdmod.use_cases.s1 import (
+from cfdmod.s1 import (
     Profile,
     EUCat,
     NBRCat,
@@ -100,9 +100,9 @@ from cfdmod.use_cases.s1 import (
     get_NBR_cat_u_profile,
     S1Probe,
 )
-from cfdmod.use_cases.climate import WindProfile, fit_weibull, directional_weibull_fit
-from cfdmod.use_cases.climate import fit_gumbel, directional_gumbel_fit
-from cfdmod.use_cases.analytical import WindProfile_NBR, WindProfile_EU
+from cfdmod.climate import WindProfile, fit_weibull, directional_weibull_fit
+from cfdmod.climate import fit_gumbel, directional_gumbel_fit
+from cfdmod.analytical import WindProfile_NBR, WindProfile_EU
 from cfdmod.analysis.inflow import NormalizationParameters, InflowData
-from cfdmod.api.configs import HashableConfig
-from cfdmod.api.geometry import read_stl, export_stl
+from cfdmod.config import HashableConfig
+from cfdmod.io import read_stl, export_stl

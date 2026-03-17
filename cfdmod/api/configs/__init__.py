@@ -1,3 +1,4 @@
-__all__ = ["HashableConfig"]
+# Backward compatibility shim. Import from cfdmod.config instead.
+from cfdmod.config import HashableConfig
 
-from cfdmod.api.configs.hashable import HashableConfig
+__all__ = ["HashableConfig"]
