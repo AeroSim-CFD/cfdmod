@@ -5,7 +5,7 @@ __all__ = ["CpConfig", "CpCaseConfig"]
 import pathlib
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.base_config import BasePressureConfig
@@ -59,7 +59,7 @@ class CpConfig(HashableConfig, BasePressureConfig):
     )
 
 
-class CpCaseConfig(BaseModel):
+class CpCaseConfig(HashableConfig):
     pressure_coefficient: dict[str, CpConfig] = Field(
         ...,
         title="Pressure Coefficient configs",

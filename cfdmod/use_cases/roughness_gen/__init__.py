@@ -3,6 +3,8 @@ __all__ = [
     "GenerationParams",
     "SpacingParams",
     "OffsetDirection",
+    "BoundingBox",
+    "PositionParams",
     "RadialParams",
     "build_single_element",
     "linear_pattern",
@@ -14,6 +16,8 @@ from .parameters import (
     GenerationParams,
     SpacingParams,
     OffsetDirection,
+    BoundingBox,
+    PositionParams,
     RadialParams,
 )
 from .build_element import build_single_element

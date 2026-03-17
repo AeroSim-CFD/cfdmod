@@ -4,7 +4,7 @@ __all__ = ["CeConfig", "CeCaseConfig"]
 
 import pathlib
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
@@ -13,7 +13,7 @@ from cfdmod.use_cases.pressure.shape.zoning_config import ZoningConfig
 from cfdmod.utils import read_yaml
 
 
-class ZoningBuilder(BaseModel):
+class ZoningBuilder(HashableConfig):
     yaml: str = Field(
         ...,
         title="Path to Zoning yaml",
@@ -65,7 +65,7 @@ class CeConfig(HashableConfig, BasePressureConfig):
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 
 
-class CeCaseConfig(BaseModel):
+class CeCaseConfig(HashableConfig):
     shape_coefficient: dict[str, CeConfig] = Field(
         ...,
         title="Shape Coefficient configs",

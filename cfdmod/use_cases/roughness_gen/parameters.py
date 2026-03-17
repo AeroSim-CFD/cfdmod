@@ -1,8 +1,9 @@
 import pathlib
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 __all__ = [
@@ -20,7 +21,7 @@ OffsetDirection = Annotated[
 ]
 
 
-class SpacingParams(BaseModel):
+class SpacingParams(HashableConfig):
     spacing: tuple[float, float] = Field(
         ...,
         title="Spacing values",
@@ -41,7 +42,7 @@ class SpacingParams(BaseModel):
     )
 
 
-class ElementParams(BaseModel):
+class ElementParams(HashableConfig):
     height: float = Field(
         ...,
         title="Element height",
@@ -56,7 +57,7 @@ class ElementParams(BaseModel):
     )
 
 
-class BoundingBox(BaseModel):
+class BoundingBox(HashableConfig):
     start: tuple[float, float, float] = Field(
         ...,
         title="Start position",
@@ -67,7 +68,7 @@ class BoundingBox(BaseModel):
     )
 
 
-class PositionParams(BaseModel):
+class PositionParams(HashableConfig):
     element_params: ElementParams = Field(
         ..., title="Element parameters", description="Object with element geometry parameters"
     )
@@ -96,7 +97,7 @@ class PositionParams(BaseModel):
             raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
 
 
-class RadialParams(BaseModel):
+class RadialParams(HashableConfig):
     element_params: ElementParams = Field(
         ..., title="Element parameters", description="Object with element geometry parameters"
     )
@@ -148,7 +149,7 @@ class RadialParams(BaseModel):
             raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
 
 
-class GenerationParams(BaseModel):
+class GenerationParams(HashableConfig):
     N_elements_x: int = Field(
         ...,
         title="Number of elements in X",

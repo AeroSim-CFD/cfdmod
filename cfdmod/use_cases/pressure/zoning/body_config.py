@@ -2,12 +2,13 @@ from __future__ import annotations
 
 __all__ = ["BodyConfig"]
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.use_cases.pressure.zoning.zoning_model import ZoningModel
 
 
-class BodyDefinition(BaseModel):
+class BodyDefinition(HashableConfig):
     surfaces: list[str] = Field(
         ..., title="Body's surfaces", description="List of surfaces that compose the body"
     )
@@ -19,7 +20,7 @@ class BodyDefinition(BaseModel):
         return v
 
 
-class BodyConfig(BaseModel):
+class BodyConfig(HashableConfig):
     name: str = Field(
         ...,
         title="Body's name",

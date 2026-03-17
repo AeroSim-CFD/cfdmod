@@ -4,7 +4,7 @@ __all__ = ["CmConfig", "CmCaseConfig"]
 
 import pathlib
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
 from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.api.geometry.transformation_config import TransformationConfig
@@ -38,7 +38,7 @@ class CmConfig(HashableConfig, BasePressureConfig):
     )
 
 
-class CmCaseConfig(BaseModel):
+class CmCaseConfig(HashableConfig):
     bodies: dict[str, BodyDefinition] = Field(
         ..., title="Bodies definition", description="Named bodies definition"
     )

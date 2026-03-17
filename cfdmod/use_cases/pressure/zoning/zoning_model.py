@@ -5,10 +5,12 @@ __all__ = ["ZoningModel"]
 import itertools
 
 import pandas as pd
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
+
+from cfdmod.api.configs.hashable import HashableConfig
 
 
-class ZoningModel(BaseModel):
+class ZoningModel(HashableConfig):
     x_intervals: list[float] = Field(
         [float("-inf"), float("inf")],
         title="X intervals list",

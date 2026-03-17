@@ -1,15 +1,17 @@
 import pathlib
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import Field, ValidationError
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 __all__ = [
     "LoftCaseConfig",
+    "LoftParams",
 ]
 
 
-class LoftParams(BaseModel):
+class LoftParams(HashableConfig):
     loft_radius: float = Field(
         ...,
         title="Loft radius",
@@ -27,7 +29,7 @@ class LoftParams(BaseModel):
     )
 
 
-class LoftCaseConfig(BaseModel):
+class LoftCaseConfig(HashableConfig):
     cases: dict[str, LoftParams] = Field(
         ...,
         title="Loft cases",

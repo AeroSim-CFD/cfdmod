@@ -3,12 +3,13 @@ from __future__ import annotations
 import pathlib
 from typing import Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from cfdmod.api.configs.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 
-class ImageConfig(BaseModel):
+class ImageConfig(HashableConfig):
     name: str = Field(..., title="Image label", description="Label of the output image")
     legend_config: LegendConfig = Field(
         ..., title="Legend configuration", description="Image legend configuration"
@@ -18,7 +19,7 @@ class ImageConfig(BaseModel):
     )
 
 
-class CropConfig(BaseModel):
+class CropConfig(HashableConfig):
     width_ratio: float = Field(
         1,
         title="Crop width ratio",
@@ -35,7 +36,7 @@ class CropConfig(BaseModel):
     )
 
 
-class OverlayImageConfig(BaseModel):
+class OverlayImageConfig(HashableConfig):
     image_path: pathlib.Path = Field(
         ...,
         title="overlay image path",
@@ -71,7 +72,7 @@ class OverlayImageConfig(BaseModel):
         raise ValueError("Image path must be a string or pathlib.Path")
 
 
-class OverlayTextConfig(BaseModel):
+class OverlayTextConfig(HashableConfig):
     text: str = Field(
         ...,
         title="overlay image path",
@@ -94,7 +95,7 @@ class OverlayTextConfig(BaseModel):
     )
 
 
-class TransformationConfig(BaseModel):
+class TransformationConfig(HashableConfig):
     translate: tuple[float, float, float] = Field(
         (0, 0, 0),
         title="Translate vector",
@@ -117,7 +118,7 @@ class TransformationConfig(BaseModel):
     )
 
 
-class LegendConfig(BaseModel):
+class LegendConfig(HashableConfig):
     label: str = Field(..., title="Legend name", description="The name of the legend in the image")
     range: tuple[float, float] | None = Field(
         None, title="Legend range values", description="Range of values in legend"
@@ -149,7 +150,7 @@ class LegendConfig(BaseModel):
             return data
 
 
-class ColormapConfig(BaseModel):
+class ColormapConfig(HashableConfig):
     value_edges: list[float] = Field(
         ...,
         title="Rotate vector",
@@ -162,7 +163,7 @@ class ColormapConfig(BaseModel):
     )
 
 
-class CameraConfig(BaseModel):
+class CameraConfig(HashableConfig):
     zoom: float = Field(1, title="Camera zoom", gt=0)
     offset_position: tuple[float, float] = Field(
         (0, 0),
@@ -177,7 +178,7 @@ class CameraConfig(BaseModel):
     )
 
 
-class ValueTagsConfig(BaseModel):
+class ValueTagsConfig(HashableConfig):
     spacing: tuple[float, float]|None = Field(None, description="Spacing (x, y)")
     padding: tuple[float, float, float, float]|None = Field(
         None, description="Padding (left, right, bottom, top)"
@@ -242,7 +243,7 @@ class ValueTagsConfig(BaseModel):
 
 
 
-class ProjectionConfig(BaseModel):
+class ProjectionConfig(HashableConfig):
     file_path: pathlib.Path = Field(
         ...,
         title="Polydata file path",
@@ -267,7 +268,7 @@ class ProjectionConfig(BaseModel):
     )
 
 
-class SnapshotConfig(BaseModel):
+class SnapshotConfig(HashableConfig):
     projections: dict[str, ProjectionConfig] = Field(
         ..., title="Labels configuration", description="Parameters for the projection labels"
     )
