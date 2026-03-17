@@ -27,220 +27,111 @@
 
 ---
 
-## Current architecture
+## Current architecture (v2.0)
+
+The library is API-first. All public symbols are importable from the top-level package:
+
+```python
+from cfdmod import LoftParams, generate_loft_surface
+from cfdmod import RadialParams, radial_pattern
+from cfdmod import mesh_summary, show_config, load_lnas
+```
+
+### Directory layout
 
 ```
 cfdmod/
     cfdmod/
-        api/
+        __init__.py         Public API (~69 exported symbols)
+        __main__.py         Global typer CLI (python -m cfdmod loft|roughness)
+        notebook_utils.py   Notebook helpers: mesh_summary, show_config, load_lnas
+        io/
             geometry/       STL I/O (export_stl, read_stl)
-            configs/        HashableConfig base (Pydantic + SHA256)
             vtk/            VTK/ParaView probe and write utilities
+        config/
+            hashable.py     HashableConfig base (Pydantic + SHA256, to_dict/to_yaml)
         analysis/
             inflow/         InflowData class and functions
-        use_cases/
-            altimetry/      Surface section analysis
-            analytical/     Analytical wind/aero models
-            climate/        Wind rose, Gumbel, Weibull, Lawson
-            loft/           Terrain loft surface generation
-            pressure/       Cp/Cf/Cm/Ce post-processing
-            roughness_gen/  Roughness element generation (linear + radial)
-            s1/             S1 profile analysis
-            snapshot/       ParaView snapshot automation
+        loft/               Terrain loft surface generation
+        roughness/          Roughness element generation (linear + radial)
+        pressure/           Cp/Cf/Cm/Ce post-processing
+        altimetry/          Surface section analysis
+        climate/            Wind rose, Gumbel, Weibull, Lawson
+        analytical/         Analytical wind/aero models
+        s1/                 S1 profile analysis
+        snapshot/           ParaView snapshot automation
         logger.py
         utils.py            read_yaml, HDF5 helpers, dataframe utilities
     tests/                  Mirror of cfdmod/ structure
     fixtures/               YAML configs + STL/LNAS mesh files for tests
     notebooks/              Jupyter notebooks for analysis and generation
+    docs/                   Sphinx documentation
 ```
 
-### Recurring patterns inside each use_case
-
-Every CLI use case follows the same layout:
+### Layout inside each domain module
 
 ```
-use_case/
-    __main__.py     python -m entry point
-    main.py         main(*args) with argparse; orchestrates the pipeline
-    parameters.py   Pydantic models; from_file(path) reads YAML
+module/
+    __init__.py     Exports all public symbols for the module
+    __main__.py     python -m entry point -> calls cli.app()
+    cli.py          Thin typer app (uses run.py functions)
+    run.py          Pure Python orchestration (no argparse, no file paths)
+    parameters.py   Pydantic config models with from_file/from_dict/to_dict/to_yaml
     functions.py    Core computational logic
     [helpers].py    Supporting modules
-    __init__.py     Exports the public symbols
 ```
 
 Data flow:
 ```
 YAML file -> Pydantic model (parameters.py)
-          -> main() orchestration (main.py)
+          -> run() orchestration (run.py)
           -> core functions (functions.py)
-          -> output files (STL, CSV, VTK, ...)
+          -> output objects (returned to caller or written by cli.py)
 ```
+
+### CLI entry points
+
+Each module is runnable as a module and as a subcommand of the global CLI:
+
+```bash
+python -m cfdmod.loft --config ... --surface ... --output ...
+python -m cfdmod.roughness --config ... --output ... --mode radial
+
+python -m cfdmod loft --config ... --surface ... --output ...
+python -m cfdmod roughness --config ... --output ...
+```
+
+After install, the `cfdmod` shell command is also available (via `[project.scripts]`).
+
+### Config models
+
+All config classes inherit from `HashableConfig` and support:
+
+```python
+params = LoftParams.from_file("config.yaml")   # from YAML
+params = LoftParams.from_dict({...})            # from dict
+params = LoftParams(field=value, ...)           # from kwargs
+
+params.to_dict()   # -> dict
+params.to_yaml()   # -> YAML string
+```
+
+### Backward-compatibility shims
+
+`cfdmod/api/` and `cfdmod/use_cases/` are retained as thin re-export shims so that
+existing scripts using old import paths continue to work. Do not add new code there.
 
 ---
 
-## Current limitations and dissatisfaction
+## Notebook utilities
 
-The structure above was designed around CLI execution and YAML-driven batch jobs.
-This makes it awkward to use as a Python library from notebooks or other programs:
+`cfdmod.notebook_utils` provides lightweight helpers for exploratory work:
 
-1. **No top-level public API.** `cfdmod/__init__.py` is empty. To use loft generation
-   you must know to import `from cfdmod.use_cases.loft.functions import generate_loft_surface`.
+- `mesh_summary(path)` - print triangle/vertex counts and bounding box for .lnas or .stl
+- `show_config(config)` - pretty-print any HashableConfig as a dict
+- `load_lnas(path)` - load an .lnas file and return the LnasFormat object
 
-2. **main() functions mix CLI parsing with orchestration.** There is no clean
-   `run(config, data)` function callable from Python without going through argparse.
-
-3. **Configuration objects are YAML-first.** `LoftParams`, `RadialParams`, etc. can be
-   constructed from Python dicts but the pattern is not documented or enforced.
-   Notebooks end up duplicating parameter logic instead of reusing config models.
-
-4. **The api/ folder is not the API.** It contains low-level I/O helpers (STL, VTK)
-   rather than being the programmatic interface to domain functionality.
-
-5. **Deep import paths for common operations.** Users write long, fragile imports
-   instead of `from cfdmod import generate_loft_surface`.
-
-6. **Functions and parameters are split across files with no enforced contract.**
-   There is no single place that describes what inputs and outputs a use_case exposes.
-
+All three are also exported from the top-level `cfdmod` package.
+[
 ---
 
-## Proposed refactoring towards an API-first structure
-
-The goal is to make cfdmod usable as:
-```python
-from cfdmod.loft import LoftParams, generate_loft_surface
-from cfdmod.roughness import RadialParams, radial_pattern
-```
-
-without needing to know internal file layout. The CLI entry points should be thin
-wrappers around this library API, not the other way around.
-
-### Proposed changes (for review)
-
-#### 1. Flatten use_cases into top-level domain modules
-
-Rename `use_cases/` to domain modules directly under `cfdmod/`:
-
-```
-cfdmod/
-    loft/
-    roughness/
-    pressure/
-    altimetry/
-    climate/
-    s1/
-    snapshot/
-    analysis/
-```
-
-Each module keeps its internal structure but its `__init__.py` exports everything
-a user needs: params classes, core functions, and any plot helpers.
-
-#### 2. Separate library from CLI in each module
-
-Split `main.py` into two parts:
-
-- `run.py` (or a `run()` function) - pure Python orchestration, takes config objects and
-  returns results. No argparse, no file I/O assumptions.
-- `cli.py` - thin typer app that calls `run()`. All CLI modules must use typer instead
-  of argparse. Typer leverages type annotations directly, keeping CLI definitions concise
-  and consistent with the rest of the codebase.
-
-Example (loft):
-```python
-# loft/run.py
-def generate_loft(params: LoftParams, geom: LnasGeometry) -> LnasGeometry:
-    ...
-
-# loft/cli.py
-import typer
-import pathlib
-
-app = typer.Typer()
-
-@app.command()
-def main(
-    config: pathlib.Path = typer.Option(..., help="Path to loft config file"),
-    surface: pathlib.Path = typer.Option(..., help="Path to STL surface file"),
-    output: pathlib.Path = typer.Option(..., help="Output path"),
-):
-    params = LoftParams.from_file(config)
-    geom = LnasFormat.from_file(surface).geometry
-    result = generate_loft(params, geom)
-    ...
-```
-
-Also create a global app (`__main__.py`) that uses all other typer apps as instances, for `cfdmod` main
-
-#### 3. Expose a clean top-level __init__.py
-
-```python
-# cfdmod/__init__.py
-from cfdmod.loft import LoftParams, generate_loft_surface
-from cfdmod.roughness import RadialParams, radial_pattern, LinearParams, linear_pattern
-from cfdmod.pressure import ...
-```
-
-Users and notebooks can then do `import cfdmod; cfdmod.generate_loft_surface(...)`.
-
-#### 4. Make config models notebook-friendly
-
-Params classes should be constructible from keyword arguments as naturally as from YAML:
-
-```python
-# Currently works but undocumented:
-params = RadialParams(element_params=..., r_start=300, ...)
-
-# Goal: this should be the primary documented interface, with from_file as a convenience:
-params = RadialParams.from_dict({...})
-params = RadialParams.from_file("config.yaml")
-```
-
-Add `to_dict()` / `to_yaml()` methods so notebook users can persist their configs.
-
-#### 5. Reorganize api/ to infrastructure/
-
-Rename `api/` to `infrastructure/` (or `io/`) to better reflect its role as low-level
-I/O and format helpers, distinct from the domain API:
-
-```
-cfdmod/
-    io/
-        stl.py
-        vtk.py
-        lnas.py       thin wrappers around aerosim-lnas
-        yaml.py
-    config/
-        base.py       HashableConfig and other base classes
-```
-
-#### 6. Standardize function signatures across modules
-
-Adopt consistent conventions:
-- Core functions take typed config objects + data objects, return data objects.
-- No functions take file paths (that belongs in CLI/IO layer).
-- No functions write files (return arrays/geometries; let the caller decide format).
-
-#### 7. Move notebook-specific helpers to a notebooks/ support module
-
-Create `cfdmod/notebook_utils.py` (or `cfdmod/viz.py`) with:
-- Quick-plot helpers for common outputs (loft surface, roughness layout, Cp maps)
-- Convenience loaders that return ready-to-use objects from a file path
-
-#### 8. Update documentation and notebook examples with new API structure
-
-Updated text and files at `docs/`. For the images, prefer to avoid using images to represent flux and use other textual representation.
-
-
----
-
-## Priority order for refactoring
-
-Suggested sequence (each step is independently mergeable):
-
-1. Expose a documented `__init__.py` with current symbols (no restructuring, low risk).
-2. Split `main.py` -> `run.py` + `cli.py` for loft and roughness_gen as a pilot.
-3. Add `to_dict()` / `to_yaml()` to all Pydantic param classes.
-4. Rename `api/` -> `io/` + `config/`.
-5. Flatten `use_cases/` to top-level domain modules.
-6. Update all notebooks and tests to use the new import paths.
