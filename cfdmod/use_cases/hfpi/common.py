@@ -41,6 +41,26 @@ def get_stats_dct(
     raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
 
 
+def get_stats_dct_gumbell(
+    dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"], dt:float|None=None
+) -> dict[str, np.ndarray] | dict[str, float]:
+    if stats_type in ["max","min"]:
+        return {
+            k: gumbel_extreme_value(
+                hist_series=v,
+                dt=dt,
+                peak_duration=3,
+                event_duration=10*60,
+                extreme_type=stats_type,
+                n_subdivisions=10,
+                non_exceedance_probability=0.78,
+            )
+            for k, v in dct.items()
+        }
+    elif stats_type == "mean":
+        return {k: v.mean(axis=0) for k, v in dct.items()}
+    raise ValueError(f"Invalid stats type: {stats_type!r}, supports only 'min', 'max', 'mean'")
+
 def get_stats_dct_peak_factor(
     dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"], peak_factor:float,
 ) -> dict[str, np.ndarray] | dict[str, float]:
@@ -121,3 +141,101 @@ def rotate_values_xy(values_proj: dict[str, np.ndarray], angle_rot: float):
 
 def get_building_angle_rotate_across_along_wind(wind_direction: float, building_rotation: float):
     return (wind_direction - building_rotation + 90 + 360) % 360
+
+
+def first_derivative(series: dict[str, np.ndarray], dt: float) -> dict[str, np.ndarray]:
+    velocity = {}
+    for axis in series:
+        disp = disp_full[axis]
+        v = np.zeros_like(disp, dtype=np.float32)
+        # backward diference for internal points
+        v[1:] = (disp[1:] - disp[:-1]) / dt
+        # Forward difference for first point
+        v[0] = (disp[1]- disp[0]) / dt
+        velocity[axis] = v
+    return velocity
+
+def second_derivative(series: dict[str, np.ndarray], dt: float) -> dict[str, np.ndarray]:
+    acceleration = {}
+    for axis in series:
+        disp = series[axis]
+        acc = np.zeros_like(disp, dtype=np.float32)
+        # Central difference for internal points
+        acc[1:-1] = (disp[2:] - 2 * disp[1:-1] + disp[:-2]) / dt**2
+        # Forward/backward difference for boundaries
+        acc[0] = (disp[2] - 2 * disp[1] + disp[0]) / dt**2
+        acc[-1] = (disp[-1] - 2 * disp[-2] + disp[-3]) / dt**2
+        acceleration[axis] = acc
+    return acceleration
+
+def fit_gumbel_model(
+    data: np.ndarray, 
+    event_duration: float, 
+    non_exceedance_probability: float
+) -> float:
+    """Fits the Gumbel model to predict extreme events
+
+    Args:
+        data (np.ndarray): Historic series
+        params (ExtremeGumbelParamsModel): Parameters for Gumbel model analysis
+        sample_duration (float): Duration of the sample
+
+    Returns:
+        float: Gumbel value for data
+    """
+    N = len(data)
+    yR = -np.log(-np.log(non_exceedance_probability))
+    y = [-np.log(-np.log(i / (N + 1))) for i in range(1, N + 1)]
+    A = np.vstack([y, np.ones(len(y))]).T
+    a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
+    U_T1 = U_T0 + a_inv * np.log(event_duration / (event_duration / N))
+    extreme_val = a_inv * yR + U_T1  # This is the design value
+
+    return extreme_val
+
+def gumbel_extreme_value(
+    hist_series: np.ndarray,
+    dt: float,
+    peak_duration: float,
+    event_duration: float,
+    extreme_type: Literal['min','max'],
+    n_subdivisions: int = 10,
+    non_exceedance_probability: float = 0.78,
+) -> tuple[float, float]:
+    """Apply extreme values analysis to coefficient historic series
+
+    Args:
+        params (ExtremeGumbelParamsModel): Parameters for extreme values calculation
+        time_scale_factor (float): Value for converting time scales
+        timestep_arr (np.ndarray): Array of simulated timesteps
+        hist_series (np.ndarray): Coefficient historic series
+
+    Returns:
+        tuple[float, float]: Tuple with (min, max) extreme values
+    """
+
+    T0 = event_duration
+    window_size = max(int(peak_duration / dt), 1)
+    smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
+
+    sub_arrays = np.array_split(smooth_parent_cp, n_subdivisions)
+
+    if extreme_type == "max":
+        v_peak = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
+        v_peak = np.sort(v_peak)
+    
+    if extreme_type == "min":
+        v_peak = np.array([np.min(sub_arr) for sub_arr in sub_arrays])
+        v_peak = np.sort(v_peak)[::-1]
+
+    peak_extreme_val = fit_gumbel_model(    
+        data=v_peak, 
+        event_duration=event_duration, 
+        event_duration=event_duration,
+        non_exceedance_probability=non_exceedance_probability
+    )
+
+    # It may return NaN values if the time series is invalid or has very few points
+    peak_extreme_val = 0 if np.isnan(peak_extreme_val) else peak_extreme_val
+
+    return peak_extreme_val
