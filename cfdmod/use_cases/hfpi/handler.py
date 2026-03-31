@@ -148,10 +148,10 @@ class MultipleAnalysisHandler(BaseModel):
         structural_data: dynamic.HFPIStructuralData,
         directions: list[float],
         xis: list[float],
-        use_kd: list[bool],
-        integral_scale_multiplier: list[bool],
-        frequency_multipliers: list[float],
         recurrence_periods: list[float],
+        use_kd: list[bool]=[False],
+        frequency_multipliers: list[float]=[1],
+        integral_scale_multiplier: list[bool]=[1],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
