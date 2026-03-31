@@ -69,7 +69,6 @@ def transform_to_cp(
     fluid_density: float,
     macroscopic_type: Literal["pressure", "rho"],
     characteristic_length: float,
-    time_scale_multiplier: float,
     columns_drop: list[str] | None = None,
     columns_process: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -107,7 +106,7 @@ def transform_to_cp(
 
     df_cp = pd.DataFrame(result.T, columns=columns_process)
     df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
-        characteristic_length / reference_vel * time_scale_multiplier
+        characteristic_length / reference_vel
     )
 
     return df_cp
@@ -156,7 +155,6 @@ def process_single_raw_group(
                 body_data=body_df,
                 reference_vel=cp_config.simul_U_H,
                 fluid_density=cp_config.fluid_density,
-                time_scale_multiplier=cp_config.time_scale_multiplier,
                 macroscopic_type=cp_config.macroscopic_type,
                 characteristic_length=cp_config.simul_characteristic_length,
                 columns_drop=columns_drop,
