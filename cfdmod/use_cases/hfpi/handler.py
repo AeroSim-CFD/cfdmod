@@ -439,6 +439,9 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
   
+    def join_by_integral_scale_multiplier(self):
+        return self.join_by(lambda params: params.integral_scale_multiplier)
+  
     def join_by_frequency_multiplier(self):
         return self.join_by(lambda params: params.frequency_multiplier)
         
@@ -452,6 +455,9 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
 
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
+    
+    def filter_by_integral_scale_multiplier(self, filter: bool):
+        return self.join_by_integral_scale_multiplier()[filter]
 
     def filter_by_frequency_multiplier(self, filter: bool):
         return self.join_by_frequency_multiplier()[filter]
