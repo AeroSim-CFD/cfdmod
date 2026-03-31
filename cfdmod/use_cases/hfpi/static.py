@@ -19,6 +19,7 @@ class DimensionalData(BaseModel):
     U_H: float
     height: float
     base: float
+    integral_scale_multiplier: float
 
     @property
     def dynamic_pressure(self):
@@ -30,7 +31,7 @@ class DimensionalData(BaseModel):
 
     @property
     def time_normalization_factor(self):
-        return self.CST
+        return self.CST*self.integral_scale_multiplier
 
     @property
     def force_normalization_factor(self):

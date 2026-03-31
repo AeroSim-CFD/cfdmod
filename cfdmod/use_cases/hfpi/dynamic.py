@@ -439,7 +439,6 @@ class HFPIResults(BaseModel):
             ax: np.column_stack(acceleration_ls[ax])
             for ax in acceleration_ls.keys()
         }
-        
         return accelerations_full
 
     def get_point_floor_acceleration(
@@ -479,13 +478,13 @@ class HFPIResults(BaseModel):
             return acc_mag
 
     def get_floor_max_acceleration(
-        self, cm_position: tuple[float,float], pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
+        self, cm_position: tuple[float,float], pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4
     ) -> float:
-        if peak_method == "extreme":
-            accs = self.get_point_floor_acceleration(cm_position, pos)
-            ac_mag = (accs['x']**2+accs['y']**2)**0.5
+        accs = self.get_point_floor_acceleration(cm_position, pos)
+        if peak_method == "gumbel":
+            acc_mag = (accs['x']**2+accs['y']**2)**0.5
             acc_extreme = common.gumbel_extreme_value(
-                hist_series=ac_mag,
+                hist_series=acc_mag,
                 dt=self.delta_t,
                 peak_duration=3,
                 event_duration=10*60,
@@ -494,17 +493,18 @@ class HFPIResults(BaseModel):
                 non_exceedance_probability=0.78,
             )
             return acc_extreme
-        else:
-            accs = self.get_point_floor_acceleration(cm_position, pos)
+        elif peak_method == 'extreme':
+            acc_mag = (accs['x']**2+accs['y']**2)**0.5
+            return acc_mag.max()
+        elif peak_method == 'peak-factor':
             acc_peak = {ax: peak_factor*acc.std(axis=0) for ax, acc in accs.items()}
-            acc_mag = (acc_peak['x']**2+acc_peak['y']**2)**0.5
-            return acc_mag
+            return (acc_peak['x']**2+acc_peak['y']**2)**0.5
 
     def get_stats_forces_static_eq(
         self, 
         cm_positions: pd.DataFrame,
         stats_type: Literal["min", "max", "mean"], 
-        peak_method: Literal["extreme", "peak-factor"]="extreme", 
+        peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel",
         peak_factor: float=4
     ):
         forces, _ = move_loads_ref_from_CM_to_origin(
@@ -512,7 +512,9 @@ class HFPIResults(BaseModel):
         )
         
         if peak_method=="extreme":
-            return common.get_stats_dct(forces, stats_type, self.delta_t)
+            return common.get_stats_dct(forces, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(forces, stats_type, self.delta_t)
         else:
             return common.get_stats_dct_peak_factor(forces, stats_type, peak_factor)
         
@@ -520,7 +522,7 @@ class HFPIResults(BaseModel):
         self, 
         cm_positions: pd.DataFrame,
         stats_type: Literal["min", "max", "mean"], 
-        peak_method: Literal["extreme", "peak-factor"]="extreme", 
+        peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel",
         peak_factor: float=4
     ):
         _, moments = move_loads_ref_from_CM_to_origin(
@@ -528,28 +530,34 @@ class HFPIResults(BaseModel):
         )
         
         if peak_method=="extreme":
-            return common.get_stats_dct(moments, stats_type, self.delta_t)
+            return common.get_stats_dct(moments, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(moments, stats_type, self.delta_t)
         else:
             return common.get_stats_dct_peak_factor(moments, stats_type, peak_factor)
 
 
-    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
         forces, _ = move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         global_forces = common.get_global_dct(forces)
         if peak_method=="extreme":
-            return common.get_stats_dct(global_forces, stats_type, self.delta_t)
+            return common.get_stats_dct(global_forces, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(global_forces, stats_type, self.delta_t)
         else:
             return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
         
-    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
         _, moments = move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         global_moments = common.get_global_dct(moments)
         if peak_method=="extreme":
-            return common.get_stats_dct(global_moments, stats_type, self.delta_t)
+            return common.get_stats_dct(global_moments, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(global_moments, stats_type, self.delta_t)
         else:
             return common.get_stats_dct_peak_factor(global_moments, stats_type, peak_factor)
 
@@ -622,39 +630,3 @@ def solve_hfpi(
         wps=wps,
         gen_displacements=all_gen_displacements[n_mode],
     )
-
-
-# def filter_with_wavelet(
-#     generalized_forces: pd.DataFrame,
-#     structural_data: HFPIStructuralData,
-#     dt: float, #timestep
-#     filter_percentage: float = 99.5,
-# ):
-#     """Apply filter using wavelet transform. Identify outliers based on rayleight regression of coefficientes and limits values to the percentile chosen"""
-    
-#     window_size_1s = 1/dt
-#     df_modes = structural_data.df_modes
-#     reference_freq = df_modes['frequency'].iloc[0] #define window based on first mode
-#     g_std = int(3*(1/reference_freq)*window_size_1s)
-#     gauss_window = scipy.signal.windows.gaussian(8*g_std, std=g_std, sym=True)
-#     SFT = scipy.signal.ShortTimeFFT(gauss_window, hop=2, fs=1/dt, scale_to='psd')
-#     f_window = 4
-    
-#     f_ids_range = set()
-#     for f_target in df_modes["frequency"]:
-#         f_idx = np.argmin(np.abs(SFT.f - f_target))
-#         f_ids_range.update(range(f_idx-f_window, f_idx+f_window))
-#     f_ids_range = list(f_ids_range)
-    
-#     for mode_id in generalized_forces.columns:
-#         Fxx = SFT.stft(generalized_forces[mode_id].to_numpy())
-#         for f_id in f_ids_range:
-#             Z = Fxx[f_id, :]
-#             Ampl_freq = np.abs(Z) 
-#             sigma_hat = np.sqrt((Ampl_freq**2).mean() / 2.0)
-#             ray = scipy.stats.rayleigh(loc=0.0, scale=sigma_hat)
-#             A_lim = ray.ppf(filter_percentage/100)
-#             mask_ampltoohigh = (Ampl_freq>A_lim)
-#             Fxx[f_id, mask_ampltoohigh] = Z[mask_ampltoohigh]/Ampl_freq[mask_ampltoohigh]*A_lim
-#         generalized_forces[mode_id] = SFT.istft(Fxx, k1=generalized_forces.shape[0])
-#     return generalized_forces

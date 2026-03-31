@@ -29,6 +29,7 @@ def fill_forces_floors(forces_df: pd.DataFrame, n_floors: int):
 def series_cross_product(arm: np.ndarray, vx: pd.DataFrame|np.ndarray, vy: pd.DataFrame|np.ndarray) -> pd.DataFrame:
     return arm[0]*vy - arm[1]*vx
 
+
 def get_stats_dct(
     dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"]
 ) -> dict[str, np.ndarray] | dict[str, float]:
@@ -168,30 +169,23 @@ def second_derivative(series: dict[str, np.ndarray], dt: float) -> dict[str, np.
         acceleration[axis] = acc
     return acceleration
 
-def fit_gumbel_model(
-    data: np.ndarray, 
-    event_duration: float, 
-    non_exceedance_probability: float
-) -> float:
-    """Fits the Gumbel model to predict extreme events
+def moving_filter(hist_series: np.ndarray, dt: float, peak_duration: float) -> np.ndarray:
+    window_size = max(int(peak_duration / dt), 1)
+    smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
+    return smooth_parent_cp
 
-    Args:
-        data (np.ndarray): Historic series
-        params (ExtremeGumbelParamsModel): Parameters for Gumbel model analysis
-        sample_duration (float): Duration of the sample
-
-    Returns:
-        float: Gumbel value for data
-    """
-    N = len(data)
-    yR = -np.log(-np.log(non_exceedance_probability))
-    y = [-np.log(-np.log(i / (N + 1))) for i in range(1, N + 1)]
-    A = np.vstack([y, np.ones(len(y))]).T
-    a_inv, U_T0 = np.linalg.lstsq(A, data, rcond=None)[0]
-    U_T1 = U_T0 + a_inv * np.log(event_duration / (event_duration / N))
-    extreme_val = a_inv * yR + U_T1  # This is the design value
-
-    return extreme_val
+def reescale_event_duration_peak(
+    loc: float, 
+    scale: float, 
+    original_time: float, 
+    new_time: float, 
+    extreme_type: Literal['min','max']
+) -> tuple[float, float]:
+    
+    sign = 1 if extreme_type=="max" else -1
+    new_scale = scale
+    new_loc = loc + sign* scale*np.log(new_time/original_time)
+    return new_loc, new_scale
 
 def gumbel_extreme_value(
     hist_series: np.ndarray,
@@ -214,28 +208,23 @@ def gumbel_extreme_value(
         tuple[float, float]: Tuple with (min, max) extreme values
     """
 
-    T0 = event_duration
-    window_size = max(int(peak_duration / dt), 1)
-    smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
-
-    sub_arrays = np.array_split(smooth_parent_cp, n_subdivisions)
-
+    smoothed_parent = moving_filter(hist_series, dt, peak_duration)
+    
+    sub_arrays = np.array_split(smoothed_parent, n_subdivisions)
+    orig_time_duration = (len(hist_series)*dt/n_subdivisions)
+    
     if extreme_type == "max":
         v_peak = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
-        v_peak = np.sort(v_peak)
-    
+        from scipy.stats import gumbel_r
+        loc, scale = gumbel_r.fit(v_peak)
+        loc, scale = reescale_event_duration_peak(loc, scale, orig_time_duration, event_duration, extreme_type)
+        p = non_exceedance_probability
+        return gumbel_r.ppf(p, loc=loc, scale=scale)
+
     if extreme_type == "min":
         v_peak = np.array([np.min(sub_arr) for sub_arr in sub_arrays])
-        v_peak = np.sort(v_peak)[::-1]
-
-    peak_extreme_val = fit_gumbel_model(    
-        data=v_peak, 
-        event_duration=event_duration, 
-        event_duration=event_duration,
-        non_exceedance_probability=non_exceedance_probability
-    )
-
-    # It may return NaN values if the time series is invalid or has very few points
-    peak_extreme_val = 0 if np.isnan(peak_extreme_val) else peak_extreme_val
-
-    return peak_extreme_val
+        from scipy.stats import gumbel_l
+        loc, scale = gumbel_l.fit(v_peak)
+        loc, scale = reescale_event_duration_peak(loc, scale, orig_time_duration, event_duration, extreme_type)
+        p = 1 - non_exceedance_probability
+        return gumbel_l.ppf(p, loc=loc, scale=scale)

@@ -33,18 +33,18 @@ class HFPICaseParameters(BaseModel, frozen=True):
     direction: float
     xi: float
     frequency_multiplier: float = 1
+    integral_scale_multiplier: float = 1
     recurrence_period: float
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
-    apply_wavelet_filter: bool
 
     def __hash__(self):
         return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier))
 
     def get_results_filename(self, base_folder: pathlib.Path):
         filename = f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}"
-        if self.apply_wavelet_filter:
-            filename += f"_wave{self.apply_wavelet_filter}"
+        if self.integral_scale_multiplier!=1:
+            filename += f"_int{self.integral_scale_multiplier}"
         if self.frequency_multiplier!=1:
             filename += f"_freq{self.frequency_multiplier}"
         filename += ".pickle"
@@ -81,9 +81,8 @@ def solve_hfpi_case(
         structural_data=hfpi_params.structural_data,
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
-        xi=parameters.xi,
-        apply_wavelet_filter=parameters.apply_wavelet_filter,
-        frequency_multiplier=parameters.frequency_multiplier,
+        xi=hfpi_params.xi,
+        frequency_multiplier=hfpi_params.frequency_multiplier,
     )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
@@ -103,6 +102,7 @@ class _HFPIParams(BaseModel):
     dim_data: static.DimensionalData
     forces: static.StaticForcesData
     xi: float
+    frequency_multiplier: float
 
 
 class MultipleAnalysisHandler(BaseModel):
@@ -131,6 +131,7 @@ class MultipleAnalysisHandler(BaseModel):
             U_H=U_h,
             base=dim.base,
             height=dim.height,
+            integral_scale_multiplier=parameters.integral_scale_multiplier,
         )
 
         return _HFPIParams(
@@ -138,6 +139,7 @@ class MultipleAnalysisHandler(BaseModel):
             dim_data=dim_data,
             forces=forces,
             xi=parameters.xi,
+            frequency_multiplier=parameters.frequency_multiplier,
         )
 
     def generate_combined_parameters(
@@ -147,9 +149,9 @@ class MultipleAnalysisHandler(BaseModel):
         directions: list[float],
         xis: list[float],
         use_kd: list[bool],
+        integral_scale_multiplier: list[bool],
         frequency_multipliers: list[float],
         recurrence_periods: list[float],
-        apply_wavelet_filter: list[bool]=[False],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
             HFPICaseParameters(
@@ -158,11 +160,11 @@ class MultipleAnalysisHandler(BaseModel):
                 use_kd=kd,
                 xi=xi,
                 structural_data=structural_data,
-                apply_wavelet_filter=apply_wavelet,
+                integral_scale_multiplier=int_mult,
                 frequency_multiplier=frequency_multiplier,
             )
-            for direction, xi, kd, period, apply_wavelet, frequency_multiplier in itertools.product(
-                *[directions, xis, use_kd, recurrence_periods, apply_wavelet_filter, frequency_multipliers]
+            for direction, xi, kd, period, frequency_multiplier, int_mult in itertools.product(
+                *[directions, xis, use_kd, recurrence_periods, frequency_multipliers, integral_scale_multiplier]
             )
         ]
         return cases_parameters
@@ -436,10 +438,7 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
 
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
-
-    def join_by_wavelet(self):
-        return self.join_by(lambda params: params.apply_wavelet_filter)
-    
+  
     def join_by_frequency_multiplier(self):
         return self.join_by(lambda params: params.frequency_multiplier)
         
@@ -454,8 +453,5 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
 
-    def filter_by_wavelet(self, filter: bool):
-        return self.join_by_wavelet()[filter]
-    
     def filter_by_frequency_multiplier(self, filter: bool):
         return self.join_by_frequency_multiplier()[filter]
