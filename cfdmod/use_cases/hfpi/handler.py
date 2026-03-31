@@ -4,6 +4,7 @@ import itertools
 import pathlib
 import pickle
 import time
+import copy
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from typing import Callable, Literal, TypeVar
@@ -68,21 +69,25 @@ def solve_hfpi_case(
 
     hfpi_params = hfpi_analysis.generate_hfpi_solver_params(parameters)
     floors_heights = hfpi_params.structural_data.df_floors["Z"].to_numpy()
+    cm_positions = hfpi_params.structural_data.df_floors[['XR','YR']]
 
     t0 = time.time()
     logger.info(f"Solving static for: {parameters.model_dump_json()}")
     static_results = static.solve_static_forces(
-        forces=hfpi_params.forces, dim_data=hfpi_params.dim_data, floors_heights=floors_heights
+        forces=hfpi_params.forces, dim_data=hfpi_params.dim_data, floors_heights=floors_heights, cm_positions=cm_positions
     )
     logger.info(f"Solved static in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
     logger.info(f"Solving HFPI for: {parameters.model_dump_json()}")
+    
+    structural_data_modified_frequency = copy.deepcopy(hfpi_params.structural_data)
+    structural_data_modified_frequency.df_modes[["frequency","wp"]] = structural_data_modified_frequency.df_modes[["frequency","wp"]]*hfpi_params.frequency_multiplier
+    structural_data_modified_frequency.df_modes["period"] = structural_data_modified_frequency.df_modes["period"]/hfpi_params.frequency_multiplier
     hfpi_results = dynamic.solve_hfpi(
-        structural_data=hfpi_params.structural_data,
+        structural_data=structural_data_modified_frequency,
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
         xi=hfpi_params.xi,
-        frequency_multiplier=hfpi_params.frequency_multiplier,
     )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
@@ -280,46 +285,47 @@ class DirectionalAnalysisResults(BaseModel):
     def join_by_direction(self):
         return {d: DirectionalAnalysisResults(results={d: res}) for d, res in self.results.items()}
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_forces_static(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_moments_static(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+            v.dynamic_res.get_stats_global_forces_static_eq(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+            v.dynamic_res.get_stats_global_moments_static_eq(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        dct_static = self.get_stats_global_forces_static(stats_type)
-        dct_dyn = self.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+    def get_stats_effective_global_forces(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        dct_static = self.get_stats_global_forces_static(cm_positions, stats_type, peak_method, peak_factor)
+        dct_dyn = self.get_stats_global_forces_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
-    def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        dct_static = self.get_stats_global_moments_static(stats_type)
-        dct_dyn = self.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+    def get_stats_effective_global_moments(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        dct_static = self.get_stats_global_moments_static(cm_positions, stats_type, peak_method, peak_factor)
+        dct_dyn = self.get_stats_global_moments_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
     def get_global_peaks_by_direction(
         self,
+        cm_positions: pd.DataFrame,
         variable_types: list[Literal["static", "hfpi", "effective"]] = [
             "static",
             "hfpi",
@@ -359,9 +365,9 @@ class DirectionalAnalysisResults(BaseModel):
             }
             for name in vars_use:
                 c = calls[name]
-                min_vals = c("min", peak_method, peak_factor)
-                max_vals = c("max", peak_method, peak_factor)
-                mean_vals = c("mean", peak_method, peak_factor)
+                min_vals = c(cm_positions, "min", peak_method, peak_factor)
+                max_vals = c(cm_positions, "max", peak_method, peak_factor)
+                mean_vals = c(cm_positions, "mean", peak_method, peak_factor)
                 for ax in axis:
                     joined_res[name][f"min_{ax}", d] = min_vals[ax]
                     joined_res[name][f"max_{ax}", d] = max_vals[ax]

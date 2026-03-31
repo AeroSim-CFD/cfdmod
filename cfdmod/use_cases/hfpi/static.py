@@ -222,6 +222,11 @@ class StaticResults(BaseModel):
     moments_static: dict[str, np.ndarray]
 
     @property
+    def delta_t(self):
+        time = next(iter(self.forces_static.items()))["time"].to_numpy()
+        return time[1]-time[0]
+
+    @property
     def global_forces_static(self):
         return common.get_global_dct(self.forces_static)
 
@@ -233,29 +238,52 @@ class StaticResults(BaseModel):
         common.rotate_values_xy(self.forces_static, angle_rot)
         common.rotate_values_xy(self.moments_static, angle_rot)
 
-    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_forces_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces , _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static, self.moments_static, cm_positions,
+        ) 
+        self.delta_t
         if peak_method=="extreme":
-            return common.get_stats_dct(self.forces_static, stats_type)
+            return common.get_stats_dct(forces, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(forces, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.forces_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(forces, stats_type, peak_factor)
 
-    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_moments_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static, self.moments_static, cm_positions,
+        )        
         if peak_method=="extreme":
-            return common.get_stats_dct(self.moments_static, stats_type)
+            return common.get_stats_dct(moments, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.moments_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(moments, stats_type, peak_factor)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static, self.moments_static, cm_positions,
+        )
+        global_forces = common.get_global_dct(forces)
         if peak_method=="extreme":
-            return common.get_stats_dct(self.global_forces_static, stats_type)
+            return common.get_stats_dct(global_forces, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(global_forces, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.global_forces_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static, self.moments_static, cm_positions,
+        )
+        global_moments = common.get_global_dct(moments)
         if peak_method=="extreme":
-            return common.get_stats_dct(self.global_moments_static, stats_type)
+            return common.get_stats_dct(global_moments, stats_type)
+        elif peak_method=="gumbel":
+            return common.get_stats_dct_gumbell(global_moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.global_moments_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(global_moments, stats_type, peak_factor)
 
 
 
@@ -270,7 +298,7 @@ def validate_forces_w_n_floors(forces: StaticForcesData, n_floors: int):
 
 
 def solve_static_forces(
-    forces: StaticForcesData, dim_data: DimensionalData, floors_heights: np.ndarray
+    forces: StaticForcesData, dim_data: DimensionalData, floors_heights: np.ndarray, cm_positions: pd.DataFrame
 ):
     """Solve system for static forces"""
     forces.fill_missing_floors(len(floors_heights))
@@ -279,6 +307,9 @@ def solve_static_forces(
 
     force_static = normalized_forces.get_as_dct()
     moments_static = common.get_moments_from_force(force_static, floors_heights)
+    force_static, moments_static = common.move_loads_ref_from_origin_to_CM(
+        force_static, moments_static, cm_positions
+    )
     return StaticResults(
         floors_heights=floors_heights, forces_static=force_static, moments_static=moments_static
     )

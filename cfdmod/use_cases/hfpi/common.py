@@ -29,6 +29,49 @@ def fill_forces_floors(forces_df: pd.DataFrame, n_floors: int):
 def series_cross_product(arm: np.ndarray, vx: pd.DataFrame|np.ndarray, vy: pd.DataFrame|np.ndarray) -> pd.DataFrame:
     return arm[0]*vy - arm[1]*vx
 
+def move_loads_ref_from_CM_to_origin(
+    forces: dict[str, np.ndarray], 
+    moments: dict[str, np.ndarray],
+    cm_positions: pd.DataFrame,
+) -> tuple[dict[str, np.ndarray],dict[str, np.ndarray]]:
+    """Transforms forces and moments of force from the coordinate system of center of mass to original coordinate system.
+
+    Args:
+        forces dict[str, np.ndarray]: dictionary with force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        moments dict[str, np.ndarray]: dictionary with moments of force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        structural_data (HFPIStructuralData): object with structural data
+
+    Returns:
+        tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
+    """
+    fx, fy, mz = forces['x'], forces['y'], moments['z']
+    n_floors = fx.shape[1]
+    for n_floor in range(n_floors):
+        CM_pos = np.array((cm_positions.iloc[n_floor][['XR','YR']]))
+        moments['z'][:,n_floor] = mz[:,n_floor] + series_cross_product(CM_pos, fx[:,n_floor], fy[:,n_floor])
+    forces["z"] = moments['z'].copy()
+    return forces, moments
+
+def move_loads_ref_from_origin_to_CM(
+    forces: dict[str, np.ndarray], 
+    moments: dict[str, np.ndarray],
+    cm_positions: pd.DataFrame,
+) -> tuple[dict[str, np.ndarray],dict[str, np.ndarray]]:
+    """Transforms forces and moments of force from the coordinate system of center of mass to original coordinate system.
+
+    Args:
+        forces dict[str, np.ndarray]: dictionary with force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        moments dict[str, np.ndarray]: dictionary with moments of force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
+        structural_data (HFPIStructuralData): object with structural data
+
+    Returns:
+        tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
+    """
+    cm_positions_inv = cm_positions.copy()
+    cm_positions_inv[['XR','YR']] = -cm_positions_inv[['XR','YR']]
+    return move_loads_ref_from_CM_to_origin(
+        forces, moments, cm_positions_inv,
+    )
 
 def get_stats_dct(
     dct: dict[str, np.ndarray], stats_type: Literal["min", "max", "mean"]

@@ -507,7 +507,7 @@ class HFPIResults(BaseModel):
         peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel",
         peak_factor: float=4
     ):
-        forces, _ = move_loads_ref_from_CM_to_origin(
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         
@@ -518,14 +518,14 @@ class HFPIResults(BaseModel):
         else:
             return common.get_stats_dct_peak_factor(forces, stats_type, peak_factor)
         
-    def get_stats_forces_static_eq(
+    def get_stats_monents_static_eq(
         self, 
         cm_positions: pd.DataFrame,
         stats_type: Literal["min", "max", "mean"], 
         peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel",
         peak_factor: float=4
     ):
-        _, moments = move_loads_ref_from_CM_to_origin(
+        _, moments = common.move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         
@@ -538,7 +538,7 @@ class HFPIResults(BaseModel):
 
 
     def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
-        forces, _ = move_loads_ref_from_CM_to_origin(
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         global_forces = common.get_global_dct(forces)
@@ -549,8 +549,8 @@ class HFPIResults(BaseModel):
         else:
             return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
         
-    def get_stats_global_forces_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
-        _, moments = move_loads_ref_from_CM_to_origin(
+    def get_stats_global_monents_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )
         global_moments = common.get_global_dct(moments)
@@ -562,29 +562,6 @@ class HFPIResults(BaseModel):
             return common.get_stats_dct_peak_factor(global_moments, stats_type, peak_factor)
 
     
-def move_loads_ref_from_CM_to_origin(
-    forces: dict[str, np.ndarray], 
-    moments: dict[str, np.ndarray],
-    cm_positions: pd.DataFrame,
-) -> tuple[dict[str, np.ndarray],dict[str, np.ndarray]]:
-    """Transforms forces and moments of force from the coordinate system of center of mass to original coordinate system.
-
-    Args:
-        forces dict[str, np.ndarray]: dictionary with force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
-        moments dict[str, np.ndarray]: dictionary with moments of force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
-        structural_data (HFPIStructuralData): object with structural data
-
-    Returns:
-        tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
-    """
-    fx, fy, mz = forces['x'], forces['y'], moments['z']
-    n_floors = fx.shape[1]
-    for n_floor in range(n_floors):
-        CM_pos = np.array((cm_positions.iloc[n_floor][['XR','YR']]))
-        moments['z'][:,n_floor] = mz[:,n_floor] + common.series_cross_product(CM_pos, fx[:,n_floor], fy[:,n_floor])
-    forces["z"] = moments['z'].copy()
-    return forces, moments
-
 def solve_hfpi(
     *,
     structural_data: HFPIStructuralData,
@@ -628,5 +605,5 @@ def solve_hfpi(
         floors_radius=floors_radius,
         modal_shapes=modal_shapes,
         wps=wps,
-        gen_displacements=all_gen_displacements[n_mode],
+        gen_displacements=all_gen_displacements,
     )
