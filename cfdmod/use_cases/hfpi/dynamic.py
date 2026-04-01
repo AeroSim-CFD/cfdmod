@@ -432,7 +432,7 @@ class HFPIResults(BaseModel):
         
         acceleration_ls = {"x": [], "y": []}
         for floor in range(n_floors):
-            floor_acc = self.get_point_floor_acceleration(cms[floor], pos)
+            floor_acc = self.get_point_floor_acceleration(cms[floor], pos, floor)
             acceleration_ls["x"].append(floor_acc["x"])
             acceleration_ls["y"].append(floor_acc["y"])
         accelerations_full = {
@@ -445,7 +445,7 @@ class HFPIResults(BaseModel):
         self, cm_position: tuple[float,float], pos: tuple[float, float] = (0, 0), floor: int = -1
     ) -> np.ndarray:
         """Get acceleration from given floor, considering radius for Z"""
-        disp_full = {"x": self.displacement["x"][:,floor], "y": self.displacement["y"][:,floor]}
+        disp_full = {"x": self.displacement["x"][:,floor].copy(), "y": self.displacement["y"][:,floor].copy()}
         rel_pos = np.array(pos) - np.array(cm_position)
         point_angle = np.arctan2(rel_pos[1], rel_pos[0])
         displ_angle = point_angle + self.displacement["z"][:,floor]
@@ -457,30 +457,35 @@ class HFPIResults(BaseModel):
         
         return common.second_derivative(disp_full, dt)
 
-    def get_max_acceleration_per_floor(self, cm_positions: pd.DataFrame, pos: tuple[float, float] = (0, 0), peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4) -> np.ndarray:
-        if peak_method == "extreme":
-            accs = self.get_point_acceleration(cm_positions, pos)
-            ac_mag = (accs['x']**2+accs['y']**2)**0.5
-            acc_extreme = common.gumbel_extreme_value(
-                hist_series=ac_mag,
-                dt=self.delta_t,
-                peak_duration=3,
-                event_duration=10*60,
-                extreme_type='max',
-                n_subdivisions=10,
-                non_exceedance_probability=0.78,
-            )
-            return acc_extreme
+    def get_max_acceleration_per_floor(self, cm_positions: pd.DataFrame, pos: tuple[float, float] = (0, 0), peak_method: Literal["gumbel","max", "peak-factor"]="gumbel", peak_factor: float=4) -> np.ndarray:
+        accs = self.get_point_acceleration(cm_positions, pos)
+        if peak_method == "max":
+            acc_mag = (accs['x']**2+accs['y']**2)**0.5
+            return acc_mag.max(axis=0)
+        if peak_method == "gumbel":
+            acc_mag = (accs['x']**2+accs['y']**2)**0.5
+            acc_extreme = []
+            for floor in range(acc_mag.shape[1]):
+                acc_extreme.append(common.gumbel_extreme_value(
+                        hist_series=acc_mag[:,floor],
+                        dt=self.delta_t,
+                        peak_duration=3,
+                        event_duration=10*60,
+                        extreme_type='max',
+                        n_subdivisions=10,
+                        non_exceedance_probability=0.78,
+                    )
+                )
+            return np.array(acc_extreme)
         else:
-            accs = self.get_point_acceleration(cm_positions, pos)
             acc_peak = {ax: peak_factor*acc.std(axis=0) for ax, acc in accs.items()}
             acc_mag = (acc_peak['x']**2+acc_peak['y']**2)**0.5
             return acc_mag
 
     def get_floor_max_acceleration(
-        self, cm_position: tuple[float,float], pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4
+        self, cm_position: tuple[float,float], pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["gumbel", "max", "peak-factor"]="gumbel", peak_factor: float=4
     ) -> float:
-        accs = self.get_point_floor_acceleration(cm_position, pos)
+        accs = self.get_point_floor_acceleration(cm_position, pos, floor)
         if peak_method == "gumbel":
             acc_mag = (accs['x']**2+accs['y']**2)**0.5
             acc_extreme = common.gumbel_extreme_value(
@@ -493,7 +498,7 @@ class HFPIResults(BaseModel):
                 non_exceedance_probability=0.78,
             )
             return acc_extreme
-        elif peak_method == 'extreme':
+        elif peak_method == 'max':
             acc_mag = (accs['x']**2+accs['y']**2)**0.5
             return acc_mag.max()
         elif peak_method == 'peak-factor':
@@ -549,7 +554,7 @@ class HFPIResults(BaseModel):
         else:
             return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
         
-    def get_stats_global_monents_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
+    def get_stats_global_moments_static_eq(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["gumbel", "extreme", "peak-factor"]="gumbel", peak_factor: float=4):
         _, moments = common.move_loads_ref_from_CM_to_origin(
             self.forces_static_eq, self.moments_static_eq, cm_positions,
         )

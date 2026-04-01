@@ -5,6 +5,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from scipy.signal import convolve
 
 
 def get_moments_from_force(force: dict[str, np.ndarray], floor_heights: np.ndarray):
@@ -214,7 +215,8 @@ def second_derivative(series: dict[str, np.ndarray], dt: float) -> dict[str, np.
 
 def moving_filter(hist_series: np.ndarray, dt: float, peak_duration: float) -> np.ndarray:
     window_size = max(int(peak_duration / dt), 1)
-    smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
+    kernel = np.ones(window_size) / window_size
+    smooth_parent_cp = convolve(hist_series, kernel, mode='valid')
     return smooth_parent_cp
 
 def reescale_event_duration_peak(
@@ -251,13 +253,16 @@ def gumbel_extreme_value(
         tuple[float, float]: Tuple with (min, max) extreme values
     """
 
+    if hist_series.ndim >1:
+        raise ValueError("Gumbel fit works only on 1D arrays")
+
     smoothed_parent = moving_filter(hist_series, dt, peak_duration)
     
     sub_arrays = np.array_split(smoothed_parent, n_subdivisions)
     orig_time_duration = (len(hist_series)*dt/n_subdivisions)
     
     if extreme_type == "max":
-        v_peak = np.array([np.max(sub_arr) for sub_arr in sub_arrays])
+        v_peak = np.array([np.max(sub_arr, axis=0) for sub_arr in sub_arrays])
         from scipy.stats import gumbel_r
         loc, scale = gumbel_r.fit(v_peak)
         loc, scale = reescale_event_duration_peak(loc, scale, orig_time_duration, event_duration, extreme_type)

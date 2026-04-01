@@ -216,15 +216,13 @@ class StaticResults(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     floors_heights: np.ndarray
+    delta_t: float
 
     # data as ["x", "y", "z"] = time series
     forces_static: dict[str, np.ndarray]
     moments_static: dict[str, np.ndarray]
 
-    @property
-    def delta_t(self):
-        time = next(iter(self.forces_static.items()))["time"].to_numpy()
-        return time[1]-time[0]
+
 
     @property
     def global_forces_static(self):
@@ -310,6 +308,10 @@ def solve_static_forces(
     force_static, moments_static = common.move_loads_ref_from_origin_to_CM(
         force_static, moments_static, cm_positions
     )
+    
+    time = normalized_forces.cf_x['time'].to_numpy()
+    delta_t = time[1] - time[0] 
+    
     return StaticResults(
-        floors_heights=floors_heights, forces_static=force_static, moments_static=moments_static
+        floors_heights=floors_heights, delta_t=delta_t, forces_static=force_static, moments_static=moments_static
     )

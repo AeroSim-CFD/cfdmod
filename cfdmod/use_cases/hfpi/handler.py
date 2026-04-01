@@ -224,46 +224,46 @@ class ResultType(BaseModel):
         if self.dynamic_res is not None:
             self.dynamic_res.rotate_xy(angle_rot)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_forces_static(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_moments_static(cm_positions, stats_type, peak_method, peak_factor)
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        forces_static = self.static_res.get_stats_forces_static(stats_type, peak_method, peak_factor)
+    def get_stats_forces_effective(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces_static = self.static_res.get_stats_forces_static(cm_positions, stats_type, peak_method, peak_factor)
         if self.dynamic_res is None:
             return forces_static
-        forces_eq = self.dynamic_res.get_stats_forces_static_eq(stats_type, peak_method, peak_factor)
+        forces_eq = self.dynamic_res.get_stats_forces_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        mom_static = self.static_res.get_stats_moments_static(stats_type, peak_method, peak_factor)
+    def get_stats_moments_effective(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        mom_static = self.static_res.get_stats_moments_static(cm_positions, stats_type, peak_method, peak_factor)
         if self.dynamic_res is None:
             return mom_static
-        mom_eq = self.dynamic_res.get_stats_moments_static_eq(stats_type, peak_method, peak_factor)
+        mom_eq = self.dynamic_res.get_stats_moments_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
 
-    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        forces_static = self.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+    def get_stats_global_forces_effective(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        forces_static = self.static_res.get_stats_global_forces_static(cm_positions, stats_type, peak_method, peak_factor)
         if self.dynamic_res is None:
             return forces_static
-        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        mom_static = self.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+    def get_stats_global_moments_effective(self, cm_positions: pd.DataFrame, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+        mom_static = self.static_res.get_stats_global_moments_static(cm_positions, stats_type, peak_method, peak_factor)
         if self.dynamic_res is None:
             return mom_static
-        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(cm_positions, stats_type, peak_method, peak_factor)
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
 
 
