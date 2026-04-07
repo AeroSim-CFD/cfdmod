@@ -90,7 +90,7 @@ class WindProfile_NBR(WindProfile):
     def S3(self, recurrence_period: float):
         return 0.54 * (0.994 / recurrence_period) ** -0.157
 
-    def get_U_H(self, height: float, direction: float, recurrence_period: float, time_filter_seconds: float=600, use_kd: bool=True) -> float:
+    def get_U_H(self, height: float, direction: float, recurrence_period: float, time_filter_seconds: float=600, use_kd: bool=False) -> float:
         if self.U_H_overwrite is not None:
             return self.U_H_overwrite
 
@@ -152,7 +152,7 @@ class WindProfile_EU(WindProfile):
         return self.kr(direction)*np.log(height/row['z0'])
 
     def get_U_H(
-        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool=True
+        self, height: float, direction: float, recurrence_period: float=50, use_kd: bool=False
     ) -> float:
         if self.U_H_overwrite is not None:
             return self.U_H_overwrite
