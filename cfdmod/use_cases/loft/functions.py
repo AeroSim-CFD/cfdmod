@@ -1,31 +1,25 @@
-import pathlib
+from __future__ import annotations
 
 import numpy as np
-import pymeshlab
 
+import lnas
 
 def flatten_vertices_and_get_triangles_as_list_of_indexes(
     triangle_vertices: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Separates coordinates of vertices of faces from their indices.
+    """Takes a set of faces defined as 3 vertices with coordinates and gives back the vertices separated in and the
+    triangles specified by the vertices indexes
 
     Args:
-        triangle_vertices (np.ndarray[t,3,3]): values as coordinates of the 3 vertices
-            coordinates:
-                0 - number of triangle
-                1 - number of vertice
-                2 - coordinate of vertice
+        triangle_vertices[a,b,c] (np.ndarray): 3d numpy array. Coordinates ->
+            0 - number of triangle (len = number of triangles)
+            1 - number of vertice (len = 3)
+            2 - coordinate of verice (len = 3)
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Flattened vertices and triangles specified as vertices indexes:
-            - flattened_vertices (np.ndarray[v,3]): values as vertices coordinates
-                coordinates:
-                    0 - number of vertice
-                    1 - vertice coordinate
-            - triangles (np.ndarray[t,3]): values as triangles vertices ids
-                coordinates:
-                    0 - number of triangle
-                    1 - number of vertice
+            - flattened_vertices[d,c] -> number of vertices, vertice coordinate
+            - triangles[a,c] -> number of triangle, number of triangle vertice (3)
     """
 
     def _get_float_as_int(v: float) -> int:
@@ -38,7 +32,8 @@ def flatten_vertices_and_get_triangles_as_list_of_indexes(
     flattened_vertices = triangle_vertices.reshape((s[0] * s[1], 3))
 
     # Round for comparison
-    decimals = 5
+    decimals = 10
+
     flat_indexes = {_get_as_key(v): i for i, v in enumerate(flattened_vertices)}
 
     # Indexed as [t_idx, edge_idx] = (v0, v1)
@@ -55,24 +50,18 @@ def flatten_vertices_and_get_triangles_as_list_of_indexes(
     return flattened_vertices, tri_index_matrix
 
 
-def find_borders(triangles_vertices: np.ndarray) -> np.ndarray:
+def find_borders(triangle_vertices: np.ndarray) -> np.ndarray:
     """Identify edges of border, based on repetition of edges
 
     Args:
-        triangles_vertices (np.ndarray[t,3]): values as triangles vertices ids
-            coordinates:
-                0 - number of triangle
-                1 - number of vertice
+        triangle_vertices (np.ndarray): vertices indexes
 
     Returns:
-        edges (np.ndarray[e,2]): edges from border, indetified by two vertices indexes
-            coordinates:
-                0 - number of edge
-                1 - number of edge vertice
+        set[tuple[int,int]]: selected set of edges, indetified by vertices indexes
     """
-    n_triangles = len(triangles_vertices)
+    n_triangles = len(triangle_vertices)
     triangles_edges = np.empty((n_triangles, 3, 2), dtype=np.uint32)
-    for t_idx, tri in enumerate(triangles_vertices):
+    for t_idx, tri in enumerate(triangle_vertices):
         triangles_edges[t_idx] = [
             tuple(sorted([tri[id_0], tri[id_1]])) for id_0, id_1 in [(0, 1), (0, 2), (1, 2)]
         ]
@@ -92,20 +81,15 @@ def find_borders(triangles_vertices: np.ndarray) -> np.ndarray:
 
 
 def remove_edges_of_internal_holes(vertices: np.ndarray, edges: np.ndarray) -> np.ndarray:
-    """Remove border edges comming from internal holes
+    """Remove border vertices comming from internal holes
 
     Args:
-        vertices (np.ndarray[v,3]): values as vertices coordinates
-                coordinates:
-                    0 - number of vertice
-                    1 - vertice coordinate
-        edges (np.ndarray[e,2]): edges from border, indetified by two vertices indexes
-            coordinates:
-                0 - number of edge
-                1 - number of edge vertice
+        border_verts (np.ndarray): All border vertices
+        radius (float): Internal radius where to ignore edges
 
     Returns:
-        np.ndarray[e,2]: filtered edges from border, indetified by two vertices indexes.
+        tuple[np.ndarray, np.ndarray]: Updated filtered border vertices and border edges
+        that are not from internal holes
     """
     edges_by_vertex = [set() for v in range(0, vertices.shape[0])]
     vertices_to_analyze = set()
@@ -114,7 +98,6 @@ def remove_edges_of_internal_holes(vertices: np.ndarray, edges: np.ndarray) -> n
         vertices_to_analyze.add(int(edge[0]))
         edges_by_vertex[edge[1]].add(tuple(edge))
         vertices_to_analyze.add(int(edge[1]))
-
     groups = []
     while len(vertices_to_analyze) > 0:
         group = {"vertices_id": set(), "edges": set()}
@@ -141,150 +124,46 @@ def remove_edges_of_internal_holes(vertices: np.ndarray, edges: np.ndarray) -> n
         x_ampl = max(x) - min(x)
         y_ampl = max(y) - min(y)
         z_ampl = max(z) - min(z)
-        x_ampl = 1e-16 if x_ampl == 0 else x_ampl
-        y_ampl = 1e-16 if y_ampl == 0 else y_ampl
-        z_ampl = 1e-16 if z_ampl == 0 else z_ampl
         groups_diameter.append(x_ampl**2 + y_ampl**2 + z_ampl**2)
-
     max_diam = max(groups_diameter)
     max_diam_group_id = groups_diameter.index(max_diam)
     biggest_group = groups[max_diam_group_id]
 
     return np.array(list(biggest_group["edges"]))
 
-
-def remove_edges_too_aligned_with_projection_direction(
-    vertices: np.ndarray,
-    edges: np.ndarray,
-    projection_diretion: np.ndarray,
-    angle_tolerance: float,
-) -> np.ndarray:
-    """Remove border edges that are too aligned with the projection direction.
-    Faces created based on those edges would have very poor quality
-
-    Args:
-        vertices (np.ndarray[v,3]): values as vertices coordinates
-                coordinates:
-                    0 - number of vertice
-                    1 - vertice coordinate
-        edges (np.ndarray[e,2]): edges from border, indetified by two vertices indexes
-            coordinates:
-                0 - number of edge
-                1 - number of edge vertice
-        projection_diretion (np.ndarray[3]): vector with the direction where loft will be projected
-        angle_tolerance (float): threshold of angle tolerance.
-            - If angle between edge and projection_direction gets below this value, edge is removed from selection
-
-    Returns:
-        np.ndarray[e,2]: filtered edges from border, indetified by two vertices indexes.
-    """
-    edge_directions = vertices[edges[:, 1], :] - vertices[edges[:, 0], :]
-    edge_directions[:, 2] = 0
-    angles_between_edges_and_projection = get_angle_between(
-        ref_vec=edge_directions, target_vec=projection_diretion
-    )
-    mask_not_too_aligned = (angle_tolerance < angles_between_edges_and_projection) & (
-        angles_between_edges_and_projection < 180 - angle_tolerance
-    )
-    return edges[mask_not_too_aligned]
-
-
-def _unit_vector(vector):
-    """Returns the unit vector of the vector."""
-    if vector.ndim > 1:
-        return vector / np.linalg.norm(vector, axis=1, keepdims=True)
-    else:
-        return vector / np.linalg.norm(vector)
-
-
-def get_angle_between(ref_vec: np.ndarray, target_vec: np.ndarray) -> float:
-    """Returns the angle in radians between vectors 'ref_vec' and 'target_vec'
-
-    Args:
-        ref_vec (np.ndarray): Reference vector
-        target_vec (np.ndarray): Target vector
-
-    Returns:
-        float: Angle between vectors 'ref_vec' and 'target_vec in degrees
-    """
-    ref_vec_u = _unit_vector(ref_vec)
-    target_vec_u = _unit_vector(target_vec)
-    angle_rad = np.arccos(np.dot(ref_vec_u, target_vec_u))
-
-    return np.degrees(angle_rad)
-
-
-def remove_edges_oposite_to_loft_direction(
-    vertices: np.ndarray,
-    edges: np.ndarray,
-    projection_diretion: np.ndarray,
-    mesh_center: np.ndarray,
-) -> np.ndarray:
-    """Remove border edges that are on the oposite side of the projection direction.
-
-    Args:
-        vertices (np.ndarray[v,3]): values as vertices coordinates
-                coordinates:
-                    0 - number of vertice
-                    1 - vertice coordinate
-        edges (np.ndarray[e,2]): edges from border, indetified by two vertices indexes
-            coordinates:
-                0 - number of edge
-                1 - number of edge vertice
-        projection_diretion (np.ndarray[3]): vector with the direction where loft will be projected
-        mesh_center (np.ndarray[3]): Nominal center of mesh. Defines what 'oposite side' means
-
-    Returns:
-        np.ndarray[e,2]: filtered edges from border, indetified by two vertices indexes.
-    """
-    vertices_0 = vertices[edges[:, 0]]
-    vertices_1 = vertices[edges[:, 1]]
-    vert_dir_from_center_0 = vertices_0 - mesh_center
-    vert_dir_from_center_1 = vertices_1 - mesh_center
-    angles_0 = get_angle_between(ref_vec=vert_dir_from_center_0, target_vec=projection_diretion)
-    angles_1 = get_angle_between(ref_vec=vert_dir_from_center_1, target_vec=projection_diretion)
-    mask_vertices_on_right_side = (angles_0 < 90) & (angles_1 < 90)
-
-    return edges[mask_vertices_on_right_side]
-
-
 def generate_loft_triangles(
     vertices: np.ndarray,
     edges: np.ndarray,
-    projection_diretion: np.ndarray,
+    loft_radius: float,
     mesh_center: np.ndarray,
-    loft_length: float,
     loft_z_pos: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Generates STL of loft
+) -> lnas.LnasGeometry:
+    """Generates loft triangles using circular projection.
 
-    Note that terrain and loft vertices are assumed to be ordered and aligned correctly
+    Each border vertex is projected radially outward from mesh_center to the
+    circle of loft_radius in the XY plane, then set to loft_z_pos in Z.
 
     Args:
-        vertices (np.ndarray[v,3]): values as vertices coordinates
-                coordinates:
-                    0 - number of vertice
-                    1 - vertice coordinate
-        edges (np.ndarray[e,2]): edges from border, indetified by two vertices indexes
-            coordinates:
-                0 - number of edge
-                1 - number of edge vertice
-        projection_diretion (np.ndarray[3]): vector with the direction where loft will be projected
-        mmesh_center (np.ndarray[3]): Nominal center of mesh. Used to contextualize loft length
-        loft_length: float,
-        loft_z_pos: float,
+        vertices (np.ndarray): All mesh vertices [n, 3]
+        edges (np.ndarray): Border edge vertex index pairs [m, 2]
+        loft_radius (float): Radius of the target projection circle
+        mesh_center (np.ndarray): Center of the mesh [3]
+        loft_z_pos (float): Target Z height for projected vertices
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Tuple with loft surface triangles and normals
+        lnas.LnasGeometry: Loft surface geometry
     """
 
-    def _get_distance_from_center_in_the_projection_direction(
-        vertices: np.ndarray, mesh_center: np.ndarray, projection_diretion: np.ndarray
-    ) -> np.ndarray:
-        vert_dir_from_center = vertices - mesh_center
-        return np.dot(vert_dir_from_center, projection_diretion)
+    def project_to_circle(verts: np.ndarray) -> np.ndarray:
+        xy_dir = verts[:, :2] - mesh_center[:2]
+        norms = np.linalg.norm(xy_dir, axis=1, keepdims=True)
+        unit_dir = xy_dir / norms
+        projected = np.empty_like(verts)
+        projected[:, :2] = mesh_center[:2] + loft_radius * unit_dir
+        projected[:, 2] = loft_z_pos
+        return projected
 
-    def _normal_of_triangles(triangles: np.ndarray) -> np.ndarray:
+    def normal_of_triangles(triangles: np.ndarray) -> np.ndarray:
         v0 = triangles[:, 0, :].squeeze()
         v1 = triangles[:, 1, :].squeeze()
         v2 = triangles[:, 2, :].squeeze()
@@ -292,80 +171,52 @@ def generate_loft_triangles(
         v = v2 - v0
         return np.cross(u, v)
 
-    num_edges_on_border = edges.shape[0]
-    vertices_on_boder_id = edges.reshape(num_edges_on_border * 2)
-    vertices_on_border = vertices[vertices_on_boder_id, :]
-    loft_distantce_start = np.max(
-        _get_distance_from_center_in_the_projection_direction(
-            vertices=vertices_on_border,
-            mesh_center=mesh_center,
-            projection_diretion=projection_diretion,
-        )
-    )
-    loft_distantce_end = loft_distantce_start + loft_length
+    edge_verts_0 = vertices[edges[:, 0]]
+    edge_verts_1 = vertices[edges[:, 1]]
 
-    edge_verts = []
-    edge_verts.append(vertices[edges[:, 0]])
-    edge_verts.append(vertices[edges[:, 1]])
-    edge_verts_projection = []
+    edge_proj_0 = project_to_circle(edge_verts_0)
+    edge_proj_1 = project_to_circle(edge_verts_1)
 
-    for vertices in edge_verts:
-        distance_of_vertices_from_center = _get_distance_from_center_in_the_projection_direction(
-            vertices=vertices,
-            mesh_center=mesh_center,
-            projection_diretion=projection_diretion,
-        )
-        distance_to_project = loft_distantce_end - distance_of_vertices_from_center
-
-        projected_vertices = vertices + distance_to_project[:, np.newaxis] * projection_diretion
-        projected_vertices[:, 2] = loft_z_pos
-        edge_verts_projection.append(projected_vertices)
-
-    triangles_0 = np.stack([edge_verts[0], edge_verts[1], edge_verts_projection[1]], axis=1)
-    triangles_1 = np.stack(
-        [edge_verts[0], edge_verts_projection[1], edge_verts_projection[0]], axis=1
-    )
-
+    triangles_0 = np.stack([edge_verts_0, edge_verts_1, edge_proj_1], axis=1)
+    triangles_1 = np.stack([edge_verts_0, edge_proj_1, edge_proj_0], axis=1)
     full_triangles = np.concatenate([triangles_0, triangles_1], axis=0)
-    full_normals = _normal_of_triangles(full_triangles)
-    mask_inverted_nomals = (full_normals[:, 2]).squeeze() < 0
+    full_normals = normal_of_triangles(full_triangles)
+    mask_inverted_normals = (full_normals[:, 2]).squeeze() < 0
     corrected_triangles = full_triangles.copy()
+    corrected_triangles[mask_inverted_normals, 0, :] = full_triangles[mask_inverted_normals, 1, :]
+    corrected_triangles[mask_inverted_normals, 1, :] = full_triangles[mask_inverted_normals, 0, :]
+    corrected_normals = normal_of_triangles(corrected_triangles)
 
-    corrected_triangles[mask_inverted_nomals, 0, :] = full_triangles[mask_inverted_nomals, 1, :]
-    corrected_triangles[mask_inverted_nomals, 1, :] = full_triangles[mask_inverted_nomals, 0, :]
-    corrected_normals = _normal_of_triangles(corrected_triangles)
+    lnas_geom = lnas.LnasFormat.from_triangles(triangles=corrected_triangles, normals=corrected_normals).geometry
 
-    return corrected_triangles, corrected_normals
+    return lnas_geom
 
 
 def generate_loft_surface(
-    triangle_vertices: np.ndarray,
-    projection_diretion: np.ndarray,
-    loft_length: float,
+    geom: lnas.LnasGeometry,
+    loft_radius: float,
     loft_z_pos: float,
-    cutoff_angle_projection: float = 45,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Generate loft surface (triangles and normals)
+) -> lnas.LnasGeometry:
+    """Generate loft surface using circular projection.
+
+    Each border vertex is projected radially outward to loft_radius from the
+    mesh center and lowered to loft_z_pos.
 
     Args:
-        triangle_vertices (np.ndarray[t,3,3]): values as coordinates of the 3 vertices
-            coordinates:
-                0 - number of triangle
-                1 - number of vertice
-                2 - coordinate of vertice
-        projection_diretion (np.ndarray[3]): vector with the direction where loft will be projected
-        loft_length (float): Minimum length of loft
-        loft_z_pos (float): Target z position
-        cutoff_angle_projection (float)(default=45): Minimum alignment tolerated between projection direction and edge
+        geom (lnas.LnasGeometry): Input terrain geometry
+        loft_radius (float): Radius of the target projection circle
+        loft_z_pos (float): Target Z height for loft base
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Loft triangles and normals
+        lnas.LnasGeometry: Loft surface geometry
     """
-    projection_diretion = _unit_vector(projection_diretion)
+
     flattened_vertices, tri_index_matrix = flatten_vertices_and_get_triangles_as_list_of_indexes(
-        triangle_vertices=triangle_vertices
+        triangle_vertices=geom.triangle_vertices,
     )
-    border_edges = find_borders(triangles_vertices=tri_index_matrix)
+
+    border_edges = find_borders(triangle_vertices=tri_index_matrix)
+
     border_edges = remove_edges_of_internal_holes(
         vertices=flattened_vertices,
         edges=border_edges,
@@ -379,74 +230,12 @@ def generate_loft_surface(
         ]
     )
 
-    border_edges = remove_edges_oposite_to_loft_direction(
+    loft_geom = generate_loft_triangles(
         vertices=flattened_vertices,
         edges=border_edges,
-        mesh_center=center,
-        projection_diretion=projection_diretion,
-    )
-
-    border_edges = remove_edges_too_aligned_with_projection_direction(
-        vertices=flattened_vertices,
-        edges=border_edges,
-        projection_diretion=projection_diretion,
-        angle_tolerance=cutoff_angle_projection,
-    )
-
-    loft_tri, loft_normals = generate_loft_triangles(
-        vertices=flattened_vertices,
-        edges=border_edges,
-        projection_diretion=projection_diretion,
-        loft_length=loft_length,
+        loft_radius=loft_radius,
         loft_z_pos=loft_z_pos,
         mesh_center=center,
     )
 
-    return loft_tri, loft_normals
-
-
-def apply_remeshing(
-    element_size: float,
-    mesh_path: pathlib.Path,
-    output_path: pathlib.Path,
-    crease_angle: float = 89,
-):
-    """Create a remeshed surface from input mesh
-
-    Args:
-        element_size (float): Target element size
-        mesh_path (pathlib.Path): Original mesh path
-        output_path (pathlib.Path): Output mesh path
-        crease_angle (float): Minimal angle for preserving edges
-    """
-    ms: pymeshlab.MeshSet = pymeshlab.MeshSet()
-    ms.load_new_mesh(str(mesh_path.absolute()))
-    ms.meshing_isotropic_explicit_remeshing(
-        iterations=15, targetlen=pymeshlab.PureValue(element_size), featuredeg=crease_angle
-    )
-    ms.compute_selection_by_condition_per_face(condselect="fnz<0")
-    ms.meshing_invert_face_orientation(onlyselected=True)
-    ms.save_current_mesh(str(output_path.absolute()), binary=True)
-
-
-def rotate_vector_around_z(vector: np.ndarray, angle_degrees: float) -> np.ndarray:
-    """Rotates a vector around z axis from a given angle
-
-    Args:
-        vector (np.ndarray): Vector to be rotated (x, y, z)
-        angle_degrees (float): Angle of rotation in degrees
-
-    Returns:
-        np.ndarray: Rotated 3D vector
-    """
-    angle_radians = np.radians(angle_degrees)
-    rotation_matrix = np.array(
-        [
-            [np.cos(angle_radians), -np.sin(angle_radians), 0],
-            [np.sin(angle_radians), np.cos(angle_radians), 0],
-            [0, 0, 1],
-        ]
-    )
-    rotated_vector = np.dot(rotation_matrix, vector)
-
-    return rotated_vector
+    return loft_geom
