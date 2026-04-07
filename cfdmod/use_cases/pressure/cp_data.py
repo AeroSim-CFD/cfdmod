@@ -226,14 +226,9 @@ def process_raw_groups(
             if static_groups != body_groups:
                 raise Exception("Keys for body and static pressure don't match!")
 
-            more_than_one_group = len(body_groups) > 1
 
             keys_to_include: list[str] = list(body_groups)
 
-            if more_than_one_group:
-                keys_to_include = HDFGroupInterface.filter_groups(
-                    body_groups, cp_config.timestep_range
-                )
             groups_process = keys_to_include
 
     if output_path.exists():
