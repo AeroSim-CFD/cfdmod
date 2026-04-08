@@ -46,12 +46,13 @@ def move_loads_ref_from_CM_to_origin(
         tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
     """
     fx, fy, mz = forces['x'], forces['y'], moments['z']
+    new_mz = mz.copy()
     n_floors = fx.shape[1]
     for n_floor in range(n_floors):
         CM_pos = np.array((cm_positions.iloc[n_floor][['XR','YR']]))
-        moments['z'][:,n_floor] = mz[:,n_floor] + series_cross_product(CM_pos, fx[:,n_floor], fy[:,n_floor])
-    forces["z"] = moments['z'].copy()
-    return forces, moments
+        new_mz[:,n_floor] = mz[:,n_floor] + series_cross_product(CM_pos, fx[:,n_floor], fy[:,n_floor])
+    new_moments = {**moments, 'z': new_mz}
+    return forces, new_moments
 
 def move_loads_ref_from_origin_to_CM(
     forces: dict[str, np.ndarray], 
