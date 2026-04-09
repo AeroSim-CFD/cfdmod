@@ -33,14 +33,42 @@ class HFPICaseParameters(BaseModel, frozen=True):
 
     direction: float
     xi: float
-    frequency_multiplier: float = 1
-    integral_scale_multiplier: float = 1
+    frequency_multiplier: float
+    integral_scale_multiplier: float
     recurrence_period: float
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
+    mass_multiplier: float
 
     def __hash__(self):
-        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier))
+        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier, self.integral_scale_multiplier, self.mass_multiplier))
+
+    def build(
+        structural_data: dynamic.HFPIStructuralData,
+        direction: float,
+        xi: float,
+        recurrence_period: float,
+        use_kd: bool= False,
+        frequency_multiplier: float= 1,
+        integral_scale_multiplier: float=1,
+        mass_multiplier: float = 1
+    ) -> HFPICaseParameters:
+        s_data = copy.deepcopy(structural_data)
+        s_data.df_floors['M'] = s_data.df_floors['M']*mass_multiplier
+        # s_data.df_modes['frequency'] = s_data.df_modes['frequency']/mass_multiplier**0.5
+        # s_data.df_modes['wp'] = s_data.df_modes['frequency']*2*np.pi
+        # s_data.df_modes['period'] = 1/s_data.df_modes['frequency']
+        
+        return HFPICaseParameters(
+            structural_data = s_data,
+            direction = direction,
+            xi = xi,
+            recurrence_period = recurrence_period,
+            use_kd = use_kd,
+            frequency_multiplier = frequency_multiplier,
+            integral_scale_multiplier = integral_scale_multiplier,
+            mass_multiplier = mass_multiplier,
+        )
 
     def get_results_filename(self, base_folder: pathlib.Path):
         filename = f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}"
@@ -48,6 +76,8 @@ class HFPICaseParameters(BaseModel, frozen=True):
             filename += f"_int{self.integral_scale_multiplier}"
         if self.frequency_multiplier!=1:
             filename += f"_freq{self.frequency_multiplier}"
+        if self.mass_multiplier!=1:
+            filename += f"_mass{self.mass_multiplier}"
         filename += ".pickle"
     
         return (
@@ -156,10 +186,11 @@ class MultipleAnalysisHandler(BaseModel):
         recurrence_periods: list[float],
         use_kd: list[bool]=[False],
         frequency_multipliers: list[float]=[1],
-        integral_scale_multiplier: list[bool]=[1],
+        integral_scale_multipliers: list[float]=[1],
+        mass_multipliers: list[float] = [1]
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
-            HFPICaseParameters(
+            HFPICaseParameters.build(
                 direction=direction,
                 recurrence_period=period,
                 use_kd=kd,
@@ -167,9 +198,10 @@ class MultipleAnalysisHandler(BaseModel):
                 structural_data=structural_data,
                 integral_scale_multiplier=int_mult,
                 frequency_multiplier=frequency_multiplier,
+                mass_multiplier=mass_mult,
             )
-            for direction, xi, kd, period, frequency_multiplier, int_mult in itertools.product(
-                *[directions, xis, use_kd, recurrence_periods, frequency_multipliers, integral_scale_multiplier]
+            for direction, xi, kd, period, frequency_multiplier, int_mult, mass_mult in itertools.product(
+                *[directions, xis, use_kd, recurrence_periods, frequency_multipliers, integral_scale_multipliers, mass_multipliers]
             )
         ]
         return cases_parameters
@@ -192,6 +224,7 @@ class MultipleAnalysisHandler(BaseModel):
         self,
         floors_height: np.ndarray,
         H: float,
+        cm_positions: pd.DataFrame,
         recurrence_period: float = 50,
         use_kd: bool = False,
     ):
@@ -205,10 +238,10 @@ class MultipleAnalysisHandler(BaseModel):
                 use_kd=use_kd,
             )
             dim_data = static.DimensionalData(
-                U_H=U_h, height=self.dimensions.height, base=self.dimensions.base
+                U_H=U_h, height=self.dimensions.height, base=self.dimensions.base, integral_scale_multiplier=1
             )
             res = static.solve_static_forces(
-                forces=forces, dim_data=dim_data, floors_heights=floors_height
+                forces=forces, dim_data=dim_data, floors_heights=floors_height, cm_positions=cm_positions
             )
             analysis_results[direction] = ResultType(static_res=res, dynamic_res=None)
 
@@ -388,16 +421,17 @@ class DirectionalAnalysisResults(BaseModel):
 
         return dct_dfs
 
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_max_acceleration(self, cm_positions: pd.DataFrame, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["gumbel", "max", "peak-factor"]="gumbel", peak_factor: float=4):
+        cm_position = cm_positions.iloc[floor][['XR','YR']].to_numpy()
         return max(
-            res.dynamic_res.get_floor_max_acceleration(pos, floor, peak_method, peak_factor) for res in self.results.values()
+            res.dynamic_res.get_floor_max_acceleration(cm_position, pos, floor, peak_method, peak_factor) for res in self.results.values()
         )
 
     def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
+        self, cm_positions: pd.DataFrame, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["gumbel", "max", "peak-factor"]="gumbel", peak_factor: float=4
     ):
         res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration(pos, floor, peak_method, peak_factor) for k, r in res.items()}
+        return {k: r.get_max_acceleration(cm_positions, pos, floor, peak_method, peak_factor) for k, r in res.items()}
 
 
 class HFPIAnalysisResults(DirectionalAnalysisResults):
@@ -450,6 +484,9 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
   
     def join_by_frequency_multiplier(self):
         return self.join_by(lambda params: params.frequency_multiplier)
+    
+    def join_by_mass_multiplier(self):
+        return self.join_by(lambda params: params.mass_multiplier)
         
 
 
@@ -467,3 +504,6 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
 
     def filter_by_frequency_multiplier(self, filter: bool):
         return self.join_by_frequency_multiplier()[filter]
+    
+    def filter_by_mass_multiplier(self, filter: bool):
+        return self.join_by_mass_multiplier()[filter]

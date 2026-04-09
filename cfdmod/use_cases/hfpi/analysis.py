@@ -343,9 +343,9 @@ def plot_floor_by_floor_mean_peaks(
         axs[0].set_ylim(y_abs[0], y_abs[1])
 
     axs[0].set_ylabel("Andar")
-    axs[0].set_ylabel(f"{vals_labels[0]} ({unit_name})", weight="bold")
-    axs[1].set_ylabel(f"{vals_labels[1]} ({unit_name})", weight="bold")
-    axs[2].set_ylabel(f"{vals_labels[2]} ({unit_name}.m)", weight="bold")
+    axs[0].set_xlabel(f"{vals_labels[0]} ({unit_name})", weight="bold")
+    axs[1].set_xlabel(f"{vals_labels[1]} ({unit_name})", weight="bold")
+    axs[2].set_xlabel(f"{vals_labels[2]} ({unit_name}.m)", weight="bold")
 
     (axs.flat)[0].legend(loc="best", frameon=False, ncol=1, fontsize=10)
 

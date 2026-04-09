@@ -469,7 +469,7 @@ class HFPIResults(BaseModel):
                 acc_extreme.append(common.gumbel_extreme_value(
                         hist_series=acc_mag[:,floor],
                         dt=self.delta_t,
-                        peak_duration=3,
+                        peak_duration=0.000001,
                         event_duration=10*60,
                         extreme_type='max',
                         n_subdivisions=10,
@@ -491,7 +491,7 @@ class HFPIResults(BaseModel):
             acc_extreme = common.gumbel_extreme_value(
                 hist_series=acc_mag,
                 dt=self.delta_t,
-                peak_duration=3,
+                peak_duration=0.000001,
                 event_duration=10*60,
                 extreme_type='max',
                 n_subdivisions=10,
