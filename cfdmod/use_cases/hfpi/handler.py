@@ -55,9 +55,9 @@ class HFPICaseParameters(BaseModel, frozen=True):
     ) -> HFPICaseParameters:
         s_data = copy.deepcopy(structural_data)
         s_data.df_floors['M'] = s_data.df_floors['M']*mass_multiplier
-        # s_data.df_modes['frequency'] = s_data.df_modes['frequency']/mass_multiplier**0.5
-        # s_data.df_modes['wp'] = s_data.df_modes['frequency']*2*np.pi
-        # s_data.df_modes['period'] = 1/s_data.df_modes['frequency']
+        s_data.df_modes['frequency'] = s_data.df_modes['frequency']/mass_multiplier**0.5
+        s_data.df_modes['wp'] = s_data.df_modes['frequency']*2*np.pi
+        s_data.df_modes['period'] = 1/s_data.df_modes['frequency']
         
         return HFPICaseParameters(
             structural_data = s_data,
