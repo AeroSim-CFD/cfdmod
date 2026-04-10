@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import math
 import pathlib
 from typing import Literal
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy
-from matplotlib.ticker import FuncFormatter 
-import matplotlib
+from matplotlib.ticker import FuncFormatter
 from scipy.ndimage import gaussian_filter
-import math
 
-from cfdmod.use_cases.hfpi import dynamic, handler, static
-from sympy import comp
+from cfdmod.use_cases.hfpi import dynamic, handler
 
 plot_style = {
     "AeroSim": {
@@ -46,7 +45,7 @@ def plot_force_spectrum(
             continue
         global_force = df_force.drop(columns=["time"]).sum(axis=1)
 
-        (freq, PSD) = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
+        freq, PSD = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
         PSD = PSD * freq / (np.std(global_force) ** 2)
         ax.loglog(
             freq,
@@ -90,7 +89,7 @@ def plot_force_spectrum_np(
             continue
         global_force = arr_force.sum(axis=1)
 
-        (freq, PSD) = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
+        freq, PSD = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
         PSD = PSD * freq / (np.std(global_force) ** 2)
         ax.loglog(
             freq,
@@ -283,8 +282,9 @@ def plot_global_stats_per_direction(
 
     return fig, axs
 
-def get_xlims(min_vals, max_vals)-> tuple[float,float]:
-    extreme_val = max( abs(min(min_vals)), max(max_vals))*1.5
+
+def get_xlims(min_vals, max_vals) -> tuple[float, float]:
+    extreme_val = max(abs(min(min_vals)), max(max_vals)) * 1.5
     if extreme_val < 1:
         sieve_size = 1
     elif extreme_val < 50:
@@ -324,7 +324,9 @@ def plot_floor_by_floor_mean_peaks(
 
     for ax, component in zip(axs.flat, ("x", "y", "z")):
         ax.axvline(x=0, color="gray", linewidth=1.5, alpha=0.7, linestyle="-")
-        x_lim = get_xlims(min_vals[component]*unit_conversion, max_vals[component]*unit_conversion)
+        x_lim = get_xlims(
+            min_vals[component] * unit_conversion, max_vals[component] * unit_conversion
+        )
         ax.set_xlim(x_lim[0], x_lim[1])
         for dct_data, key, mark, label_n in zip(
             (mean_vals, max_vals, min_vals), keys, markers, labels
@@ -404,7 +406,7 @@ def plot_max_acceleration(
         range_NBR_ac_residential,
         "-",
         linewidth=4,
-        label=f"NBR 6123 - residential",
+        label="NBR 6123 - residential",
         color=color_nbr_res,
         alpha=0.8,
     )
@@ -430,7 +432,7 @@ def plot_max_acceleration(
         range_NBR_ac_comertial,
         "-",
         linewidth=4,
-        label=f"NBR 6123 - comercial",
+        label="NBR 6123 - comercial",
         color=color_nbr_com,
         alpha=0.8,
     )
@@ -456,7 +458,7 @@ def plot_max_acceleration(
         range_NBCC,
         "-",
         linewidth=4,
-        label=f"NBCC - residential and comercial",
+        label="NBCC - residential and comercial",
         color=color_nbcc,
         alpha=0.8,
     )
@@ -477,7 +479,7 @@ def plot_max_acceleration(
 
     ax.set_ylabel(f"Acceleration [{unit_name}]")
     ax.set_xlabel("Wind recurrence period")
-    ax.set_title(f"Maximum acceleration")
+    ax.set_title("Maximum acceleration")
     ax.legend()
 
     return fig, ax
@@ -491,9 +493,11 @@ def plot_acceleration_floor_by_floor(
     project_name: str = "AeroSim",
     unit_conversion: float = 1000 / 9.806,
     unit_name: str = "milli-g",
-    last_floor: int|None = None,
+    last_floor: int | None = None,
     language="en",
-    standards_to_use: list[Literal['nbr_com','nbr_res','nbcc_res','nbcc_com','melbourne']] = ['melbourne'], 
+    standards_to_use: list[Literal["nbr_com", "nbr_res", "nbcc_res", "nbcc_com", "melbourne"]] = [
+        "melbourne"
+    ],
 ):
     color_eq = "#E69F00"
     color_nbcc_res = "#2F993A"
@@ -502,21 +506,21 @@ def plot_acceleration_floor_by_floor(
     color_nbr_com = "#426AC2"
     color_melbourne = "#A20DDD"
 
-    #avoid problems of underspecification of criteria type
+    # avoid problems of underspecification of criteria type
     def filter_only_valid_standards_by_rec_period(standards_to_use, rec_period):
-        compatibilities = {'nbr_com': 1,'nbr_res': 1,'nbcc_res': 10,'nbcc_com': 10}
+        compatibilities = {"nbr_com": 1, "nbr_res": 1, "nbcc_res": 10, "nbcc_com": 10}
         valid_standards = []
         for std in standards_to_use:
-            if std == 'melbourne': #always valid
+            if std == "melbourne":  # always valid
                 valid_standards.append(std)
                 continue
             if compatibilities[std] == rec_period:
                 valid_standards.append(std)
         return valid_standards
-    
+
     standards_to_use = filter_only_valid_standards_by_rec_period(standards_to_use, rec_period)
-    if len(standards_to_use) == 0: #if no valid standard remained, use melbourne
-        standards_to_use.append('melbourne')
+    if len(standards_to_use) == 0:  # if no valid standard remained, use melbourne
+        standards_to_use.append("melbourne")
 
     fig, ax = plt.subplots()
 
@@ -527,21 +531,24 @@ def plot_acceleration_floor_by_floor(
         "nbr_res": {"en": "NBR 6123 - residential", "pt-br": "NBR 6123 - residencial"},
         "nbr_com": {"en": "NBR 6123 - comercial", "pt-br": "NBR 6123 - comercial"},
         "melbourne": {"en": "Melbourne (1992)", "pt-br": "Melbourne (1992)"},
-        'lastfloor': {"en": "Last habitable floor", "pt-br": "Último andar habitável"},
+        "lastfloor": {"en": "Last habitable floor", "pt-br": "Último andar habitável"},
     }
 
     if last_floor is not None:
         ax.axhline(
             last_floor,
-            color='grey',
-            linestyle='--',
-            label=texts['lastfloor'][language],
+            color="grey",
+            linestyle="--",
+            label=texts["lastfloor"][language],
             linewidth=1,
         )
 
     kwargs_codes = dict(linewidth=2)
-    def plot_nbr_comertial(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
-        range_NBR_ac_comertial = 0.01 * 6.12 * natural_freq ** -0.445 * unit_conversion
+
+    def plot_nbr_comertial(
+        fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes
+    ) -> tuple[matplotlib.figure.Figure, ax : matplotlib.axes.Axes]:
+        range_NBR_ac_comertial = 0.01 * 6.12 * natural_freq**-0.445 * unit_conversion
         ax.axvline(
             range_NBR_ac_comertial,
             label=texts["nbr_com"][language],
@@ -549,8 +556,11 @@ def plot_acceleration_floor_by_floor(
             **kwargs_codes,
         )
         return fig, ax
-    def plot_nbr_residential(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
-        range_NBR_ac_residential = 0.01 * 4.08 * natural_freq ** -0.445 * unit_conversion
+
+    def plot_nbr_residential(
+        fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes
+    ) -> tuple[matplotlib.figure.Figure, ax : matplotlib.axes.Axes]:
+        range_NBR_ac_residential = 0.01 * 4.08 * natural_freq**-0.445 * unit_conversion
         ax.axvline(
             range_NBR_ac_residential,
             label=texts["nbr_res"][language],
@@ -558,7 +568,10 @@ def plot_acceleration_floor_by_floor(
             **kwargs_codes,
         )
         return fig, ax
-    def plot_nbcc_comertial(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+
+    def plot_nbcc_comertial(
+        fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes
+    ) -> tuple[matplotlib.figure.Figure, ax : matplotlib.axes.Axes]:
         range_NBCC = [
             20 * (9.806 / 1000) * unit_conversion,
             25 * (9.806 / 1000) * unit_conversion,
@@ -572,7 +585,10 @@ def plot_acceleration_floor_by_floor(
             **kwargs_codes,
         )
         return fig, ax
-    def plot_nbcc_residential(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+
+    def plot_nbcc_residential(
+        fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes
+    ) -> tuple[matplotlib.figure.Figure, ax : matplotlib.axes.Axes]:
         range_NBCC = [
             15 * (9.806 / 1000) * unit_conversion,
             18 * (9.806 / 1000) * unit_conversion,
@@ -586,7 +602,10 @@ def plot_acceleration_floor_by_floor(
             **kwargs_codes,
         )
         return fig, ax
-    def plot_melbourne(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes) -> tuple[matplotlib.figure.Figure, ax: matplotlib.axes.Axes]:
+
+    def plot_melbourne(
+        fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes
+    ) -> tuple[matplotlib.figure.Figure, ax : matplotlib.axes.Axes]:
         range_melbourne = (
             unit_conversion
             * np.sqrt(2 * np.log(600 * natural_freq))
@@ -622,11 +641,13 @@ def plot_acceleration_floor_by_floor(
 
 
 def get_effective_forces_peak_loads_per_direction(
-    results: handler.HFPIAnalysisResults, unit_conversion: float = 1 / 9806, get_primary_load: tuple[bool,bool,bool]|bool=True
+    results: handler.HFPIAnalysisResults,
+    unit_conversion: float = 1 / 9806,
+    get_primary_load: tuple[bool, bool, bool] | bool = True,
 ) -> dict[str, pd.DataFrame]:
     if isinstance(get_primary_load, bool):
         get_primary_load = (get_primary_load, get_primary_load, get_primary_load)
-    get_primary_load = {ax: c for ax, c in zip(['x','y','z'], get_primary_load)}
+    get_primary_load = {ax: c for ax, c in zip(["x", "y", "z"], get_primary_load)}
     tables = {"Fx": {}, "Fy": {}, "Mz": {}}
     for wd, res in results.join_by_direction().items():
         r = next(iter(res.results.values()))
@@ -660,20 +681,25 @@ def is_float(s):
     except ValueError:
         return False
 
-def export_eberick_tables_to_xlsx(tables: dict[str, pd.DataFrame], filename: pathlib.Path, coordinate_system: Literal['global','local']='global'):
+
+def export_eberick_tables_to_xlsx(
+    tables: dict[str, pd.DataFrame],
+    filename: pathlib.Path,
+    coordinate_system: Literal["global", "local"] = "global",
+):
     """Export floor values to Eberick compatible xlsx
 
     https://suporte.altoqi.com.br/hc/pt-br/articles/360050991093"""
 
     filename.parent.mkdir(parents=True, exist_ok=True)
-    if coordinate_system == 'global':
+    if coordinate_system == "global":
         tab_names = {"Fx": "Fx", "Fy": "Fy", "Mz": "Mz"}
     else:
         tab_names = {"Fx": "Força vento", "Fy": "Força transversal", "Mz": "Momento torsor"}
 
-    with pd.ExcelWriter(filename, engine="openpyxl", mode='w') as writer:
+    with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
         for key, df in tables.items():
             cols_order = ["Pavimento", "Cota"]
             cols_order += sorted([c for c in df.columns if is_float(c)], key=lambda k: float(k))
-            df.sort_values(by='Cota', ascending=False, inplace=True)
+            df.sort_values(by="Cota", ascending=False, inplace=True)
             df[cols_order].to_excel(writer, sheet_name=tab_names[key], index=False)

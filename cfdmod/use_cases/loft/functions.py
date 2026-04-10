@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import lnas
 import numpy as np
 
-import lnas
 
 def flatten_vertices_and_get_triangles_as_list_of_indexes(
     triangle_vertices: np.ndarray,
@@ -131,6 +131,7 @@ def remove_edges_of_internal_holes(vertices: np.ndarray, edges: np.ndarray) -> n
 
     return np.array(list(biggest_group["edges"]))
 
+
 def generate_loft_triangles(
     vertices: np.ndarray,
     edges: np.ndarray,
@@ -187,7 +188,9 @@ def generate_loft_triangles(
     corrected_triangles[mask_inverted_normals, 1, :] = full_triangles[mask_inverted_normals, 0, :]
     corrected_normals = normal_of_triangles(corrected_triangles)
 
-    lnas_geom = lnas.LnasFormat.from_triangles(triangles=corrected_triangles, normals=corrected_normals).geometry
+    lnas_geom = lnas.LnasFormat.from_triangles(
+        triangles=corrected_triangles, normals=corrected_normals
+    ).geometry
 
     return lnas_geom
 

@@ -6,7 +6,6 @@ import pandas as pd
 from ruamel.yaml import YAML
 
 
-
 def read_df(df_path: pathlib.Path) -> pd.DataFrame:
     """Iterates through keys and reads full dataframe from hdf file. Useful for debug
 
@@ -23,6 +22,7 @@ def read_df(df_path: pathlib.Path) -> pd.DataFrame:
 
     df_inst = pd.concat(np_ls)
     return df_inst
+
 
 def create_folders_for_file(filename: pathlib.Path):
     """Creates folders to save given file
