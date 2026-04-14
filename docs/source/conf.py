@@ -27,6 +27,7 @@ extensions = [
     "myst_parser",
     "nbsphinx",
     "shibuya",
+    "sphinx_sitemap",
 ]
 
 source_suffix = [".rst", ".md"]
