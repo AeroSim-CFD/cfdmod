@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import pathlib
-import pickle
+from functools import cached_property
 from typing import Literal
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
-import scipy.signal
-import scipy.stats
 from scipy import integrate
 
-from cfdmod.use_cases.hfpi import common, static
 from cfdmod import utils
+from cfdmod.use_cases.hfpi import common, static
+
 
 def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI modes from CSV. Expected columns:
@@ -34,9 +33,8 @@ def read_hfpi_modes(csv_path: pathlib.Path) -> pd.DataFrame:
     df.sort_values(by="mode", inplace=True)
     return df
 
-def read_hfpi_floors_data(
-    csv_path: pathlib.Path
-) -> pd.DataFrame:
+
+def read_hfpi_floors_data(csv_path: pathlib.Path) -> pd.DataFrame:
     """Read HFPI floors data from CSV. Expected columns:
 
     Z, M, I: height, center of rotation, mass, moment of inertia
@@ -45,7 +43,7 @@ def read_hfpi_floors_data(
 
     df = pd.read_csv(csv_path, index_col=None)
     # "XG", "YG", "XR", "YR", "I", "R"
-    req_keys = ["Z", "M", "I","XR", "YR"]
+    req_keys = ["Z", "M", "I", "XR", "YR"]
     if not utils.validate_keys_df(df, req_keys):
         raise KeyError(
             f"Not all required keys ({req_keys}) present in HFPI floors CSV {csv_path.as_posix()}. Found only keys {df.columns}"
@@ -121,7 +119,7 @@ class HFPIStructuralData(BaseModel):
         inactive_modes: list = [],
     ):
         df_modes = read_hfpi_modes(modes_csv)
-        df_floors = read_hfpi_floors_data( floors_csv )
+        df_floors = read_hfpi_floors_data(floors_csv)
         df_phi_floors = []
         for p in phi_floors_csvs:
             df = read_hfpi_floor_phi(p)
@@ -164,6 +162,7 @@ class HFPIStructuralData(BaseModel):
         [normalize_mode_shapes(self.df_floors, df_phi) for df_phi in self.df_modal_shapes]
         self.is_normalized = True
 
+
 def compute_generalized_forces(
     forces: static.StaticForcesData, structural_data: HFPIStructuralData
 ) -> pd.DataFrame:
@@ -190,16 +189,14 @@ def compute_generalized_forces(
         f_tmp = np.zeros((n_floors, n_samples))
         for n_floor in range(n_floors):
             k_use = str(n_floor) if use_string else int(n_floor)
-            CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
+            CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][["XR", "YR"]]))
             cm_z_onCM = cm_z[k_use] - common.series_cross_product(CM_pos, cf_x[k_use], cf_y[k_use])
             f_tmp[n_floor, :] = (
                 cf_x[k_use] * df_phi["DX"].iloc[n_floor]
                 + cf_y[k_use] * df_phi["DY"].iloc[n_floor]
                 + cm_z_onCM * df_phi["RZ"].iloc[n_floor]
             )
-        # F_gen[n_mode] = f_tmp.sum(axis=1)
         F_gen[n_mode] = f_tmp.sum(axis=0)
-    # print(F_gen)
     df_forces_gen = pd.DataFrame(F_gen)
     return df_forces_gen
 
@@ -245,20 +242,41 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
     return sol.y[0]
 
 
+def compute_real_displacement(
+    gen_mode_displacements: dict[int, np.ndarray], modal_shapes: dict[int, pd.DataFrame]
+) -> np.ndarray:
+    """Solve real structure displacement, summing contribution of all active modes
+
+    Args:
+        gen_mode_displacement (dict[int, np.ndarray]): generalized displacement of building for each mode
+        modal_shapes (dict[int,pd.DataFrame]): Shape of each mode
+
+    Returns:
+        pd.DataFrame: Dataframe with real structure displacement in "x", "y" and "z"
+    """
+    all_real_displacements = []
+    for n_mode in gen_mode_displacements.keys():
+        df_phi = modal_shapes[n_mode]
+        real_displacement = compute_mode_real_displacement(gen_mode_displacements[n_mode], df_phi)
+        all_real_displacements.append(real_displacement)
+    displacement = combine_modes(all_real_displacements)
+    return displacement
+
+
 def compute_mode_real_displacement(
-    gen_mode_displacement: np.ndarray, df_mode_phi: pd.DataFrame
+    gen_mode_displacement: np.ndarray, df_mode_shape: pd.DataFrame
 ) -> dict[str, np.ndarray]:
     """Solve real structure displacement for a given mode
 
     Args:
         gen_mode_displacement (np.ndarray): generalized displacement of building in given mode
-        df_mode_phi (pd.DataFrame): Mode data for structure floors
+        df_mode_shape (pd.DataFrame): Shape of current mode
 
     Returns:
         pd.DataFrame: Dataframe with real structure displacement in "x", "y" and "z"
     """
 
-    n_floors = len(df_mode_phi)
+    n_floors = len(df_mode_shape)
     n_samples = len(gen_mode_displacement)
 
     disp = {}
@@ -267,7 +285,7 @@ def compute_mode_real_displacement(
     disp["z"] = np.zeros((n_samples, n_floors))
 
     for n_floor in range(n_floors):
-        df_floor = df_mode_phi.iloc[n_floor]
+        df_floor = df_mode_shape.iloc[n_floor]
         disp["x"][:, n_floor] = gen_mode_displacement * df_floor["DX"]
         disp["y"][:, n_floor] = gen_mode_displacement * df_floor["DY"]
         disp["z"][:, n_floor] = gen_mode_displacement * df_floor["RZ"]
@@ -275,25 +293,60 @@ def compute_mode_real_displacement(
     return disp
 
 
+def compute_static_equivalent_forces(
+    gen_mode_displacements: dict[int, np.ndarray],
+    floors_mass: np.ndarray,
+    floors_radius: np.ndarray,
+    modal_shapes: dict[int, pd.DataFrame],
+    wps: dict[int, float],
+) -> dict[str, np.ndarray]:
+    """Solve sum of static equivalent forces for all active modes
+
+    Args:
+        gen_mode_displacement (dict[int, np.ndarray]): generalized displacement of building for each mode
+        floors_mass (np.ndarray): mass of each floor
+        floors_radius (np.ndarray): radius of gyration of each floor
+        modal_shapes (dict[int,pd.DataFrame]): Shape of each mode
+        wp (dict[int,float]): frequency for each mode
+
+    Returns:
+        pd.DataFrame: Dataframe with static equivalent forces in "x", "y" and "z"
+    """
+    all_static_eq_force = []
+
+    for n_mode in gen_mode_displacements.keys():
+        df_phi = modal_shapes[n_mode]
+        wp = wps[n_mode]
+
+        static_eq_mode = compute_mode_static_equivalent_force(
+            gen_mode_displacements[n_mode], df_phi, floors_mass, floors_radius, wp
+        )
+        all_static_eq_force.append(static_eq_mode)
+    force_static_eq = combine_modes(all_static_eq_force)
+    return force_static_eq
+
+
 def compute_mode_static_equivalent_force(
     gen_mode_displacement: np.ndarray,
-    df_mode_phi: pd.DataFrame,
-    df_floors: pd.DataFrame,
+    df_mode_shape: pd.DataFrame,
+    floors_mass: np.ndarray,
+    floors_radius: np.ndarray,
     wp: float,
 ) -> dict[str, np.ndarray]:
     """Solve static equivalent force for a given mode
 
     Args:
-        real_mode_displacement (np.ndarray): real displacement of building in given mode
-        df_mode_phi (pd.DataFrame): Mode data for structure floors
-        df_floors (pd.DataFrame): Data for structure floors
-        wp (float): frequency for mode
+        gen_mode_displacement (np.ndarray): geneeralized displacement of building in given mode
+        df_mode_phi (pd.DataFrame): Shape of current mode
+        floors_mass (np.ndarray): mass of each floor
+        floors_radius (np.ndarray): radius of gyration of each floor
+        wp (float): frequency for current mode
 
     Returns:
         pd.DataFrame: Dataframe with static equivalent forces in "x", "y" and "z"
     """
 
-    n_floors = len(df_mode_phi)
+    n_floors = len(df_mode_shape)
     n_samples = len(gen_mode_displacement)
 
     static_eq = {}
@@ -302,14 +355,20 @@ def compute_mode_static_equivalent_force(
     static_eq["z"] = np.zeros((n_samples, n_floors))
 
     for n_floor in range(n_floors):
-        M = df_floors["M"][n_floor]
-        R = df_floors["R"][n_floor]
-        df_floor = df_mode_phi.iloc[n_floor]
+        M = floors_mass[n_floor]
+        R = floors_radius[n_floor]
+        df_floor_mode_shape = df_mode_shape.iloc[n_floor]
         force_factor = (wp**2) * M
         moment_factor = (wp**2) * M * (R**2)
-        static_eq["x"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DX"]
-        static_eq["y"][:, n_floor] = gen_mode_displacement * force_factor * df_floor["DY"]
-        static_eq["z"][:, n_floor] = gen_mode_displacement * moment_factor * df_floor["RZ"]
+        static_eq["x"][:, n_floor] = (
+            gen_mode_displacement * force_factor * df_floor_mode_shape["DX"]
+        )
+        static_eq["y"][:, n_floor] = (
+            gen_mode_displacement * force_factor * df_floor_mode_shape["DY"]
+        )
+        static_eq["z"][:, n_floor] = (
+            gen_mode_displacement * moment_factor * df_floor_mode_shape["RZ"]
+        )
     return static_eq
 
 
@@ -330,165 +389,224 @@ class HFPIResults(BaseModel):
     """Results generated from HFPI analysis"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
     delta_t: float
     xi: float
+
     floors_heights: np.ndarray
+    floors_mass: np.ndarray
+    floors_radius: np.ndarray
+    modal_shapes: dict[int, pd.DataFrame]
+    wps: dict[int, float]
+
+    gen_displacements: dict[int, np.ndarray]
 
     # data as ["x", "y", "z"] = time series
-    displacement: dict[str, np.ndarray]
-    forces_static_eq: dict[str, np.ndarray]
-    moments_static_eq: dict[str, np.ndarray]
+    @cached_property
+    def displacement(self) -> dict[str, np.ndarray]:
+        return compute_real_displacement(self.gen_displacements, self.modal_shapes)
+
+    @cached_property
+    def forces_static_eq(self) -> dict[str, np.ndarray]:
+        return compute_static_equivalent_forces(
+            self.gen_displacements,
+            self.floors_mass,
+            self.floors_radius,
+            self.modal_shapes,
+            self.wps,
+        )
+
+    @cached_property
+    def moments_static_eq(self) -> dict[str, np.ndarray]:
+        return common.get_moments_from_force(self.forces_static_eq, self.floors_heights)
 
     def rotate_xy(self, angle_rot: float):
         common.rotate_values_xy(self.forces_static_eq, angle_rot)
         common.rotate_values_xy(self.moments_static_eq, angle_rot)
 
-    @property
-    def global_forces_static_eq(self):
-        return common.get_global_dct(self.forces_static_eq)
+    # @property
+    # def global_forces_static_eq(self):
+    #     return common.get_global_dct(self.forces_static_eq)
 
-    @property
-    def global_moments_static_eq(self):
-        return common.get_global_dct(self.moments_static_eq)
+    # @property
+    # def global_moments_static_eq(self):
+    #     return common.get_global_dct(self.moments_static_eq)
 
-    def get_displacement_w_rotation(self, pos: tuple[float, float]) -> dict[str, np.ndarray]:
-        r = (pos[0] ** 2 + pos[1] ** 2) ** 0.5
-        theta = np.arctan2(pos[1], pos[0])
-        disp_z = theta + self.displacement["z"]
-
-        x = np.cos(disp_z) * r
-        y = np.sin(disp_z) * r
-
-        return {"x": x, "y": y}
-
-    def get_acceleration(self, pos: tuple[float, float] = (0, 0)) -> np.ndarray:
+    def get_point_acceleration(
+        self, cm_positions: pd.DataFrame, pos: tuple[float, float]
+    ) -> np.ndarray:
         """Get acceleration considering position for radius (moment in Z)"""
-        acceleration = {}
-        dt = self.delta_t
+        cms = cm_positions[["XR", "YR"]].to_numpy()
+        n_floors = len(self.floors_heights)
 
-        disp_full = {"x": self.displacement["x"].copy(), "y": self.displacement["y"].copy()}
-        disp_rot = self.get_displacement_w_rotation(pos)
-        disp_full["x"] += disp_rot["x"]
-        disp_full["y"] += disp_rot["y"]
+        acceleration_ls = {"x": [], "y": []}
+        for floor in range(n_floors):
+            floor_acc = self.get_point_floor_acceleration(cms[floor], pos, floor)
+            acceleration_ls["x"].append(floor_acc["x"])
+            acceleration_ls["y"].append(floor_acc["y"])
+        accelerations_full = {
+            ax: np.column_stack(acceleration_ls[ax]) for ax in acceleration_ls.keys()
+        }
+        return accelerations_full
 
-        for axis in ["x", "y"]:
-            disp = disp_full[axis][:]
-            acc = np.zeros_like(disp, dtype=np.float32)
-            # Central difference for internal points
-            acc[1:-1] = (disp[2:] - 2 * disp[1:-1] + disp[:-2]) / dt**2
-            # Forward/backward difference for boundaries
-            acc[0] = (disp[2] - 2 * disp[1] + disp[0]) / dt**2
-            acc[-1] = (disp[-1] - 2 * disp[-2] + disp[-3]) / dt**2
-            acceleration[axis] = acc
-
-        scalar_acceleration = (acceleration["x"] ** 2 + acceleration["y"] ** 2) ** 0.5
-
-        return scalar_acceleration
-
-    def get_floor_acceleration(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1
+    def get_point_floor_acceleration(
+        self, cm_position: tuple[float, float], pos: tuple[float, float] = (0, 0), floor: int = -1
     ) -> np.ndarray:
         """Get acceleration from given floor, considering radius for Z"""
-        return self.get_acceleration(pos=pos)[:, floor]
+        disp_full = {
+            "x": self.displacement["x"][:, floor].copy(),
+            "y": self.displacement["y"][:, floor].copy(),
+        }
+        rel_pos = np.array(pos) - np.array(cm_position)
+        point_angle = np.arctan2(rel_pos[1], rel_pos[0])
+        displ_angle = point_angle + self.displacement["z"][:, floor]
+        r = (rel_pos[0] ** 2 + rel_pos[1] ** 2) ** 0.5
 
-    def get_max_acceleration_per_floor(self, pos: tuple[float, float] = (0, 0), peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4) -> np.ndarray:
-        if peak_method == "extreme":
-            return self.get_acceleration(pos=pos).max(axis=0)
+        disp_full["x"] += np.cos(displ_angle) * r
+        disp_full["y"] += np.sin(displ_angle) * r
+        dt = self.delta_t
+
+        return common.second_derivative(disp_full, dt)
+
+    def get_max_acceleration_per_floor(
+        self,
+        cm_positions: pd.DataFrame,
+        pos: tuple[float, float] = (0, 0),
+        peak_method: Literal["gumbel", "max", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ) -> np.ndarray:
+        accs = self.get_point_acceleration(cm_positions, pos)
+        if peak_method == "max":
+            acc_mag = (accs["x"] ** 2 + accs["y"] ** 2) ** 0.5
+            return acc_mag.max(axis=0)
+        if peak_method == "gumbel":
+            acc_mag = (accs["x"] ** 2 + accs["y"] ** 2) ** 0.5
+            acc_extreme = []
+            for floor in range(acc_mag.shape[1]):
+                acc_extreme.append(
+                    common.gumbel_extreme_value(
+                        hist_series=acc_mag[:, floor],
+                        dt=self.delta_t,
+                        peak_duration=0.000001,
+                        event_duration=10 * 60,
+                        extreme_type="max",
+                        n_subdivisions=10,
+                        non_exceedance_probability=0.78,
+                    )
+                )
+            return np.array(acc_extreme)
         else:
-            acc = self.get_acceleration(pos=pos)
-            acc_m = acc.mean(axis=0)
-            return acc_m + (acc-acc_m).std(axis=0)*peak_factor
+            acc_peak = {ax: peak_factor * acc.std(axis=0) for ax, acc in accs.items()}
+            acc_mag = (acc_peak["x"] ** 2 + acc_peak["y"] ** 2) ** 0.5
+            return acc_mag
 
     def get_floor_max_acceleration(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
+        self,
+        cm_position: tuple[float, float],
+        pos: tuple[float, float] = (0, 0),
+        floor: int = -1,
+        peak_method: Literal["gumbel", "max", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
     ) -> float:
+        accs = self.get_point_floor_acceleration(cm_position, pos, floor)
+        if peak_method == "gumbel":
+            acc_mag = (accs["x"] ** 2 + accs["y"] ** 2) ** 0.5
+            acc_extreme = common.gumbel_extreme_value(
+                hist_series=acc_mag,
+                dt=self.delta_t,
+                peak_duration=0.000001,
+                event_duration=10 * 60,
+                extreme_type="max",
+                n_subdivisions=10,
+                non_exceedance_probability=0.78,
+            )
+            return acc_extreme
+        elif peak_method == "max":
+            acc_mag = (accs["x"] ** 2 + accs["y"] ** 2) ** 0.5
+            return acc_mag.max()
+        elif peak_method == "peak-factor":
+            acc_peak = {ax: peak_factor * acc.std(axis=0) for ax, acc in accs.items()}
+            return (acc_peak["x"] ** 2 + acc_peak["y"] ** 2) ** 0.5
+
+    def get_stats_forces_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["gumbel", "extreme", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ):
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static_eq,
+            self.moments_static_eq,
+            cm_positions,
+        )
+
         if peak_method == "extreme":
-            return self.get_floor_acceleration(pos=pos, floor=floor).max()
+            return common.get_stats_dct(forces, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(forces, stats_type, self.delta_t)
         else:
-            acc = self.get_floor_acceleration(pos=pos, floor=floor)
-            return acc.mean()+acc.std()*peak_factor
+            return common.get_stats_dct_peak_factor(forces, stats_type, peak_factor)
 
-    def get_stats_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.forces_static_eq, stats_type)
+    def get_stats_monents_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["gumbel", "extreme", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static_eq,
+            self.moments_static_eq,
+            cm_positions,
+        )
+
+        if peak_method == "extreme":
+            return common.get_stats_dct(moments, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.forces_static_eq, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(moments, stats_type, peak_factor)
 
-    def get_stats_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.moments_static_eq, stats_type)
+    def get_stats_global_forces_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["gumbel", "extreme", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ):
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static_eq,
+            self.moments_static_eq,
+            cm_positions,
+        )
+        global_forces = common.get_global_dct(forces)
+        if peak_method == "extreme":
+            return common.get_stats_dct(global_forces, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(global_forces, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.moments_static_eq, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
 
-
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.global_forces_static_eq, stats_type)
+    def get_stats_global_moments_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["gumbel", "extreme", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static_eq,
+            self.moments_static_eq,
+            cm_positions,
+        )
+        global_moments = common.get_global_dct(moments)
+        if peak_method == "extreme":
+            return common.get_stats_dct(global_moments, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(global_moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.global_forces_static_eq, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(global_moments, stats_type, peak_factor)
 
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.global_moments_static_eq, stats_type)
-        else:
-            return common.get_stats_dct_peak_factor(self.global_moments_static_eq, stats_type, peak_factor)
-    
-    # def get_stats_global_forces_static_eq_peak_factor(self, stats_type: Literal["min", "max"], peak_factor: float = 4):
-    #     dict_vals = self.global_moments_static_eq
-    #     result = {}
-    #     for comp, values in dict_vals.items():
-    #         mean = values.mean(axis=0)
-    #         std = values.std(axis=0)
-    #         signal = -1 if stats_type=='min' else 1
-    #         result[comp] = mean + signal*std*peak_factor
-    #     return result
-
-def move_displacement_ref_from_CM_to_origin(
-    displacement: dict[str, np.ndarray], 
-    structural_data:  HFPIStructuralData,
-) -> dict[str, np.ndarray]:
-    """ Transforms displacements from the coordinate system of center of mass to original coordinate system.
-        Currently not implemented. Just returns displacement without changes.
-    """
-    # n_floors = structural_data.n_floors
-    # x, y, z = displacement['x'], displacement['y'], displacement['z']
-    # for n_floor in range(n_floors):
-    #     k_use = int(n_floor)
-    #     print(n_floor, "old",y[-1,k_use])
-    #     CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
-    #     CM_R = (CM_pos[0]**2+CM_pos[1]**2)**0.5
-    #     CM_ang = np.atan2(CM_pos[0], CM_pos[1])
-    #     # new_ang = CM_ang + z[:,k_use]
-    #     new_ang = z[:,k_use]
-    #     displacement['x'][:,k_use] = CM_R*np.cos(new_ang) + x[:,k_use]
-    #     displacement['y'][:,k_use] = y[:,k_use] + CM_R*np.sin(new_ang)
-    #     print("new",displacement['y'][-1,k_use], z[-1,k_use], CM_ang)
-    return displacement
-
-def move_loads_ref_from_CM_to_origin(
-    forces: dict[str, np.ndarray], 
-    moments: dict[str, np.ndarray],
-    structural_data:  HFPIStructuralData,
-) -> tuple[dict[str, np.ndarray],dict[str, np.ndarray]]:
-    """Transforms forces and moments of force from the coordinate system of center of mass to original coordinate system.
-
-    Args:
-        forces dict[str, np.ndarray]: dictionary with force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
-        moments dict[str, np.ndarray]: dictionary with moments of force. Keys are ['x','y''z'] and items are numpy arrays N timesteps by F floors.
-        structural_data (HFPIStructuralData): object with structural data
-
-    Returns:
-        tuple[dict[str, np.ndarray],dict[str, np.ndarray]]: Transformed dictionaries of force and moment of force in that order
-    """
-    n_floors = structural_data.n_floors
-    fx, fy, mz = forces['x'], forces['y'], moments['z']
-    for n_floor in range(n_floors):
-        k_use = int(n_floor)
-        CM_pos = np.array((structural_data.df_floors.iloc[int(k_use)][['XR','YR']]))
-        moments['z'][:,k_use] = mz[:,k_use] + common.series_cross_product(CM_pos, fx[:,k_use], fy[:,k_use])
-    forces["z"] = moments['z'].copy()
-    return forces, moments
 
 def solve_hfpi(
     *,
@@ -496,15 +614,13 @@ def solve_hfpi(
     dim_data: static.DimensionalData,
     forces: static.StaticForcesData,
     xi: float,
-    frequency_multiplier: float,
-    return_values_on_origin: bool = True,
-    apply_wavelet_filter: bool = False,
-    filter_percentage: float =  99.5,
 ) -> HFPIResults:
     """Solver HFPI (high frequency pressure integration) for given structure and forces conditions"""
 
     df_floors = structural_data.df_floors
     floors_heights = df_floors["Z"].to_numpy()
+    floors_mass = df_floors["M"].to_numpy()
+    floors_radius = df_floors["R"].to_numpy()
 
     structural_data.normalize_all_mode_shapes()
     static.validate_forces_w_n_floors(forces, structural_data.n_floors)
@@ -513,78 +629,27 @@ def solve_hfpi(
 
     generalized_forces = compute_generalized_forces(normalized_forces, structural_data)
     dt = normalized_forces.delta_t
-    if apply_wavelet_filter:
-        generalized_forces = filter_with_wavelet(generalized_forces, structural_data, dt, filter_percentage)
 
-    all_real_displacements = []
-    all_static_eq_force = []
+    all_gen_displacements = {}
+    wps = {}
+    modal_shapes = {}
 
     for n_mode in structural_data.active_modes:
         df_mode = structural_data.df_modes.iloc[n_mode]
-        df_phi = structural_data.df_modal_shapes[n_mode]
-        wp = df_mode["wp"]*frequency_multiplier
-        gen_displacement = solve_runge_kunta(
+        wp = float(df_mode["wp"])
+        all_gen_displacements[n_mode] = solve_runge_kunta(
             generalized_forces[n_mode].to_numpy(), dt=dt, wp=wp, xi=xi
         )
-        real_displacement = compute_mode_real_displacement(gen_displacement, df_phi)
-        all_real_displacements.append(real_displacement)
-
-        static_eq_mode = compute_mode_static_equivalent_force(
-            gen_displacement, df_phi, df_floors, wp
-        )
-        all_static_eq_force.append(static_eq_mode)
-
-    displacement = combine_modes(all_real_displacements)
-
-    force_static_eq = combine_modes(all_static_eq_force)
-    moments_static_eq = common.get_moments_from_force(force_static_eq, floors_heights)
-    if return_values_on_origin:
-        displacement = move_displacement_ref_from_CM_to_origin(displacement, structural_data)
-        force_static_eq, moments_static_eq = move_loads_ref_from_CM_to_origin(force_static_eq, moments_static_eq, structural_data)
+        wps[n_mode] = wp
+        modal_shapes[n_mode] = structural_data.df_modal_shapes[n_mode].copy()
 
     return HFPIResults(
         delta_t=dt,
         xi=xi,
         floors_heights=floors_heights,
-        displacement=displacement,
-        forces_static_eq=force_static_eq,
-        moments_static_eq=moments_static_eq,
+        floors_mass=floors_mass,
+        floors_radius=floors_radius,
+        modal_shapes=modal_shapes,
+        wps=wps,
+        gen_displacements=all_gen_displacements,
     )
-
-
-
-
-def filter_with_wavelet(
-    generalized_forces: pd.DataFrame,
-    structural_data: HFPIStructuralData,
-    dt: float, #timestep
-    filter_percentage: float = 99.5,
-):
-    """Apply filter using wavelet transform. Identify outliers based on rayleight regression of coefficientes and limits values to the percentile chosen"""
-    
-    window_size_1s = 1/dt
-    df_modes = structural_data.df_modes
-    reference_freq = df_modes['frequency'].iloc[0] #define window based on first mode
-    g_std = int(3*(1/reference_freq)*window_size_1s)
-    gauss_window = scipy.signal.windows.gaussian(8*g_std, std=g_std, sym=True)
-    SFT = scipy.signal.ShortTimeFFT(gauss_window, hop=2, fs=1/dt, scale_to='psd')
-    f_window = 4
-    
-    f_ids_range = set()
-    for f_target in df_modes["frequency"]:
-        f_idx = np.argmin(np.abs(SFT.f - f_target))
-        f_ids_range.update(range(f_idx-f_window, f_idx+f_window))
-    f_ids_range = list(f_ids_range)
-    
-    for mode_id in generalized_forces.columns:
-        Fxx = SFT.stft(generalized_forces[mode_id].to_numpy())
-        for f_id in f_ids_range:
-            Z = Fxx[f_id, :]
-            Ampl_freq = np.abs(Z) 
-            sigma_hat = np.sqrt((Ampl_freq**2).mean() / 2.0)
-            ray = scipy.stats.rayleigh(loc=0.0, scale=sigma_hat)
-            A_lim = ray.ppf(filter_percentage/100)
-            mask_ampltoohigh = (Ampl_freq>A_lim)
-            Fxx[f_id, mask_ampltoohigh] = Z[mask_ampltoohigh]/Ampl_freq[mask_ampltoohigh]*A_lim
-        generalized_forces[mode_id] = SFT.istft(Fxx, k1=generalized_forces.shape[0])
-    return generalized_forces

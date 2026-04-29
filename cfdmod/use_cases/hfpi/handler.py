@@ -1,23 +1,22 @@
 from __future__ import annotations
 
+import copy
 import itertools
 import pathlib
 import pickle
 import time
-from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from typing import Callable, Literal, TypeVar
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from cfdmod.logger import logger
-from cfdmod.use_cases.hfpi import common, dynamic, static
 from cfdmod.use_cases.climate.wind_profile import WindProfile
+from cfdmod.use_cases.hfpi import common, dynamic, static
 
 T = TypeVar("T")
-
 
 
 class DimensionSpecs(BaseModel):
@@ -32,28 +31,64 @@ class HFPICaseParameters(BaseModel, frozen=True):
 
     direction: float
     xi: float
-    frequency_multiplier: float = 1
+    frequency_multiplier: float
+    integral_scale_multiplier: float
     recurrence_period: float
     use_kd: bool
     structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
-    apply_wavelet_filter: bool
+    mass_multiplier: float
 
     def __hash__(self):
-        return hash((self.direction, self.xi, self.recurrence_period, self.use_kd, self.frequency_multiplier))
+        return hash(
+            (
+                self.direction,
+                self.xi,
+                self.recurrence_period,
+                self.use_kd,
+                self.frequency_multiplier,
+                self.integral_scale_multiplier,
+                self.mass_multiplier,
+            )
+        )
+
+    def build(
+        structural_data: dynamic.HFPIStructuralData,
+        direction: float,
+        xi: float,
+        recurrence_period: float,
+        use_kd: bool = False,
+        frequency_multiplier: float = 1,
+        integral_scale_multiplier: float = 1,
+        mass_multiplier: float = 1,
+    ) -> HFPICaseParameters:
+        s_data = copy.deepcopy(structural_data)
+        s_data.df_floors["M"] = s_data.df_floors["M"] * mass_multiplier
+        s_data.df_modes["frequency"] = s_data.df_modes["frequency"] / mass_multiplier**0.5
+        s_data.df_modes["wp"] = s_data.df_modes["frequency"] * 2 * np.pi
+        s_data.df_modes["period"] = 1 / s_data.df_modes["frequency"]
+
+        return HFPICaseParameters(
+            structural_data=s_data,
+            direction=direction,
+            xi=xi,
+            recurrence_period=recurrence_period,
+            use_kd=use_kd,
+            frequency_multiplier=frequency_multiplier,
+            integral_scale_multiplier=integral_scale_multiplier,
+            mass_multiplier=mass_multiplier,
+        )
 
     def get_results_filename(self, base_folder: pathlib.Path):
         filename = f"dir{self.direction}_xi{self.xi}_rp{self.recurrence_period}_kd{self.use_kd}"
-        if self.apply_wavelet_filter:
-            filename += f"_wave{self.apply_wavelet_filter}"
-        if self.frequency_multiplier!=1:
+        if self.integral_scale_multiplier != 1:
+            filename += f"_int{self.integral_scale_multiplier}"
+        if self.frequency_multiplier != 1:
             filename += f"_freq{self.frequency_multiplier}"
+        if self.mass_multiplier != 1:
+            filename += f"_mass{self.mass_multiplier}"
         filename += ".pickle"
-    
-        return (
-            base_folder
-            / filename
-        )
 
+        return base_folder / filename
 
 
 def solve_hfpi_case(
@@ -68,22 +103,33 @@ def solve_hfpi_case(
 
     hfpi_params = hfpi_analysis.generate_hfpi_solver_params(parameters)
     floors_heights = hfpi_params.structural_data.df_floors["Z"].to_numpy()
+    cm_positions = hfpi_params.structural_data.df_floors[["XR", "YR"]]
 
     t0 = time.time()
     logger.info(f"Solving static for: {parameters.model_dump_json()}")
     static_results = static.solve_static_forces(
-        forces=hfpi_params.forces, dim_data=hfpi_params.dim_data, floors_heights=floors_heights
+        forces=hfpi_params.forces,
+        dim_data=hfpi_params.dim_data,
+        floors_heights=floors_heights,
+        cm_positions=cm_positions,
     )
     logger.info(f"Solved static in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
     logger.info(f"Solving HFPI for: {parameters.model_dump_json()}")
+
+    structural_data_modified_frequency = copy.deepcopy(hfpi_params.structural_data)
+    structural_data_modified_frequency.df_modes[["frequency", "wp"]] = (
+        structural_data_modified_frequency.df_modes[["frequency", "wp"]]
+        * hfpi_params.frequency_multiplier
+    )
+    structural_data_modified_frequency.df_modes["period"] = (
+        structural_data_modified_frequency.df_modes["period"] / hfpi_params.frequency_multiplier
+    )
     hfpi_results = dynamic.solve_hfpi(
-        structural_data=hfpi_params.structural_data,
+        structural_data=structural_data_modified_frequency,
         dim_data=hfpi_params.dim_data,
         forces=hfpi_params.forces,
-        xi=parameters.xi,
-        apply_wavelet_filter=parameters.apply_wavelet_filter,
-        frequency_multiplier=parameters.frequency_multiplier,
+        xi=hfpi_params.xi,
     )
     logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
 
@@ -103,6 +149,7 @@ class _HFPIParams(BaseModel):
     dim_data: static.DimensionalData
     forces: static.StaticForcesData
     xi: float
+    frequency_multiplier: float
 
 
 class MultipleAnalysisHandler(BaseModel):
@@ -131,6 +178,7 @@ class MultipleAnalysisHandler(BaseModel):
             U_H=U_h,
             base=dim.base,
             height=dim.height,
+            integral_scale_multiplier=parameters.integral_scale_multiplier,
         )
 
         return _HFPIParams(
@@ -138,6 +186,7 @@ class MultipleAnalysisHandler(BaseModel):
             dim_data=dim_data,
             forces=forces,
             xi=parameters.xi,
+            frequency_multiplier=parameters.frequency_multiplier,
         )
 
     def generate_combined_parameters(
@@ -146,23 +195,33 @@ class MultipleAnalysisHandler(BaseModel):
         structural_data: dynamic.HFPIStructuralData,
         directions: list[float],
         xis: list[float],
-        use_kd: list[bool],
-        frequency_multipliers: list[float],
         recurrence_periods: list[float],
-        apply_wavelet_filter: list[bool]=[False],
+        use_kd: list[bool] = [False],
+        frequency_multipliers: list[float] = [1],
+        integral_scale_multipliers: list[float] = [1],
+        mass_multipliers: list[float] = [1],
     ) -> list[HFPICaseParameters]:
         cases_parameters = [
-            HFPICaseParameters(
+            HFPICaseParameters.build(
                 direction=direction,
                 recurrence_period=period,
                 use_kd=kd,
                 xi=xi,
                 structural_data=structural_data,
-                apply_wavelet_filter=apply_wavelet,
+                integral_scale_multiplier=int_mult,
                 frequency_multiplier=frequency_multiplier,
+                mass_multiplier=mass_mult,
             )
-            for direction, xi, kd, period, apply_wavelet, frequency_multiplier in itertools.product(
-                *[directions, xis, use_kd, recurrence_periods, apply_wavelet_filter, frequency_multipliers]
+            for direction, xi, kd, period, frequency_multiplier, int_mult, mass_mult in itertools.product(
+                *[
+                    directions,
+                    xis,
+                    use_kd,
+                    recurrence_periods,
+                    frequency_multipliers,
+                    integral_scale_multipliers,
+                    mass_multipliers,
+                ]
             )
         ]
         return cases_parameters
@@ -185,6 +244,7 @@ class MultipleAnalysisHandler(BaseModel):
         self,
         floors_height: np.ndarray,
         H: float,
+        cm_positions: pd.DataFrame,
         recurrence_period: float = 50,
         use_kd: bool = False,
     ):
@@ -198,10 +258,16 @@ class MultipleAnalysisHandler(BaseModel):
                 use_kd=use_kd,
             )
             dim_data = static.DimensionalData(
-                U_H=U_h, height=self.dimensions.height, base=self.dimensions.base
+                U_H=U_h,
+                height=self.dimensions.height,
+                base=self.dimensions.base,
+                integral_scale_multiplier=1,
             )
             res = static.solve_static_forces(
-                forces=forces, dim_data=dim_data, floors_heights=floors_height
+                forces=forces,
+                dim_data=dim_data,
+                floors_heights=floors_height,
+                cm_positions=cm_positions,
             )
             analysis_results[direction] = ResultType(static_res=res, dynamic_res=None)
 
@@ -217,49 +283,103 @@ class ResultType(BaseModel):
         if self.dynamic_res is not None:
             self.dynamic_res.rotate_xy(angle_rot)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_forces_static(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_moments_static(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        forces_static = self.static_res.get_stats_forces_static(stats_type, peak_method, peak_factor)
+    def get_stats_forces_effective(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        forces_static = self.static_res.get_stats_forces_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         if self.dynamic_res is None:
             return forces_static
-        forces_eq = self.dynamic_res.get_stats_forces_static_eq(stats_type, peak_method, peak_factor)
+        forces_eq = self.dynamic_res.get_stats_forces_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        mom_static = self.static_res.get_stats_moments_static(stats_type, peak_method, peak_factor)
+    def get_stats_moments_effective(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        mom_static = self.static_res.get_stats_moments_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         if self.dynamic_res is None:
             return mom_static
-        mom_eq = self.dynamic_res.get_stats_moments_static_eq(stats_type, peak_method, peak_factor)
+        mom_eq = self.dynamic_res.get_stats_moments_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
 
-    def get_stats_global_forces_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        forces_static = self.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+    def get_stats_global_forces_effective(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        forces_static = self.static_res.get_stats_global_forces_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         if self.dynamic_res is None:
             return forces_static
-        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+        forces_eq = self.dynamic_res.get_stats_global_forces_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_stats_among_dct([forces_eq, forces_static], stats_type)
 
-    def get_stats_global_moments_effective(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        mom_static = self.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+    def get_stats_global_moments_effective(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        mom_static = self.static_res.get_stats_global_moments_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         if self.dynamic_res is None:
             return mom_static
-        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+        mom_eq = self.dynamic_res.get_stats_global_moments_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_stats_among_dct([mom_eq, mom_static], stats_type)
-
-
 
     def save(self, filename: pathlib.Path):
         filename.parent.mkdir(exist_ok=True, parents=True)
@@ -278,52 +398,106 @@ class DirectionalAnalysisResults(BaseModel):
     def join_by_direction(self):
         return {d: DirectionalAnalysisResults(results={d: res}) for d, res in self.results.items()}
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.static_res.get_stats_global_forces_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_forces_static(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.static_res.get_stats_global_moments_static(stats_type, peak_method, peak_factor)
+            v.static_res.get_stats_global_moments_static(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_forces_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_forces_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.dynamic_res.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+            v.dynamic_res.get_stats_global_forces_static_eq(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_global_moments_static_eq(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_stats_global_moments_static_eq(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
         dcts = [
-            v.dynamic_res.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+            v.dynamic_res.get_stats_global_moments_static_eq(
+                cm_positions, stats_type, peak_method, peak_factor
+            )
             for k, v in self.results.items()
         ]
         return common.get_global_stats_dct_float(dcts, stats_type)
 
-    def get_stats_effective_global_forces(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        dct_static = self.get_stats_global_forces_static(stats_type)
-        dct_dyn = self.get_stats_global_forces_static_eq(stats_type, peak_method, peak_factor)
+    def get_stats_effective_global_forces(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        dct_static = self.get_stats_global_forces_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
+        dct_dyn = self.get_stats_global_forces_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
-    def get_stats_effective_global_moments(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        dct_static = self.get_stats_global_moments_static(stats_type)
-        dct_dyn = self.get_stats_global_moments_static_eq(stats_type, peak_method, peak_factor)
+    def get_stats_effective_global_moments(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        dct_static = self.get_stats_global_moments_static(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
+        dct_dyn = self.get_stats_global_moments_static_eq(
+            cm_positions, stats_type, peak_method, peak_factor
+        )
         return common.get_global_stats_dct_float([dct_static, dct_dyn], stats_type)
 
     def get_global_peaks_by_direction(
         self,
+        cm_positions: pd.DataFrame,
         variable_types: list[Literal["static", "hfpi", "effective"]] = [
             "static",
             "hfpi",
             "effective",
         ],
-        peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4,
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
     ) -> dict[str, pd.DataFrame]:
         """Get global peaks per direction of results
 
@@ -357,9 +531,9 @@ class DirectionalAnalysisResults(BaseModel):
             }
             for name in vars_use:
                 c = calls[name]
-                min_vals = c("min", peak_method, peak_factor)
-                max_vals = c("max", peak_method, peak_factor)
-                mean_vals = c("mean", peak_method, peak_factor)
+                min_vals = c(cm_positions, "min", peak_method, peak_factor)
+                max_vals = c(cm_positions, "max", peak_method, peak_factor)
+                mean_vals = c(cm_positions, "mean", peak_method, peak_factor)
                 for ax in axis:
                     joined_res[name][f"min_{ax}", d] = min_vals[ax]
                     joined_res[name][f"max_{ax}", d] = max_vals[ax]
@@ -380,16 +554,35 @@ class DirectionalAnalysisResults(BaseModel):
 
         return dct_dfs
 
-    def get_max_acceleration(self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
+    def get_max_acceleration(
+        self,
+        cm_positions: pd.DataFrame,
+        pos: tuple[float, float] = (0, 0),
+        floor: int = -1,
+        peak_method: Literal["gumbel", "max", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
+    ):
+        cm_position = cm_positions.iloc[floor][["XR", "YR"]].to_numpy()
         return max(
-            res.dynamic_res.get_floor_max_acceleration(pos, floor, peak_method, peak_factor) for res in self.results.values()
+            res.dynamic_res.get_floor_max_acceleration(
+                cm_position, pos, floor, peak_method, peak_factor
+            )
+            for res in self.results.values()
         )
 
     def get_max_acceleration_by_recurrence_period(
-        self, pos: tuple[float, float] = (0, 0), floor: int = -1, peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4
+        self,
+        cm_positions: pd.DataFrame,
+        pos: tuple[float, float] = (0, 0),
+        floor: int = -1,
+        peak_method: Literal["gumbel", "max", "peak-factor"] = "gumbel",
+        peak_factor: float = 4,
     ):
         res = self.join_by_recurrence_period()
-        return {k: r.get_max_acceleration(pos, floor, peak_method, peak_factor) for k, r in res.items()}
+        return {
+            k: r.get_max_acceleration(cm_positions, pos, floor, peak_method, peak_factor)
+            for k, r in res.items()
+        }
 
 
 class HFPIAnalysisResults(DirectionalAnalysisResults):
@@ -437,13 +630,14 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def join_by_direction(self):
         return self.join_by(lambda params: params.direction)
 
-    def join_by_wavelet(self):
-        return self.join_by(lambda params: params.apply_wavelet_filter)
-    
+    def join_by_integral_scale_multiplier(self):
+        return self.join_by(lambda params: params.integral_scale_multiplier)
+
     def join_by_frequency_multiplier(self):
         return self.join_by(lambda params: params.frequency_multiplier)
-        
 
+    def join_by_mass_multiplier(self):
+        return self.join_by(lambda params: params.mass_multiplier)
 
     def filter_by_xi(self, xi: float):
         return self.join_by_xi()[xi]
@@ -454,8 +648,11 @@ class HFPIAnalysisResults(DirectionalAnalysisResults):
     def filter_by_recurrence_period(self, recurrence_period: float):
         return self.join_by_recurrence_period()[recurrence_period]
 
-    def filter_by_wavelet(self, filter: bool):
-        return self.join_by_wavelet()[filter]
-    
+    def filter_by_integral_scale_multiplier(self, filter: bool):
+        return self.join_by_integral_scale_multiplier()[filter]
+
     def filter_by_frequency_multiplier(self, filter: bool):
         return self.join_by_frequency_multiplier()[filter]
+
+    def filter_by_mass_multiplier(self, filter: bool):
+        return self.join_by_mass_multiplier()[filter]

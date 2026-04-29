@@ -4,13 +4,13 @@ import warnings
 from typing import Literal
 
 import filelock
+import h5py
 import pandas as pd
 from lnas import LnasGeometry
 
 from cfdmod.api.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 from cfdmod.logger import logger
 from cfdmod.use_cases.pressure.chunking import (
-    HDFGroupInterface,
     calculate_statistics_for_groups,
     divide_timeseries_in_groups,
 )
@@ -18,7 +18,6 @@ from cfdmod.use_cases.pressure.cp_config import CpConfig
 from cfdmod.use_cases.pressure.path_manager import CpPathManager
 from cfdmod.utils import create_folders_for_file, save_yaml
 
-import h5py
 
 def add_cp2xdmf(
     *,
@@ -52,7 +51,7 @@ def add_cp2xdmf(
             return
 
         with h5py.File(atm_probe_h5) as f_atm:
-            grp_atm = f_atm[f"pressure"]
+            grp_atm = f_atm["pressure"]
             for k in keys:
                 p_body = grp_abs[k]
                 p_ref = grp_atm[k][0]
@@ -60,6 +59,7 @@ def add_cp2xdmf(
                 if k in grp_cp:
                     del grp_cp[k]
                 grp_cp[k] = cp
+
 
 def transform_to_cp(
     *,
@@ -69,7 +69,6 @@ def transform_to_cp(
     fluid_density: float,
     macroscopic_type: Literal["pressure", "rho"],
     characteristic_length: float,
-    time_scale_multiplier: float,
     columns_drop: list[str] | None = None,
     columns_process: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -107,7 +106,7 @@ def transform_to_cp(
 
     df_cp = pd.DataFrame(result.T, columns=columns_process)
     df_cp["time_normalized"] = body_data["time_step"].to_numpy() / (
-        characteristic_length / reference_vel * time_scale_multiplier
+        characteristic_length / reference_vel
     )
 
     return df_cp
@@ -156,7 +155,6 @@ def process_single_raw_group(
                 body_data=body_df,
                 reference_vel=cp_config.simul_U_H,
                 fluid_density=cp_config.fluid_density,
-                time_scale_multiplier=cp_config.time_scale_multiplier,
                 macroscopic_type=cp_config.macroscopic_type,
                 characteristic_length=cp_config.simul_characteristic_length,
                 columns_drop=columns_drop,
@@ -225,7 +223,6 @@ def process_raw_groups(
 
             if static_groups != body_groups:
                 raise Exception("Keys for body and static pressure don't match!")
-
 
             keys_to_include: list[str] = list(body_groups)
 

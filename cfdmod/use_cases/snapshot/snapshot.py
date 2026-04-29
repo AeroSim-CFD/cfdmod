@@ -249,6 +249,7 @@ def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
     mesh.rotate_z(transformation.rotate[2], point=center, inplace=True)
     mesh.translate(transformation.translate, inplace=True)
 
+
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
     if legend_config.custom_colorbar is not None:
         contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
@@ -275,12 +276,15 @@ def create_feature_edges(mesh: pv.DataSet) -> pv.DataSet:
 
 
 def create_value_tags(
-    mesh: pv.DataSet, projection_config: ProjectionConfig, value_tags_config: ValueTagsConfig, is_cell: bool = True,
+    mesh: pv.DataSet,
+    projection_config: ProjectionConfig,
+    value_tags_config: ValueTagsConfig,
+    is_cell: bool = True,
 ) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
     if value_tags_config.x is not None:
-        x_targets = [v+bounds[0] for v in value_tags_config.x]
-        y_targets = [v+bounds[2] for v in value_tags_config.y]
+        x_targets = [v + bounds[0] for v in value_tags_config.x]
+        y_targets = [v + bounds[2] for v in value_tags_config.y]
     else:
         spacing_x, spacing_y = value_tags_config.spacing
         padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
@@ -314,7 +318,7 @@ def create_value_tags(
             y_start = center_y - total_spacing_y / 2
             y_end = center_y + total_spacing_y / 2
             y_targets = np.linspace(y_start, y_end, num_points_y)
-    
+
     z_level = bounds[5] - value_tags_config.z_offset
 
     X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
@@ -347,7 +351,7 @@ def create_value_tags(
         values = mesh.point_data[projection_config.scalar][closest_mesh_ids]
         return points, values
 
-    if(is_cell):
+    if is_cell:
         points, values = find_cells()
     else:
         points, values = find_pts()

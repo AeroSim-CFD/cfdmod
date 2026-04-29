@@ -33,6 +33,7 @@ class HDFGroupInterface:
     def get_timestep_keys_for_group(cls, hdf_keys: list[str], group_key: str) -> list[str]:
         return [k for k in hdf_keys if k.split(cls.GROUP_PREFIX)[1] in group_key]
 
+
 def split_into_chunks(
     time_series_df: pd.DataFrame, number_of_chunks: int, output_path: pathlib.Path
 ):

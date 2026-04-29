@@ -227,7 +227,7 @@ def transform_Cf(
         .reset_index()
     )
 
-    if(nominal_area > 0):
+    if nominal_area > 0:
         Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
         Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
         Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import lnas
 import numpy as np
 
-from cfdmod.api.geometry.STL import export_stl, read_stl
+from cfdmod.api.geometry.STL import export_stl
 from cfdmod.logger import logger
 from cfdmod.use_cases.loft.functions import generate_loft_surface
 from cfdmod.use_cases.loft.parameters import LoftCaseConfig
