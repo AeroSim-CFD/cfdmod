@@ -44,6 +44,18 @@ from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
 from cfdmod.utils import create_folders_for_file
 
 
+def _coerce_case_cfg(source, model_cls):
+    """Resolve ``cfg_path`` to a case-config instance.
+
+    Accepts either an already-built case-config (returned as-is, useful for
+    in-process pipelines) or a path to a YAML file (loaded via
+    ``model_cls.from_file``).
+    """
+    if isinstance(source, model_cls):
+        return source
+    return model_cls.from_file(pathlib.Path(source))
+
+
 def _write_region_timeseries(
     ts_path: pathlib.Path,
     *,
@@ -121,7 +133,7 @@ def _write_stats_for_group(
 def run_cp(
     body_h5: pathlib.Path,
     probe_h5: pathlib.Path | None,
-    cfg_path: pathlib.Path,
+    cfg_path: pathlib.Path | str | CpCaseConfig | CfCaseConfig | CmCaseConfig | CeCaseConfig,
     output: pathlib.Path,
     mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
@@ -141,7 +153,7 @@ def run_cp(
             ``.xdmf``, or a pre-loaded :class:`LnasFormat`. If omitted, the
             geometry is read from ``body_h5`` itself (single ``"all"`` surface).
     """
-    case_cfg = CpCaseConfig.from_file(cfg_path)
+    case_cfg = _coerce_case_cfg(cfg_path, CpCaseConfig)
     mesh = mesh_from_h5(body_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CpPathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
@@ -296,7 +308,7 @@ def _run_body_coefficient(
 
 def run_cf(
     cp_h5: pathlib.Path,
-    cfg_path: pathlib.Path,
+    cfg_path: pathlib.Path | str | CpCaseConfig | CfCaseConfig | CmCaseConfig | CeCaseConfig,
     output: pathlib.Path,
     mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
@@ -312,7 +324,7 @@ def run_cf(
     ``.xdmf``, or a pre-loaded :class:`LnasFormat`. If omitted, the geometry
     is read from ``cp_h5`` itself (single ``"all"`` surface).
     """
-    case_cfg = CfCaseConfig.from_file(cfg_path)
+    case_cfg = _coerce_case_cfg(cfg_path, CfCaseConfig)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CfPathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
@@ -425,7 +437,7 @@ def _expand_moment_cases(
 
 def run_cm(
     cp_h5: pathlib.Path,
-    cfg_path: pathlib.Path,
+    cfg_path: pathlib.Path | str | CpCaseConfig | CfCaseConfig | CmCaseConfig | CeCaseConfig,
     output: pathlib.Path,
     mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
@@ -446,7 +458,7 @@ def run_cm(
     pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
     ``cp_h5`` itself (single ``"all"`` surface).
     """
-    case_cfg = CmCaseConfig.from_file(cfg_path)
+    case_cfg = _coerce_case_cfg(cfg_path, CmCaseConfig)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CmPathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
@@ -478,7 +490,7 @@ def run_cm(
 
 def run_ce(
     cp_h5: pathlib.Path,
-    cfg_path: pathlib.Path,
+    cfg_path: pathlib.Path | str | CpCaseConfig | CfCaseConfig | CmCaseConfig | CeCaseConfig,
     output: pathlib.Path,
     mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
@@ -498,7 +510,7 @@ def run_ce(
     pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
     ``cp_h5`` itself (single ``"all"`` surface).
     """
-    case_cfg = CeCaseConfig.from_file(cfg_path)
+    case_cfg = _coerce_case_cfg(cfg_path, CeCaseConfig)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CePathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
