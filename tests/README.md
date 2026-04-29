@@ -45,8 +45,40 @@ CFDMOD_PERF_SCALE=extreme pytest -m perf -s   # the long one
 Per-stage budgets default per scale; override individually via
 `CFDMOD_PERF_{CP,CF,CM}_BUDGET_S` and `CFDMOD_PERF_RSS_BUDGET_MB`.
 The `_measure()` context manager prints a one-line `[perf:{scale}]
-{label}: Xs peak_rss_delta=Y MiB` report so `pytest -m perf -s` doubles
-as a benchmark.
+{label}: ...` report so `pytest -m perf -s` doubles as an interactive
+benchmark.
+
+### Per-run report
+
+Every `pytest -m perf` invocation also writes a structured report:
+
+```
+output/perf/perf_report.md     # human-readable
+output/perf/perf_report.json   # programmatic
+```
+
+The report path is configurable via `CFDMOD_PERF_REPORT_DIR` (default
+`output/perf`). Both files are overwritten per run; check them in
+manually if you want to keep history.
+
+For each pipeline stage the report captures:
+
+- `elapsed_s` -- wall time.
+- `rss_after_mib` -- process-wide peak RSS so far (includes numpy /
+  h5py native allocations).
+- `rss_delta_mib` -- the rise during the stage; lower bound on additional
+  peak observed.
+- `py_heap_peak_mib` -- peak Python-managed heap during the stage
+  (`tracemalloc`); useful for catching accidental in-Python copies.
+
+Sample output (medium scale, this dev machine):
+
+| Stage | Wall (s) | RSS after | RSS delta | Py heap peak |
+|---|---:|---:|---:|---:|
+| synthesise_inputs | 1.66 | 347 | 13 | 3 |
+| run_cp | 4.39 | 441 | 94 | 42 |
+| run_cf | 20.03 | 884 | 443 | 467 |
+| run_cm (4 cases) | 90.40 | 1021 | 138 | 510 |
 
 ## Shared fixtures (`tests/pressure/conftest.py`)
 

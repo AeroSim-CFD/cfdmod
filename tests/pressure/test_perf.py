@@ -9,7 +9,7 @@ reproducible on any machine. Two reference scales:
 ================  =============  ==============  =================
 ``tiny``                  5 000          200    quick smoke (~10 s)
 ``medium`` (default)     30 000        2 000    standard benchmark
-``extreme``             150 000       10 000    1/5x scale of  user's worst
+``extreme``             150 000       10 000    1/5x scale of user's worst
                                                 case; minutes to run
 ================  =============  ==============  =================
 
@@ -28,21 +28,30 @@ Tunables (environment variables):
 - ``CFDMOD_PERF_{CP,CF,CM}_BUDGET_S`` -- override individual wall-time
   budgets in seconds.
 - ``CFDMOD_PERF_RSS_BUDGET_MB`` -- peak-RSS budget in MiB.
+- ``CFDMOD_PERF_REPORT_DIR`` -- directory where ``perf_report.md`` and
+  ``perf_report.json`` are written (default: ``output/perf``).
 
 Budgets default to the per-scale entries below and are deliberately loose
 (3-5x typical observed) so the suite isn't flaky on slow runners.
-``_measure()`` prints a one-line "[perf] {label}: Xs peak_rss_delta=Y MiB"
-report, so ``pytest -m perf -s`` doubles as a quick benchmark.
+``_measure()`` prints a one-line "[perf:{scale}] {label}: ..." report so
+``pytest -m perf -s`` doubles as an interactive benchmark; the same data
+is appended to a structured markdown + JSON report on every run.
 """
 
 from __future__ import annotations
 
+import datetime as _dt
+import json
 import math
 import os
 import pathlib
+import platform
 import resource
+import sys
 import time
+import tracemalloc
 from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 
 import h5py
 import numpy as np
@@ -108,7 +117,7 @@ _BUDGET_PEAK_RSS_MB = float(os.environ.get("CFDMOD_PERF_RSS_BUDGET_MB", "32768")
 
 
 # ---------------------------------------------------------------------------
-# Wall-time + peak-RSS measurement
+# Wall-time + memory measurement
 # ---------------------------------------------------------------------------
 
 
@@ -124,21 +133,155 @@ def _max_rss_mb() -> float:
     return raw / (1024 * 1024)  # bytes -> MiB
 
 
+@dataclass
+class PerfRecord:
+    """One row in the per-run perf report."""
+
+    label: str
+    elapsed_s: float
+    rss_after_mib: float
+    rss_delta_mib: float
+    py_heap_peak_mib: float
+
+
+# Records collected during the session; flushed to disk by the
+# session-scoped ``_perf_report_writer`` fixture below.
+_RECORDS: list[PerfRecord] = []
+
+
 @contextmanager
 def _measure(label: str):
-    """Time + peak-RSS measurement around a block; prints a one-line report."""
+    """Time + memory measurement around a block.
+
+    Prints a one-line report to stdout (so ``pytest -m perf -s`` doubles as
+    a quick benchmark) and appends a :class:`PerfRecord` to the session log.
+
+    Three signals are captured:
+
+    - ``elapsed_s``      wall time (``time.perf_counter``).
+    - ``rss_after_mib``  peak RSS of the process so far (process-wide,
+                          includes h5py/numpy native allocations).
+    - ``rss_delta_mib``  the increase in peak RSS attributed to this block
+                          (peak is monotonic, so delta is a lower bound on
+                          the additional peak observed during the block).
+    - ``py_heap_peak_mib`` peak Python-managed heap during the block via
+                          tracemalloc; complements RSS for spotting
+                          accidental in-Python copies.
+    """
     rss_before = _max_rss_mb()
+    if not tracemalloc.is_tracing():
+        tracemalloc.start()
+        owns_tracer = True
+    else:
+        owns_tracer = False
+    snapshot_before = tracemalloc.take_snapshot()  # noqa: F841 - kept for parity
+    tracemalloc.reset_peak()
     t0 = time.perf_counter()
     try:
         yield
     finally:
         elapsed = time.perf_counter() - t0
+        _, peak_py = tracemalloc.get_traced_memory()
+        if owns_tracer:
+            tracemalloc.stop()
         rss_after = _max_rss_mb()
         delta = max(0.0, rss_after - rss_before)
+        py_peak_mib = peak_py / (1024 * 1024)
+
+        _RECORDS.append(
+            PerfRecord(
+                label=label,
+                elapsed_s=elapsed,
+                rss_after_mib=rss_after,
+                rss_delta_mib=delta,
+                py_heap_peak_mib=py_peak_mib,
+            )
+        )
+
         print(
             f"[perf:{_SCALE}] {label}: {elapsed:.2f}s  "
-            f"peak_rss_delta={delta:.0f} MiB  rss_after={rss_after:.0f} MiB"
+            f"rss_after={rss_after:.0f} MiB  "
+            f"rss_delta={delta:.0f} MiB  "
+            f"py_peak={py_peak_mib:.0f} MiB"
         )
+
+
+# ---------------------------------------------------------------------------
+# Report writer
+# ---------------------------------------------------------------------------
+
+
+_REPORT_DIR = pathlib.Path(
+    os.environ.get("CFDMOD_PERF_REPORT_DIR", "output/perf")
+)
+
+
+def _flush_report(report_dir: pathlib.Path = _REPORT_DIR) -> None:
+    """Persist the in-memory records as ``perf_report.{md,json}`` in
+    ``report_dir``. Overwrites previous reports for the same scale; the
+    files are timestamped internally so successive runs are
+    distinguishable. Skipped when no records were collected (e.g. the
+    test module skipped or fixtures errored).
+    """
+    if not _RECORDS:
+        return
+
+    report_dir.mkdir(parents=True, exist_ok=True)
+    now = _dt.datetime.now(_dt.timezone.utc)
+    payload = {
+        "generated_at": now.isoformat(),
+        "scale": _SCALE,
+        "n_tri": _N_TRI,
+        "n_steps": _N_STEPS,
+        "python": sys.version.split()[0],
+        "platform": platform.platform(),
+        "budgets_s": {
+            "cp": _BUDGET_CP_S,
+            "cf": _BUDGET_CF_S,
+            "cm": _BUDGET_CM_S,
+        },
+        "rss_budget_mib": _BUDGET_PEAK_RSS_MB,
+        "stages": [asdict(r) for r in _RECORDS],
+    }
+
+    (report_dir / "perf_report.json").write_text(
+        json.dumps(payload, indent=2) + "\n"
+    )
+
+    md_lines = [
+        "# cfdmod pressure perf report",
+        "",
+        f"- Generated: `{payload['generated_at']}`",
+        f"- Scale: `{_SCALE}`  (n_tri={_N_TRI}, n_steps={_N_STEPS})",
+        f"- Python: `{payload['python']}`",
+        f"- Platform: `{payload['platform']}`",
+        "",
+        "| Stage | Wall time (s) | RSS after (MiB) | RSS delta (MiB) | Py heap peak (MiB) |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    for r in _RECORDS:
+        md_lines.append(
+            f"| {r.label} | {r.elapsed_s:.2f} | "
+            f"{r.rss_after_mib:.0f} | {r.rss_delta_mib:.0f} | "
+            f"{r.py_heap_peak_mib:.0f} |"
+        )
+    md_lines.append("")
+    md_lines.append(
+        "RSS = process-wide max resident set (includes numpy/h5py native "
+        "allocations); RSS delta is the rise during the stage. "
+        "Py heap peak is the peak Python-managed heap during the stage "
+        "(tracemalloc), useful for spotting accidental Python-side copies."
+    )
+
+    (report_dir / "perf_report.md").write_text("\n".join(md_lines) + "\n")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _perf_report_writer():
+    """Auto-fixture: clear records on entry, flush to disk on teardown."""
+    _RECORDS.clear()
+    yield
+    _flush_report()
 
 
 # ---------------------------------------------------------------------------
