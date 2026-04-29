@@ -77,7 +77,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aerosim-lnas", specifier = ">=0.6.0,<0.7" },
+    { name = "aerosim-lnas", specifier = ">=0.6.9,<0.7" },
     { name = "colorama", specifier = ">=0.4.6,<0.5" },
     { name = "filelock", specifier = ">=3.17.0" },
     { name = "h5py", specifier = ">=3.15.1" },
@@ -120,15 +120,15 @@ dev = [
 
 [[package]]
 name = "aerosim-lnas"
-version = "0.6.2"
+version = "0.6.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/41/98150c42c37022c1c14f1c5d31076ffe01301ca35e6da265496244c0c573/aerosim_lnas-0.6.2.tar.gz", hash = "sha256:89cf2f6cb219b22746690744a21d52d5ecd20a9890a9a0a63e84f0af775b3af2", size = 13980, upload-time = "2025-02-17T20:58:49.529Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/fe/bfb38a4e7e98e438ac04c4a4196ec88d74704c7836960a2889f3c5ad8426/aerosim_lnas-0.6.9.tar.gz", hash = "sha256:a44903a1640503706363ea8649c34e2d1e0b56a71329c8d77d249011397f9450", size = 17043, upload-time = "2026-04-02T22:08:44.622Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/aa/cdfe92c3284de72c097e406331094c547aba258c98971305b67932fe59d7/aerosim_lnas-0.6.2-py3-none-any.whl", hash = "sha256:1ce67a18d077024131d20d2ae9acc5b78bb300bd7addeb56013af59f98356161", size = 14838, upload-time = "2025-02-17T20:58:47.552Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/fb/82564399aeb4b5d2642925f2f9bffd4b0503084be399d59d9149361b1482/aerosim_lnas-0.6.9-py3-none-any.whl", hash = "sha256:fa74c40b5848fa4a029b6460289cdd11789a42c14c451ff7bafbafc8e15713be", size = 17970, upload-time = "2026-04-02T22:08:43.512Z" },
 ]
 
 [[package]]
