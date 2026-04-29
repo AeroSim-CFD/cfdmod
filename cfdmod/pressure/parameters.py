@@ -307,18 +307,19 @@ class MomentBodyConfig(BodyConfig):
             "regions not covered by region_lever_origins under any strategy."
         ),
     )
-    lever_strategy: Literal["fixed", "region_base"] = Field(
+    lever_strategy: Literal["fixed", "region_base", "region_bbox_corners_xy"] = Field(
         "fixed",
         title="Lever-origin strategy",
         description=(
             "How to derive the moment center for each region in this body. "
             "'fixed' (default): every triangle uses lever_origin. "
-            "'region_base': for each region, derive the base automatically "
-            "from the region's triangle vertices as "
-            "(mean_x, mean_y, min_z) -- the centroid of the floor-plane "
-            "footprint at the lowest z. Useful for overturning moment about "
-            "the base of each container. Specific regions can still be "
-            "overridden via region_lever_origins."
+            "'region_base': per region, derive (mean_x, mean_y, min_z) of "
+            "the region's triangle vertices -- footprint centroid at the "
+            "lowest z. 'region_bbox_corners_xy': expand into 4 independent "
+            "cases per body (xmin_ymin, xmin_ymax, xmax_ymin, xmax_ymax), "
+            "each with its own per-region origin at the corresponding xy "
+            "corner of the region bbox at z=min. Useful for finding the "
+            "worst-case overturning moment about a footprint edge."
         ),
     )
     region_lever_origins: dict[int, tuple[float, float, float]] | None = Field(
@@ -330,6 +331,21 @@ class MomentBodyConfig(BodyConfig):
             "precedence over both lever_strategy and lever_origin. Use this "
             "for HFPI-style analyses where the center of mass of each body "
             "or container is known externally."
+        ),
+    )
+    lever_origin_cases: (
+        dict[str, dict[int, tuple[float, float, float]]] | None
+    ) = Field(
+        None,
+        title="Per-case per-region lever origins",
+        description=(
+            "Multi-case lever-origin set. Each key is a case label and the "
+            "value is a per-region origin map (region_int -> (x, y, z)). "
+            "Each case is run independently end-to-end (its own timeseries "
+            "file, its own stats group), so the user can scan over candidate "
+            "moment centers (e.g. corners of each container's footprint) and "
+            "compare results side by side. Takes precedence over "
+            "lever_strategy."
         ),
     )
 

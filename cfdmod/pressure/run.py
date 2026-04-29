@@ -335,6 +335,94 @@ def run_cf(
         logger.info(f"Cf stats written for config '{cfg_lbl}'")
 
 
+def _bbox_corners_xy_cases(
+    body_cfg, mesh: LnasFormat, sfc_list: list[str]
+) -> dict[str, dict[int, tuple[float, float, float]]]:
+    """For a body's regions, generate 4 lever-origin candidates per region at
+    the xy corners of each region's bounding box (z = min z of the region).
+
+    Returns a dict mapping case label (xmin_ymin, xmin_ymax, xmax_ymin,
+    xmax_ymax) to a per-region-int origin map.
+    """
+    from cfdmod.pressure.geometry import get_indexing_mask
+
+    body_geom = mesh.geometry_from_list_surfaces(surfaces_names=sfc_list)[0]
+    transformed = body_geom.copy()
+    df_regions = body_cfg.sub_bodies.get_regions_df()
+    region_idx_per_tri = get_indexing_mask(mesh=transformed, df_regions=df_regions)
+
+    cases: dict[str, dict[int, tuple[float, float, float]]] = {
+        "xmin_ymin": {},
+        "xmin_ymax": {},
+        "xmax_ymin": {},
+        "xmax_ymax": {},
+    }
+    for region_int in np.unique(region_idx_per_tri):
+        if region_int < 0:
+            continue
+        in_region = np.where(region_idx_per_tri == region_int)[0]
+        xyz = transformed.triangle_vertices[in_region]
+        x_min = float(xyz[:, :, 0].min())
+        x_max = float(xyz[:, :, 0].max())
+        y_min = float(xyz[:, :, 1].min())
+        y_max = float(xyz[:, :, 1].max())
+        z_min = float(xyz[:, :, 2].min())
+        cases["xmin_ymin"][int(region_int)] = (x_min, y_min, z_min)
+        cases["xmin_ymax"][int(region_int)] = (x_min, y_max, z_min)
+        cases["xmax_ymin"][int(region_int)] = (x_max, y_min, z_min)
+        cases["xmax_ymax"][int(region_int)] = (x_max, y_max, z_min)
+    return cases
+
+
+def _expand_moment_cases(
+    cfg, bodies_definition: dict, mesh: LnasFormat
+) -> list[tuple]:
+    """Resolve a moment cfg's bodies into one independent run per
+    (body, lever-origin case) pair.
+
+    Each entry in the returned list is a ``(single_body_cfg, bodies_def)``
+    tuple ready to feed into ``_run_body_coefficient`` -- always exactly one
+    body per run so the downstream geometry/region machinery never sees
+    triangles re-registered under multiple body names.
+
+    Bodies with no cases (no ``lever_origin_cases`` and no
+    ``region_bbox_corners_xy`` strategy) pass through unchanged as a single
+    run with the original body name.
+    """
+    runs: list[tuple] = []
+
+    for body_cfg in cfg.bodies:
+        sfc_list = bodies_definition[body_cfg.name].surfaces or list(mesh.surfaces.keys())
+
+        if body_cfg.lever_origin_cases:
+            case_map = body_cfg.lever_origin_cases
+        elif body_cfg.lever_strategy == "region_bbox_corners_xy":
+            case_map = _bbox_corners_xy_cases(body_cfg, mesh, sfc_list)
+        else:
+            single_cfg = cfg.model_copy(update={"bodies": [body_cfg]})
+            single_def = {body_cfg.name: bodies_definition[body_cfg.name]}
+            runs.append((single_cfg, single_def))
+            continue
+
+        for case_label, region_origins in case_map.items():
+            new_name = (
+                f"{body_cfg.name}.{case_label}" if case_label else body_cfg.name
+            )
+            derived = body_cfg.model_copy(
+                update={
+                    "name": new_name,
+                    "lever_strategy": "fixed",
+                    "region_lever_origins": region_origins,
+                    "lever_origin_cases": None,
+                }
+            )
+            single_cfg = cfg.model_copy(update={"bodies": [derived]})
+            single_def = {new_name: bodies_definition[body_cfg.name]}
+            runs.append((single_cfg, single_def))
+
+    return runs
+
+
 def run_cm(
     cp_h5: pathlib.Path,
     cfg_path: pathlib.Path,
@@ -346,6 +434,13 @@ def run_cm(
     Per body & cfg label:
       - {output}/Cm.{label}.{body}.time_series.h5 + .xdmf
       - stats.h5: /cm_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+
+    Multi-case moment centers: when a ``MomentBodyConfig`` declares
+    ``lever_origin_cases`` or ``lever_strategy="region_bbox_corners_xy"``,
+    each case is expanded into a separate derived body (named
+    ``{body}.{case_label}``). Every case produces its own timeseries file
+    and stats group, computed independently, so callers can scan candidate
+    moment centers and pick the worst-case afterwards.
 
     ``mesh_path`` accepts ``.lnas``, ``.stl``, ``.h5``, ``.xdmf``, or a
     pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
@@ -359,17 +454,24 @@ def run_cm(
 
     for cfg_lbl, cfg in case_cfg.moment_coefficient.items():
         logger.info(f"Processing Cm: {cfg_lbl}")
-        _run_body_coefficient(
-            coef="cm",
-            mesh=mesh,
-            cp_h5=cp_h5,
-            cfg_lbl=cfg_lbl,
-            cfg=cfg,
-            bodies_definition=case_cfg.bodies,
-            process_fn=process_Cm,
-            path_manager=path_manager,
-            stats_h5=stats_h5,
-        )
+        runs = _expand_moment_cases(cfg, case_cfg.bodies, mesh)
+        if len(runs) != len(cfg.bodies):
+            logger.info(
+                f"Cm cases: expanded {len(cfg.bodies)} body(ies) into "
+                f"{len(runs)} independent runs"
+            )
+        for run_cfg, run_bodies_def in runs:
+            _run_body_coefficient(
+                coef="cm",
+                mesh=mesh,
+                cp_h5=cp_h5,
+                cfg_lbl=cfg_lbl,
+                cfg=run_cfg,
+                bodies_definition=run_bodies_def,
+                process_fn=process_Cm,
+                path_manager=path_manager,
+                stats_h5=stats_h5,
+            )
         write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
         logger.info(f"Cm stats written for config '{cfg_lbl}'")
 

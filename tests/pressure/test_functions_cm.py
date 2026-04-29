@@ -109,6 +109,24 @@ def test_add_lever_arm_override_beats_strategy(geom_data, geometry_df):
     np.testing.assert_allclose(result_df["rz"].to_numpy(), [-100.0, -100.0])
 
 
+def test_lever_origin_cases_round_trip():
+    """A MomentBodyConfig with lever_origin_cases preserves the dict."""
+    body = MomentBodyConfig(
+        name="pack",
+        lever_origin_cases={
+            "xmin_ymin": {0: (0.0, 0.0, 0.0), 1: (10.0, 0.0, 0.0)},
+            "xmax_ymin": {0: (5.0, 0.0, 0.0), 1: (15.0, 0.0, 0.0)},
+        },
+    )
+    assert set(body.lever_origin_cases) == {"xmin_ymin", "xmax_ymin"}
+    assert body.lever_origin_cases["xmax_ymin"][1] == (15.0, 0.0, 0.0)
+
+
+def test_lever_strategy_accepts_region_bbox_corners_xy():
+    body = MomentBodyConfig(name="pack", lever_strategy="region_bbox_corners_xy")
+    assert body.lever_strategy == "region_bbox_corners_xy"
+
+
 def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
     geometry_df = add_lever_arm_to_geometry_df(
         geom_data=geom_data,
