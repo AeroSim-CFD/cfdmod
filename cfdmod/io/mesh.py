@@ -24,10 +24,27 @@ import h5py
 import numpy as np
 from lnas import LnasFormat, LnasGeometry
 
-# Version that the lnas reader accepts (its check strips the patch number,
-# so any "v0.5.X" works); kept central so synthesis stays compatible with
-# whatever lnas the project is pinned to.
-_LNAS_VERSION = "v0.5.2"
+
+def _resolve_lnas_version() -> str:
+    """Pick a version string the installed lnas reader will accept.
+
+    lnas exposes ``_CURRENT_VERSION`` (e.g. ``"v0.5.2"``) on
+    :mod:`lnas.fmt`; we use that when available so cfdmod tracks the
+    library it's pinned against. If the symbol moves or disappears, fall
+    back to a hard-coded value compatible with lnas's major-version check.
+    """
+    try:
+        from lnas import fmt as _lnas_fmt
+
+        version = getattr(_lnas_fmt, "_CURRENT_VERSION", None)
+        if isinstance(version, str) and version:
+            return version
+    except Exception:
+        pass
+    return "v0.5.2"
+
+
+_LNAS_VERSION = _resolve_lnas_version()
 _DEFAULT_SURFACE_NAME = "all"
 
 

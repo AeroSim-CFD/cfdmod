@@ -284,7 +284,16 @@ class BodyConfig(HashableConfig):
     name: str = Field(
         ...,
         title="Body's name",
-        description="Name of the body defined in the bodies section",
+        description=(
+            "Name of the body defined in the bodies section. Used both as a "
+            "lookup key against ``bodies_definition`` and as a filename "
+            "component in the flat output layout (e.g. "
+            "``Cf.{cfg_lbl}.{body_name}.time_series.h5``). "
+            "Avoid characters that conflict with the dot separator in the "
+            "filename layout; the moment-coefficient case expansion produces "
+            "derived body names of the form ``{name}.{case_label}``, so a "
+            "literal '.' inside ``name`` would make those harder to parse."
+        ),
     )
     sub_bodies: ZoningModel = Field(
         ZoningModel(
