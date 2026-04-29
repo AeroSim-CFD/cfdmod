@@ -78,8 +78,14 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
+# -m 'not perf' excludes the perf-marked tests by default. Run them on
+# demand with ``pytest -m perf`` (requires the big-case files at the
+# repo root; perf tests skip when missing).
+addopts = "-ra -q -m 'not perf'"
 testpaths = ["tests"]
+markers = [
+    "perf: pipeline performance benchmarks on the real big-case data; opt-in via -m perf",
+]
 
 [tool.black]
 exclude = '''
