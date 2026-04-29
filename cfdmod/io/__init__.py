@@ -22,6 +22,8 @@ __all__ = [
     "write_temporal_xdmf",
     "write_stats_field",
     "write_stats_xdmf",
+    "write_processing_metadata",
+    "read_processing_metadata",
     # mesh resolver
     "load_mesh",
     "mesh_from_h5",
@@ -46,8 +48,10 @@ from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import (
     get_pressure_keys,
     filter_keys_by_range,
+    read_processing_metadata,
     read_step,
     read_timeseries_meta,
+    write_processing_metadata,
     write_timeseries_step,
     write_timeseries_meta,
     write_timeseries_geometry,
