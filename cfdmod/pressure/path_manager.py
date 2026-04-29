@@ -21,6 +21,15 @@ class PathManagerBase(BaseModel):
             / f"{self._FOLDERNAME}.time_series.h5"
         )
 
+    def get_body_timeseries_path(self, cfg_lbl: str, body_name: str) -> pathlib.Path:
+        """Per-body timeseries H5 (used by Cf/Cm where each body has its own mesh)."""
+        return (
+            self.output_path
+            / self._FOLDERNAME
+            / cfg_lbl
+            / f"{body_name}.time_series.h5"
+        )
+
     def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
         return self.output_path / self._FOLDERNAME / cfg_lbl / f"{self._FOLDERNAME}.config.yaml"
 
@@ -43,6 +52,10 @@ class CfPathManager(PathManagerBase):
 
 class CePathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "Ce"
+
+    def get_regions_stl_path(self, cfg_lbl: str) -> pathlib.Path:
+        """STL file containing the sliced regions mesh used for Ce."""
+        return self.output_path / self._FOLDERNAME / cfg_lbl / "regions.stl"
 
 
 class CpPathManager(PathManagerBase):
