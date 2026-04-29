@@ -11,6 +11,8 @@ from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.pressure.parameters import MomentBodyConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
+pytestmark = pytest.mark.unit
+
 
 def _moment_body(name="body", lever_origin=(0.0, 0.0, 10.0), **kwargs) -> MomentBodyConfig:
     return MomentBodyConfig(name=name, lever_origin=lever_origin, **kwargs)

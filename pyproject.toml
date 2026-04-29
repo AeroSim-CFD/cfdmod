@@ -79,12 +79,19 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 minversion = "6.0"
 # -m 'not perf' excludes the perf-marked tests by default. Run them on
-# demand with ``pytest -m perf`` (requires the big-case files at the
-# repo root; perf tests skip when missing).
+# demand with ``pytest -m perf`` (synthesises body+probe, runs full
+# Cp/Cf/Cm chain on configurable big data).
 addopts = "-ra -q -m 'not perf'"
 testpaths = ["tests"]
+# Selection cheatsheet:
+#   pytest -m unit                -> fast, pure-function tests
+#   pytest -m integration         -> end-to-end pipeline tests (read real fixture h5)
+#   pytest -m "unit or integration"  -> default (everything except perf)
+#   pytest -m perf                -> opt-in benchmark (synthetic data, minutes)
 markers = [
-    "perf: pipeline performance benchmarks on the real big-case data; opt-in via -m perf",
+    "unit: pure-function tests with no real-data fixtures or pipeline orchestration",
+    "integration: end-to-end pipeline tests that exercise multiple components together",
+    "perf: pipeline performance benchmarks on synthetic big data; opt-in via -m perf",
 ]
 
 [tool.black]

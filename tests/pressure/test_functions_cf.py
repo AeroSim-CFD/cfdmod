@@ -11,6 +11,8 @@ from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.pressure.parameters import BasicStatisticModel, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def cp_data():

@@ -4,6 +4,8 @@ import pytest
 
 from cfdmod.io.vtk.probe_vtm import create_line, get_array_from_filter, probe_over_line, read_vtm
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture()
 def p1():

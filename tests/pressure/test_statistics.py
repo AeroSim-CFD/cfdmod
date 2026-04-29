@@ -14,6 +14,8 @@ from cfdmod.pressure.parameters import (
 from cfdmod.pressure.functions import calculate_statistics
 from cfdmod.utils import convert_dataframe_into_matrix
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def stats_to_apply():

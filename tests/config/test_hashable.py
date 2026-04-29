@@ -2,6 +2,9 @@ import pathlib
 import tempfile
 
 from cfdmod.config.hashable import HashableConfig
+import pytest
+
+pytestmark = pytest.mark.unit
 
 
 def test_equal_hashes():

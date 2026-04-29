@@ -15,6 +15,8 @@ from cfdmod.pressure.geometry import (
 from cfdmod.pressure.parameters import BasicStatisticModel, CeConfig, ZoningConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def mesh():

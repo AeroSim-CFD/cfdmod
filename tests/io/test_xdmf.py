@@ -20,6 +20,8 @@ from cfdmod.io.xdmf import (
     write_timeseries_step,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def triangles():

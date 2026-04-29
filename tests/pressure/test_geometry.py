@@ -9,6 +9,8 @@ from cfdmod.pressure.geometry import (
 )
 from cfdmod.pressure.parameters import ZoningModel
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def mesh():

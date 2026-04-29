@@ -18,6 +18,8 @@ from lnas import LnasFormat, LnasGeometry
 from cfdmod.io.xdmf import get_pressure_keys
 from cfdmod.pressure.migrate import migrate_body_h5, migrate_probe_h5
 
+pytestmark = pytest.mark.integration
+
 
 def _write_legacy_body(path: pathlib.Path, n_tri: int = 4) -> tuple[np.ndarray, np.ndarray]:
     """Write a minimal legacy-format body H5 (pandas HDFStore with /step* keys)

@@ -3,6 +3,9 @@ import pathlib
 import numpy as np
 
 from cfdmod.io.geometry.STL import export_stl, read_stl
+import pytest
+
+pytestmark = pytest.mark.unit
 
 
 def test_STL_example():

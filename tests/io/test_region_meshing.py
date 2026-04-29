@@ -8,6 +8,9 @@ from cfdmod.io.geometry.region_meshing import (
     triangulate_tri,
 )
 from cfdmod.pressure.parameters import ZoningModel
+import pytest
+
+pytestmark = pytest.mark.unit
 
 
 def test_triangulate_tri():

@@ -8,6 +8,8 @@ from lnas import LnasGeometry
 from cfdmod.pressure.functions import combine_stats_data_with_mesh, get_indexing_mask
 from cfdmod.pressure.parameters import ZoningModel
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def zoning():

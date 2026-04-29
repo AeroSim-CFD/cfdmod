@@ -11,6 +11,8 @@ from cfdmod.pressure.parameters import (
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
 from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
 
+pytestmark = pytest.mark.integration
+
 
 def test_calculate_statistics_from_h5_basic():
     statistics = [

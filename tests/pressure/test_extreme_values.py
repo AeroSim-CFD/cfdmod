@@ -13,6 +13,8 @@ from cfdmod.pressure.parameters import (
     ExtremePeakParamsModel,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def timestep_arr():

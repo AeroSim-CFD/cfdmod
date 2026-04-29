@@ -17,6 +17,8 @@ from cfdmod.pressure.parameters import CpConfig, BasicStatisticModel
 from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
 from tests.pressure.conftest import BUILDING_PROBE_H5 as PROBE_H5
 
+pytestmark = pytest.mark.integration
+
 
 def test_get_pressure_keys():
     keys = get_pressure_keys(BODY_H5, "pressure")

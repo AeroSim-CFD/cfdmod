@@ -26,6 +26,9 @@ from tests.pressure.conftest import (
     make_cp_cfg,
     zoning_full,
 )
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _galpao_cp(tmp_path):

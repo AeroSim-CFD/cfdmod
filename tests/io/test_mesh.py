@@ -8,6 +8,8 @@ from lnas import LnasFormat
 from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import write_timeseries_geometry
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def triangles():

@@ -6,6 +6,9 @@ import trimesh
 from cfdmod.altimetry import AltimetryProbe, AltimetrySection, Shed
 from cfdmod.altimetry.figure import savefig_to_file
 from cfdmod.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
+import pytest
+
+pytestmark = pytest.mark.unit
 
 
 def test_image_generation():

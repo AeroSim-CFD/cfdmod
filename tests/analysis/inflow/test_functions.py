@@ -12,6 +12,8 @@ from cfdmod.analysis.inflow.functions import (
 )
 from cfdmod.analysis.inflow.profile import InflowData, NormalizationParameters
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture()
 def inflow_data_dict():

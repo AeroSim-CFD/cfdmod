@@ -4,6 +4,8 @@ import pytest
 
 from cfdmod.utils import convert_dataframe_into_matrix, convert_matrix_into_dataframe
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def dataframe_timeseries():

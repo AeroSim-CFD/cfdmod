@@ -20,6 +20,9 @@ from tests.pressure.conftest import (
     iter_stats_leaves,
     zoning_full,
 )
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 # ---------------------------------------------------------------------------

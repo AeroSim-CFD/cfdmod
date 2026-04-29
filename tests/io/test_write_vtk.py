@@ -8,6 +8,8 @@ from vtk.util.numpy_support import vtk_to_numpy  # type: ignore
 
 from cfdmod.io.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def vertices():
