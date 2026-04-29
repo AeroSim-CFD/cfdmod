@@ -85,7 +85,7 @@ from cfdmod.pressure.parameters import (
     StatisticsParamsModel,
     BodyDefinition,
 )
-from cfdmod.utils import convert_dataframe_into_matrix, create_folders_for_file
+from cfdmod.utils import convert_dataframe_into_matrix
 
 
 # ---------------------------------------------------------------------------
@@ -109,19 +109,6 @@ class CeOutput(CommonOutput):
 
     processed_entities: list[ProcessedEntity]
     excluded_entities: list[ProcessedEntity]
-
-    def export_mesh(self, cfg_label: str, path_manager):
-        regions_mesh = self.processed_entities[0].mesh.copy()
-        regions_mesh.join([sfc.mesh.copy() for sfc in self.processed_entities[1:]])
-        mesh_path = path_manager.get_surface_path(cfg_lbl=cfg_label, sfc_lbl="body")
-        create_folders_for_file(mesh_path)
-        regions_mesh.export_stl(mesh_path)
-
-        if len(self.excluded_entities) != 0:
-            excluded_path = path_manager.get_surface_path(
-                cfg_lbl=cfg_label, sfc_lbl="excluded_surfaces"
-            )
-            self.excluded_entities[0].mesh.export_stl(excluded_path)
 
 
 # ---------------------------------------------------------------------------

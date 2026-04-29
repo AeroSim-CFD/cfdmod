@@ -1,12 +1,9 @@
 """Path manager classes for the pressure module output directory layout."""
 
 import pathlib
-import shutil
 from typing import ClassVar
 
 from pydantic import BaseModel, Field
-
-from cfdmod.utils import create_folder_path
 
 
 class PathManagerBase(BaseModel):
@@ -15,33 +12,13 @@ class PathManagerBase(BaseModel):
     output_path: pathlib.Path = Field(
         ..., title="Output path", description="Path for saving output files"
     )
-    direction_label: str = Field(
-        "", title="Direction of coefficient", description="Direction of coefficient"
-    )
-
-    def get_stats_path(self, cfg_lbl: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / self._FOLDERNAME
-            / cfg_lbl
-            / f"{self._FOLDERNAME}{self.direction_label}.stats.h5"
-        )
 
     def get_timeseries_path(self, cfg_lbl: str) -> pathlib.Path:
         return (
             self.output_path
             / self._FOLDERNAME
             / cfg_lbl
-            / f"{self._FOLDERNAME}{self.direction_label}.time_series.h5"
-        )
-
-    def get_timeseries_xdmf_path(self, cfg_lbl: str) -> pathlib.Path:
-        """Return path for the temporal XDMF alongside each coefficient timeseries H5."""
-        return (
-            self.output_path
-            / self._FOLDERNAME
-            / cfg_lbl
-            / f"{self._FOLDERNAME}{self.direction_label}.time_series.xdmf"
+            / f"{self._FOLDERNAME}.time_series.h5"
         )
 
     def get_config_path(self, cfg_lbl: str) -> pathlib.Path:
@@ -56,63 +33,17 @@ class PathManagerBase(BaseModel):
         return self.output_path / "results.xdmf"
 
 
-class PathManagerBody(PathManagerBase):
-    def get_excluded_surface_path(self, cfg_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / "excluded_surfaces.stl"
-
-    def get_region_indexing_path(self, cfg_lbl: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / self._FOLDERNAME
-            / cfg_lbl
-            / f"{self._FOLDERNAME}.region_indexing.h5"
-        )
-
-    def get_region_definition_path(self, cfg_lbl: str) -> pathlib.Path:
-        return (
-            self.output_path
-            / self._FOLDERNAME
-            / cfg_lbl
-            / f"{self._FOLDERNAME}.region_definition.h5"
-        )
-
-
-class CmPathManager(PathManagerBody):
+class CmPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "Cm"
 
 
-class CfPathManager(PathManagerBody):
+class CfPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "Cf"
 
 
-class CePathManager(PathManagerBody):
+class CePathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "Ce"
-
-    def get_surface_path(self, cfg_lbl: str, sfc_lbl: str) -> pathlib.Path:
-        return self.output_path / self._FOLDERNAME / cfg_lbl / f"{sfc_lbl}.regions.stl"
 
 
 class CpPathManager(PathManagerBase):
     _FOLDERNAME: ClassVar[str] = "cp"
-
-
-def copy_input_artifacts(
-    cfg_path: pathlib.Path,
-    mesh_path: pathlib.Path,
-    static_data_path: pathlib.Path,
-    body_data_path: pathlib.Path,
-    path_manager: CpPathManager,
-):
-    create_folder_path(path_manager.output_path / "input_cp")
-    create_folder_path(path_manager.output_path / "input_cp" / "data")
-
-    shutil.copy(cfg_path, path_manager.output_path / "input_cp" / cfg_path.name)
-    shutil.copy(mesh_path, path_manager.output_path / "input_cp" / mesh_path.name)
-    shutil.copy(
-        static_data_path,
-        path_manager.output_path / "input_cp" / "data" / static_data_path.name,
-    )
-    shutil.copy(
-        body_data_path,
-        path_manager.output_path / "input_cp" / "data" / body_data_path.name,
-    )
