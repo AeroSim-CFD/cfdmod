@@ -72,7 +72,9 @@ def radial_pattern(
         tuple[np.ndarray, np.ndarray]: Triangles and normals arrays (STL representation).
     """
     z_interp = _build_z_interpolator(surface_paths)
-    positions = _generate_positions(r_start, r_end, radial_spacing, arc_spacing, ring_offset_distance, center)
+    positions = _generate_positions(
+        r_start, r_end, radial_spacing, arc_spacing, ring_offset_distance, center
+    )
 
     z_heights = z_interp(positions[:, 0], positions[:, 1])
     valid_mask = ~np.isnan(z_heights)
@@ -94,9 +96,7 @@ def radial_pattern(
         cos_t = np.cos(theta)
         sin_t = np.sin(theta)
 
-        R = np.array(
-            [[cos_t, -sin_t, 0.0], [sin_t, cos_t, 0.0], [0.0, 0.0, 1.0]]
-        )
+        R = np.array([[cos_t, -sin_t, 0.0], [sin_t, cos_t, 0.0], [0.0, 0.0, 1.0]])
         rotated = (R @ base_verts.T).T
 
         translation = np.array(

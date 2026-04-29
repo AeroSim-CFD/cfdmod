@@ -376,11 +376,7 @@ def process_xdmf_to_cp(
 
     dynamic_pressure = 0.5 * cp_config.fluid_density * cp_config.simul_U_H**2
     multiplier = 1.0 / 3.0 if cp_config.macroscopic_type == "rho" else 1.0
-    time_scale = (
-        cp_config.simul_characteristic_length
-        / cp_config.simul_U_H
-        * cp_config.time_scale_multiplier
-    )
+    time_scale = cp_config.simul_characteristic_length / cp_config.simul_U_H
 
     with h5py.File(body_h5, "r") as f:
         triangles = f["Triangles"][:]

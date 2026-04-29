@@ -1,6 +1,6 @@
 import numpy as np
 import pyvista as pv
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgba
+from matplotlib.colors import ListedColormap, to_rgba
 
 # class ColormapFactory:
 #     """Factory class for building colormaps.

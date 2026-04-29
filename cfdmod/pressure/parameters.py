@@ -428,11 +428,6 @@ class CpConfig(HashableConfig, BasePressureConfig):
         title="Simulation Characteristic Length",
         description="Simulation characteristic length to convert time scales",
     )
-    time_scale_multiplier: float = Field(
-        1,
-        title="Atmospheric integral length scale corrector",
-        description="Multiplier to correct the effective integral length scale",
-    )
 
 
 class CpCaseConfig(HashableConfig):

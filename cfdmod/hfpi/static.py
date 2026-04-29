@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import copy
 import pathlib
 from typing import Literal
 
 import numpy as np
 import pandas as pd
-import copy
 from pydantic import BaseModel, ConfigDict
 
-from cfdmod.hfpi import common
 from cfdmod import utils
+from cfdmod.hfpi import common
+
 
 class DimensionalData(BaseModel):
     """Analytical data required to analyze a given HFPI model"""
@@ -19,6 +20,7 @@ class DimensionalData(BaseModel):
     U_H: float
     height: float
     base: float
+    integral_scale_multiplier: float
 
     @property
     def dynamic_pressure(self):
@@ -30,7 +32,7 @@ class DimensionalData(BaseModel):
 
     @property
     def time_normalization_factor(self):
-        return self.CST
+        return self.CST * self.integral_scale_multiplier
 
     @property
     def force_normalization_factor(self):
@@ -85,7 +87,7 @@ class StaticForcesData(BaseModel):
     cf_x: pd.DataFrame
     cf_y: pd.DataFrame
     cm_z: pd.DataFrame
-    fixed_point: np.ndarray = np.array([0,0,0])
+    fixed_point: np.ndarray = np.array([0, 0, 0])
     is_scaled: bool = False
 
     def get_as_dct(self):
@@ -146,12 +148,18 @@ class StaticForcesData(BaseModel):
             res.filter_by_period(min_cst_period)
 
         return res
-    
-    def transform_fixed_point(self, new_fixed_point: np.ndarrray=np.array([0,0,0]), inplace: bool=True) -> StaticForcesData:
+
+    def transform_fixed_point(
+        self, new_fixed_point: np.ndarrray = np.array([0, 0, 0]), inplace: bool = True
+    ) -> StaticForcesData:
         obj = self if inplace else copy.deepcopy(self)
         transf_arm = obj.fixed_point - new_fixed_point
-        col_mul = [k for k in obj.cm_z.columns if not isinstance(k, str) or not k.startswith("time")]
-        obj.cm_z[col_mul] = obj.cm_z[col_mul] + common.series_cross_product(transf_arm, obj.cf_x[col_mul], obj.cf_y[col_mul])
+        col_mul = [
+            k for k in obj.cm_z.columns if not isinstance(k, str) or not k.startswith("time")
+        ]
+        obj.cm_z[col_mul] = obj.cm_z[col_mul] + common.series_cross_product(
+            transf_arm, obj.cf_x[col_mul], obj.cf_y[col_mul]
+        )
         return obj
 
     def filter_by_period(self, min_cst_period: float):
@@ -215,6 +223,7 @@ class StaticResults(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     floors_heights: np.ndarray
+    delta_t: float
 
     # data as ["x", "y", "z"] = time series
     forces_static: dict[str, np.ndarray]
@@ -232,30 +241,84 @@ class StaticResults(BaseModel):
         common.rotate_values_xy(self.forces_static, angle_rot)
         common.rotate_values_xy(self.moments_static, angle_rot)
 
-    def get_stats_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.forces_static, stats_type)
+    def get_stats_forces_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static,
+            self.moments_static,
+            cm_positions,
+        )
+        self.delta_t
+        if peak_method == "extreme":
+            return common.get_stats_dct(forces, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(forces, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.forces_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(forces, stats_type, peak_factor)
 
-    def get_stats_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.moments_static, stats_type)
+    def get_stats_moments_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static,
+            self.moments_static,
+            cm_positions,
+        )
+        if peak_method == "extreme":
+            return common.get_stats_dct(moments, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.moments_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(moments, stats_type, peak_factor)
 
-    def get_stats_global_forces_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.global_forces_static, stats_type)
+    def get_stats_global_forces_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        forces, _ = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static,
+            self.moments_static,
+            cm_positions,
+        )
+        global_forces = common.get_global_dct(forces)
+        if peak_method == "extreme":
+            return common.get_stats_dct(global_forces, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(global_forces, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.global_forces_static, stats_type, peak_factor)
+            return common.get_stats_dct_peak_factor(global_forces, stats_type, peak_factor)
 
-    def get_stats_global_moments_static(self, stats_type: Literal["min", "max", "mean"], peak_method: Literal["extreme", "peak-factor"]="extreme", peak_factor: float=4):
-        if peak_method=="extreme":
-            return common.get_stats_dct(self.global_moments_static, stats_type)
+    def get_stats_global_moments_static(
+        self,
+        cm_positions: pd.DataFrame,
+        stats_type: Literal["min", "max", "mean"],
+        peak_method: Literal["extreme", "peak-factor"] = "extreme",
+        peak_factor: float = 4,
+    ):
+        _, moments = common.move_loads_ref_from_CM_to_origin(
+            self.forces_static,
+            self.moments_static,
+            cm_positions,
+        )
+        global_moments = common.get_global_dct(moments)
+        if peak_method == "extreme":
+            return common.get_stats_dct(global_moments, stats_type)
+        elif peak_method == "gumbel":
+            return common.get_stats_dct_gumbell(global_moments, stats_type, self.delta_t)
         else:
-            return common.get_stats_dct_peak_factor(self.global_moments_static, stats_type, peak_factor)
-
+            return common.get_stats_dct_peak_factor(global_moments, stats_type, peak_factor)
 
 
 def validate_forces_w_n_floors(forces: StaticForcesData, n_floors: int):
@@ -269,7 +332,10 @@ def validate_forces_w_n_floors(forces: StaticForcesData, n_floors: int):
 
 
 def solve_static_forces(
-    forces: StaticForcesData, dim_data: DimensionalData, floors_heights: np.ndarray
+    forces: StaticForcesData,
+    dim_data: DimensionalData,
+    floors_heights: np.ndarray,
+    cm_positions: pd.DataFrame,
 ):
     """Solve system for static forces"""
     forces.fill_missing_floors(len(floors_heights))
@@ -278,6 +344,16 @@ def solve_static_forces(
 
     force_static = normalized_forces.get_as_dct()
     moments_static = common.get_moments_from_force(force_static, floors_heights)
+    force_static, moments_static = common.move_loads_ref_from_origin_to_CM(
+        force_static, moments_static, cm_positions
+    )
+
+    time = normalized_forces.cf_x["time"].to_numpy()
+    delta_t = time[1] - time[0]
+
     return StaticResults(
-        floors_heights=floors_heights, forces_static=force_static, moments_static=moments_static
+        floors_heights=floors_heights,
+        delta_t=delta_t,
+        forces_static=force_static,
+        moments_static=moments_static,
     )
