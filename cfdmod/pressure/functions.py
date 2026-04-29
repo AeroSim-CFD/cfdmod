@@ -9,7 +9,6 @@ from __future__ import annotations
 
 __all__ = [
     # Cp
-    "add_cp2xdmf",
     "process_xdmf_to_cp",
     "process_timeseries",
     # Cf
@@ -292,46 +291,6 @@ def calculate_statistics(
 # ---------------------------------------------------------------------------
 # Cp functions
 # ---------------------------------------------------------------------------
-
-
-def add_cp2xdmf(
-    *,
-    body_h5: pathlib.Path,
-    atm_probe_h5: pathlib.Path | None,
-    reference_vel: float,
-    fluid_density: float,
-) -> None:
-    """Add pressure coefficient (Cp) to H5 compatible with XDMF format.
-
-    Args:
-        body_h5 (pathlib.Path): H5 file for body pressure timeseries
-        atm_probe_h5 (pathlib.Path | None): H5 file for atmospheric pressure probe.
-            If None, constant reference pressure of 0 is used.
-        reference_vel (float): Reference velocity
-        fluid_density (float): Fluid density
-    """
-    with h5py.File(body_h5, mode="a") as f_body:
-        grp_abs = f_body["pressure"]
-        grp_cp = f_body.require_group("cp")
-        keys = list(grp_abs.keys())
-
-        if atm_probe_h5 is None:
-            for k in keys:
-                cp = grp_abs[k][:] / (0.5 * fluid_density * reference_vel**2)
-                if k in grp_cp:
-                    del grp_cp[k]
-                grp_cp[k] = cp
-            return
-
-        with h5py.File(atm_probe_h5) as f_atm:
-            grp_atm = f_atm["pressure"]
-            for k in keys:
-                p_body = grp_abs[k][:]
-                p_ref = grp_atm[k][0]
-                cp = (p_body - p_ref) / (0.5 * fluid_density * reference_vel**2)
-                if k in grp_cp:
-                    del grp_cp[k]
-                grp_cp[k] = cp
 
 
 def process_xdmf_to_cp(

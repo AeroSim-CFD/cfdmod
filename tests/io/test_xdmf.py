@@ -8,8 +8,10 @@ import pytest
 from cfdmod.io.xdmf import (
     filter_keys_by_range,
     get_pressure_keys,
+    read_processing_metadata,
     read_step,
     read_timeseries_meta,
+    write_processing_metadata,
     write_stats_field,
     write_stats_xdmf,
     write_temporal_xdmf,
@@ -296,3 +298,55 @@ def test_xdmf_files_have_doctype_header(tmp_path, timeseries_h5):
     write_temporal_xdmf(timeseries_h5, xdmf_path, group="pressure")
     text = pathlib.Path(xdmf_path).read_text()
     assert text.startswith('<?xml version="1.0" ?>\n<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">')
+
+
+def test_processing_metadata_round_trip(tmp_path):
+    path = tmp_path / "out.h5"
+    cfg = {
+        "statistics": [{"stats": "mean"}, {"stats": "rms"}],
+        "simul_U_H": 1.5,
+        "macroscopic_type": "rho",
+    }
+    write_processing_metadata(
+        path,
+        "cp/default",
+        cfg,
+        extra={"coefficient": "cp", "cfg_lbl": "default", "body_h5": "/tmp/body.h5"},
+    )
+    md = read_processing_metadata(path, "cp/default")
+    assert md["config"] == cfg
+    assert md["coefficient"] == "cp"
+    assert md["cfg_lbl"] == "default"
+    assert md["body_h5"] == "/tmp/body.h5"
+    assert "produced_at" in md
+    assert "cfdmod_version" in md
+
+
+def test_processing_metadata_does_not_break_stats_xdmf(tmp_path, triangles, vertices):
+    path = tmp_path / "results.h5"
+    write_stats_field(
+        path,
+        group="cp/default",
+        stat_name="mean",
+        values=np.array([0.1, 0.2]),
+        triangles=triangles,
+        vertices=vertices,
+    )
+    write_processing_metadata(path, "cp/default", {"simul_U_H": 1.0})
+
+    xdmf_path = tmp_path / "results.xdmf"
+    write_stats_xdmf(path, xdmf_path)
+
+    root = ET.parse(xdmf_path).getroot()
+    grids = root.findall("Domain/Grid")
+    assert [g.attrib["Name"] for g in grids] == ["cp/default"]
+    attrs = [a.attrib["Name"] for a in grids[0].findall("Attribute")]
+    assert attrs == ["cp/default/mean"]
+
+
+def test_processing_metadata_overwrites_existing_yaml(tmp_path):
+    path = tmp_path / "out.h5"
+    write_processing_metadata(path, "cp", {"x": 1})
+    write_processing_metadata(path, "cp", {"x": 2})
+    md = read_processing_metadata(path, "cp")
+    assert md["config"] == {"x": 2}

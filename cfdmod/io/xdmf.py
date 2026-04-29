@@ -29,14 +29,18 @@ __all__ = [
     "write_temporal_xdmf",
     "write_stats_field",
     "write_stats_xdmf",
+    "write_processing_metadata",
+    "read_processing_metadata",
 ]
 
+import datetime as _dt
 import pathlib
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 import h5py
 import numpy as np
+from ruamel.yaml import YAML
 
 
 def get_pressure_keys(
@@ -328,6 +332,74 @@ def write_stats_xdmf(h5_path: pathlib.Path, xdmf_path: pathlib.Path) -> None:
             attr_item.text = f"{h5_name}:/{grp_path}/{stat_name}"
 
     _write_pretty_xml(root, xdmf_path)
+
+
+def write_processing_metadata(
+    h5_path: pathlib.Path,
+    group: str,
+    config: dict,
+    *,
+    extra: dict | None = None,
+) -> None:
+    """Embed the post-processing parameters used to produce ``group`` as
+    HDF5 attributes on that group, plus the YAML serialization as a
+    sibling string dataset for round-trip reproducibility.
+
+    Attributes:
+        config_yaml: full config serialized to YAML (string)
+        produced_at: ISO-8601 UTC timestamp
+        cfdmod_version: package version
+        plus every key from ``extra`` (e.g. {'body_h5': '...', 'probe_h5': '...'})
+
+    Stored under ``{group}/processing_metadata/config.yaml`` (string dataset)
+    so it remains human-inspectable via ``h5dump`` even when attribute
+    inspection isn't available.
+    """
+    from io import StringIO
+
+    yaml = YAML(typ="safe")
+    yaml.default_flow_style = False
+    buf = StringIO()
+    yaml.dump(config, buf)
+    yaml_text = buf.getvalue()
+
+    try:
+        from importlib.metadata import version as _pkg_version
+
+        pkg_version = _pkg_version("aerosim-cfdmod")
+    except Exception:
+        pkg_version = "unknown"
+
+    with h5py.File(h5_path, "a") as f:
+        grp = f.require_group(group)
+        meta = grp.require_group("processing_metadata")
+        for key in ("config.yaml", "config_yaml"):
+            if key in meta:
+                del meta[key]
+        meta.create_dataset("config.yaml", data=yaml_text)
+        meta.attrs["produced_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        meta.attrs["cfdmod_version"] = pkg_version
+        if extra:
+            for k, v in extra.items():
+                meta.attrs[k] = str(v)
+
+
+def read_processing_metadata(h5_path: pathlib.Path, group: str) -> dict:
+    """Read the metadata written by :func:`write_processing_metadata`.
+
+    Returns dict with keys ``config`` (parsed YAML), ``produced_at``,
+    ``cfdmod_version``, and any ``extra`` keys recorded at write time.
+    """
+    yaml = YAML(typ="safe")
+    with h5py.File(h5_path, "r") as f:
+        meta = f[group]["processing_metadata"]
+        text = meta["config.yaml"][()]
+        if isinstance(text, bytes):
+            text = text.decode()
+        result: dict = {"config": yaml.load(text)}
+        for k, v in meta.attrs.items():
+            result[k] = v.decode() if isinstance(v, bytes) else v
+    return result
 
 
 def _write_pretty_xml(root: ET.Element, path: pathlib.Path) -> None:

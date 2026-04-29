@@ -11,7 +11,6 @@ __all__ = [
     # Cp
     "CpConfig",
     "CpCaseConfig",
-    "add_cp2xdmf",
     "process_xdmf_to_cp",
     "process_timeseries",
     # Cf
@@ -77,7 +76,6 @@ from cfdmod.pressure.parameters import (
 from cfdmod.pressure.functions import (
     CommonOutput,
     CeOutput,
-    add_cp2xdmf,
     process_xdmf_to_cp,
     process_timeseries,
     get_representative_areas,

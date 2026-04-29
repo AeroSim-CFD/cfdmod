@@ -22,6 +22,7 @@ import pandas as pd
 from lnas import LnasFormat
 
 from cfdmod.io.xdmf import (
+    write_processing_metadata,
     write_stats_field,
     write_stats_xdmf,
     write_temporal_xdmf,
@@ -39,7 +40,7 @@ from cfdmod.pressure.functions import (
 from cfdmod.pressure.parameters import CeCaseConfig, CfCaseConfig, CmCaseConfig, CpCaseConfig
 from cfdmod.pressure.path_manager import CePathManager, CfPathManager, CmPathManager, CpPathManager
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
-from cfdmod.utils import create_folders_for_file, save_yaml
+from cfdmod.utils import create_folders_for_file
 
 
 def _write_region_timeseries(
@@ -145,10 +146,6 @@ def run_cp(
         timeseries_path = path_manager.get_timeseries_path(cfg_lbl=cfg_lbl)
         create_folders_for_file(timeseries_path)
 
-        config_path = path_manager.get_config_path(cfg_lbl=cfg_lbl)
-        create_folders_for_file(config_path)
-        save_yaml(cfg.model_dump(), config_path)
-
         logger.info("Transforming to Cp timeseries...")
         process_xdmf_to_cp(
             body_h5=body_h5,
@@ -156,6 +153,10 @@ def run_cp(
             output_path=timeseries_path,
             cp_config=cfg,
         )
+
+        cfg_dump = cfg.model_dump()
+        ts_inputs = {"body_h5": str(body_h5), "probe_h5": str(probe_h5), "mesh_path": str(mesh_path)}
+        write_processing_metadata(timeseries_path, "/", cfg_dump, extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs})
 
         logger.info("Calculating Cp statistics from on-disk timeseries...")
         _write_stats_for_group(
@@ -166,6 +167,12 @@ def run_cp(
             statistics=cfg.statistics,
             triangles=triangles,
             vertices=vertices,
+        )
+        write_processing_metadata(
+            results_h5,
+            f"cp/{cfg_lbl}",
+            cfg_dump,
+            extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
         )
 
         write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
@@ -200,10 +207,6 @@ def _run_body_coefficient(
         cp_h5=cp_h5,
         bodies_definition=bodies_definition,
     )
-
-    config_path = path_manager.get_config_path(cfg_lbl=cfg_lbl)
-    create_folders_for_file(config_path)
-    save_yaml(cfg.model_dump(), config_path)
 
     geometry_df = compiled_output[cfg.directions[0]].region_indexing_df
 
@@ -244,15 +247,31 @@ def _run_body_coefficient(
             group=[f"{coef}_{d}" for d in cfg.directions],
         )
 
+        cfg_dump = cfg.model_dump()
+        meta_extra = {
+            "coefficient": coef,
+            "cfg_lbl": cfg_lbl,
+            "body": body_cfg.name,
+            "cp_h5": str(cp_h5),
+        }
+        write_processing_metadata(ts_path, "/", cfg_dump, extra=meta_extra)
+
         for direction in cfg.directions:
+            stats_grp = f"{coef}_{direction}/{cfg_lbl}/{body_cfg.name}"
             _write_stats_for_group(
                 results_h5,
                 timeseries_path=ts_path,
                 timeseries_group=f"{coef}_{direction}",
-                stats_group=f"{coef}_{direction}/{cfg_lbl}/{body_cfg.name}",
+                stats_group=stats_grp,
                 statistics=cfg.statistics,
                 triangles=body_geom.triangles,
                 vertices=body_geom.vertices,
+            )
+            write_processing_metadata(
+                results_h5,
+                stats_grp,
+                cfg_dump,
+                extra={**meta_extra, "direction": direction},
             )
 
 
@@ -355,10 +374,6 @@ def run_ce(
     for cfg_lbl, cfg in case_cfg.shape_coefficient.items():
         logger.info(f"Processing Ce: {cfg_lbl}")
 
-        config_path = path_manager.get_config_path(cfg_lbl=cfg_lbl)
-        create_folders_for_file(config_path)
-        save_yaml(cfg.model_dump(), config_path)
-
         ce_output = process_Ce(mesh=mesh, cfg=cfg, cp_h5=cp_h5)
 
         # Build the unified cut mesh and per-cut-tri region label array.
@@ -392,6 +407,15 @@ def run_ce(
         write_timeseries_meta(ts_path, times, times)
         write_temporal_xdmf(ts_path, ts_path.with_suffix(".xdmf"), group="ce")
 
+        cfg_dump = cfg.model_dump()
+        meta_extra = {
+            "coefficient": "ce",
+            "cfg_lbl": cfg_lbl,
+            "cp_h5": str(cp_h5),
+            "regions_stl": str(regions_stl),
+        }
+        write_processing_metadata(ts_path, "/", cfg_dump, extra=meta_extra)
+
         _write_stats_for_group(
             results_h5,
             timeseries_path=ts_path,
@@ -401,6 +425,7 @@ def run_ce(
             triangles=cut_mesh.triangles,
             vertices=cut_mesh.vertices,
         )
+        write_processing_metadata(results_h5, f"ce/{cfg_lbl}", cfg_dump, extra=meta_extra)
 
         write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
         logger.info(f"Ce stats written for config '{cfg_lbl}'")

@@ -14,7 +14,7 @@ from cfdmod.io.xdmf import (
     write_timeseries_meta,
     write_timeseries_step,
 )
-from cfdmod.pressure.functions import add_cp2xdmf, process_xdmf_to_cp
+from cfdmod.pressure.functions import process_xdmf_to_cp
 from cfdmod.pressure.parameters import CpConfig, BasicStatisticModel
 
 
@@ -103,22 +103,43 @@ def test_process_xdmf_to_cp_no_probe(tmp_path):
     assert output_h5.exists()
 
 
-def test_add_cp2xdmf(tmp_path):
+def test_process_xdmf_to_cp_does_not_modify_inputs(tmp_path):
+    """Cp computation must produce a NEW file and leave body/probe untouched."""
     import shutil
 
     body_copy = tmp_path / "body.h5"
+    probe_copy = tmp_path / "probe.h5"
     shutil.copy(BODY_H5, body_copy)
+    shutil.copy(PROBE_H5, probe_copy)
+
+    body_mtime_before = body_copy.stat().st_mtime_ns
+    body_size_before = body_copy.stat().st_size
+    probe_mtime_before = probe_copy.stat().st_mtime_ns
+    probe_size_before = probe_copy.stat().st_size
 
     with h5py.File(body_copy, "r") as f:
-        keys = list(f["pressure"].keys())
+        body_keys_before = sorted(f.keys())
+    with h5py.File(probe_copy, "r") as f:
+        probe_keys_before = sorted(f.keys())
 
-    add_cp2xdmf(
-        body_h5=body_copy,
-        atm_probe_h5=None,
-        reference_vel=1.0,
+    cfg = CpConfig(
+        statistics=[BasicStatisticModel(stats="mean")],
+        timestep_range=(0.0, 1e9),
+        macroscopic_type="pressure",
+        reference_pressure="average",
+        simul_U_H=1.0,
+        simul_characteristic_length=1.0,
         fluid_density=1.0,
     )
+    output_h5 = tmp_path / "cp.time_series.h5"
+    process_xdmf_to_cp(body_copy, probe_copy, output_h5, cfg)
 
+    assert output_h5.exists()
+    assert body_copy.stat().st_mtime_ns == body_mtime_before
+    assert body_copy.stat().st_size == body_size_before
+    assert probe_copy.stat().st_mtime_ns == probe_mtime_before
+    assert probe_copy.stat().st_size == probe_size_before
     with h5py.File(body_copy, "r") as f:
-        assert "cp" in f
-        assert list(f["cp"].keys()) == keys
+        assert sorted(f.keys()) == body_keys_before
+    with h5py.File(probe_copy, "r") as f:
+        assert sorted(f.keys()) == probe_keys_before
