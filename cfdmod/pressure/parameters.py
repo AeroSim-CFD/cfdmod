@@ -349,6 +349,23 @@ class MomentBodyConfig(BodyConfig):
         ),
     )
 
+    @model_validator(mode="after")
+    def _check_lever_combination(self) -> "MomentBodyConfig":
+        if self.lever_origin_cases is not None and self.lever_strategy not in (
+            "fixed",
+        ):
+            import warnings
+
+            warnings.warn(
+                f"MomentBodyConfig {self.name!r}: lever_origin_cases is set, "
+                f"so lever_strategy={self.lever_strategy!r} will be ignored. "
+                "Set lever_strategy='fixed' (or omit it) to silence this "
+                "warning.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self
+
 
 # ---------------------------------------------------------------------------
 # Ce shape coefficient zoning config

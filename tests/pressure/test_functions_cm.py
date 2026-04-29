@@ -127,6 +127,35 @@ def test_lever_strategy_accepts_region_bbox_corners_xy():
     assert body.lever_strategy == "region_bbox_corners_xy"
 
 
+def test_lever_origin_cases_with_strategy_warns():
+    """Combining lever_origin_cases with a non-fixed strategy is ambiguous --
+    cases win, so the user gets a UserWarning to flag the dead-code field."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        MomentBodyConfig(
+            name="pack",
+            lever_strategy="region_bbox_corners_xy",
+            lever_origin_cases={"a": {0: (0.0, 0.0, 0.0)}},
+        )
+    assert any("lever_origin_cases is set" in str(w.message) for w in caught)
+
+
+def test_lever_origin_cases_with_fixed_strategy_silent():
+    """The validator only warns on conflicting strategies, not on the
+    canonical (fixed + cases) combination."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        MomentBodyConfig(
+            name="pack",
+            lever_origin_cases={"a": {0: (0.0, 0.0, 0.0)}},
+        )
+    assert not any("lever_origin_cases is set" in str(w.message) for w in caught)
+
+
 def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
     geometry_df = add_lever_arm_to_geometry_df(
         geom_data=geom_data,
