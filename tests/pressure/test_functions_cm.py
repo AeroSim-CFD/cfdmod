@@ -8,8 +8,12 @@ from lnas import LnasGeometry
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure.functions import add_lever_arm_to_geometry_df, transform_Cm
 from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
-from cfdmod.pressure.parameters import ZoningModel
+from cfdmod.pressure.parameters import MomentBodyConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
+
+
+def _moment_body(name="body", lever_origin=(0.0, 0.0, 10.0), **kwargs) -> MomentBodyConfig:
+    return MomentBodyConfig(name=name, lever_origin=lever_origin, **kwargs)
 
 
 @pytest.fixture()
@@ -51,22 +55,65 @@ def geometry_df(geom_data, body_geom):
     )
 
 
-def test_add_lever_arm(geom_data, geometry_df):
+def test_add_lever_arm_fixed(geom_data, geometry_df):
     result_df = add_lever_arm_to_geometry_df(
         geom_data=geom_data,
         transformation=TransformationConfig(),
-        lever_origin=[0, 0, 10],
+        body_cfg=_moment_body(lever_origin=(0.0, 0.0, 10.0)),
         geometry_df=geometry_df,
     )
 
     assert all(f"r{d}" in result_df.columns for d in ["x", "y", "z"])
+    # Body fixture: triangles span (0,0,0)-(10,10,0). Lever origin (0,0,10).
+    # First triangle centroid is roughly (10/3, 10/3, 0) -> rz = -10.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [-10.0, -10.0])
+
+
+def test_add_lever_arm_region_base(geom_data, geometry_df):
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(lever_strategy="region_base"),
+        geometry_df=geometry_df,
+    )
+    # All vertices live on z=0, so the auto-derived base z is 0 -> rz == cz == 0.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [0.0, 0.0])
+
+
+def test_add_lever_arm_explicit_override(geom_data, geometry_df):
+    # Default zoning produces a single region per body labelled "0-body".
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(
+            lever_origin=(0.0, 0.0, 0.0),
+            region_lever_origins={0: (0.0, 0.0, 100.0)},
+        ),
+        geometry_df=geometry_df,
+    )
+    # Override puts origin at z=100 -> rz = 0 - 100 = -100 for both tris.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [-100.0, -100.0])
+
+
+def test_add_lever_arm_override_beats_strategy(geom_data, geometry_df):
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(
+            lever_strategy="region_base",
+            region_lever_origins={0: (0.0, 0.0, 100.0)},
+        ),
+        geometry_df=geometry_df,
+    )
+    # Region 0 uses the explicit override even though strategy is region_base.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [-100.0, -100.0])
 
 
 def test_transform_Cm(geom_data, body_data, body_geom, geometry_df):
     geometry_df = add_lever_arm_to_geometry_df(
         geom_data=geom_data,
         transformation=TransformationConfig(),
-        lever_origin=[0, 0, 10],
+        body_cfg=_moment_body(lever_origin=(0.0, 0.0, 10.0)),
         geometry_df=geometry_df,
     )
     cm_data = transform_Cm(

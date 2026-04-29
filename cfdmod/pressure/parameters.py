@@ -299,9 +299,38 @@ class BodyConfig(HashableConfig):
 
 class MomentBodyConfig(BodyConfig):
     lever_origin: tuple[float, float, float] = Field(
-        ...,
-        title="Lever origin",
-        description="Reference point to evaluate the lever for moment calculations",
+        (0.0, 0.0, 0.0),
+        title="Lever origin (fixed-strategy fallback)",
+        description=(
+            "Reference point used as the moment center for every triangle when "
+            "lever_strategy='fixed'. Also serves as the fallback origin for "
+            "regions not covered by region_lever_origins under any strategy."
+        ),
+    )
+    lever_strategy: Literal["fixed", "region_base"] = Field(
+        "fixed",
+        title="Lever-origin strategy",
+        description=(
+            "How to derive the moment center for each region in this body. "
+            "'fixed' (default): every triangle uses lever_origin. "
+            "'region_base': for each region, derive the base automatically "
+            "from the region's triangle vertices as "
+            "(mean_x, mean_y, min_z) -- the centroid of the floor-plane "
+            "footprint at the lowest z. Useful for overturning moment about "
+            "the base of each container. Specific regions can still be "
+            "overridden via region_lever_origins."
+        ),
+    )
+    region_lever_origins: dict[int, tuple[float, float, float]] | None = Field(
+        None,
+        title="Per-region lever origins (explicit overrides)",
+        description=(
+            "Explicit moment centers keyed by the integer region index "
+            "(0, 1, ... matching the order produced by sub_bodies). Takes "
+            "precedence over both lever_strategy and lever_origin. Use this "
+            "for HFPI-style analyses where the center of mass of each body "
+            "or container is known externally."
+        ),
     )
 
 

@@ -81,6 +81,7 @@ from cfdmod.pressure.parameters import (
     ExtremeGumbelParamsModel,
     ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
+    MomentBodyConfig,
     ParameterizedStatisticModel,
     StatisticsParamsModel,
     BodyDefinition,
@@ -677,36 +678,102 @@ def process_Cf(
 # ---------------------------------------------------------------------------
 
 
+def _resolve_region_origin(
+    region_label: str,
+    body_cfg: MomentBodyConfig,
+    transformed_body: LnasGeometry,
+    local_idx_in_region: np.ndarray,
+) -> tuple[float, float, float]:
+    """Pick the moment center for a single region.
+
+    Precedence:
+      1. body_cfg.region_lever_origins[region_int] when set (explicit override).
+      2. (mean_x, mean_y, min_z) of the region's triangle vertices when
+         body_cfg.lever_strategy == "region_base".
+      3. body_cfg.lever_origin (fixed-strategy fallback).
+    """
+    overrides = body_cfg.region_lever_origins or {}
+    region_int = int(region_label.split("-", 1)[0])
+    if region_int in overrides:
+        return tuple(overrides[region_int])  # type: ignore[return-value]
+    if body_cfg.lever_strategy == "region_base":
+        xyz = transformed_body.triangle_vertices[local_idx_in_region]
+        return (
+            float(xyz[:, :, 0].mean()),
+            float(xyz[:, :, 1].mean()),
+            float(xyz[:, :, 2].min()),
+        )
+    return tuple(body_cfg.lever_origin)  # type: ignore[return-value]
+
+
 def add_lever_arm_to_geometry_df(
     geom_data: GeometryData,
     transformation,
-    lever_origin: tuple[float, float, float],
+    body_cfg: MomentBodyConfig,
     geometry_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Add lever arm distances to geometry_df for moment calculations.
+    """Populate per-triangle lever arms (rx, ry, rz) for ``body_cfg``'s rows.
+
+    The moment center per triangle depends on its region and on
+    ``body_cfg.lever_strategy`` / ``body_cfg.region_lever_origins`` (see
+    ``_resolve_region_origin``). Triangles that belong to other bodies in the
+    same ``geometry_df`` are left untouched, so callers may invoke this once
+    per body within a multi-body Cm config.
 
     Args:
-        geom_data (GeometryData): Geometry data object
-        transformation: Transformation config
-        lever_origin (tuple[float, float, float]): Lever origin coordinates
-        geometry_df (pd.DataFrame): Dataframe with geometric properties
+        geom_data: Body's geometry slice (triangles, indices into the parent mesh).
+        transformation: Transformation applied to the mesh before computing centroids.
+        body_cfg: Per-body moment configuration (lever strategy + overrides).
+        geometry_df: Tabulated geometry for all bodies in the current Cm cfg.
 
     Returns:
-        pd.DataFrame: geometry_df merged with lever arm columns rx, ry, rz
+        pd.DataFrame: ``geometry_df`` with rx/ry/rz columns; only this body's
+        rows are populated by this call.
     """
     transformed_body = geom_data.mesh.copy()
     transformed_body.apply_transformation(transformation.get_geometry_transformation())
     centroids = np.mean(transformed_body.triangle_vertices, axis=1)
 
-    position_df = pd.DataFrame(
-        {
-            "rx": centroids[:, 0] - lever_origin[0],
-            "ry": centroids[:, 1] - lever_origin[1],
-            "rz": centroids[:, 2] - lever_origin[2],
-            "point_idx": geom_data.triangles_idxs,
-        }
+    body_mask = geometry_df.point_idx.isin(geom_data.triangles_idxs).to_numpy()
+    body_view = geometry_df.loc[body_mask, ["point_idx", "region_idx"]].copy()
+
+    local_idx_map = pd.Series(
+        np.arange(len(geom_data.triangles_idxs)), index=geom_data.triangles_idxs
     )
-    return pd.merge(geometry_df, position_df, on="point_idx", how="left")
+    body_view["local_idx"] = body_view["point_idx"].map(local_idx_map).astype(int)
+
+    body_view["cx"] = centroids[body_view["local_idx"], 0]
+    body_view["cy"] = centroids[body_view["local_idx"], 1]
+    body_view["cz"] = centroids[body_view["local_idx"], 2]
+
+    region_origin: dict[str, tuple[float, float, float]] = {}
+    for region_label, region_rows in body_view.groupby("region_idx", sort=False):
+        local_in_region = region_rows["local_idx"].to_numpy()
+        region_origin[region_label] = _resolve_region_origin(
+            region_label=region_label,
+            body_cfg=body_cfg,
+            transformed_body=transformed_body,
+            local_idx_in_region=local_in_region,
+        )
+
+    body_view["origin_x"] = body_view["region_idx"].map(lambda r: region_origin[r][0])
+    body_view["origin_y"] = body_view["region_idx"].map(lambda r: region_origin[r][1])
+    body_view["origin_z"] = body_view["region_idx"].map(lambda r: region_origin[r][2])
+
+    body_view["rx"] = body_view["cx"] - body_view["origin_x"]
+    body_view["ry"] = body_view["cy"] - body_view["origin_y"]
+    body_view["rz"] = body_view["cz"] - body_view["origin_z"]
+
+    out = geometry_df.copy() if "rx" not in geometry_df.columns else geometry_df
+    for col in ("rx", "ry", "rz"):
+        if col not in out.columns:
+            out[col] = np.nan
+
+    out.loc[body_mask, "rx"] = body_view["rx"].to_numpy()
+    out.loc[body_mask, "ry"] = body_view["ry"].to_numpy()
+    out.loc[body_mask, "rz"] = body_view["rz"].to_numpy()
+
+    return out
 
 
 def get_representative_volume(
@@ -873,7 +940,7 @@ def process_Cm(
         geometry_df = add_lever_arm_to_geometry_df(
             geom_data=geometry_dict[body_cfg.name],
             transformation=cfg.transformation,
-            lever_origin=body_cfg.lever_origin,
+            body_cfg=body_cfg,
             geometry_df=geometry_df,
         )
 
