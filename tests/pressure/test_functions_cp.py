@@ -1,7 +1,5 @@
 """Tests for Cp functions (io/xdmf + process_xdmf_to_cp)."""
 
-import pathlib
-
 import h5py
 import numpy as np
 import pytest
@@ -16,10 +14,8 @@ from cfdmod.io.xdmf import (
 )
 from cfdmod.pressure.functions import process_xdmf_to_cp
 from cfdmod.pressure.parameters import CpConfig, BasicStatisticModel
-
-
-BODY_H5 = pathlib.Path("fixtures/tests/pressure/xdmf/bodies.building.h5")
-PROBE_H5 = pathlib.Path("fixtures/tests/pressure/xdmf/points.point0.h5")
+from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
+from tests.pressure.conftest import BUILDING_PROBE_H5 as PROBE_H5
 
 
 def test_get_pressure_keys():

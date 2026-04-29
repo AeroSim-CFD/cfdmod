@@ -1,7 +1,5 @@
 """Tests for calculate_statistics_from_h5 (streaming stats)."""
 
-import pathlib
-
 import numpy as np
 import pytest
 
@@ -11,8 +9,7 @@ from cfdmod.pressure.parameters import (
     ParameterizedStatisticModel,
 )
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
-
-BODY_H5 = pathlib.Path("fixtures/tests/pressure/xdmf/bodies.building.h5")
+from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
 
 
 def test_calculate_statistics_from_h5_basic():
