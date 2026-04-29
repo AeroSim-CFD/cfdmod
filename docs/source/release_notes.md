@@ -2,16 +2,111 @@
 
 ## v2.0.0
 
-API-first refactoring for library usability.
+API-first rewrite of the post-processing pipeline. The branch focus was
+"library that external scripts and notebooks can drive" -- the public API,
+the I/O contract and the output layout were all redesigned around that goal.
 
-- Exposed public `cfdmod/__init__.py` with ~66 symbols directly importable
-- Added `to_dict()` and `to_yaml()` to all config models
-- Split `main.py` into `run.py` (pure Python) and `cli.py` (typer) for loft and roughness
-- Renamed `api/` to `io/` (I/O helpers) and `config/` (base config classes)
-- Flattened `use_cases/` to top-level domain modules (e.g. `cfdmod.loft`, `cfdmod.roughness`)
-- `roughness_gen` module renamed to `roughness`
-- Added `cfdmod.notebook_utils` with `mesh_summary`, `show_config`, `load_lnas` helpers
-- Backward-compatibility shims retained in `api/` and `use_cases/` for existing scripts
+### Pipeline (Cp / Cf / Cm / Ce)
+
+- Disk-first stats contract. Every coefficient persists its full per-triangle
+  timeseries to an XDMF+H5 file *before* statistics are computed. Statistics
+  are then read back from disk via
+  `cfdmod.pressure.statistics_runner.calculate_statistics_from_h5` so memory
+  pressure no longer scales with the number of timesteps.
+- Single combined `stats.{h5,xdmf}` for the whole run, with an embedded mesh
+  per leaf group. `write_stats_xdmf` walks the H5 tree and emits one
+  `<Grid>` per `(coefficient, body[, direction[, case]])` triple, each on
+  the correct sub-mesh -- fixes the silent length-mismatch behaviour in
+  v1.x where Cf/Cm/Ce stats were written against the full-mesh topology
+  while their values were per-body or per-region.
+- Multi-attribute temporal XDMF for Cf/Cm body timeseries: pick `cf_x`,
+  `cf_y`, `cf_z` (or `cm_x/y/z`) from the ParaView Attribute selector on the
+  same animation.
+- The user's input H5 files are read-only. The previous in-place mutator
+  (`add_cp2xdmf`) is gone, and a regression test pins body / probe size and
+  modification-time across a full `run_cp`.
+- Multi-format mesh resolver. `mesh_path` now accepts `.lnas` / `.stl` /
+  `.h5` / `.xdmf` (or a pre-loaded `LnasFormat`). It is also optional --
+  when omitted, the geometry is read from the source H5's embedded
+  `/Triangles + /Geometry`. Internally LnasFormat is still the carrier;
+  externally STL/XDMF/H5 are first-class.
+- Embedded post-processing metadata. Every output H5 carries
+  `<group>/processing_metadata/config.yaml` plus group attrs for
+  `produced_at`, `cfdmod_version`, `coefficient`, `cfg_lbl`, `body`,
+  `direction`, and the input paths. `read_processing_metadata(path, group)`
+  round-trips back to a dict.
+- Output layout is flat by default: every artefact for a `(coefficient,
+  cfg_lbl[, body[, case]])` triple sits directly in `output_path` with
+  dot-separated filenames (`cp.default.time_series.h5`,
+  `Cf.containers.pack.time_series.h5`, ...). Combined stats land in
+  `stats.{h5,xdmf}`.
+
+### New Cm features
+
+- `lever_strategy="region_base"` derives a per-region base from each
+  region's triangle vertices `(mean_x, mean_y, min_z)` -- the natural
+  reference for overturning moments about the floor footprint.
+- `lever_strategy="region_bbox_corners_xy"` expands one body into four
+  independent runs (`xmin_ymin`, `xmin_ymax`, `xmax_ymin`, `xmax_ymax`)
+  so external pipelines can scan worst-case overturning moments around
+  every footprint corner without doing the orchestration themselves.
+- `region_lever_origins: dict[int, (x, y, z)]` for explicit per-region
+  centers (HFPI-style externally-known centers of mass).
+- `lever_origin_cases: dict[case_label, dict[region_int, (x, y, z)]]` for
+  arbitrary case scans.
+
+### Public API
+
+- `from cfdmod import run_cp, run_cf, run_cm, run_ce` -- canonical pipeline
+  entry points.
+- `from cfdmod import load_mesh, mesh_from_h5,
+  read_processing_metadata, write_processing_metadata` -- IO helpers
+  surfaced for external consumers.
+- `cfg_path` accepts either a YAML path *or* a pre-built
+  `CpCaseConfig` / `CfCaseConfig` / `CmCaseConfig` / `CeCaseConfig`
+  instance, so in-memory pipelines don't need sidecar YAMLs.
+- CLI subcommands (`python -m cfdmod pressure cp|cf|cm|ce`) accept all
+  mesh formats with `--mesh` now optional.
+
+### Breaking changes
+
+- `cfdmod.pressure.add_cp2xdmf` removed (it mutated the input body H5).
+  External callers should use `run_cp`, which writes to a separate
+  output file.
+- `cfdmod.pressure.add_lever_arm_to_geometry_df` signature changed:
+  the third argument is now a `MomentBodyConfig` instead of a bare
+  `lever_origin` tuple, so the per-region lever logic can be applied
+  without the caller re-implementing it.
+- `MomentBodyConfig.lever_origin` is now optional with default
+  `(0.0, 0.0, 0.0)`. Configs that previously relied on it being required
+  will continue to load.
+- `cfdmod.pressure.path_manager.{get_results_h5_path, get_results_xdmf_path}`
+  renamed to `get_stats_h5_path` / `get_stats_xdmf_path`. The output files
+  are now `stats.{h5,xdmf}` (was `results.{h5,xdmf}`).
+- `cfdmod.api` and `cfdmod.use_cases` shims emit `DeprecationWarning` on
+  import; their code paths still work but will be removed in a future
+  release.
+
+### Compatibility / migration
+
+- Legacy pandas-HDFStore inputs from inflow (`cfdmod.analysis.inflow.profile`)
+  and HFPI (`cfdmod.hfpi.static.read_static_forces`) are read with a
+  `DeprecationWarning`; the readers prefer the new layout but accept the old
+  one.
+- `cfdmod.pressure.migrate.migrate_body_h5` and `migrate_probe_h5` convert
+  legacy pandas-HDFStore body/probe files to the new XDMF+H5 layout
+  on disk for users who want to upgrade their fixtures.
+- `aerosim-lnas` upgraded to `>=0.6.9,<0.7`.
+
+### Documentation / tooling
+
+- Top-level `notebooks/process_container_pack.ipynb` is the worked example:
+  reads `bodies.body_cp body.h5` + `points.point_cp ref.h5` from the repo
+  root, auto-detects container partition via a >1 m gap rule, runs Cp/Cf/Cm
+  end-to-end with `region_bbox_corners_xy` corner scan, and never authors a
+  surface label (geometry is read straight from the body H5).
+- `cfdmod.notebook_utils` provides `mesh_summary`, `show_config`,
+  `load_lnas` for exploratory notebook work.
 
 ## v1.1.2
 
@@ -38,34 +133,3 @@ It features the refactor for pressure use case module.
 
 First production stable release.
 It features all consulting use cases:
-
-- Loft, Altimetry, Pressure, Roughness Generation, S1 and Snapshots modules
-
-It also includes an API for handling geometry and vtk objects (Probe from VTM).
-All use cases have good testing code coverage, all passing.
-
-## v0.1.0
-
-First version of CFDMod. It is being refactored from the
-original codebase [CFD-Scripting](https://github.com/AeroSim-CFD/cfd-scripting)
-
-The API module currently supports STL reading and writing.
-It also includes tools for extracting data from multiblock datasets.
-
-The available use cases are
-
-- Use cases
-
-  - Altimetry:
-
-    - Sections
-    - Plots
-
-  - Block Generation:
-
-    - STL file with blocks
-
-  - S1
-
-    - From csv
-    - From vtm
