@@ -8,7 +8,7 @@ Two layout conventions are used:
   ``write_temporal_xdmf`` reads the root mesh and emits one Grid per timestep
   with one Attribute per group.
 
-- **Stats results files** (``results.h5``) embed a separate mesh inside *each*
+- **Stats results files** (``stats.h5``) embed a separate mesh inside *each*
   leaf group, alongside the per-stat datasets:
   ``/{path}/{Triangles, Geometry, mean, rms, ...}``. ``write_stats_xdmf`` walks
   the tree and emits one Grid per group that has both Triangles and Geometry.

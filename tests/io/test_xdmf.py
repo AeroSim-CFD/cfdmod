@@ -172,7 +172,7 @@ def test_write_temporal_xdmf_multi_group(tmp_path, triangles, vertices):
 
 
 def test_write_stats_field_embeds_group_mesh(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_stats_field(
         path,
         group="cp/case1",
@@ -190,7 +190,7 @@ def test_write_stats_field_embeds_group_mesh(tmp_path, triangles, vertices):
 
 
 def test_write_stats_field_does_not_overwrite_group_mesh(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_stats_field(
         path,
         group="cp/case1",
@@ -213,7 +213,7 @@ def test_write_stats_field_does_not_overwrite_group_mesh(tmp_path, triangles, ve
 
 
 def test_write_stats_field_overwrites_existing_stat(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_stats_field(
         path,
         group="cp",
@@ -233,7 +233,7 @@ def test_write_stats_field_overwrites_existing_stat(tmp_path, triangles, vertice
 
 
 def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     cp_tri, cp_verts = triangles, vertices
     body_tri = np.array([[0, 1, 2]], dtype=np.int32)
     body_verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64)
@@ -248,7 +248,7 @@ def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, v
         triangles=body_tri, vertices=body_verts,
     )
 
-    xdmf_path = tmp_path / "results.xdmf"
+    xdmf_path = tmp_path / "stats.xdmf"
     write_stats_xdmf(path, xdmf_path)
 
     root = ET.parse(xdmf_path).getroot()
@@ -268,7 +268,7 @@ def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, v
 
 
 def test_write_stats_xdmf_skips_groups_without_geometry(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_stats_field(
         path, "cp/default", "mean", np.array([0.1, 0.2]),
         triangles=triangles, vertices=vertices,
@@ -278,19 +278,19 @@ def test_write_stats_xdmf_skips_groups_without_geometry(tmp_path, triangles, ver
         path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
     )
 
-    xdmf_path = tmp_path / "results.xdmf"
+    xdmf_path = tmp_path / "stats.xdmf"
     write_stats_xdmf(path, xdmf_path)
     grid_names = [g.attrib["Name"] for g in ET.parse(xdmf_path).getroot().findall("Domain/Grid")]
     assert grid_names == ["cp/default"]
 
 
 def test_write_stats_xdmf_raises_when_no_grids(tmp_path):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_timeseries_meta(
         path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
     )
     with pytest.raises(ValueError, match="no group with both Triangles and Geometry"):
-        write_stats_xdmf(path, tmp_path / "results.xdmf")
+        write_stats_xdmf(path, tmp_path / "stats.xdmf")
 
 
 def test_xdmf_files_have_doctype_header(tmp_path, timeseries_h5):
@@ -323,7 +323,7 @@ def test_processing_metadata_round_trip(tmp_path):
 
 
 def test_processing_metadata_does_not_break_stats_xdmf(tmp_path, triangles, vertices):
-    path = tmp_path / "results.h5"
+    path = tmp_path / "stats.h5"
     write_stats_field(
         path,
         group="cp/default",
@@ -334,7 +334,7 @@ def test_processing_metadata_does_not_break_stats_xdmf(tmp_path, triangles, vert
     )
     write_processing_metadata(path, "cp/default", {"simul_U_H": 1.0})
 
-    xdmf_path = tmp_path / "results.xdmf"
+    xdmf_path = tmp_path / "stats.xdmf"
     write_stats_xdmf(path, xdmf_path)
 
     root = ET.parse(xdmf_path).getroot()

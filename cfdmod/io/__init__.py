@@ -22,6 +22,9 @@ __all__ = [
     "write_temporal_xdmf",
     "write_stats_field",
     "write_stats_xdmf",
+    # mesh resolver
+    "load_mesh",
+    "mesh_from_h5",
 ]
 
 from cfdmod.io.geometry.STL import read_stl, export_stl
@@ -39,6 +42,7 @@ from cfdmod.io.vtk.write_vtk import (
     read_polydata,
     merge_polydata,
 )
+from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import (
     get_pressure_keys,
     filter_keys_by_range,

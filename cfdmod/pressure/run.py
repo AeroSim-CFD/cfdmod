@@ -5,7 +5,7 @@ Pure Python entry points called by cli.py. No argparse or file-path logic here.
 Pipeline contract: every coefficient first persists its full per-triangle
 timeseries to disk (XDMF+H5), then computes statistics from that on-disk
 file via cfdmod.pressure.statistics_runner.calculate_statistics_from_h5.
-Stats are appended to a single combined results.h5 with an embedded mesh
+Stats are appended to a single combined stats.h5 with an embedded mesh
 per leaf group (so different sub-meshes — body subsets for Cf/Cm, sliced
 regions mesh for Ce — coexist without length collisions).
 """
@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from lnas import LnasFormat
 
+from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import (
     write_processing_metadata,
     write_stats_field,
@@ -89,7 +90,7 @@ def _write_region_timeseries(
 
 
 def _write_stats_for_group(
-    results_h5: pathlib.Path,
+    stats_h5: pathlib.Path,
     *,
     timeseries_path: pathlib.Path,
     timeseries_group: str,
@@ -98,7 +99,7 @@ def _write_stats_for_group(
     triangles: np.ndarray,
     vertices: np.ndarray,
 ) -> None:
-    """Compute stats from an on-disk timeseries group and append to results.h5
+    """Compute stats from an on-disk timeseries group and append to stats.h5
     under ``stats_group`` with the embedded mesh."""
     stats_df = calculate_statistics_from_h5(
         h5_path=timeseries_path,
@@ -108,7 +109,7 @@ def _write_stats_for_group(
     )
     for stat_name in stats_df.columns:
         write_stats_field(
-            h5_path=results_h5,
+            h5_path=stats_h5,
             group=stats_group,
             stat_name=stat_name,
             values=stats_df[stat_name].to_numpy(dtype=np.float64),
@@ -120,22 +121,31 @@ def _write_stats_for_group(
 def run_cp(
     body_h5: pathlib.Path,
     probe_h5: pathlib.Path | None,
-    mesh_path: pathlib.Path,
     cfg_path: pathlib.Path,
     output: pathlib.Path,
+    mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
     """Compute Cp timeseries + stats.
 
     Outputs per config label:
-      - {output}/cp/{label}/cp.time_series.h5 + .xdmf      (timeseries)
-      - {output}/results.h5 + results.xdmf                  (stats; embeds the
+      - {output}/cp.{label}.time_series.h5 + .xdmf       (timeseries)
+      - {output}/stats.h5 + stats.xdmf                    (stats; embeds the
         full mesh under /cp/{label}/ alongside stat datasets)
+
+    Args:
+        body_h5: Body pressure XDMF+H5.
+        probe_h5: Reference probe XDMF+H5 (or None).
+        cfg_path: Cp YAML config path.
+        output: Output directory.
+        mesh_path: Optional geometry source -- ``.lnas``, ``.stl``, ``.h5``,
+            ``.xdmf``, or a pre-loaded :class:`LnasFormat`. If omitted, the
+            geometry is read from ``body_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = CpCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.from_file(mesh_path)
+    mesh = mesh_from_h5(body_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CpPathManager(output_path=output)
-    results_h5 = path_manager.get_results_h5_path()
-    create_folders_for_file(results_h5)
+    stats_h5 = path_manager.get_stats_h5_path()
+    create_folders_for_file(stats_h5)
 
     triangles = mesh.geometry.triangles
     vertices = mesh.geometry.vertices
@@ -155,12 +165,16 @@ def run_cp(
         )
 
         cfg_dump = cfg.model_dump()
-        ts_inputs = {"body_h5": str(body_h5), "probe_h5": str(probe_h5), "mesh_path": str(mesh_path)}
+        ts_inputs = {
+            "body_h5": str(body_h5),
+            "probe_h5": str(probe_h5),
+            "mesh_path": str(mesh_path) if mesh_path is not None else f"<from {body_h5}>",
+        }
         write_processing_metadata(timeseries_path, "/", cfg_dump, extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs})
 
         logger.info("Calculating Cp statistics from on-disk timeseries...")
         _write_stats_for_group(
-            results_h5,
+            stats_h5,
             timeseries_path=timeseries_path,
             timeseries_group="cp",
             stats_group=f"cp/{cfg_lbl}",
@@ -169,13 +183,13 @@ def run_cp(
             vertices=vertices,
         )
         write_processing_metadata(
-            results_h5,
+            stats_h5,
             f"cp/{cfg_lbl}",
             cfg_dump,
             extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
         )
 
-        write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
+        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
         logger.info(f"Cp stats written for config '{cfg_lbl}'")
 
 
@@ -189,7 +203,7 @@ def _run_body_coefficient(
     bodies_definition,
     process_fn,
     path_manager,
-    results_h5: pathlib.Path,
+    stats_h5: pathlib.Path,
 ) -> None:
     """Shared body-coefficient flow for Cf and Cm.
 
@@ -198,7 +212,7 @@ def _run_body_coefficient(
     2. For each body: write a per-body timeseries H5 with one group per
        direction (cf_x/cf_y/cf_z), broadcasting the per-region values onto
        body-mesh triangles via the region-indexing df produced upstream.
-    3. Compute stats from the on-disk file and append to results.h5 under
+    3. Compute stats from the on-disk file and append to stats.h5 under
        /{coef}_{dir}/{cfg_lbl}/{body}/ with the body mesh embedded.
     """
     compiled_output = process_fn(
@@ -211,9 +225,14 @@ def _run_body_coefficient(
     geometry_df = compiled_output[cfg.directions[0]].region_indexing_df
 
     for body_cfg in cfg.bodies:
-        body_geom = mesh.geometry_from_list_surfaces(
-            surfaces_names=bodies_definition[body_cfg.name].surfaces
-        )[0]
+        sfc_list = bodies_definition[body_cfg.name].surfaces
+        # Empty surfaces list means "every surface in the mesh" -- the same
+        # convention get_geometry_data uses upstream. This makes the synthetic-
+        # surface path (loaded from a body H5 / STL with one "all" surface)
+        # work without forcing the user to know its name.
+        if not sfc_list:
+            sfc_list = list(mesh.surfaces.keys())
+        body_geom = mesh.geometry_from_list_surfaces(surfaces_names=sfc_list)[0]
         body_region_idx = geometry_df.loc[
             geometry_df.region_idx.str.contains(body_cfg.name)
         ].region_idx.to_numpy()
@@ -259,7 +278,7 @@ def _run_body_coefficient(
         for direction in cfg.directions:
             stats_grp = f"{coef}_{direction}/{cfg_lbl}/{body_cfg.name}"
             _write_stats_for_group(
-                results_h5,
+                stats_h5,
                 timeseries_path=ts_path,
                 timeseries_group=f"{coef}_{direction}",
                 stats_group=stats_grp,
@@ -268,7 +287,7 @@ def _run_body_coefficient(
                 vertices=body_geom.vertices,
             )
             write_processing_metadata(
-                results_h5,
+                stats_h5,
                 stats_grp,
                 cfg_dump,
                 extra={**meta_extra, "direction": direction},
@@ -277,23 +296,27 @@ def _run_body_coefficient(
 
 def run_cf(
     cp_h5: pathlib.Path,
-    mesh_path: pathlib.Path,
     cfg_path: pathlib.Path,
     output: pathlib.Path,
+    mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
     """Compute Cf per direction + stats.
 
     Per body & cfg label:
-      - {output}/Cf/{label}/{body}.time_series.h5 + .xdmf     (one group per
+      - {output}/Cf.{label}.{body}.time_series.h5 + .xdmf     (one group per
         direction: /cf_x, /cf_y, /cf_z, each with /t{T} arrays of length
         n_body_tri)
-      - results.h5: /cf_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+      - stats.h5: /cf_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+
+    ``mesh_path`` is optional and accepts ``.lnas``, ``.stl``, ``.h5``,
+    ``.xdmf``, or a pre-loaded :class:`LnasFormat`. If omitted, the geometry
+    is read from ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = CfCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.from_file(mesh_path)
+    mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CfPathManager(output_path=output)
-    results_h5 = path_manager.get_results_h5_path()
-    create_folders_for_file(results_h5)
+    stats_h5 = path_manager.get_stats_h5_path()
+    create_folders_for_file(stats_h5)
 
     for cfg_lbl, cfg in case_cfg.force_coefficient.items():
         logger.info(f"Processing Cf: {cfg_lbl}")
@@ -306,29 +329,33 @@ def run_cf(
             bodies_definition=case_cfg.bodies,
             process_fn=process_Cf,
             path_manager=path_manager,
-            results_h5=results_h5,
+            stats_h5=stats_h5,
         )
-        write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
+        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
         logger.info(f"Cf stats written for config '{cfg_lbl}'")
 
 
 def run_cm(
     cp_h5: pathlib.Path,
-    mesh_path: pathlib.Path,
     cfg_path: pathlib.Path,
     output: pathlib.Path,
+    mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
     """Compute Cm per direction + stats. Same disk-first contract as run_cf.
 
     Per body & cfg label:
-      - {output}/Cm/{label}/{body}.time_series.h5 + .xdmf
-      - results.h5: /cm_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+      - {output}/Cm.{label}.{body}.time_series.h5 + .xdmf
+      - stats.h5: /cm_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+
+    ``mesh_path`` accepts ``.lnas``, ``.stl``, ``.h5``, ``.xdmf``, or a
+    pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
+    ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = CmCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.from_file(mesh_path)
+    mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CmPathManager(output_path=output)
-    results_h5 = path_manager.get_results_h5_path()
-    create_folders_for_file(results_h5)
+    stats_h5 = path_manager.get_stats_h5_path()
+    create_folders_for_file(stats_h5)
 
     for cfg_lbl, cfg in case_cfg.moment_coefficient.items():
         logger.info(f"Processing Cm: {cfg_lbl}")
@@ -341,17 +368,17 @@ def run_cm(
             bodies_definition=case_cfg.bodies,
             process_fn=process_Cm,
             path_manager=path_manager,
-            results_h5=results_h5,
+            stats_h5=stats_h5,
         )
-        write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
+        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
         logger.info(f"Cm stats written for config '{cfg_lbl}'")
 
 
 def run_ce(
     cp_h5: pathlib.Path,
-    mesh_path: pathlib.Path,
     cfg_path: pathlib.Path,
     output: pathlib.Path,
+    mesh_path: pathlib.Path | LnasFormat | None = None,
 ) -> None:
     """Compute Ce + stats.
 
@@ -360,16 +387,20 @@ def run_ce(
     timeseries and stats.
 
     Per cfg label:
-      - {output}/Ce/{label}/Ce.time_series.h5 + .xdmf
+      - {output}/Ce.{label}.time_series.h5 + .xdmf
         (root /Triangles+/Geometry = cut mesh; /ce/t{T} per timestep)
-      - {output}/Ce/{label}/regions.stl    (cut mesh as STL for QC/ParaView)
-      - results.h5: /ce/{label}/{Triangles, Geometry, stat...}
+      - {output}/Ce.{label}.regions.stl    (cut mesh as STL for QC/ParaView)
+      - stats.h5: /ce/{label}/{Triangles, Geometry, stat...}
+
+    ``mesh_path`` accepts ``.lnas``, ``.stl``, ``.h5``, ``.xdmf``, or a
+    pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
+    ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = CeCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.from_file(mesh_path)
+    mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CePathManager(output_path=output)
-    results_h5 = path_manager.get_results_h5_path()
-    create_folders_for_file(results_h5)
+    stats_h5 = path_manager.get_stats_h5_path()
+    create_folders_for_file(stats_h5)
 
     for cfg_lbl, cfg in case_cfg.shape_coefficient.items():
         logger.info(f"Processing Ce: {cfg_lbl}")
@@ -417,7 +448,7 @@ def run_ce(
         write_processing_metadata(ts_path, "/", cfg_dump, extra=meta_extra)
 
         _write_stats_for_group(
-            results_h5,
+            stats_h5,
             timeseries_path=ts_path,
             timeseries_group="ce",
             stats_group=f"ce/{cfg_lbl}",
@@ -425,7 +456,7 @@ def run_ce(
             triangles=cut_mesh.triangles,
             vertices=cut_mesh.vertices,
         )
-        write_processing_metadata(results_h5, f"ce/{cfg_lbl}", cfg_dump, extra=meta_extra)
+        write_processing_metadata(stats_h5, f"ce/{cfg_lbl}", cfg_dump, extra=meta_extra)
 
-        write_stats_xdmf(results_h5, path_manager.get_results_xdmf_path())
+        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
         logger.info(f"Ce stats written for config '{cfg_lbl}'")

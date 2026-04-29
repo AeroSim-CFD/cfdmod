@@ -11,8 +11,8 @@ dots, e.g.::
     output/Cm.containers.pack.time_series.h5
     output/Ce.measurement_1.time_series.h5
     output/Ce.measurement_1.regions.stl
-    output/results.h5
-    output/results.xdmf
+    output/stats.h5
+    output/stats.xdmf
 
 This keeps "open the output folder, see everything" workflows trivial. If
 nested layouts are ever needed, override the ``get_*`` methods on a subclass.
@@ -41,13 +41,13 @@ class PathManagerBase(BaseModel):
         """Per-body timeseries H5 (used by Cf/Cm where each body has its own mesh)."""
         return self.output_path / f"{self._stem(cfg_lbl, body_name)}.time_series.h5"
 
-    def get_results_h5_path(self) -> pathlib.Path:
+    def get_stats_h5_path(self) -> pathlib.Path:
         """Return path for the combined stats H5 (shared across all coefficients)."""
-        return self.output_path / "results.h5"
+        return self.output_path / "stats.h5"
 
-    def get_results_xdmf_path(self) -> pathlib.Path:
+    def get_stats_xdmf_path(self) -> pathlib.Path:
         """Return path for the combined stats XDMF (shared across all coefficients)."""
-        return self.output_path / "results.xdmf"
+        return self.output_path / "stats.xdmf"
 
 
 class CmPathManager(PathManagerBase):
