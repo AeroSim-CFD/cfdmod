@@ -1,6 +1,19 @@
 """XDMF+H5 reader/writer for timeseries and stats.
 
-Used by the pressure module for both per-timestep timeseries and combined stats output.
+Two layout conventions are used:
+
+- **Timeseries files** (e.g. ``cp.time_series.h5``, body Cf timeseries) embed a
+  single mesh at the file root: ``/Triangles`` and ``/Geometry``. Per-timestep
+  arrays live under one or more groups (``/cp/t{T}``, ``/cf_x/t{T}``, ...).
+  ``write_temporal_xdmf`` reads the root mesh and emits one Grid per timestep
+  with one Attribute per group.
+
+- **Stats results files** (``results.h5``) embed a separate mesh inside *each*
+  leaf group, alongside the per-stat datasets:
+  ``/{path}/{Triangles, Geometry, mean, rms, ...}``. ``write_stats_xdmf`` walks
+  the tree and emits one Grid per group that has both Triangles and Geometry.
+  This lets a single file describe stats over different sub-meshes (e.g. a
+  sliced regions mesh for Ce, body subsets for Cf/Cm) without length collisions.
 """
 
 from __future__ import annotations
@@ -125,17 +138,29 @@ def write_timeseries_geometry(
 def write_temporal_xdmf(
     h5_path: pathlib.Path,
     xdmf_path: pathlib.Path,
-    group: str,
+    group: str | list[str],
 ) -> None:
     """Write temporal XDMF XML for a timeseries H5.
 
-    Reads /Triangles, /Geometry, and /{group}/t{T} keys from h5_path.
-    Produces a temporal collection (one grid per timestep) compatible with ParaView.
+    Reads ``/Triangles``, ``/Geometry``, and ``/{group}/t{T}`` keys from
+    ``h5_path``. Produces a temporal collection (one Grid per timestep)
+    compatible with ParaView. When multiple groups are supplied, each Grid
+    carries one Attribute per group (e.g. for Cf with x/y/z directions).
+
+    Args:
+        h5_path: Source H5 file.
+        xdmf_path: Output .xdmf path.
+        group: Single group name or list of group names. The first group's
+            keys define the time axis.
     """
+    groups = [group] if isinstance(group, str) else list(group)
+    if not groups:
+        raise ValueError("At least one group is required")
+
     with h5py.File(h5_path, "r") as f:
         n_tri = f["Triangles"].shape[0]
         n_verts = f["Geometry"].shape[0]
-        keys = sorted(f[group].keys(), key=lambda k: float(k[1:]))
+        keys = sorted(f[groups[0]].keys(), key=lambda k: float(k[1:]))
 
     h5_name = h5_path.name
     root = ET.Element("Xdmf", Version="3.0")
@@ -179,16 +204,17 @@ def write_temporal_xdmf(
         )
         geom_item.text = f"{h5_name}:/Geometry"
 
-        attr = ET.SubElement(grid, "Attribute", Name=group, Center="Cell")
-        attr_item = ET.SubElement(
-            attr,
-            "DataItem",
-            Format="HDF",
-            DataType="Float",
-            Precision="8",
-            Dimensions=str(n_tri),
-        )
-        attr_item.text = f"{h5_name}:/{group}/{key}"
+        for grp_name in groups:
+            attr = ET.SubElement(grid, "Attribute", Name=grp_name, Center="Cell")
+            attr_item = ET.SubElement(
+                attr,
+                "DataItem",
+                Format="HDF",
+                DataType="Float",
+                Precision="8",
+                Dimensions=str(n_tri),
+            )
+            attr_item.text = f"{h5_name}:/{grp_name}/{key}"
 
     _write_pretty_xml(root, xdmf_path)
 
@@ -201,89 +227,105 @@ def write_stats_field(
     triangles: np.ndarray | None = None,
     vertices: np.ndarray | None = None,
 ) -> None:
-    """Write a single stats field (e.g. /cp/mean) to the combined H5.
+    """Write a stat dataset to ``<group>/<stat_name>``.
 
-    If triangles/vertices are provided and not yet in the file, writes
-    /Triangles and /Geometry.
+    When ``triangles`` and ``vertices`` are provided, ``<group>/Triangles`` and
+    ``<group>/Geometry`` are created if not already present. Each leaf group
+    therefore carries its own embedded mesh; ``write_stats_xdmf`` discovers
+    these and emits one Grid per group.
     """
     with h5py.File(h5_path, "a") as f:
-        if "Triangles" not in f and triangles is not None:
-            f.create_dataset("Triangles", data=triangles.astype(np.int32))
-        if "Geometry" not in f and vertices is not None:
-            f.create_dataset("Geometry", data=vertices.astype(np.float64))
         grp = f.require_group(group)
+        if triangles is not None and "Triangles" not in grp:
+            grp.create_dataset("Triangles", data=triangles.astype(np.int32))
+        if vertices is not None and "Geometry" not in grp:
+            grp.create_dataset("Geometry", data=vertices.astype(np.float64))
         if stat_name in grp:
             del grp[stat_name]
         grp.create_dataset(stat_name, data=values.astype(np.float64))
 
 
 def write_stats_xdmf(h5_path: pathlib.Path, xdmf_path: pathlib.Path) -> None:
-    """(Re)generate the static XDMF XML for the combined stats H5.
+    """(Re)generate the static XDMF XML for a stats H5.
 
-    Scans all /{group}/{stat} datasets and lists them as Attributes on the
-    mesh grid. Called after each processing step to keep XDMF up to date.
+    Walks every group in ``h5_path``; emits one Grid per group that contains
+    both ``Triangles`` and ``Geometry``. Sibling datasets in such a group
+    (other than Triangles/Geometry) become Cell Attributes on that Grid.
     """
-    _SKIP = {"Triangles", "Geometry", "meta"}
-
+    grids: list[tuple[str, int, int, list[str]]] = []
     with h5py.File(h5_path, "r") as f:
-        n_tri = f["Triangles"].shape[0]
-        n_verts = f["Geometry"].shape[0]
-        fields: list[tuple[str, str]] = []
-        for grp_name in f.keys():
-            if grp_name in _SKIP:
-                continue
-            grp = f[grp_name]
-            if isinstance(grp, h5py.Group):
-                for stat_name in grp.keys():
-                    fields.append((grp_name, stat_name))
+
+        def visitor(name: str, obj) -> None:
+            if not isinstance(obj, h5py.Group):
+                return
+            if "Triangles" not in obj or "Geometry" not in obj:
+                return
+            n_tri = obj["Triangles"].shape[0]
+            n_verts = obj["Geometry"].shape[0]
+            stats = sorted(
+                k
+                for k in obj.keys()
+                if k not in ("Triangles", "Geometry")
+                and isinstance(obj[k], h5py.Dataset)
+            )
+            grids.append((name, n_tri, n_verts, stats))
+
+        f.visititems(visitor)
+
+    if not grids:
+        raise ValueError(
+            f"{h5_path} has no group with both Triangles and Geometry to emit XDMF for."
+        )
 
     h5_name = h5_path.name
     root = ET.Element("Xdmf", Version="3.0")
     domain = ET.SubElement(root, "Domain")
-    grid = ET.SubElement(domain, "Grid", Name="Results", GridType="Uniform")
 
-    topo = ET.SubElement(
-        grid,
-        "Topology",
-        TopologyType="Triangle",
-        NumberOfElements=str(n_tri),
-    )
-    topo_item = ET.SubElement(
-        topo,
-        "DataItem",
-        Format="HDF",
-        DataType="Int",
-        Dimensions=f"{n_tri} 3",
-    )
-    topo_item.text = f"{h5_name}:/Triangles"
+    for grp_path, n_tri, n_verts, stats in sorted(grids):
+        grid = ET.SubElement(domain, "Grid", Name=grp_path, GridType="Uniform")
 
-    geom = ET.SubElement(grid, "Geometry", GeometryType="XYZ")
-    geom_item = ET.SubElement(
-        geom,
-        "DataItem",
-        Format="HDF",
-        DataType="Float",
-        Precision="8",
-        Dimensions=f"{n_verts} 3",
-    )
-    geom_item.text = f"{h5_name}:/Geometry"
-
-    for grp_name, stat_name in sorted(fields):
-        attr = ET.SubElement(
+        topo = ET.SubElement(
             grid,
-            "Attribute",
-            Name=f"{grp_name}/{stat_name}",
-            Center="Cell",
+            "Topology",
+            TopologyType="Triangle",
+            NumberOfElements=str(n_tri),
         )
-        attr_item = ET.SubElement(
-            attr,
+        topo_item = ET.SubElement(
+            topo,
+            "DataItem",
+            Format="HDF",
+            DataType="Int",
+            Dimensions=f"{n_tri} 3",
+        )
+        topo_item.text = f"{h5_name}:/{grp_path}/Triangles"
+
+        geom = ET.SubElement(grid, "Geometry", GeometryType="XYZ")
+        geom_item = ET.SubElement(
+            geom,
             "DataItem",
             Format="HDF",
             DataType="Float",
             Precision="8",
-            Dimensions=str(n_tri),
+            Dimensions=f"{n_verts} 3",
         )
-        attr_item.text = f"{h5_name}:/{grp_name}/{stat_name}"
+        geom_item.text = f"{h5_name}:/{grp_path}/Geometry"
+
+        for stat_name in stats:
+            attr = ET.SubElement(
+                grid,
+                "Attribute",
+                Name=f"{grp_path}/{stat_name}",
+                Center="Cell",
+            )
+            attr_item = ET.SubElement(
+                attr,
+                "DataItem",
+                Format="HDF",
+                DataType="Float",
+                Precision="8",
+                Dimensions=str(n_tri),
+            )
+            attr_item.text = f"{h5_name}:/{grp_path}/{stat_name}"
 
     _write_pretty_xml(root, xdmf_path)
 

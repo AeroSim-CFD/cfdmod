@@ -127,7 +127,7 @@ def test_write_timeseries_geometry_overwrites(tmp_path, triangles, vertices):
         assert f["Geometry"].shape == (3, 3)
 
 
-def test_write_temporal_xdmf_structure(tmp_path, timeseries_h5):
+def test_write_temporal_xdmf_single_group(tmp_path, timeseries_h5):
     xdmf_path = tmp_path / "ts.xdmf"
     write_temporal_xdmf(timeseries_h5, xdmf_path, group="pressure")
 
@@ -142,11 +142,52 @@ def test_write_temporal_xdmf_structure(tmp_path, timeseries_h5):
     assert times == [0.0, 0.5, 1.0]
 
     h5_name = timeseries_h5.name
-    attr_item = grids[0].find("Attribute/DataItem")
-    assert attr_item.text == f"{h5_name}:/pressure/t0.0"
+    attrs = grids[0].findall("Attribute")
+    assert len(attrs) == 1
+    assert attrs[0].attrib["Name"] == "pressure"
+    assert attrs[0].find("DataItem").text == f"{h5_name}:/pressure/t0.0"
 
 
-def test_write_stats_field_creates_geometry_once(tmp_path, triangles, vertices):
+def test_write_temporal_xdmf_multi_group(tmp_path, triangles, vertices):
+    h5 = tmp_path / "ts.h5"
+    write_timeseries_geometry(h5, triangles, vertices)
+    for direction in ("cf_x", "cf_y", "cf_z"):
+        write_timeseries_step(h5, direction, "t0.0", np.array([1.0, 2.0]))
+        write_timeseries_step(h5, direction, "t1.0", np.array([3.0, 4.0]))
+    write_timeseries_meta(
+        h5, time_steps=np.array([0.0, 1.0]), time_normalized=np.array([0.0, 1.0])
+    )
+
+    xdmf_path = tmp_path / "ts.xdmf"
+    write_temporal_xdmf(h5, xdmf_path, group=["cf_x", "cf_y", "cf_z"])
+
+    grids = ET.parse(xdmf_path).getroot().findall(".//Grid[@GridType='Uniform']")
+    assert len(grids) == 2
+    attr_names = [a.attrib["Name"] for a in grids[0].findall("Attribute")]
+    assert attr_names == ["cf_x", "cf_y", "cf_z"]
+    refs = [a.find("DataItem").text for a in grids[0].findall("Attribute")]
+    assert refs == [f"{h5.name}:/cf_x/t0.0", f"{h5.name}:/cf_y/t0.0", f"{h5.name}:/cf_z/t0.0"]
+
+
+def test_write_stats_field_embeds_group_mesh(tmp_path, triangles, vertices):
+    path = tmp_path / "results.h5"
+    write_stats_field(
+        path,
+        group="cp/case1",
+        stat_name="mean",
+        values=np.array([0.1, 0.2]),
+        triangles=triangles,
+        vertices=vertices,
+    )
+    with h5py.File(path, "r") as f:
+        assert "Triangles" not in f
+        assert "Geometry" not in f
+        assert f["cp/case1/Triangles"].shape == triangles.shape
+        assert f["cp/case1/Geometry"].shape == vertices.shape
+        np.testing.assert_array_equal(f["cp/case1/mean"][:], [0.1, 0.2])
+
+
+def test_write_stats_field_does_not_overwrite_group_mesh(tmp_path, triangles, vertices):
     path = tmp_path / "results.h5"
     write_stats_field(
         path,
@@ -165,8 +206,7 @@ def test_write_stats_field_creates_geometry_once(tmp_path, triangles, vertices):
         vertices=np.zeros((9, 3), dtype=np.float64),
     )
     with h5py.File(path, "r") as f:
-        assert f["Triangles"].shape == triangles.shape
-        np.testing.assert_array_equal(f["cp/case1/mean"][:], [0.1, 0.2])
+        assert f["cp/case1/Triangles"].shape == triangles.shape
         np.testing.assert_array_equal(f["cp/case1/std"][:], [0.01, 0.02])
 
 
@@ -190,58 +230,65 @@ def test_write_stats_field_overwrites_existing_stat(tmp_path, triangles, vertice
         np.testing.assert_array_equal(f["cp/mean"][:], [9.0, 9.0])
 
 
-def test_write_stats_xdmf_lists_all_fields(tmp_path, triangles, vertices):
+def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, vertices):
     path = tmp_path / "results.h5"
+    cp_tri, cp_verts = triangles, vertices
+    body_tri = np.array([[0, 1, 2]], dtype=np.int32)
+    body_verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64)
+
     write_stats_field(
-        path,
-        group="cp",
-        stat_name="mean",
-        values=np.array([0.1, 0.2]),
-        triangles=triangles,
-        vertices=vertices,
+        path, "cp/default", "mean", np.array([0.1, 0.2]),
+        triangles=cp_tri, vertices=cp_verts,
     )
-    write_stats_field(path, group="cp", stat_name="std", values=np.array([0.01, 0.02]))
-    write_stats_field(path, group="ce", stat_name="mean", values=np.array([1.0, 2.0]))
+    write_stats_field(path, "cp/default", "rms", np.array([0.01, 0.02]))
+    write_stats_field(
+        path, "cf_x/m1/body", "mean", np.array([0.5]),
+        triangles=body_tri, vertices=body_verts,
+    )
 
     xdmf_path = tmp_path / "results.xdmf"
     write_stats_xdmf(path, xdmf_path)
 
-    tree = ET.parse(xdmf_path)
-    root = tree.getroot()
-    attr_names = sorted(a.attrib["Name"] for a in root.findall(".//Attribute"))
-    assert attr_names == ["ce/mean", "cp/mean", "cp/std"]
+    root = ET.parse(xdmf_path).getroot()
+    grids = root.findall("Domain/Grid")
+    grid_names = sorted(g.attrib["Name"] for g in grids)
+    assert grid_names == ["cf_x/m1/body", "cp/default"]
 
-    h5_name = path.name
-    items = root.findall(".//Attribute/DataItem")
-    refs = sorted(it.text for it in items)
-    assert refs == [
-        f"{h5_name}:/ce/mean",
-        f"{h5_name}:/cp/mean",
-        f"{h5_name}:/cp/std",
-    ]
+    cp_grid = next(g for g in grids if g.attrib["Name"] == "cp/default")
+    cp_attrs = sorted(a.attrib["Name"] for a in cp_grid.findall("Attribute"))
+    assert cp_attrs == ["cp/default/mean", "cp/default/rms"]
+    cp_topo = cp_grid.find("Topology/DataItem")
+    assert cp_topo.text == f"{path.name}:/cp/default/Triangles"
+
+    body_grid = next(g for g in grids if g.attrib["Name"] == "cf_x/m1/body")
+    body_topo = body_grid.find("Topology")
+    assert int(body_topo.attrib["NumberOfElements"]) == 1
 
 
-def test_write_stats_xdmf_skips_meta_groups(tmp_path, triangles, vertices):
+def test_write_stats_xdmf_skips_groups_without_geometry(tmp_path, triangles, vertices):
     path = tmp_path / "results.h5"
     write_stats_field(
-        path,
-        group="cp",
-        stat_name="mean",
-        values=np.array([0.1, 0.2]),
-        triangles=triangles,
-        vertices=vertices,
+        path, "cp/default", "mean", np.array([0.1, 0.2]),
+        triangles=triangles, vertices=vertices,
     )
+    # Add a meta-only group: should NOT produce a grid.
     write_timeseries_meta(
         path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
     )
 
     xdmf_path = tmp_path / "results.xdmf"
     write_stats_xdmf(path, xdmf_path)
+    grid_names = [g.attrib["Name"] for g in ET.parse(xdmf_path).getroot().findall("Domain/Grid")]
+    assert grid_names == ["cp/default"]
 
-    tree = ET.parse(xdmf_path)
-    attr_names = [a.attrib["Name"] for a in tree.getroot().findall(".//Attribute")]
-    assert "meta" not in " ".join(attr_names)
-    assert attr_names == ["cp/mean"]
+
+def test_write_stats_xdmf_raises_when_no_grids(tmp_path):
+    path = tmp_path / "results.h5"
+    write_timeseries_meta(
+        path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
+    )
+    with pytest.raises(ValueError, match="no group with both Triangles and Geometry"):
+        write_stats_xdmf(path, tmp_path / "results.xdmf")
 
 
 def test_xdmf_files_have_doctype_header(tmp_path, timeseries_h5):
