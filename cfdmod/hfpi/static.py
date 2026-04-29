@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import copy
 import pathlib
+import warnings
 from typing import Literal
 
+import h5py
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
@@ -43,9 +45,55 @@ class DimensionalData(BaseModel):
         return self.base * self.base * self.height * self.dynamic_pressure
 
 
+def _read_force_h5(hdf_path: pathlib.Path) -> pd.DataFrame:
+    """Read an HFPI force timeseries H5 in either layout.
+
+    New layout: h5py file with a 2-D /forces dataset (n_time x n_cols) and a
+    /columns dataset of UTF-8 column names that includes 'time_normalized'.
+
+    Legacy layout: pandas single-key HDFStore — read via ``pd.read_hdf`` and a
+    DeprecationWarning is emitted.
+    """
+    try:
+        with h5py.File(hdf_path, "r") as f:
+            if "forces" in f and "columns" in f:
+                forces = f["forces"][:]
+                columns = [c.decode() if isinstance(c, bytes) else c for c in f["columns"][:]]
+                return pd.DataFrame(forces, columns=columns)
+    except OSError:
+        # Pandas HDFStore files aren't valid h5py files in some configurations.
+        pass
+
+    warnings.warn(
+        f"Reading legacy pandas-HDFStore force file {hdf_path}. Convert to "
+        "the new layout (h5py with /forces 2-D dataset and /columns names) "
+        "via cfdmod.hfpi.static.write_force_h5; legacy support will be "
+        "removed in a future release.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return pd.read_hdf(hdf_path)
+
+
+def write_force_h5(df: pd.DataFrame, hdf_path: pathlib.Path) -> None:
+    """Write an HFPI force DataFrame to the new h5py-based force file layout."""
+    with h5py.File(hdf_path, "w") as f:
+        f.create_dataset("forces", data=df.to_numpy(dtype=np.float64))
+        f.create_dataset(
+            "columns",
+            data=np.array([str(c).encode() for c in df.columns]),
+        )
+
+
 def read_static_forces(hdf_path: pathlib.Path) -> pd.DataFrame:
-    """Read forces for HFPI from path, with scalar key specified"""
-    df_force = pd.read_hdf(hdf_path)
+    """Read forces for HFPI as a DataFrame.
+
+    Accepts the new XDMF+H5 layout (h5py file with /forces dataset and a
+    /columns dataset of column names) and the legacy pandas-HDFStore format
+    (single-key table read by ``pd.read_hdf``). The legacy path emits a
+    DeprecationWarning.
+    """
+    df_force = _read_force_h5(hdf_path)
     req_keys = ["time_normalized"]
     if not utils.validate_keys_df(df_force, req_keys):
         raise KeyError(
