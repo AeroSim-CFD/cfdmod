@@ -47,7 +47,7 @@ def run_cp(
         output (pathlib.Path): Output directory
     """
     case_cfg = CpCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.load(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     path_manager = CpPathManager(output_path=output)
 
     for cfg_lbl, cfg in case_cfg.pressure_coefficient.items():
@@ -115,7 +115,7 @@ def run_cf(
         output (pathlib.Path): Output directory
     """
     case_cfg = CfCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.load(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     path_manager = CfPathManager(output_path=output)
 
     results_h5 = path_manager.get_results_h5_path()
@@ -192,7 +192,7 @@ def run_cm(
         output (pathlib.Path): Output directory
     """
     case_cfg = CmCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.load(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     path_manager = CmPathManager(output_path=output)
 
     results_h5 = path_manager.get_results_h5_path()
@@ -265,7 +265,7 @@ def run_ce(
         output (pathlib.Path): Output directory
     """
     case_cfg = CeCaseConfig.from_file(cfg_path)
-    mesh = LnasFormat.load(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     path_manager = CePathManager(output_path=output)
 
     results_h5 = path_manager.get_results_h5_path()

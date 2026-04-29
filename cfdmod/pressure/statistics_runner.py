@@ -60,17 +60,10 @@ def calculate_statistics_from_h5(
     stats_list = statistics
     statistics_names = [s.stats for s in stats_list]
 
-    # Determine which stats can be done streaming vs need full data
+    # Streaming-only stats: those computable from running moments.
+    # mean_eq depends on min/max/mean, so it (like min/max) requires full data.
     _STREAMING = {"mean", "rms", "skewness", "kurtosis"}
-    _needs_full = False
-    for s in stats_list:
-        if s.stats in ("min", "max", "mean_eq") and hasattr(s, "params"):
-            method = s.params.method_type  # type: ignore
-            if method in ("Gumbel", "Moving Average", "Absolute", "Peak"):
-                _needs_full = True
-                break
-        if s.stats in ("min", "max"):
-            _needs_full = True
+    _needs_full = any(s.stats in ("min", "max", "mean_eq") for s in stats_list)
 
     # If all stats are streaming-compatible and no min/max, do single pass
     if not _needs_full and all(s in _STREAMING for s in statistics_names):

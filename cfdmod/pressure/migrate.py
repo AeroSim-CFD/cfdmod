@@ -45,7 +45,7 @@ def migrate_body_h5(
     if output_h5.exists():
         output_h5.unlink()
 
-    mesh = LnasFormat.load(mesh_path)
+    mesh = LnasFormat.from_file(mesh_path)
     write_timeseries_geometry(
         output_h5, mesh.geometry.triangles, mesh.geometry.vertices
     )
