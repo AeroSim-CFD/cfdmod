@@ -7,7 +7,7 @@ from cfdmod.io.geometry.region_meshing import (
     slice_triangle,
     triangulate_tri,
 )
-from cfdmod.pressure.zoning.zoning_model import ZoningModel
+from cfdmod.pressure.parameters import ZoningModel
 
 
 def test_triangulate_tri():
