@@ -62,6 +62,12 @@ the I/O contract and the output layout were all redesigned around that goal.
 - `from cfdmod import load_mesh, mesh_from_h5,
   read_processing_metadata, write_processing_metadata` -- IO helpers
   surfaced for external consumers.
+- `from cfdmod import read_timeseries_df, to_csv, plot_timeseries` --
+  pull a `pd.DataFrame` out of any `*.time_series.h5` (with optional
+  triangle / region / timestep filtering), export to CSV, or plot
+  selected columns with one call. `regions=True` deduplicates the
+  per-triangle broadcast of Cf/Cm so you get one column per region
+  instead of one per triangle.
 - `cfg_path` accepts either a YAML path *or* a pre-built
   `CpCaseConfig` / `CfCaseConfig` / `CmCaseConfig` / `CeCaseConfig`
   instance, so in-memory pipelines don't need sidecar YAMLs.
@@ -100,13 +106,65 @@ the I/O contract and the output layout were all redesigned around that goal.
 
 ### Documentation / tooling
 
-- Top-level `notebooks/process_container_pack.ipynb` is the worked example:
-  reads `bodies.body_cp body.h5` + `points.point_cp ref.h5` from the repo
-  root, auto-detects container partition via a >1 m gap rule, runs Cp/Cf/Cm
-  end-to-end with `region_bbox_corners_xy` corner scan, and never authors a
-  surface label (geometry is read straight from the body H5).
+- Top-level `notebooks/process_container_pack.ipynb` is the worked
+  example: reads `bodies.body_cp body.h5` + `points.point_cp ref.h5`
+  from the repo root, auto-detects container partition via a >1 m gap
+  rule, runs Cp/Cf/Cm end-to-end with `lever_strategy="region_base"`
+  (footprint-base lever) by default, and never authors a surface label
+  (geometry is read straight from the body H5). Cf and Cm runs in the
+  notebook are configured for `x` and `y` only -- the most common
+  client-facing case.
 - `cfdmod.notebook_utils` provides `mesh_summary`, `show_config`,
   `load_lnas` for exploratory notebook work.
+- ASCII-only convention is now project-wide (CLAUDE.md):
+  no em-dash, ellipsis, arrow glyphs, typographic quotes, or other
+  non-ASCII characters in source, configs, notebooks or docs. Use
+  `--`, `...`, `->`, `'`/`"` instead. The codebase was swept to
+  match.
+
+### Tests / quality
+
+- pytest markers for the suite: `unit` (pure-function, fast),
+  `integration` (multi-component end-to-end), and `perf` (synthetic
+  big-data benchmarks). Default invocation excludes `perf`; run it
+  explicitly with `pytest -m perf`.
+- Shared pressure conftest centralises fixture paths, config
+  builders (`make_cp_cfg`, `make_cf_cfg`, `make_cm_cfg`), zoning
+  helpers and stats walkers, replacing the per-test boilerplate.
+- Performance harness (`tests/pressure/test_perf.py`) synthesises
+  body + probe data in-fixture (no dependency on root files) and
+  drives the full Cp / Cf / Cm chain at two scales: medium
+  (~30k triangles x 2k timesteps) and extreme (~150k triangles x
+  10k timesteps, 1/5x of the worst real-world case).
+- Per-run perf report: tracemalloc-tracked Python heap peak +
+  `getrusage` RSS for each scale, written to
+  `output/perf/perf_report.md` and `perf_report.json` for tracking
+  regressions across releases.
+
+### Dependencies / packaging
+
+- Runtime deps slimmed: `tables` and `filelock` removed from the
+  base install. `tables` is still needed for the legacy
+  pandas-HDFStore compat readers in `cfdmod.analysis.inflow`,
+  `cfdmod.hfpi.static`, and `cfdmod.pressure.migrate`; install via
+  the new `legacy` extras (`pip install aerosim-cfdmod[legacy]`).
+- `geometry` extras now ships only `trimesh`. `pymeshlab` was
+  removed entirely -- it is GPL-licensed and would force GPL on any
+  downstream code linking it. Code paths that genuinely need
+  pymeshlab are documented and the user installs it explicitly at
+  their own license risk.
+- `docs` extras switched from `sphinx-book-theme` to `shibuya`
+  (modern theme, active upstream).
+- `cfdmod.io` now lazy-loads its vtk-backed helpers via PEP 562
+  `__getattr__`. `import cfdmod` no longer pulls VTK at load time;
+  accessing a vtk-backed name without the `vtk` extras raises a
+  clear `ImportError` pointing at `pip install
+  aerosim-cfdmod[vtk]`.
+- `cfdmod.io.vtk.*` imports VTK classes via `vtkmodules.*`
+  submodules (e.g. `from vtkmodules.vtkIOXML import
+  vtkXMLPolyDataWriter`) instead of the catch-all `import vtk`,
+  avoiding an unnecessary load of the full VTK universe on first
+  use.
 
 ## v1.1.2
 

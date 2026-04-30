@@ -16,6 +16,31 @@ metadata, multi-format geometry (`.lnas` / `.stl` / `.h5` / `.xdmf`), and
 flat output by default. See `docs/source/release_notes.md` for the full
 v2.0 changeset.
 
+## Install
+
+Base install (Cp / Cf / Cm / Ce pipeline, IO helpers, CLI):
+
+```bash
+pip install aerosim-cfdmod
+```
+
+Optional extras:
+
+| Extras | When you need it |
+|---|---|
+| `[vtk]` | ParaView snapshot automation, VTK polydata writers, S1 probe-on-line |
+| `[geometry]` | Altimetry section + loft helpers (trimesh) |
+| `[notebook]` | jupyter / ipykernel for the worked-example notebook |
+| `[docs]` | sphinx + shibuya theme + nbsphinx for `make html` |
+| `[legacy]` | pandas-HDFStore compat readers (inflow, HFPI static, migrate) |
+
+Install several at once with `pip install
+"aerosim-cfdmod[vtk,geometry,notebook]"`.
+
+`pymeshlab` is intentionally *not* an extra (its GPL license would
+force GPL on downstream code). Code paths that genuinely need it
+expect the user to install it explicitly at their own license risk.
+
 ## Quickstart
 
 Install the package and run the pipeline against an existing body + probe
@@ -140,10 +165,19 @@ defaults to the geometry embedded in `--body` / `--cp`.
 
 ### Tests
 
+The suite is grouped by pytest markers:
+
 ```bash
-uv run pytest             # full suite
-uv run pytest tests/io tests/pressure   # the v2 pipeline scope
+uv run pytest                          # full default suite (excludes -m perf)
+uv run pytest -m unit                  # pure-function tests
+uv run pytest -m integration           # end-to-end pipeline tests
+uv run pytest -m perf                  # opt-in synthetic big-data benchmarks
+uv run pytest tests/io tests/pressure  # the v2 pipeline scope
 ```
+
+The perf run writes a markdown + JSON report (Python heap peak +
+RSS per scale) to `output/perf/perf_report.{md,json}` so regressions
+across releases are tracked over time.
 
 ### Tox
 
