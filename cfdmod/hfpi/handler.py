@@ -6,15 +6,15 @@ import pathlib
 import pickle
 import time
 from multiprocessing import Pool, cpu_count
-from typing import Callable, Literal, TypeVar
+from typing import Annotated, Callable, Literal, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from cfdmod.logger import logger
 from cfdmod.climate.wind_profile import WindProfile
 from cfdmod.hfpi import common, dynamic, static
+from cfdmod.logger import logger
 
 T = TypeVar("T")
 
@@ -35,7 +35,7 @@ class HFPICaseParameters(BaseModel, frozen=True):
     integral_scale_multiplier: float
     recurrence_period: float
     use_kd: bool
-    structural_data: dynamic.HFPIStructuralData = Field(exclude=True)
+    structural_data: Annotated[dynamic.HFPIStructuralData, Field(exclude=True)]
     mass_multiplier: float
 
     def __hash__(self):
@@ -160,7 +160,7 @@ class MultipleAnalysisHandler(BaseModel):
     directional_forces: dict[float, static.StaticForcesData]
     save_folder: pathlib.Path
 
-    results: dict[HFPICaseParameters, ResultType] = Field(default_factory=dict)
+    results: Annotated[dict[HFPICaseParameters, ResultType], Field(default_factory=dict)]
 
     def generate_hfpi_solver_params(self, parameters: HFPICaseParameters):
         forces = self.directional_forces[parameters.direction]
@@ -393,7 +393,7 @@ class ResultType(BaseModel):
 
 
 class DirectionalAnalysisResults(BaseModel):
-    results: dict[float, ResultType] = Field(default_factory=dict)
+    results: Annotated[dict[float, ResultType], Field(default_factory=dict)]
 
     def join_by_direction(self):
         return {d: DirectionalAnalysisResults(results={d: res}) for d, res in self.results.items()}
@@ -588,7 +588,7 @@ class DirectionalAnalysisResults(BaseModel):
 class HFPIAnalysisResults(DirectionalAnalysisResults):
     results_folder: pathlib.Path
 
-    results: dict[HFPICaseParameters, ResultType] = Field(default_factory=dict)  # type: ignore
+    results: Annotated[dict[HFPICaseParameters, ResultType], Field(default_factory=dict)]  # type: ignore
 
     def load_result(self, parameters: HFPICaseParameters):
         filename = parameters.get_results_filename(self.results_folder)

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -9,24 +11,36 @@ class Shed(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    start_coordinate: np.ndarray = Field(
-        ...,
-        title="Start coordinate",
-        description="Start coordinate of the shed/building cut by the section",
-    )
-    end_coordinate: np.ndarray = Field(
-        ...,
-        title="End coordinate",
-        description="End coordinate of the shed/building cut by the section",
-    )
-    shed_label: str = Field(
-        ...,
-        title="Building label",
-        description="Label of the shed/building represented by the object",
-    )
-    height: float = Field(
-        default=15.0,
-        title="Shed height",
-        description="Size of the shed/building in z axis."
-        + "Used to determine the limits when plotting, connecting the shed coordinates",
-    )
+    start_coordinate: Annotated[
+        np.ndarray,
+        Field(
+            ...,
+            title="Start coordinate",
+            description="Start coordinate of the shed/building cut by the section",
+        ),
+    ]
+    end_coordinate: Annotated[
+        np.ndarray,
+        Field(
+            ...,
+            title="End coordinate",
+            description="End coordinate of the shed/building cut by the section",
+        ),
+    ]
+    shed_label: Annotated[
+        str,
+        Field(
+            ...,
+            title="Building label",
+            description="Label of the shed/building represented by the object",
+        ),
+    ]
+    height: Annotated[
+        float,
+        Field(
+            default=15.0,
+            title="Shed height",
+            description="Size of the shed/building in z axis."
+            + "Used to determine the limits when plotting, connecting the shed coordinates",
+        ),
+    ]

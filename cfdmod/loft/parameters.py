@@ -1,4 +1,5 @@
 import pathlib
+from typing import Annotated
 
 from pydantic import Field, ValidationError
 
@@ -12,29 +13,41 @@ __all__ = [
 
 
 class LoftParams(HashableConfig):
-    loft_radius: float = Field(
-        ...,
-        title="Loft radius",
-        description="Radius of the circular loft projection from mesh center.",
-    )
-    mesh_element_size: float = Field(
-        ...,
-        title="Mesh element size",
-        description="Target of the output mesh element size.",
-    )
-    upwind_elevation: float = Field(
-        ...,
-        title="Loft elevation",
-        description="Target Z elevation for the loft base.",
-    )
+    loft_radius: Annotated[
+        float,
+        Field(
+            ...,
+            title="Loft radius",
+            description="Radius of the circular loft projection from mesh center.",
+        ),
+    ]
+    mesh_element_size: Annotated[
+        float,
+        Field(
+            ...,
+            title="Mesh element size",
+            description="Target of the output mesh element size.",
+        ),
+    ]
+    upwind_elevation: Annotated[
+        float,
+        Field(
+            ...,
+            title="Loft elevation",
+            description="Target Z elevation for the loft base.",
+        ),
+    ]
 
 
 class LoftCaseConfig(HashableConfig):
-    cases: dict[str, LoftParams] = Field(
-        ...,
-        title="Loft cases",
-        description="Setup for multiple loft configurations, for each wind source direction.",
-    )
+    cases: Annotated[
+        dict[str, LoftParams],
+        Field(
+            ...,
+            title="Loft cases",
+            description="Setup for multiple loft configurations, for each wind source direction.",
+        ),
+    ]
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):

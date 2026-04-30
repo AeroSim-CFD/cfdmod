@@ -55,7 +55,6 @@ from cfdmod.io.xdmf import (
 )
 from cfdmod.logger import logger
 
-
 # ---------------------------------------------------------------------------
 # Filter specs (flat discriminated union, dispatched by `kind`)
 # ---------------------------------------------------------------------------
@@ -72,7 +71,7 @@ class MovingAverageFilter(BaseModel):
     """
 
     kind: Literal["moving_average"] = "moving_average"
-    window: float = Field(gt=0, description="Window width in input time units")
+    window: Annotated[float, Field(gt=0, description="Window width in input time units")]
 
 
 FilterSpec = Annotated[MovingAverageFilter, Field(discriminator="kind")]

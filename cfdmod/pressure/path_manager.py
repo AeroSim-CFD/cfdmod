@@ -19,7 +19,7 @@ nested layouts are ever needed, override the ``get_*`` methods on a subclass.
 """
 
 import pathlib
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -27,9 +27,9 @@ from pydantic import BaseModel, Field
 class PathManagerBase(BaseModel):
     _PREFIX: ClassVar[str]  # short label for filename prefix (e.g. "cp", "Cf")
 
-    output_path: pathlib.Path = Field(
-        ..., title="Output path", description="Path for saving output files"
-    )
+    output_path: Annotated[
+        pathlib.Path, Field(..., title="Output path", description="Path for saving output files")
+    ]
 
     def _stem(self, *parts: str) -> str:
         return ".".join((self._PREFIX, *parts))

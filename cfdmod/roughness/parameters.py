@@ -22,70 +22,97 @@ OffsetDirection = Annotated[
 
 
 class SpacingParams(HashableConfig):
-    spacing: tuple[float, float] = Field(
-        ...,
-        title="Spacing values",
-        description="Spacing values in X axis (index 0) and Y axis (index 1)."
-        + "The spacing between each line is calculated with the spacing value "
-        + "plus the size of the block in respective direction",
-    )
-    line_offset: float = Field(
-        ...,
-        title="Line offset",
-        description="Offset percentage between each block line",
-        ge=0,
-    )
-    offset_direction: OffsetDirection = Field(
-        "y",
-        title="Offset Direction",
-        description="Direction which the blocks should be offseted to",
-    )
+    spacing: Annotated[
+        tuple[float, float],
+        Field(
+            ...,
+            title="Spacing values",
+            description="Spacing values in X axis (index 0) and Y axis (index 1)."
+            + "The spacing between each line is calculated with the spacing value "
+            + "plus the size of the block in respective direction",
+        ),
+    ]
+    line_offset: Annotated[
+        float,
+        Field(
+            ...,
+            title="Line offset",
+            description="Offset percentage between each block line",
+            ge=0,
+        ),
+    ]
+    offset_direction: Annotated[
+        OffsetDirection,
+        Field(
+            "y",
+            title="Offset Direction",
+            description="Direction which the blocks should be offseted to",
+        ),
+    ]
 
 
 class ElementParams(HashableConfig):
-    height: float = Field(
-        ...,
-        title="Element height",
-        description="Size of the generated elements in Z axis",
-        gt=0,
-    )
-    width: float = Field(
-        ...,
-        title="Element width",
-        description="Size of the generated elements in Y axis",
-        gt=0,
-    )
+    height: Annotated[
+        float,
+        Field(
+            ...,
+            title="Element height",
+            description="Size of the generated elements in Z axis",
+            gt=0,
+        ),
+    ]
+    width: Annotated[
+        float,
+        Field(
+            ...,
+            title="Element width",
+            description="Size of the generated elements in Y axis",
+            gt=0,
+        ),
+    ]
 
 
 class BoundingBox(HashableConfig):
-    start: tuple[float, float, float] = Field(
-        ...,
-        title="Start position",
-        description="Bounding box starting position (x, y, z)",
-    )
-    end: tuple[float, float, float] = Field(
-        ..., title="End position", description="Bounding box ending position (x, y, z)"
-    )
+    start: Annotated[
+        tuple[float, float, float],
+        Field(
+            ...,
+            title="Start position",
+            description="Bounding box starting position (x, y, z)",
+        ),
+    ]
+    end: Annotated[
+        tuple[float, float, float],
+        Field(..., title="End position", description="Bounding box ending position (x, y, z)"),
+    ]
 
 
 class PositionParams(HashableConfig):
-    element_params: ElementParams = Field(
-        ..., title="Element parameters", description="Object with element geometry parameters"
-    )
-    spacing_params: SpacingParams = Field(
-        ..., title="Spacing parameters", description="Object with spacing parameters"
-    )
-    bounding_box: BoundingBox = Field(
-        BoundingBox(
-            start=(float("-inf"), float("-inf"), float("-inf")),
-            end=(float("inf"), float("inf"), float("inf")),
+    element_params: Annotated[
+        ElementParams,
+        Field(
+            ..., title="Element parameters", description="Object with element geometry parameters"
         ),
-        title="Bounding box",
-        description="Definition of the inside volume in which to generate elements",
-    )
-    surfaces: dict[str, str] = Field(
-        ..., title="Surfaces dictionary", description="LNAS surface path keyed by label"
-    )
+    ]
+    spacing_params: Annotated[
+        SpacingParams,
+        Field(..., title="Spacing parameters", description="Object with spacing parameters"),
+    ]
+    bounding_box: Annotated[
+        BoundingBox,
+        Field(
+            BoundingBox(
+                start=(float("-inf"), float("-inf"), float("-inf")),
+                end=(float("inf"), float("inf"), float("inf")),
+            ),
+            title="Bounding box",
+            description="Definition of the inside volume in which to generate elements",
+        ),
+    ]
+    surfaces: Annotated[
+        dict[str, str],
+        Field(..., title="Surfaces dictionary", description="LNAS surface path keyed by label"),
+    ]
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):
@@ -98,46 +125,68 @@ class PositionParams(HashableConfig):
 
 
 class RadialParams(HashableConfig):
-    element_params: ElementParams = Field(
-        ..., title="Element parameters", description="Object with element geometry parameters"
-    )
-    r_start: float = Field(
-        ...,
-        title="Start radius",
-        description="Inner radius of the roughness ring band",
-        gt=0,
-    )
-    r_end: float = Field(
-        ...,
-        title="End radius",
-        description="Outer radius of the roughness ring band",
-        gt=0,
-    )
-    radial_spacing: float = Field(
-        ...,
-        title="Radial spacing",
-        description="Distance between rings in the radial direction",
-        gt=0,
-    )
-    arc_spacing: float = Field(
-        ...,
-        title="Arc spacing",
-        description="Target arc-length spacing between fins along each ring",
-        gt=0,
-    )
-    ring_offset_distance: float = Field(
-        0.0,
-        title="Ring offset distance",
-        description="Arc-length distance to stagger alternating rings (converted to angle per ring as offset/r)",
-    )
-    center: tuple[float, float] = Field(
-        (0.0, 0.0),
-        title="Center",
-        description="XY center of the radial pattern",
-    )
-    surfaces: dict[str, str] = Field(
-        ..., title="Surfaces dictionary", description="LNAS surface path keyed by label"
-    )
+    element_params: Annotated[
+        ElementParams,
+        Field(
+            ..., title="Element parameters", description="Object with element geometry parameters"
+        ),
+    ]
+    r_start: Annotated[
+        float,
+        Field(
+            ...,
+            title="Start radius",
+            description="Inner radius of the roughness ring band",
+            gt=0,
+        ),
+    ]
+    r_end: Annotated[
+        float,
+        Field(
+            ...,
+            title="End radius",
+            description="Outer radius of the roughness ring band",
+            gt=0,
+        ),
+    ]
+    radial_spacing: Annotated[
+        float,
+        Field(
+            ...,
+            title="Radial spacing",
+            description="Distance between rings in the radial direction",
+            gt=0,
+        ),
+    ]
+    arc_spacing: Annotated[
+        float,
+        Field(
+            ...,
+            title="Arc spacing",
+            description="Target arc-length spacing between fins along each ring",
+            gt=0,
+        ),
+    ]
+    ring_offset_distance: Annotated[
+        float,
+        Field(
+            0.0,
+            title="Ring offset distance",
+            description="Arc-length distance to stagger alternating rings (converted to angle per ring as offset/r)",
+        ),
+    ]
+    center: Annotated[
+        tuple[float, float],
+        Field(
+            (0.0, 0.0),
+            title="Center",
+            description="XY center of the radial pattern",
+        ),
+    ]
+    surfaces: Annotated[
+        dict[str, str],
+        Field(..., title="Surfaces dictionary", description="LNAS surface path keyed by label"),
+    ]
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):
@@ -150,24 +199,34 @@ class RadialParams(HashableConfig):
 
 
 class GenerationParams(HashableConfig):
-    N_elements_x: int = Field(
-        ...,
-        title="Number of elements in X",
-        description="Defines the number of elements in the X axis",
-        gt=0,
-    )
-    N_elements_y: int = Field(
-        ...,
-        title="Number of elements in Y",
-        description="Defines the number of elements in the Y axis",
-        gt=0,
-    )
-    element_params: ElementParams = Field(
-        ..., title="Element parameters", description="Object with element geometry parameters"
-    )
-    spacing_params: SpacingParams = Field(
-        ..., title="Spacing parameters", description="Object with spacing parameters"
-    )
+    N_elements_x: Annotated[
+        int,
+        Field(
+            ...,
+            title="Number of elements in X",
+            description="Defines the number of elements in the X axis",
+            gt=0,
+        ),
+    ]
+    N_elements_y: Annotated[
+        int,
+        Field(
+            ...,
+            title="Number of elements in Y",
+            description="Defines the number of elements in the Y axis",
+            gt=0,
+        ),
+    ]
+    element_params: Annotated[
+        ElementParams,
+        Field(
+            ..., title="Element parameters", description="Object with element geometry parameters"
+        ),
+    ]
+    spacing_params: Annotated[
+        SpacingParams,
+        Field(..., title="Spacing parameters", description="Object with spacing parameters"),
+    ]
 
     @property
     def single_line_elements(self) -> int:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from typing import Annotated
 
 import numpy as np
 import pandas as pd
@@ -16,32 +17,47 @@ class AltimetryProbe(BaseModel):
     Used for defining building position and section plane
     """
 
-    probe_coordinate: tuple[float, float, float] = Field(
-        ...,
-        title="Coordinate of altimetry probe",
-        description="Spatial 3D coordinate that defines probe location",
-    )
-    building_label: str = Field(
-        ...,
-        title="Building label",
-        description="Label of the building being cut by the probe",
-    )
-    section_label: str = Field(
-        ...,
-        title="Section label",
-        description="Label of the section defined by the probe",
-    )
-    probe_label: str = Field(
-        ...,
-        title="Probe label",
-        description="Label of the probe",
-    )
-    case_label: str = Field(
-        ...,
-        title="Case label",
-        description="Label of the consulting case applied to the probe."
-        + "Normally this label is used to define the wind direction",
-    )
+    probe_coordinate: Annotated[
+        tuple[float, float, float],
+        Field(
+            ...,
+            title="Coordinate of altimetry probe",
+            description="Spatial 3D coordinate that defines probe location",
+        ),
+    ]
+    building_label: Annotated[
+        str,
+        Field(
+            ...,
+            title="Building label",
+            description="Label of the building being cut by the probe",
+        ),
+    ]
+    section_label: Annotated[
+        str,
+        Field(
+            ...,
+            title="Section label",
+            description="Label of the section defined by the probe",
+        ),
+    ]
+    probe_label: Annotated[
+        str,
+        Field(
+            ...,
+            title="Probe label",
+            description="Label of the probe",
+        ),
+    ]
+    case_label: Annotated[
+        str,
+        Field(
+            ...,
+            title="Case label",
+            description="Label of the consulting case applied to the probe."
+            + "Normally this label is used to define the wind direction",
+        ),
+    ]
 
     @property
     def coordinate(self) -> np.ndarray:
