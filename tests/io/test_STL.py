@@ -1,9 +1,9 @@
 import pathlib
 
 import numpy as np
+import pytest
 
 from cfdmod.io.geometry.STL import export_stl, read_stl
-import pytest
 
 pytestmark = pytest.mark.unit
 

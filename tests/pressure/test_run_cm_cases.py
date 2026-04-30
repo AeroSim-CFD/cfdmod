@@ -2,24 +2,14 @@
 
 from __future__ import annotations
 
+import pytest
 
+from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.io.mesh import mesh_from_h5
-from cfdmod.pressure import (
-    BodyDefinition,
-    CmCaseConfig,
-    CmConfig,
-    MomentBodyConfig,
-    run_cm,
-)
+from cfdmod.pressure import BodyDefinition, CmCaseConfig, CmConfig, MomentBodyConfig, run_cm
 from cfdmod.pressure.parameters import BasicStatisticModel
 from cfdmod.pressure.run import _bbox_corners_xy_cases, _expand_moment_cases
-from cfdmod.io.geometry.transformation_config import TransformationConfig
-from tests.pressure.conftest import (
-    BUILDING_BODY_H5,
-    iter_stats_leaves,
-    zoning_full,
-)
-import pytest
+from tests.pressure.conftest import BUILDING_BODY_H5, iter_stats_leaves, zoning_full
 
 pytestmark = pytest.mark.integration
 
@@ -84,9 +74,7 @@ def test_expand_moment_cases_explicit_dict():
 
 def test_expand_moment_cases_no_cases_passes_body_through():
     mesh = mesh_from_h5(BUILDING_BODY_H5)
-    body = MomentBodyConfig(
-        name="b", sub_bodies=zoning_full(), lever_origin=(1.0, 2.0, 3.0)
-    )
+    body = MomentBodyConfig(name="b", sub_bodies=zoning_full(), lever_origin=(1.0, 2.0, 3.0))
     cfg = CmConfig(
         statistics=[BasicStatisticModel(stats="mean")],
         bodies=[body],

@@ -7,11 +7,7 @@ import pandas as pd
 import pytest
 
 from cfdmod.io.timeseries import plot_timeseries, read_timeseries_df, to_csv
-from cfdmod.io.xdmf import (
-    write_timeseries_geometry,
-    write_timeseries_meta,
-    write_timeseries_step,
-)
+from cfdmod.io.xdmf import write_timeseries_geometry, write_timeseries_meta, write_timeseries_step
 
 pytestmark = pytest.mark.unit
 
@@ -21,15 +17,11 @@ def per_triangle_h5(tmp_path):
     """Tiny per-triangle Cp-style file: 4 timesteps x 3 distinct values per tri."""
     path = tmp_path / "ts.h5"
     triangles = np.array([[0, 1, 2], [1, 3, 2]], dtype=np.int32)
-    vertices = np.array(
-        [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64
-    )
+    vertices = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64)
     write_timeseries_geometry(path, triangles, vertices)
     times = np.array([0.0, 1.0, 2.0, 3.0])
     for i, t in enumerate(times):
-        write_timeseries_step(
-            path, "cp", f"t{t}", np.array([1.0 + i, 2.0 + i, 3.0 + i])
-        )
+        write_timeseries_step(path, "cp", f"t{t}", np.array([1.0 + i, 2.0 + i, 3.0 + i]))
     write_timeseries_meta(path, time_steps=times, time_normalized=times / 10.0)
     return path
 
@@ -46,9 +38,7 @@ def per_region_h5(tmp_path):
     region_a = [0.1, 0.2, 0.3]
     region_b = [-0.5, -0.4, -0.3]
     for ra, rb, t in zip(region_a, region_b, times):
-        write_timeseries_step(
-            path, "cf_x", f"t{t}", np.array([ra, ra, ra, rb, rb, rb])
-        )
+        write_timeseries_step(path, "cf_x", f"t{t}", np.array([ra, ra, ra, rb, rb, rb]))
     write_timeseries_meta(path, time_steps=times, time_normalized=times)
     return path
 

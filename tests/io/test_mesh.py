@@ -18,9 +18,7 @@ def triangles():
 
 @pytest.fixture()
 def vertices():
-    return np.array(
-        [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64
-    )
+    return np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64)
 
 
 def test_mesh_from_h5_synthetic_surface(tmp_path, triangles, vertices):

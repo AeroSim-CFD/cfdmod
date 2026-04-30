@@ -15,13 +15,8 @@ import numpy as np
 import pandas as pd
 
 from cfdmod.io.xdmf import filter_keys_by_range, get_pressure_keys
-from cfdmod.pressure.functions import (
-    calculate_statistics,
-)
-from cfdmod.pressure.parameters import (
-    BasicStatisticModel,
-    ParameterizedStatisticModel,
-)
+from cfdmod.pressure.functions import calculate_statistics
+from cfdmod.pressure.parameters import BasicStatisticModel, ParameterizedStatisticModel
 
 
 def calculate_statistics_from_h5(

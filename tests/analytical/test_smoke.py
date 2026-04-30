@@ -48,9 +48,7 @@ def test_nbr_S3_recurrence_monotone():
 
 
 def test_nbr_get_U_H_overwrite_short_circuits():
-    wp = WindProfile_NBR(
-        directional_data=_nbr_directional_data(), V0=35.0, U_H_overwrite=42.0
-    )
+    wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0, U_H_overwrite=42.0)
     u_h = wp.get_U_H(height=10.0, direction=0.0, recurrence_period=50)
     assert u_h == 42.0
 

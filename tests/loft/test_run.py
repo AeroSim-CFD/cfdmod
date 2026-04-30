@@ -2,9 +2,9 @@ import pathlib
 
 import lnas
 
-from cfdmod.logger import logger
 from cfdmod.loft.parameters import LoftCaseConfig
 from cfdmod.loft.run import run_loft
+from cfdmod.logger import logger
 
 
 def test_run_loft():

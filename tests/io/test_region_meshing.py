@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from lnas import LnasGeometry
 
 from cfdmod.io.geometry.region_meshing import (
@@ -8,7 +9,6 @@ from cfdmod.io.geometry.region_meshing import (
     triangulate_tri,
 )
 from cfdmod.pressure.parameters import ZoningModel
-import pytest
 
 pytestmark = pytest.mark.unit
 

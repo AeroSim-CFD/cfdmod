@@ -168,9 +168,7 @@ def make_cm_cfg(
     if bodies is None:
         bodies = {"all": BodyDefinition(surfaces=[])}
     if body_configs is None:
-        body_configs = [
-            MomentBodyConfig(name="all", sub_bodies=zoning_full())
-        ]
+        body_configs = [MomentBodyConfig(name="all", sub_bodies=zoning_full())]
     if statistics is None:
         statistics = basic_stats("mean")
     if directions is None:

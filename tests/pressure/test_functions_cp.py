@@ -3,13 +3,9 @@
 import h5py
 import pytest
 
-from cfdmod.io.xdmf import (
-    filter_keys_by_range,
-    get_pressure_keys,
-    read_step,
-)
+from cfdmod.io.xdmf import filter_keys_by_range, get_pressure_keys, read_step
 from cfdmod.pressure.functions import process_xdmf_to_cp
-from cfdmod.pressure.parameters import CpConfig, BasicStatisticModel
+from cfdmod.pressure.parameters import BasicStatisticModel, CpConfig
 from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
 from tests.pressure.conftest import BUILDING_PROBE_H5 as PROBE_H5
 

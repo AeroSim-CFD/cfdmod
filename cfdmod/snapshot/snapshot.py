@@ -13,11 +13,7 @@ from cfdmod.snapshot.config import (  # Projections,
     TransformationConfig,
     ValueTagsConfig,
 )
-from cfdmod.snapshot.image_processing import (
-    crop_image,
-    display_image,
-    paste_overlay_image,
-)
+from cfdmod.snapshot.image_processing import crop_image, display_image, paste_overlay_image
 
 
 def get_mesh_center(mesh_bounds: list[float]) -> tuple[float, float, float]:

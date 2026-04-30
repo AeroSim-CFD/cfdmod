@@ -1,15 +1,8 @@
 import numpy as np
 import pytest
 
-from cfdmod.pressure.functions import (
-    fit_gumbel_model,
-    gumbel_extreme_values,
-    peak_extreme_values,
-)
-from cfdmod.pressure.parameters import (
-    ExtremeGumbelParamsModel,
-    ExtremePeakParamsModel,
-)
+from cfdmod.pressure.functions import fit_gumbel_model, gumbel_extreme_values, peak_extreme_values
+from cfdmod.pressure.parameters import ExtremeGumbelParamsModel, ExtremePeakParamsModel
 
 pytestmark = pytest.mark.unit
 

@@ -25,17 +25,17 @@ def _write_legacy_body(path: pathlib.Path, n_tri: int = 4) -> tuple[np.ndarray, 
     """Write a minimal legacy-format body H5 (pandas HDFStore with /step* keys)
     and return (time_steps, pressure_matrix) arrays for assertions."""
     times = np.array([0.0, 1.5], dtype=np.float64)
-    pressures = np.array(
-        [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float32
-    )
+    pressures = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float32)
 
     with pd.HDFStore(path, mode="w") as store:
         for t, row in zip(times, pressures):
             df = pd.DataFrame(
-                [{
-                    "time_step": t,
-                    **{str(i): row[i] for i in range(n_tri)},
-                }]
+                [
+                    {
+                        "time_step": t,
+                        **{str(i): row[i] for i in range(n_tri)},
+                    }
+                ]
             )
             store.put(f"step{int(t):07d}", df, format="table")
     return times, pressures
@@ -87,9 +87,7 @@ def test_migrate_body_h5_rho_applies_cs2_scaling(tmp_path):
     keys = get_pressure_keys(new, "pressure")
     with h5py.File(new, "r") as f:
         for (_, key), expected in zip(keys, pressures):
-            np.testing.assert_array_almost_equal(
-                f["pressure"][key][:], expected * (1.0 / 3.0)
-            )
+            np.testing.assert_array_almost_equal(f["pressure"][key][:], expected * (1.0 / 3.0))
 
 
 def test_migrate_probe_h5(tmp_path):

@@ -15,11 +15,7 @@ from cfdmod.io.xdmf import (
     write_timeseries_meta,
     write_timeseries_step,
 )
-from cfdmod.pressure.filters import (
-    MovingAverageFilter,
-    _window_in_samples,
-    apply_filters,
-)
+from cfdmod.pressure.filters import MovingAverageFilter, _window_in_samples, apply_filters
 
 pytestmark = pytest.mark.unit
 

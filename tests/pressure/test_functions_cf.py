@@ -6,7 +6,7 @@ import pytest
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
-from cfdmod.pressure.functions import transform_Cf, calculate_statistics
+from cfdmod.pressure.functions import calculate_statistics, transform_Cf
 from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.pressure.parameters import BasicStatisticModel, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix

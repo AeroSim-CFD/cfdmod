@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure import (
@@ -25,7 +26,6 @@ from tests.pressure.conftest import (
     make_cp_cfg,
     zoning_full,
 )
-import pytest
 
 pytestmark = pytest.mark.integration
 

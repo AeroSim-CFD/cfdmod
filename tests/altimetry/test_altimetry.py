@@ -1,12 +1,12 @@
 import pathlib
 
 import numpy as np
+import pytest
 import trimesh
 
 from cfdmod.altimetry import AltimetryProbe, AltimetrySection, Shed
 from cfdmod.altimetry.figure import savefig_to_file
 from cfdmod.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
-import pytest
 
 pytestmark = pytest.mark.unit
 

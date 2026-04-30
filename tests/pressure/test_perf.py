@@ -71,12 +71,7 @@ from cfdmod.pressure import (
     run_cm,
     run_cp,
 )
-from tests.pressure.conftest import (
-    basic_stats,
-    iter_stats_leaves,
-    make_cp_cfg,
-    zoning_full,
-)
+from tests.pressure.conftest import basic_stats, iter_stats_leaves, make_cp_cfg, zoning_full
 
 pytestmark = [pytest.mark.perf]
 
@@ -87,23 +82,21 @@ pytestmark = [pytest.mark.perf]
 
 
 _SCALES: dict[str, dict[str, int]] = {
-    "tiny":    {"n_tri":   5_000, "n_steps":    200},
-    "medium":  {"n_tri":  30_000, "n_steps":  2_000},
+    "tiny": {"n_tri": 5_000, "n_steps": 200},
+    "medium": {"n_tri": 30_000, "n_steps": 2_000},
     "extreme": {"n_tri": 150_000, "n_steps": 10_000},
 }
 
 _DEFAULT_BUDGETS_S: dict[str, dict[str, float]] = {
     # cp / cf / cm wall-time budgets per scale, in seconds.
-    "tiny":    {"cp":   30,  "cf":    60, "cm":   120},
-    "medium":  {"cp":  120,  "cf":   600, "cm":  1800},
-    "extreme": {"cp": 1800,  "cf":  7200, "cm": 14400},
+    "tiny": {"cp": 30, "cf": 60, "cm": 120},
+    "medium": {"cp": 120, "cf": 600, "cm": 1800},
+    "extreme": {"cp": 1800, "cf": 7200, "cm": 14400},
 }
 
 _SCALE = os.environ.get("CFDMOD_PERF_SCALE", "medium").lower()
 if _SCALE not in _SCALES:
-    raise ValueError(
-        f"CFDMOD_PERF_SCALE={_SCALE!r} not one of {sorted(_SCALES)}"
-    )
+    raise ValueError(f"CFDMOD_PERF_SCALE={_SCALE!r} not one of {sorted(_SCALES)}")
 
 _N_TRI = int(os.environ.get("CFDMOD_PERF_N_TRI", _SCALES[_SCALE]["n_tri"]))
 _N_STEPS = int(os.environ.get("CFDMOD_PERF_N_STEPS", _SCALES[_SCALE]["n_steps"]))
@@ -210,9 +203,7 @@ def _measure(label: str):
 # ---------------------------------------------------------------------------
 
 
-_REPORT_DIR = pathlib.Path(
-    os.environ.get("CFDMOD_PERF_REPORT_DIR", "output/perf")
-)
+_REPORT_DIR = pathlib.Path(os.environ.get("CFDMOD_PERF_REPORT_DIR", "output/perf"))
 
 
 def _flush_report(report_dir: pathlib.Path = _REPORT_DIR) -> None:
@@ -243,9 +234,7 @@ def _flush_report(report_dir: pathlib.Path = _REPORT_DIR) -> None:
         "stages": [asdict(r) for r in _RECORDS],
     }
 
-    (report_dir / "perf_report.json").write_text(
-        json.dumps(payload, indent=2) + "\n"
-    )
+    (report_dir / "perf_report.json").write_text(json.dumps(payload, indent=2) + "\n")
 
     md_lines = [
         "# cfdmod pressure perf report",
@@ -313,15 +302,13 @@ def _grid_triangles(n_tri: int) -> tuple[np.ndarray, np.ndarray]:
     base = r * nx + c
     tris_a = np.column_stack([base, base + 1, base + nx])
     tris_b = np.column_stack([base + 1, base + nx + 1, base + nx])
-    triangles = np.concatenate(
-        [tris_a.reshape(-1, 3), tris_b.reshape(-1, 3)], axis=0
-    )[:n_tri].astype(np.int32)
+    triangles = np.concatenate([tris_a.reshape(-1, 3), tris_b.reshape(-1, 3)], axis=0)[
+        :n_tri
+    ].astype(np.int32)
     return triangles, vertices
 
 
-def _write_synthetic_body(
-    path: pathlib.Path, *, n_tri: int, n_steps: int, seed: int = 0
-) -> None:
+def _write_synthetic_body(path: pathlib.Path, *, n_tri: int, n_steps: int, seed: int = 0) -> None:
     """Build a body XDMF+H5 in the v2 layout with synthetic random pressure.
 
     Streams timesteps one at a time into the open file so peak memory stays
@@ -337,31 +324,23 @@ def _write_synthetic_body(
         f.create_dataset("Geometry", data=vertices)
         pressure = f.create_group("pressure")
         for t in times:
-            pressure.create_dataset(
-                f"t{t}", data=rng.standard_normal(n_tri).astype(np.float64)
-            )
+            pressure.create_dataset(f"t{t}", data=rng.standard_normal(n_tri).astype(np.float64))
         meta = f.create_group("meta")
         meta.create_dataset("time_steps", data=times.astype(np.float64))
         meta.create_dataset("time_normalized", data=times.astype(np.float64))
 
 
-def _write_synthetic_probe(
-    path: pathlib.Path, *, n_steps: int, seed: int = 1
-) -> None:
+def _write_synthetic_probe(path: pathlib.Path, *, n_steps: int, seed: int = 1) -> None:
     """Build a single-point probe XDMF+H5 (trivial mesh + random pressure)."""
     rng = np.random.default_rng(seed)
     times = np.linspace(100.0, 800.0, n_steps)
 
     with h5py.File(path, "w") as f:
         f.create_dataset("Triangles", data=np.array([[0, 0, 0]], dtype=np.int32))
-        f.create_dataset(
-            "Geometry", data=np.array([[0.0, 0.0, 0.0]], dtype=np.float64)
-        )
+        f.create_dataset("Geometry", data=np.array([[0.0, 0.0, 0.0]], dtype=np.float64))
         pressure = f.create_group("pressure")
         for t in times:
-            pressure.create_dataset(
-                f"t{t}", data=rng.standard_normal(1).astype(np.float64)
-            )
+            pressure.create_dataset(f"t{t}", data=rng.standard_normal(1).astype(np.float64))
         meta = f.create_group("meta")
         meta.create_dataset("time_steps", data=times.astype(np.float64))
         meta.create_dataset("time_normalized", data=times.astype(np.float64))
@@ -449,9 +428,9 @@ def test_perf_run_cf(synthetic_cp_h5, tmp_path):
     rss_delta = max(0.0, _max_rss_mb() - rss_before)
 
     assert elapsed < _BUDGET_CF_S, f"run_cf took {elapsed:.1f}s > budget {_BUDGET_CF_S}s"
-    assert rss_delta < _BUDGET_PEAK_RSS_MB, (
-        f"run_cf added {rss_delta:.0f} MiB peak RSS > budget {_BUDGET_PEAK_RSS_MB} MiB"
-    )
+    assert (
+        rss_delta < _BUDGET_PEAK_RSS_MB
+    ), f"run_cf added {rss_delta:.0f} MiB peak RSS > budget {_BUDGET_PEAK_RSS_MB} MiB"
 
     leaves = {n for n, *_ in iter_stats_leaves(tmp_path / "stats.h5") if n.startswith("cf_")}
     assert leaves == {

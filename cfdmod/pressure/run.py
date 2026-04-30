@@ -34,12 +34,7 @@ from cfdmod.io.xdmf import (
     write_timeseries_step,
 )
 from cfdmod.logger import logger
-from cfdmod.pressure.functions import (
-    process_Ce,
-    process_Cf,
-    process_Cm,
-    process_xdmf_to_cp,
-)
+from cfdmod.pressure.functions import process_Ce, process_Cf, process_Cm, process_xdmf_to_cp
 from cfdmod.pressure.parameters import (
     CeCaseConfig,
     CfCaseConfig,

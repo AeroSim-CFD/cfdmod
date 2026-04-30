@@ -58,8 +58,7 @@ def test_get_region_definition_dataframe(mesh, zoning):
     region_df = get_region_definition_dataframe(geom_dict)
 
     assert all(
-        f"{i}-sfc1" in region_df["region_idx"].values
-        for i in range(len(zoning.get_regions()))
+        f"{i}-sfc1" in region_df["region_idx"].values for i in range(len(zoning.get_regions()))
     )
 
 
@@ -75,7 +74,9 @@ def test_transform_Ce(matrix_cp_data, zoning, mesh, cp_data):
     )
     ce_data = transform_Ce(matrix_cp_data, geometry_df, mesh)
 
-    assert len(ce_data) == cp_data["time_normalized"].nunique() * geometry_df["region_idx"].nunique()
+    assert (
+        len(ce_data) == cp_data["time_normalized"].nunique() * geometry_df["region_idx"].nunique()
+    )
     assert "Ce" in ce_data.columns
 
 
@@ -86,7 +87,16 @@ def test_process_surfaces(mesh, zoning):
     region_data = convert_dataframe_into_matrix(
         pd.DataFrame(
             {
-                "region_idx": ["0-sfc1", "0-sfc1", "0-sfc1", "0-sfc1", "1-sfc1", "1-sfc1", "1-sfc1", "1-sfc1"],
+                "region_idx": [
+                    "0-sfc1",
+                    "0-sfc1",
+                    "0-sfc1",
+                    "0-sfc1",
+                    "1-sfc1",
+                    "1-sfc1",
+                    "1-sfc1",
+                    "1-sfc1",
+                ],
                 "time_normalized": [0, 1, 2, 3, 0, 1, 2, 3],
                 "Ce": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
             }

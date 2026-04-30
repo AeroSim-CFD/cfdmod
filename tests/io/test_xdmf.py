@@ -30,9 +30,7 @@ def triangles():
 
 @pytest.fixture()
 def vertices():
-    return np.array(
-        [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64
-    )
+    return np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float64)
 
 
 @pytest.fixture()
@@ -99,16 +97,12 @@ def test_write_timeseries_step_overwrites_existing_key(tmp_path):
     path = tmp_path / "ts.h5"
     write_timeseries_step(path, "pressure", "t0.0", np.array([1.0, 2.0]))
     write_timeseries_step(path, "pressure", "t0.0", np.array([9.0, 9.0]))
-    np.testing.assert_array_equal(
-        read_step(path, "t0.0", group="pressure"), [9.0, 9.0]
-    )
+    np.testing.assert_array_equal(read_step(path, "t0.0", group="pressure"), [9.0, 9.0])
 
 
 def test_write_timeseries_meta_overwrites_existing(tmp_path):
     path = tmp_path / "ts.h5"
-    write_timeseries_meta(
-        path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
-    )
+    write_timeseries_meta(path, time_steps=np.array([0.0]), time_normalized=np.array([0.0]))
     write_timeseries_meta(
         path,
         time_steps=np.array([0.0, 1.0]),
@@ -241,13 +235,21 @@ def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, v
     body_verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64)
 
     write_stats_field(
-        path, "cp/default", "mean", np.array([0.1, 0.2]),
-        triangles=cp_tri, vertices=cp_verts,
+        path,
+        "cp/default",
+        "mean",
+        np.array([0.1, 0.2]),
+        triangles=cp_tri,
+        vertices=cp_verts,
     )
     write_stats_field(path, "cp/default", "rms", np.array([0.01, 0.02]))
     write_stats_field(
-        path, "cf_x/m1/body", "mean", np.array([0.5]),
-        triangles=body_tri, vertices=body_verts,
+        path,
+        "cf_x/m1/body",
+        "mean",
+        np.array([0.5]),
+        triangles=body_tri,
+        vertices=body_verts,
     )
 
     xdmf_path = tmp_path / "stats.xdmf"
@@ -272,13 +274,15 @@ def test_write_stats_xdmf_emits_one_grid_per_meshed_group(tmp_path, triangles, v
 def test_write_stats_xdmf_skips_groups_without_geometry(tmp_path, triangles, vertices):
     path = tmp_path / "stats.h5"
     write_stats_field(
-        path, "cp/default", "mean", np.array([0.1, 0.2]),
-        triangles=triangles, vertices=vertices,
+        path,
+        "cp/default",
+        "mean",
+        np.array([0.1, 0.2]),
+        triangles=triangles,
+        vertices=vertices,
     )
     # Add a meta-only group: should NOT produce a grid.
-    write_timeseries_meta(
-        path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
-    )
+    write_timeseries_meta(path, time_steps=np.array([0.0]), time_normalized=np.array([0.0]))
 
     xdmf_path = tmp_path / "stats.xdmf"
     write_stats_xdmf(path, xdmf_path)
@@ -288,9 +292,7 @@ def test_write_stats_xdmf_skips_groups_without_geometry(tmp_path, triangles, ver
 
 def test_write_stats_xdmf_raises_when_no_grids(tmp_path):
     path = tmp_path / "stats.h5"
-    write_timeseries_meta(
-        path, time_steps=np.array([0.0]), time_normalized=np.array([0.0])
-    )
+    write_timeseries_meta(path, time_steps=np.array([0.0]), time_normalized=np.array([0.0]))
     with pytest.raises(ValueError, match="no group with both Triangles and Geometry"):
         write_stats_xdmf(path, tmp_path / "stats.xdmf")
 

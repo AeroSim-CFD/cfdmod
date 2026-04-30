@@ -3,10 +3,7 @@ import pytest
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
-from cfdmod.pressure.geometry import (
-    GeometryData,
-    tabulate_geometry_data,
-)
+from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
 from cfdmod.pressure.parameters import ZoningModel
 
 pytestmark = pytest.mark.unit
