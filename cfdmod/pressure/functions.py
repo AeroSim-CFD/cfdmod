@@ -331,7 +331,13 @@ def process_xdmf_to_cp(
 
     dynamic_pressure = 0.5 * cp_config.fluid_density * cp_config.simul_U_H**2
     multiplier = 1.0 / 3.0 if cp_config.macroscopic_type == "rho" else 1.0
-    time_scale = cp_config.simul_characteristic_length / cp_config.simul_U_H
+    # Time-axis conversion is opt-in: when normalize_time is False the
+    # downstream "time_normalized" array carries raw solver time as-is.
+    time_scale = (
+        cp_config.simul_characteristic_length / cp_config.simul_U_H
+        if cp_config.normalize_time
+        else 1.0
+    )
 
     if mesh_override is not None:
         triangles, vertices = mesh_override

@@ -516,12 +516,25 @@ class CpConfig(HashableConfig, BasePressureConfig):
     simul_U_H: float = Field(
         ...,
         title="Simulation Flow Velocity",
-        description="Simulation flow velocity to calculate dynamic pressure and time scales",
+        description="Simulation flow velocity used in the Cp dynamic pressure denominator (always required) and as the time scale L/U when normalize_time=True.",
     )
     simul_characteristic_length: float = Field(
         ...,
         title="Simulation Characteristic Length",
-        description="Simulation characteristic length to convert time scales",
+        description="Simulation characteristic length used as the time scale L/U when normalize_time=True (otherwise unused).",
+    )
+    normalize_time: bool = Field(
+        False,
+        title="Normalize time axis",
+        description=(
+            "When True, the time axis written to /meta/time_normalized in the "
+            "Cp output H5 is divided by simul_characteristic_length/simul_U_H "
+            "(convective-time normalisation). When False (the default), the "
+            "time axis is the raw solver time -- nothing is silently rescaled. "
+            "Filters and statistics downstream operate in whichever units this "
+            "setting selects, so user-facing windows / durations stay in those "
+            "same units."
+        ),
     )
 
 
