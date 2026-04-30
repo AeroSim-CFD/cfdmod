@@ -638,7 +638,12 @@ def _resolve_region_origin(
       3. body_cfg.lever_origin (fixed-strategy fallback).
     """
     overrides = body_cfg.region_lever_origins or {}
-    region_int = int(region_label.split("-", 1)[0])
+    # Region labels are formatted f"{int}-{body_name}", e.g. "0-pack" or
+    # "5-pack". rsplit splits off the body suffix from the right so a
+    # negative-int sentinel like "-1-pack" (a triangle that did not fall
+    # into any zoning cell -- get_indexing_mask leaves -1 there) parses
+    # back to int(-1) instead of choking on int("").
+    region_int = int(region_label.rsplit("-", 1)[0])
     if region_int in overrides:
         return tuple(overrides[region_int])  # type: ignore[return-value]
     if body_cfg.lever_strategy == "region_base":
