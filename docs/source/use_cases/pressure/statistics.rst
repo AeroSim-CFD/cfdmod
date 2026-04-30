@@ -144,13 +144,19 @@ In the context of CFD simulations, particularly for pressure coefficient signals
 Extreme events in pressure coefficient signals often represent **critical scenarios such as peak loads on structures or components**.
 The analysis involves fitting extreme value distributions to the data and extrapolating to estimate the occurrence of extreme events beyond the observed range.
 
-Currently, CFD modules support two models of extreme value calculation:
+Currently, ``cfdmod`` supports three peak-factor estimators for the
+``min`` / ``max`` columns of the stats:
 
-- **Moving average**: The coefficient signal is smoothed using a time window, then its min and max values are assigned to the extreme peaks
-- **Gumbel**: The coefficient signal time window is extrapolated using Gumbel statistical model.
-- **Peak factor**: The value of the peak is calculated using the average, RMS and peak factor values.
+- **Absolute**: raw signal min/max, no model.
+- **Peak factor**: ``xtr = avg +/- peak_factor * rms``.
+- **Gumbel**: extreme-value fit on the maxima / minima of the signal's
+  subdivisions.
 
-The following configuration illustrates how to select and configure the appropriate model:
+(Moving-average smoothing is no longer a peak-factor method - it is a
+distinct pipeline step. See :ref:`Filters <pressure-filters>` below.)
+
+The following configuration illustrates how to select and configure the
+appropriate model:
 
 .. code-block:: yaml
 
@@ -176,29 +182,44 @@ The following configuration illustrates how to select and configure the appropri
         params:
           method_type: "Peak"
           peak_factor: 3 # xtr = avg +- factor * rms
-      - stats: "max"
-        params:
-          method_type: "Moving Average"
-          window_size_real_scale: 3 # s
 
-Moving average
-^^^^^^^^^^^^^^
+.. _pressure-filters:
 
-In the context of wind engineering, sometimes it may be necessary to smooth a coefficient signal so that the **peak values (maximum and minimum) are in the same order as the event time scale**.
-Normally, atmospheric wind gusts **peak pressures last for about 3 seconds**, according to the wind standard NBR-6123.
-However, other wind standards may define a different base time scale.
+Filters (smoothing as a pipeline step)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Therefore, the pressure coefficient peaks can be obtained after smoothing the pressure signal based on the event time scale.
-That way, a peak that happens in a shorter period can be neglected/smoothed.
+In wind engineering it is sometimes desirable to smooth a coefficient
+signal so that the **peak values are in the same order as the event time
+scale** (atmospheric wind gusts peak for about 3 s under NBR-6123, for
+example). In ``cfdmod`` this is exposed as a separate first-class step
+on the timeseries -- not as a stats method -- so the smoothing decision
+is explicit, traceable, and reusable across stats configurations.
 
-Applying a **moving average to a signal has the effect of smoothing it**.
-The image below illustrates the effect of a moving average:
+.. code-block:: python
+
+    from cfdmod import MovingAverageFilter, apply_filters
+
+    apply_filters(
+        input_h5="output/cp.default.time_series.h5",
+        output_h5="output/cp.default.smoothed.time_series.h5",
+        filters=[MovingAverageFilter(window=3.0)],   # window in input time units
+        group="cp",
+    )
+
+The output is a normal ``*.time_series.h5`` (same layout as ``run_cp``'s
+output) that downstream ``run_cf`` / ``run_cm`` / statistics consume in
+place of the raw Cp. The applied chain is recorded under the file's
+``/processing_metadata`` so the lineage is self-describing.
+
+``MovingAverageFilter.window`` is in the same units as the input file's
+time axis (raw solver time when ``CpConfig.normalize_time=False``, the
+default; convective time when ``True``). The filter does no implicit
+unit conversion. The image below illustrates the effect of a moving
+average on a noisy signal:
 
 .. image:: /_static/pressure/moving_avg.png
     :width: 60 %
     :align: center
-
-After smoothing the pressure signal, based on the wind gust time scale, the peaks from the smoothed signal are captured and assigned as a extreme value (minimum/negative or maximum/positive).
 
 Gumbel model
 ^^^^^^^^^^^^

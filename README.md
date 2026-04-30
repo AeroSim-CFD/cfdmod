@@ -143,6 +143,30 @@ Every output H5 carries the post-processing config under
 `/processing_metadata/`; read it back with
 `cfdmod.io.read_processing_metadata(path, group)`.
 
+## Filtering between coefficients
+
+Filters are an opt-in pipeline step: take any `*.time_series.h5`,
+apply a chain in order, and write a new `*.time_series.h5` with the
+applied chain recorded under `/processing_metadata`. Cf / Cm / Ce
+then consume the filtered file in place of the raw Cp.
+
+```python
+from cfdmod import MovingAverageFilter, apply_filters
+
+apply_filters(
+    input_h5="output/cp.default.time_series.h5",
+    output_h5="output/cp.default.smoothed.time_series.h5",
+    filters=[MovingAverageFilter(window=3.0)],   # in input time units
+    group="cp",
+)
+# Then point run_cf / run_cm at the smoothed file.
+```
+
+`MovingAverageFilter.window` is in the same units as the input file's
+time axis (raw solver time when `CpConfig.normalize_time=False`, the
+default; convective time when `True`) -- the filter performs no
+implicit unit conversion.
+
 ## Worked example notebook
 
 `notebooks/process_container_pack.ipynb` runs the full Cp/Cf/Cm pipeline on

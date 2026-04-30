@@ -33,8 +33,35 @@ The pipeline accepts geometry in any of the following formats and dispatches by 
 
 The ``mesh_path`` argument is optional on every ``run_*`` entry point. When omitted, the geometry is read from the source H5 itself (the body H5 for ``run_cp``, the cp timeseries H5 for ``run_cf``/``run_cm``/``run_ce``) -- so a single-body pipeline does not need a separate mesh file.
 
+When the same building is simulated at several wind directions, each solver run produces a body H5 in its own wind-aligned ("spun") coordinate frame. Pass a single fixed-frame mesh as ``mesh_path`` to ``run_cp`` and the Cp output (and everything downstream from it: Cf, Cm, Ce) is written in that shared frame. Triangle ordering must match the body H5 -- only vertex coordinates may differ. ``run_cf`` / ``run_cm`` / ``run_ce`` then inherit the reference frame through ``cp_h5`` automatically; no need to repeat ``mesh_path=`` on each call.
+
 .. note::
    For LNAS-specific details, see the documentation inside the `LNAS repository <https://github.com/AeroSim-CFD/stl2lnas>`_.
+
+Filtering between coefficients
+==============================
+
+A coefficient timeseries (Cp, Cf, Cm, Ce) is a normal XDMF+H5 file that
+can be passed through a chain of signal-processing filters using
+:func:`cfdmod.pressure.filters.apply_filters`. Filters are an opt-in
+pipeline step; the output is another timeseries H5 with the same
+on-disk shape, ready to feed the next stage. The applied chain is
+recorded in ``/processing_metadata`` so the lineage stays self-
+describing.
+
+.. code-block:: python
+
+   from cfdmod import MovingAverageFilter, apply_filters
+
+   apply_filters(
+       input_h5="output/cp.default.time_series.h5",
+       output_h5="output/cp.default.smoothed.time_series.h5",
+       filters=[MovingAverageFilter(window=3.0)],   # in input time units
+       group="cp",
+   )
+
+See :ref:`pressure-filters` for details and the rationale behind moving
+smoothing out of the statistics block.
 
 v2 Quickstart
 =============

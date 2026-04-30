@@ -6,6 +6,79 @@ API-first rewrite of the post-processing pipeline. The branch focus was
 "library that external scripts and notebooks can drive" -- the public API,
 the I/O contract and the output layout were all redesigned around that goal.
 
+### Sane defaults and explicit knobs
+
+The Cp config inputs were tightened so the pipeline never silently
+guesses something the user didn't ask for. All of these are
+behaviour-changing relative to v1.x:
+
+- `CpConfig.macroscopic_type` now defaults to `"pressure"` (was
+  `"rho"`). The description lists both options. If the solver wrote
+  real pressure -- the common case -- you can leave it unset.
+- New `CpConfig.reference_pressure: Literal["probe", "average"]`,
+  default `"probe"`. `"probe"` uses the first probe point (the
+  reference probe placed above the body, the standard wind-tunnel
+  choice); `"average"` takes the spatial mean across all probe points
+  at each timestep.
+- New `CpConfig.normalize_time: bool = False`. Time-axis
+  normalisation is now opt-in: with the default `False`,
+  `/meta/time_normalized` carries raw solver time (nothing is
+  silently divided by `L/U`). Filters and statistics downstream
+  operate in whichever units this setting selects.
+  `simul_characteristic_length` becomes meaningful only when
+  `normalize_time=True`; `simul_U_H` stays a hard requirement (it is
+  in the Cp dynamic-pressure denominator regardless).
+- `CfConfig.nominal_area` and `CmConfig.nominal_volume` are now
+  required (`gt=0`). The previous "fall back to tribute area / volume
+  when zero" behaviour is gone -- without an explicit reference
+  value, the resulting Cf / Cm cannot be converted back to real-scale
+  forces / moments unambiguously, so the program no longer chooses
+  for you. The unreachable tribute-area / tribute-volume code paths
+  in `transform_Cf` / `transform_Cm` were removed.
+- For Cf / Cm, `full_scale_U_H` and `full_scale_characteristic_length`
+  on `ExtremeGumbelParamsModel` are now optional. When omitted the
+  runner reads them from the Cp metadata embedded in `cp_h5`
+  (`/processing_metadata`) -- so you only need to specify those
+  scales once, in the Cp scope. Cp itself still requires explicit
+  values.
+
+### Reference-frame override (multi-direction sweeps)
+
+`run_cp(mesh_path=...)` now actually embeds that mesh's triangles +
+vertices into the Cp output via `process_xdmf_to_cp(mesh_override=...)`,
+with a triangle-count safety check. Use case: same building, several
+wind directions; each solver run produces a body H5 in its own wind-
+aligned ("spun") coordinate frame, and you want all cp / cf / cm / ce
+outputs in a single fixed reference frame for cross-direction
+comparison. Downstream `run_cf` / `run_cm` / `run_ce` already default
+mesh from `cp_h5`, so the reference frame propagates without re-passing
+`mesh_path` per call.
+
+### First-class filter chain
+
+Signal-processing filters are now their own pipeline stage rather than
+being smuggled into the statistics block:
+
+- `cfdmod.pressure.filters.apply_filters(input_h5, output_h5,
+  filters=[...], group=...)` reads any coefficient timeseries, applies
+  the chain in order, and writes a new `*.time_series.h5` with the
+  same on-disk shape (`/Triangles + /Geometry`, `/{group}/t{T}` per
+  timestep, `/meta/...`, sibling temporal XDMF). The applied chain is
+  recorded under `/processing_metadata` so the lineage is self-
+  describing.
+- Initial filter type: `MovingAverageFilter(window=...)`. `window` is
+  in the input file's own time-axis units (raw solver time by
+  default; convective time when `normalize_time=True`). No implicit
+  unit conversion. Implemented via a flat Pydantic discriminated
+  union, so a new filter is one new class added to the union and one
+  branch in `_apply_one`.
+- `ExtremeMovingAverageParamsModel`,
+  `moving_average_extreme_values`, and the `"Moving Average"` entry
+  in `ExtremeMethods` were **removed**. Statistics now expose only
+  the three real peak-factor methods: `Absolute`, `Peak`, `Gumbel`.
+  Moving-average smoothing is done in the filter stage, then
+  statistics run over the filtered file.
+
 ### Pipeline (Cp / Cf / Cm / Ce)
 
 - Disk-first stats contract. Every coefficient persists its full per-triangle
@@ -68,6 +141,9 @@ the I/O contract and the output layout were all redesigned around that goal.
   selected columns with one call. `regions=True` deduplicates the
   per-triangle broadcast of Cf/Cm so you get one column per region
   instead of one per triangle.
+- `from cfdmod import MovingAverageFilter, apply_filters` -- the
+  filter chain (see "First-class filter chain" above). `FilterSpec`
+  is also exported for type annotations of user-built chains.
 - `cfg_path` accepts either a YAML path *or* a pre-built
   `CpCaseConfig` / `CfCaseConfig` / `CmCaseConfig` / `CeCaseConfig`
   instance, so in-memory pipelines don't need sidecar YAMLs.
@@ -92,6 +168,26 @@ the I/O contract and the output layout were all redesigned around that goal.
 - `cfdmod.api` and `cfdmod.use_cases` shims emit `DeprecationWarning` on
   import; their code paths still work but will be removed in a future
   release.
+- `CpConfig.macroscopic_type` default flipped from `"rho"` to
+  `"pressure"`. Configs that rely on the implicit default but actually
+  feed LBM density now need to set `macroscopic_type="rho"` explicitly.
+- `CpConfig` time-axis normalisation is now opt-in via
+  `normalize_time: bool = False`. The previous behaviour (always
+  divide by `L/U`) becomes `normalize_time=True`. With the new
+  default, `/meta/time_normalized` carries raw solver time, and
+  filter / Gumbel windows operate in the same raw-time units.
+- `CfConfig.nominal_area` and `CmConfig.nominal_volume` are now
+  required (`gt=0`); the implicit-tribute fallback was removed.
+  Configs that previously left them unset (or set them to `0`) need
+  to provide an explicit reference area / volume. Only `transform_Cf`
+  / `transform_Cm` were affected; the public `get_representative_areas`
+  / `get_representative_volume` helpers are still exported.
+- `ExtremeMovingAverageParamsModel`,
+  `cfdmod.pressure.functions.moving_average_extreme_values`, and the
+  `"Moving Average"` entry in `ExtremeMethods` were removed. To get
+  stats over a moving-average-smoothed signal, run
+  `apply_filters([MovingAverageFilter(window=...)])` first and then
+  run statistics over the filtered file.
 
 ### Compatibility / migration
 
