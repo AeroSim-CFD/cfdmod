@@ -67,54 +67,59 @@ It can be seen as the resulting effect of the wind induced force over a body.
 Artifacts
 =========
 
-In order to use the force coefficient module, the user has to provide a **set of artifacts**:
+The user provides:
 
-#. **A lnas file**: It contains the information about the mesh.
-#. **Parameters file**: It contains which surface inside the mesh is going to be used for evaluating net force coefficient as well as other configs parameters.
-#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
+#. **Cp timeseries XDMF+H5** produced by ``run_cp``.
+#. **Parameters** (``CfCaseConfig``): bodies, sub-body zoning and the
+   nominal-area knobs. Pass either a YAML path or an in-memory instance.
+#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``.
+   ``BodyDefinition(surfaces=[])`` selects every surface in the mesh, so
+   when the input is a single-surface H5 the same config covers the
+   whole mesh as one body. When omitted, the geometry comes from the
+   cp timeseries H5.
 
-Which outputs the following data:
+Outputs (flat under ``output``):
 
-#. **Dimensionless time series**: force coefficient time series for each body.
-#. **Statistical results**: maximum, minimum, RMS and average values for the force coefficient time series, for each body.
-#. **VTK File**: contains the statistical values inside the original mesh (VTK).
-
-An illustration of the force coefficient module pipeline can be seen below:
-
-.. image:: /_static/pressure/Cf_pipeline.png
-    :width: 90 %
-    :align: center
+#. ``Cf.{cfg_lbl}.{body}.time_series.{h5,xdmf}`` -- one file per body.
+   Each file embeds the body's mesh and carries ``cf_x`` / ``cf_y`` /
+   ``cf_z`` groups; pick the direction from the ParaView Attribute
+   selector on the same animation.
+#. ``stats.h5`` / ``stats.xdmf`` -- combined statistics; Cf lands under
+   ``/cf_{x,y,z}/{cfg_lbl}/{body}/`` with the body's mesh embedded.
+#. Each output H5 carries the post-processing config under
+   ``/processing_metadata/``.
 
 Usage
 =====
 
-An example of the parameters file required for calculating the net force coefficient can be seen below:
+Reference parameters file:
 
 .. literalinclude:: /_static/pressure/Cf_params.yaml
     :language: yaml
 
-To invoke and run the calculation, the following command can be used:
+From Python:
+
+.. code-block:: python
+
+   from cfdmod import run_cf, CfCaseConfig
+   run_cf(
+       cp_h5="output/cp.default.time_series.h5",
+       cfg_path=CfCaseConfig.from_file("cf.yaml"),
+       output="output",
+       # mesh_path optional; omitting it reads geometry from the cp H5
+   )
+
+CLI:
 
 .. code-block:: Bash
 
-   uv run python -m cfdmod.use_cases.pressure.Cf \
-      --output {OUTPUT_PATH} \
-      --cp     {CP_SERIES_PATH} \
-      --mesh   {LNAS_PATH} \
-      --config {CONFIG_PATH}
-
-Or it can be generated together with the pressure data conversion:
-
-.. code-block:: Bash
-
-   uv run python -m cfdmod.use_cases.pressure \
-      --output {OUTPUT_PATH} \
-      --cp     {CP_SERIES_PATH} \
-      --mesh   {LNAS_PATH} \
+   python -m cfdmod pressure cf \
+      --cp     {CP_TIMESERIES_H5} \
       --config {CONFIG_PATH} \
-      --Cf
+      --output {OUTPUT_PATH}
 
-Another way to run the force coefficient calculation, is through the `notebook <calculate_Cf.ipynb>`_
+A worked example covering Cp, Cf and Cm together lives at
+``notebooks/process_container_pack.ipynb`` in the repository root.
 
 Data format
 ===========

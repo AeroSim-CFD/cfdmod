@@ -28,45 +28,64 @@ However, it is not the final result to be delivered to clients.
 Artifacts
 =========
 
-In order to use the pressure normalization module, the user has to provide a **set of artifacts**:
+The user provides:
 
-#. **A lnas file**: It contains the information about the mesh.
-#. **HDF time series**: It contains the pressure signals indexed by each of the mesh triangles.
-#. **Parameters file**: It contains the values for adimensionalization as well as other configs parameters.
-#. **Static reference pressure time series**: It contains the pressure signals for probes far away from the building.
+#. **Body pressure XDMF+H5**: per-timestep pressure on every mesh triangle.
+#. **Reference probe XDMF+H5** (optional): atmospheric reference pressure
+   probe signal. If omitted, the reference pressure is taken as 0.
+#. **Parameters** (``CpCaseConfig``): adimensionalisation values, statistic
+   list, time-step range. The config can be a YAML file or built in code.
+#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``. When
+   omitted, the geometry is read from the body H5's embedded
+   ``/Triangles + /Geometry``.
 
-Which outputs the following data:
+Outputs (under the ``output`` directory; layout is flat, no subfolders):
 
-#. **Dimensionless time series**: pressure coefficient time series for each triangle.
-#. **Statistical results**: statistical values for the pressure coefficient time series, for each triangle.
-#. **VTK File**: contains the statistical values inside a mesh representation (VTK).
+#. ``cp.{label}.time_series.{h5,xdmf}`` -- per-timestep Cp on the full
+   mesh, ParaView-readable.
+#. ``stats.{h5,xdmf}`` -- combined statistics for every coefficient in
+   the run, with one ``<Grid>`` per leaf group on the matching mesh.
+   Cp lands under ``/cp/{label}/``.
 
-An illustration of the pressure coefficient module pipeline can be seen below:
-
-.. image:: /_static/pressure/cp_pipeline.png
-    :width: 90 %
-    :align: center
+Each output H5 carries the post-processing config under
+``/processing_metadata/`` for downstream debugging; read it back with
+:func:`cfdmod.read_processing_metadata`.
 
 Usage
 =====
 
-The parameter file for converting the pressure data into pressure coefficient looks as follows:
+A reference parameters file:
 
 .. literalinclude:: /_static/pressure/cp_params.yaml
     :language: yaml
 
-To invoke and run the conversion, the following command can be used:
+Driving the pipeline from Python:
+
+.. code-block:: python
+
+   from cfdmod import run_cp, CpCaseConfig
+   run_cp(
+       body_h5="body.h5",
+       probe_h5="probe.h5",                    # or None for zero reference
+       cfg_path=CpCaseConfig.from_file("cp.yaml"),
+       output="output",
+       # mesh_path optional; omitting it reads from body.h5
+   )
+
+Or via the CLI:
 
 .. code-block:: Bash
 
-   uv run python -m cfdmod.use_cases.pressure \
-      --output {OUTPUT_PATH} \
-      --p      {PRESS_SERIES_PATH} \
-      --s      {STATIC_PRESS_PATH} \
-      --mesh   {LNAS_PATH} \
-      --config {CONFIG_PATH}
+   python -m cfdmod pressure cp \
+      --body   {BODY_H5} \
+      --probe  {PROBE_H5} \
+      --config {CONFIG_PATH} \
+      --output {OUTPUT_PATH}
 
-Another way to run the pressure coefficient conversion, is through the `notebook <calculate_cp.ipynb>`_
+The same flow is also exercised in the `calculate_cp.ipynb <calculate_cp.ipynb>`_
+notebook, with a fuller end-to-end version (including container
+partition, Cf, and Cm) available at ``notebooks/process_container_pack.ipynb``
+in the repository root.
 
 Data format
 ===========

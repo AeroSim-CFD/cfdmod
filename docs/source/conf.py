@@ -18,6 +18,7 @@ author = "AeroSim"
 templates_path = ["_templates"]
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
@@ -29,6 +30,16 @@ extensions = [
     "shibuya",
     "sphinx_sitemap",
 ]
+
+# Napoleon: parse Google-style docstrings used across the codebase
+# (Args / Returns / Raises). Without this, reST sees indented arg
+# blocks as unexpected indentation.
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = False
+napoleon_use_admonition_for_examples = False
+napoleon_use_param = True
+napoleon_use_rtype = True
 
 source_suffix = [".rst", ".md"]
 bibtex_bibfiles = ["_refs/refs.bib"]

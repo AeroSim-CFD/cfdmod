@@ -68,30 +68,32 @@ Or even to evaluate the resulting effect over **doors**, and calculate the stres
 Artifacts
 =========
 
-In order to use the shape coefficient module, the user has to provide a **set of artifacts**:
+The user provides:
 
-#. **A lnas file**: It contains the information about the mesh.
-#. **HDF time series**: It contains the pressure coefficient signals indexed by each of the mesh triangles.
-#. **Parameters file**: It contains the zoning information for defining the bounding area, as well as other configs parameters.
+#. **Cp timeseries XDMF+H5** produced by ``run_cp``.
+#. **Parameters** (``CeCaseConfig``): zoning intervals, surface
+   set/exclude/exception lists and statistics. Pass either a YAML path
+   or an in-memory instance.
+#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``. Ce
+   slices triangles along the zoning planes and so produces a
+   *different* output mesh than the input -- the cut regions mesh.
 
-Which outputs the following data:
+Outputs (flat under ``output``):
 
-#. **Dimensionless time series**: shape coefficient time series for each region.
-#. **Regions**: definition of each region generated with its bounds (x_min, x_max), (y_min, y_max), (z_min, z_max), and the region index.
-#. **Regions mesh**: new mesh generated using the region information and the original mesh.
-#. **Statistical results**: maximum, minimum, RMS and average values for the shape coefficient time series, for each region.
-#. **VTK File**: contains the statistical values inside the region mesh (VTK).
-
-An illustration of the shape coefficient module pipeline can be seen below:
-
-.. image:: /_static/pressure/Ce_pipeline.png
-    :width: 90 %
-    :align: center
+#. ``Ce.{cfg_lbl}.regions.stl`` -- the cut regions mesh as STL for
+   ParaView / QC use.
+#. ``Ce.{cfg_lbl}.time_series.{h5,xdmf}`` -- per-cut-triangle Ce
+   timeseries on the cut mesh (root ``/Triangles + /Geometry`` is the
+   cut mesh; per-timestep arrays under ``/ce/t{T}``).
+#. ``stats.h5`` / ``stats.xdmf`` -- Ce stats land under ``/ce/{cfg_lbl}/``
+   with the cut mesh embedded so ParaView renders on the right topology.
+#. Each output H5 carries the post-processing config under
+   ``/processing_metadata/``.
 
 Usage
 =====
 
-An example of the parameters file required for calculating the shape coefficient can be seen below:
+Reference parameters file:
 
 .. literalinclude:: /_static/pressure/Ce_params.yaml
     :language: yaml
@@ -100,28 +102,29 @@ An example of the parameters file required for calculating the shape coefficient
     :language: yaml
     :caption: zoning_params.yaml
 
-To invoke and run the calculation, the following command can be used:
+From Python:
+
+.. code-block:: python
+
+   from cfdmod import run_ce, CeCaseConfig
+   run_ce(
+       cp_h5="output/cp.default.time_series.h5",
+       cfg_path=CeCaseConfig.from_file("ce.yaml"),
+       output="output",
+       # mesh_path optional; omitting it reads geometry from the cp H5
+   )
+
+CLI:
 
 .. code-block:: Bash
 
-   uv run python -m cfdmod.use_cases.pressure.Ce \
-      --output {OUTPUT_PATH} \
-      --cp     {CP_SERIES_PATH} \
-      --mesh   {LNAS_PATH} \
-      --config {CONFIG_PATH}
-
-Or it can be generated together with the pressure data conversion:
-
-.. code-block:: Bash
-
-   uv run python -m cfdmod.use_cases.pressure \
-      --output {OUTPUT_PATH} \
-      --cp     {CP_SERIES_PATH} \
-      --mesh   {LNAS_PATH} \
+   python -m cfdmod pressure ce \
+      --cp     {CP_TIMESERIES_H5} \
       --config {CONFIG_PATH} \
-      --Ce
+      --output {OUTPUT_PATH}
 
-Another way to run the shape coefficient calculation, is through the `notebook <calculate_Ce.ipynb>`_
+The Sphinx-bundled `calculate_Ce.ipynb <calculate_Ce.ipynb>`_ notebook
+covers the full Ce workflow.
 
 Data format
 ===========

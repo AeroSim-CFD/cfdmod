@@ -1,6 +1,20 @@
 .vscode
 output/
 
+# User case-data dumps that occasionally land in the repo root.
+# Repo-root-only patterns -- fixtures live under fixtures/ and stay tracked.
+/bodies.*.h5
+/bodies.*.xdmf
+/points.*.h5
+/points.*.xdmf
+/a.ipynb
+/line.*.csv
+notebooks/bodies.*.h5
+notebooks/bodies.*.xdmf
+notebooks/points.*.h5
+notebooks/points.*.xdmf
+notebooks/forces_*.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

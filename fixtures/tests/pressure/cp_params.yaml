@@ -1,7 +1,5 @@
 pressure_coefficient:
   default:
-    # Define how many chunks the output time series will be split into. Optional, defaults to 1
-    number_of_chunks: 10
     # Select the time interval to filter the signal and calculate statistics
     timestep_range: [10000, 20000]
     # Velocity at the building interest height
@@ -32,9 +30,5 @@ pressure_coefficient:
       #     non_exceedance_probability: 0.78 # Confidence parameter in %
       #     full_scale_U_H: 40
       #     full_scale_characteristic_length: 22.4
-      # - stats: "max"
-      #   params:
-      #     method_type: "Moving Average"
-      #     window_size_interval: 3 # s
-      #     full_scale_U_H: 40
-      #     full_scale_characteristic_length: 16
+      # Moving-average smoothing is now a separate filter step.
+      # See cfdmod.pressure.filters.MovingAverageFilter and apply_filters().
