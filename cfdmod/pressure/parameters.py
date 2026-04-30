@@ -14,7 +14,6 @@ __all__ = [
     "ExtremeAbsoluteParamsModel",
     "ExtremeGumbelParamsModel",
     "ExtremePeakParamsModel",
-    "ExtremeMovingAverageParamsModel",
     "MeanEquivalentParamsModel",
     "StatisticsParamsModel",
     "BasicStatisticModel",
@@ -60,7 +59,7 @@ from cfdmod.utils import read_yaml
 # ---------------------------------------------------------------------------
 
 Statistics = Literal["max", "min", "rms", "mean", "mean_eq", "skewness", "kurtosis"]
-ExtremeMethods = Literal["Gumbel", "Peak", "Absolute", "Moving Average"]
+ExtremeMethods = Literal["Gumbel", "Peak", "Absolute"]
 AxisDirections = Literal["x", "y", "z"]
 
 
@@ -92,15 +91,6 @@ class ExtremePeakParamsModel(BaseModel):
     peak_factor: float
 
 
-class ExtremeMovingAverageParamsModel(BaseModel):
-    method_type: Literal["Moving Average"] = "Moving Average"
-    window_size_interval: float = Field(gt=0)
-    # See ExtremeGumbelParamsModel: optional in Cf/Cm, inherited from the
-    # Cp metadata embedded in cp_h5 when omitted.
-    full_scale_U_H: float | None = Field(default=None, gt=0)
-    full_scale_characteristic_length: float | None = Field(default=None, gt=0)
-
-
 class MeanEquivalentParamsModel(BaseModel):
     scale_factor: float = Field(default=0.61, gt=0, le=1)
 
@@ -110,7 +100,6 @@ StatisticsParamsModel = (
     | ExtremeGumbelParamsModel
     | ExtremePeakParamsModel
     | ExtremeAbsoluteParamsModel
-    | ExtremeMovingAverageParamsModel
 )
 
 
@@ -133,8 +122,6 @@ class ParameterizedStatisticModel(BasicStatisticModel):
                 return ExtremePeakParamsModel(**v)
             elif v["method_type"] == "Absolute":
                 return ExtremeAbsoluteParamsModel(**v)
-            elif v["method_type"] == "Moving Average":
-                return ExtremeMovingAverageParamsModel(**v)
             else:
                 available = get_args(ExtremeMethods)
                 raise ValueError(

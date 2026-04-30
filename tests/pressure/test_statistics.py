@@ -6,7 +6,6 @@ from cfdmod.pressure.parameters import (
     BasicStatisticModel,
     ExtremeAbsoluteParamsModel,
     ExtremeGumbelParamsModel,
-    ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
     MeanEquivalentParamsModel,
     ParameterizedStatisticModel,
@@ -29,14 +28,6 @@ def stats_to_apply():
         ),
         ParameterizedStatisticModel(stats="min", params=ExtremeAbsoluteParamsModel()),
         ParameterizedStatisticModel(stats="min", params=ExtremePeakParamsModel(peak_factor=3)),
-        ParameterizedStatisticModel(
-            stats="max",
-            params=ExtremeMovingAverageParamsModel(
-                window_size_interval=3,
-                full_scale_characteristic_length=22.4,
-                full_scale_U_H=40,
-            ),
-        ),
         ParameterizedStatisticModel(
             stats="max",
             params=ExtremeGumbelParamsModel(

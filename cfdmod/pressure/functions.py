@@ -36,7 +36,6 @@ __all__ = [
     # Extreme values
     "fit_gumbel_model",
     "gumbel_extreme_values",
-    "moving_average_extreme_values",
     "peak_extreme_values",
 ]
 
@@ -78,7 +77,6 @@ from cfdmod.pressure.parameters import (
     CmConfig,
     CpConfig,
     ExtremeGumbelParamsModel,
-    ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
     MomentBodyConfig,
     ParameterizedStatisticModel,
@@ -152,17 +150,6 @@ def gumbel_extreme_values(
     return min_val, max_val
 
 
-def moving_average_extreme_values(
-    params: ExtremeMovingAverageParamsModel, hist_series: np.ndarray
-) -> tuple[float, float]:
-    """Apply moving average extreme values analysis."""
-    CST_full_scale = params.full_scale_characteristic_length / params.full_scale_U_H
-    window_size = max(1, round(params.window_size_interval / CST_full_scale))
-    kernel = np.ones(window_size) / window_size
-    smoothed = np.convolve(hist_series, kernel, mode="valid")
-    return smoothed.min(), smoothed.max()
-
-
 def peak_extreme_values(
     params: ExtremePeakParamsModel, hist_series: np.ndarray
 ) -> tuple[float, float]:
@@ -194,10 +181,6 @@ def extreme_values_analysis(
     elif params.method_type == "Peak":
         return data_df.apply(
             lambda x: peak_extreme_values(params=params, hist_series=x)
-        )
-    elif params.method_type == "Moving Average":
-        return data_df.apply(
-            lambda x: moving_average_extreme_values(params=params, hist_series=x)
         )
     raise ValueError(f"Unknown method_type: {params.method_type}")
 

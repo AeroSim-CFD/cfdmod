@@ -46,6 +46,10 @@ __all__ = [
     "tabulate_geometry_data",
     # Statistics runner
     "calculate_statistics_from_h5",
+    # Filters
+    "MovingAverageFilter",
+    "FilterSpec",
+    "apply_filters",
     # Run
     "run_cp",
     "run_cf",
@@ -95,4 +99,5 @@ from cfdmod.pressure.functions import (
 )
 from cfdmod.pressure.geometry import GeometryData, ProcessedEntity, tabulate_geometry_data
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
+from cfdmod.pressure.filters import MovingAverageFilter, FilterSpec, apply_filters
 from cfdmod.pressure.run import run_cp, run_cf, run_cm, run_ce

@@ -36,6 +36,10 @@ __all__ = [
     "CeCaseConfig",
     "process_Ce",
     "run_ce",
+    # Filters
+    "MovingAverageFilter",
+    "FilterSpec",
+    "apply_filters",
     # Zoning
     "ZoningModel",
     "BodyDefinition",
@@ -107,6 +111,7 @@ from cfdmod.pressure.parameters import (
     MomentBodyConfig,
 )
 from cfdmod.pressure.functions import process_Cf, process_Cm, process_Ce
+from cfdmod.pressure.filters import MovingAverageFilter, FilterSpec, apply_filters
 from cfdmod.pressure.run import run_cp, run_cf, run_cm, run_ce
 from cfdmod.s1 import (
     Profile,

@@ -45,7 +45,6 @@ from cfdmod.pressure.parameters import (
     CmCaseConfig,
     CpCaseConfig,
     ExtremeGumbelParamsModel,
-    ExtremeMovingAverageParamsModel,
     ParameterizedStatisticModel,
 )
 from cfdmod.pressure.path_manager import CePathManager, CfPathManager, CmPathManager, CpPathManager
@@ -118,9 +117,7 @@ def _inherit_full_scale_from_cp(case_cfg, cp_h5: pathlib.Path) -> None:
             if not isinstance(stat, ParameterizedStatisticModel):
                 continue
             params = stat.params
-            if not isinstance(
-                params, (ExtremeGumbelParamsModel, ExtremeMovingAverageParamsModel)
-            ):
+            if not isinstance(params, ExtremeGumbelParamsModel):
                 continue
             needs_u = params.full_scale_U_H is None
             needs_l = params.full_scale_characteristic_length is None

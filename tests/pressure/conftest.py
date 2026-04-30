@@ -44,7 +44,6 @@ from cfdmod.pressure import (
 from cfdmod.pressure.parameters import (
     ExtremeAbsoluteParamsModel,
     ExtremeGumbelParamsModel,
-    ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
     MeanEquivalentParamsModel,
     ZoningConfig,
@@ -277,7 +276,6 @@ __all__ = [
 _ = (
     ExtremeAbsoluteParamsModel,
     ExtremeGumbelParamsModel,
-    ExtremeMovingAverageParamsModel,
     ExtremePeakParamsModel,
     MeanEquivalentParamsModel,
     ParameterizedStatisticModel,

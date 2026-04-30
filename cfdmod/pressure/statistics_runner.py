@@ -18,7 +18,6 @@ from cfdmod.io.xdmf import filter_keys_by_range, get_pressure_keys
 from cfdmod.pressure.functions import (
     calculate_statistics,
     gumbel_extreme_values,
-    moving_average_extreme_values,
     peak_extreme_values,
 )
 from cfdmod.pressure.parameters import (
@@ -38,8 +37,8 @@ def calculate_statistics_from_h5(
     Basic stats (mean, rms, skewness, kurtosis) use a single-pass online
     algorithm (Welford) requiring O(n_points) memory.
 
-    Parameterized stats needing the full dataset (Gumbel, Moving Average, Peak,
-    Absolute) load data as a [n_time, n_points] array and apply the method.
+    Parameterized stats needing the full dataset (Gumbel, Peak, Absolute)
+    load data as a [n_time, n_points] array and apply the method.
 
     Args:
         h5_path (pathlib.Path): Timeseries H5 file
