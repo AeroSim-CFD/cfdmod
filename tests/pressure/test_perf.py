@@ -435,6 +435,7 @@ def test_perf_run_cf(synthetic_cp_h5, tmp_path):
                 statistics=basic_stats("mean", "rms"),
                 bodies=[BodyConfig(name="pack", sub_bodies=zoning_full())],
                 directions=["x", "y", "z"],
+                nominal_area=1.0,
                 transformation=TransformationConfig(),
             )
         },
@@ -476,6 +477,7 @@ def test_perf_run_cm_with_corner_scan(synthetic_cp_h5, tmp_path):
                     )
                 ],
                 directions=["x", "y", "z"],
+                nominal_volume=1.0,
                 transformation=TransformationConfig(),
             )
         },
