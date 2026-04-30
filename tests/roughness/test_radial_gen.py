@@ -7,7 +7,9 @@ from cfdmod.roughness import RadialParams, radial_pattern
 from cfdmod.roughness.parameters import ElementParams
 
 
-def _make_flat_surface(tmp_path: pathlib.Path, size: float = 300.0, z: float = 0.0) -> pathlib.Path:
+def _make_flat_surface(
+    tmp_path: pathlib.Path, size: float = 300.0, z: float = 0.0
+) -> pathlib.Path:
     triangles = np.array(
         [
             [[-size, -size, z], [size, -size, z], [size, size, z]],

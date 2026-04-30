@@ -35,7 +35,7 @@ def triangle_vertices(nx, ny):
 
 @pytest.fixture()
 def triangle_indices(triangle_vertices):
-    (flattened_vertices, tri_index_matrix) = flatten_vertices_and_get_triangles_as_list_of_indexes(
+    flattened_vertices, tri_index_matrix = flatten_vertices_and_get_triangles_as_list_of_indexes(
         triangle_vertices
     )
 
