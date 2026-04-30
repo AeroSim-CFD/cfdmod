@@ -48,8 +48,7 @@ cfdmod/
         io/
             geometry/       STL I/O (export_stl, read_stl)
             vtk/            VTK/ParaView probe and write utilities
-        analysis/
-            inflow/         InflowData class and functions
+        inflow.py           InflowData class + analysis functions (single file)
         loft/               Terrain loft surface generation
         roughness/          Roughness element generation (linear + radial)
         pressure/           Cp/Cf/Cm/Ce post-processing

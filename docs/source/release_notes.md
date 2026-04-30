@@ -208,13 +208,23 @@ being smuggled into the statistics block:
   stats over a moving-average-smoothed signal, run
   `apply_filters([MovingAverageFilter(window=...)])` first and then
   run statistics over the filtered file.
+- The `cfdmod.analysis` package was removed. Inflow lives in a
+  single top-level module now, `cfdmod.inflow`. Migration:
+    - `from cfdmod.analysis.inflow.profile import InflowData,
+      NormalizationParameters` -> `from cfdmod.inflow import
+      InflowData, NormalizationParameters`
+    - `from cfdmod.analysis.inflow.functions import
+      calculate_mean_velocity, ...` -> `from cfdmod.inflow import
+      calculate_mean_velocity, ...`
+  The top-level `from cfdmod import InflowData,
+  NormalizationParameters` re-export is unchanged.
 
 ### Compatibility / migration
 
-- Legacy pandas-HDFStore inputs from inflow (`cfdmod.analysis.inflow.profile`)
-  and HFPI (`cfdmod.hfpi.static.read_static_forces`) are read with a
-  `DeprecationWarning`; the readers prefer the new layout but accept the old
-  one.
+- Legacy pandas-HDFStore inputs from inflow (`cfdmod.inflow`) and HFPI
+  (`cfdmod.hfpi.static.read_static_forces`) are read with a
+  `DeprecationWarning`; the readers prefer the new layout but accept
+  the old one.
 - `cfdmod.pressure.migrate.migrate_body_h5` and `migrate_probe_h5` convert
   legacy pandas-HDFStore body/probe files to the new XDMF+H5 layout
   on disk for users who want to upgrade their fixtures.
@@ -261,7 +271,7 @@ being smuggled into the statistics block:
 
 - Runtime deps slimmed: `tables` and `filelock` removed from the
   base install. `tables` is still needed for the legacy
-  pandas-HDFStore compat readers in `cfdmod.analysis.inflow`,
+  pandas-HDFStore compat readers in `cfdmod.inflow`,
   `cfdmod.hfpi.static`, and `cfdmod.pressure.migrate`; install via
   the new `legacy` extras (`pip install aerosim-cfdmod[legacy]`).
 - `geometry` extras now ships only `trimesh`. `pymeshlab` was

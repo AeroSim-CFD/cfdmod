@@ -82,7 +82,7 @@ __all__ = [
     "load_lnas",
 ]
 
-from cfdmod.analysis.inflow import InflowData, NormalizationParameters
+from cfdmod.inflow import InflowData, NormalizationParameters
 from cfdmod.analytical import WindProfile_EU, WindProfile_NBR
 from cfdmod.climate import (
     WindProfile,

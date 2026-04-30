@@ -3,14 +3,15 @@ import pathlib
 import numpy as np
 import pytest
 
-from cfdmod.analysis.inflow.functions import (
+from cfdmod.inflow import (
+    InflowData,
+    NormalizationParameters,
     calculate_autocorrelation,
     calculate_mean_velocity,
     calculate_spectral_density,
     calculate_turbulence_intensity,
     spectral_density_function,
 )
-from cfdmod.analysis.inflow.profile import InflowData, NormalizationParameters
 
 pytestmark = pytest.mark.integration
 
