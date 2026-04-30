@@ -51,7 +51,7 @@ def _read_force_h5(hdf_path: pathlib.Path) -> pd.DataFrame:
     New layout: h5py file with a 2-D /forces dataset (n_time x n_cols) and a
     /columns dataset of UTF-8 column names that includes 'time_normalized'.
 
-    Legacy layout: pandas single-key HDFStore — read via ``pd.read_hdf`` and a
+    Legacy layout: pandas single-key HDFStore - read via ``pd.read_hdf`` and a
     DeprecationWarning is emitted.
     """
     try:

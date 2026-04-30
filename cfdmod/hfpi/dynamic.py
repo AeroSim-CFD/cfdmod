@@ -225,7 +225,7 @@ def solve_runge_kunta(gen_force: np.ndarray, dt: float, wp: float, xi: float) ->
         # x1 = pos
         # x2 = vel
         # x1' = x2
-        # x2' = F(t)−2xi.w_p x1 − w_p^2 x1
+        # x2' = F(t)-2xi.w_p x1 - w_p^2 x1
         dxdt = v
         dvdt = F_t - 2 * xi * wp * v - wp**2 * x
         return [dxdt, dvdt]

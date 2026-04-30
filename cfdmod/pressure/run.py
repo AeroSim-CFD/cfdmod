@@ -6,8 +6,8 @@ Pipeline contract: every coefficient first persists its full per-triangle
 timeseries to disk (XDMF+H5), then computes statistics from that on-disk
 file via cfdmod.pressure.statistics_runner.calculate_statistics_from_h5.
 Stats are appended to a single combined stats.h5 with an embedded mesh
-per leaf group (so different sub-meshes — body subsets for Cf/Cm, sliced
-regions mesh for Ce — coexist without length collisions).
+per leaf group (so different sub-meshes - body subsets for Cf/Cm, sliced
+regions mesh for Ce - coexist without length collisions).
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ def _write_region_timeseries(
     # Build per-triangle column indices into data_df. For zoning splits where
     # the regions mesh is finer than the data (e.g. a slice plane lands inside
     # a region that has no Cp samples), the missing tri positions are filled
-    # with NaN — same behaviour as process_surfaces' existing left-join warn.
+    # with NaN - same behaviour as process_surfaces' existing left-join warn.
     col_pos = {c: i for i, c in enumerate(data_df.columns)}
     tri_col_idx = np.array(
         [col_pos.get(r, -1) for r in region_idx_per_tri], dtype=np.int64
