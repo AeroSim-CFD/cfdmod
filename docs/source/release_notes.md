@@ -165,9 +165,18 @@ being smuggled into the statistics block:
 - `cfdmod.pressure.path_manager.{get_results_h5_path, get_results_xdmf_path}`
   renamed to `get_stats_h5_path` / `get_stats_xdmf_path`. The output files
   are now `stats.{h5,xdmf}` (was `results.{h5,xdmf}`).
-- `cfdmod.api` and `cfdmod.use_cases` shims emit `DeprecationWarning` on
-  import; their code paths still work but will be removed in a future
-  release.
+- `cfdmod.api` and `cfdmod.use_cases` shims have been **removed**.
+  v1.x scripts that imported via these paths must update to the
+  top-level domain modules (`cfdmod.config`, `cfdmod.io`, and the
+  per-domain packages such as `cfdmod.loft`, `cfdmod.pressure`,
+  `cfdmod.roughness`, ...).
+- Pre-typer argparse entry points were removed: `cfdmod.loft.main`,
+  `cfdmod.roughness.main`, and `cfdmod.altimetry.main`. Each module
+  now exposes a typer app at `cfdmod.<module>.cli:app`, registered
+  under the unified `python -m cfdmod <module>` entry point.
+- `cfdmod.snapshot.__main__` was removed (it imported a non-existent
+  `cfdmod.snapshot.main`). The snapshot module currently has no CLI
+  entry point; use the Python API directly until one lands.
 - `CpConfig.macroscopic_type` default flipped from `"rho"` to
   `"pressure"`. Configs that rely on the implicit default but actually
   feed LBM density now need to set `macroscopic_type="rho"` explicitly.
