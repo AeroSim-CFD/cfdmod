@@ -1,5 +1,60 @@
 # Release Notes
 
+## v2.0.1
+
+Patch release on top of v2.0.0 covering the worked-notebook polish
+and one Cm regression that surfaced the first time a user ran
+`run_cm` with the new reference-mesh path on a real container pack.
+
+### Notebook (`process_container_pack.ipynb`)
+
+- The geometry-inspect and zoning auto-detect cells now load
+  `REFERENCE_MESH` when set, falling back to the body H5's embedded
+  geometry when not. Previously they always called
+  `mesh_from_h5(BODY_H5)`, so when a user pointed `REFERENCE_MESH`
+  at a fixed-frame STL the auto-detect partitioned the *body H5's*
+  wind-aligned frame and then applied those boundaries to the
+  reference-frame Cp output -- producing wrong region splits along
+  whichever axis the wind was aligned with.
+- Zoning detection is now **hierarchical 2D**. The previous
+  implementation projected centroids on each axis independently,
+  which lumped misaligned containers together along whichever axis
+  had row overlap. New algorithm: pick the xy axis with the largest
+  single gap as the *primary* split, then within each primary
+  subset detect secondary boundaries on the other xy axis; the
+  Cartesian `ZoningModel`'s secondary intervals are the union of
+  all per-subset boundaries. Misaligned rows now produce extra
+  empty cells (harmless -- the pipeline treats them as zero-area
+  regions) but each container ends up in its own region.
+- Z is no longer partitioned automatically; `z_intervals` is
+  fixed at `[-inf, +inf]`. The container-pack use case has all
+  containers on the ground; vertical splits are out of scope.
+- The auto-detect cell now prints the resulting `x_intervals`,
+  `y_intervals`, `z_intervals` so users can map regions to
+  physical containers without inspecting the model object.
+
+### Pressure pipeline
+
+- `_resolve_region_origin` (in `cfdmod/pressure/functions.py`)
+  used to parse the integer prefix of a region label via
+  `int(region_label.split("-", 1)[0])`. For triangles whose
+  centroid did not fall into any zoning cell --
+  `cfdmod.pressure.geometry.get_indexing_mask` initialises the
+  region array to `-1` and only updates entries that match a
+  cell -- the resulting label was `"-1-<body>"`, and the split
+  produced an empty-string head, raising
+  `ValueError: invalid literal for int() with base 10: ''`. Cf
+  and Ce survived because they only group by the string label;
+  only Cm parsed the integer back. Switched the parser to
+  `rsplit("-", 1)` so the body suffix is peeled from the right
+  and negative ints survive: `"-1-pack"` -> `("-1", "pack")` ->
+  `int("-1")`. Sentinel triangles now fall through to the
+  `lever_strategy` branch (region_base computes a meaningful
+  `(mean_x, mean_y, min_z)` from their own rows; fixed picks up
+  the body's `lever_origin`). Three regression tests under
+  `tests/pressure/test_functions_cm.py` pin the behaviour for
+  fixed, region_base, and explicit-override on a negative key.
+
 ## v2.0.0
 
 API-first rewrite of the post-processing pipeline. The branch focus was
