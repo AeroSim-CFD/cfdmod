@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasGeometry
-from vtk.util.numpy_support import vtk_to_numpy  # type: ignore
+from vtkmodules.util.numpy_support import vtk_to_numpy  # type: ignore
 
 from cfdmod.io.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
 
