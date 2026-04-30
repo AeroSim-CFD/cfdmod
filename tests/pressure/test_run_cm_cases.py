@@ -66,6 +66,7 @@ def test_expand_moment_cases_explicit_dict():
         statistics=[BasicStatisticModel(stats="mean")],
         bodies=[body],
         directions=["x"],
+        nominal_volume=1.0,
         transformation=TransformationConfig(),
     )
     bodies_def = {"b": BodyDefinition(surfaces=["all"])}
@@ -91,6 +92,7 @@ def test_expand_moment_cases_no_cases_passes_body_through():
         statistics=[BasicStatisticModel(stats="mean")],
         bodies=[body],
         directions=["x"],
+        nominal_volume=1.0,
         transformation=TransformationConfig(),
     )
     bodies_def = {"b": BodyDefinition(surfaces=["all"])}
@@ -123,6 +125,7 @@ def test_run_cm_with_bbox_corners_writes_one_run_per_case(building_cp_h5, tmp_pa
                     )
                 ],
                 directions=["x", "y"],
+                nominal_volume=1.0,
                 transformation=TransformationConfig(),
             )
         },

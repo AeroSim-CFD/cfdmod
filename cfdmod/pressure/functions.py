@@ -298,6 +298,8 @@ def process_xdmf_to_cp(
     probe_h5: pathlib.Path | None,
     output_path: pathlib.Path,
     cp_config: CpConfig,
+    *,
+    mesh_override: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> None:
     """Read body+probe XDMF H5 per-timestep, compute Cp, write to output H5.
 
@@ -310,6 +312,12 @@ def process_xdmf_to_cp(
         probe_h5 (pathlib.Path | None): Atmospheric probe H5 (pressure/t{T} with shape (1,))
         output_path (pathlib.Path): Output H5 file path
         cp_config (CpConfig): Pressure coefficient configuration
+        mesh_override: Optional ``(triangles, vertices)`` to embed in the output
+            instead of the geometry stored in ``body_h5``. Used to swap a
+            wind-rotated body H5's per-direction coordinates for a single
+            fixed reference geometry, so all directions share the same vertex
+            frame downstream. Triangle count must match the body H5's
+            per-timestep pressure array length.
     """
     if output_path.exists():
         warnings.warn(
@@ -325,9 +333,24 @@ def process_xdmf_to_cp(
     multiplier = 1.0 / 3.0 if cp_config.macroscopic_type == "rho" else 1.0
     time_scale = cp_config.simul_characteristic_length / cp_config.simul_U_H
 
-    with h5py.File(body_h5, "r") as f:
-        triangles = f["Triangles"][:]
-        vertices = f["Geometry"][:]
+    if mesh_override is not None:
+        triangles, vertices = mesh_override
+        with h5py.File(body_h5, "r") as f:
+            first_key = keys[0][1] if keys else None
+            if first_key is not None:
+                n_pressure = f["pressure"][first_key].shape[0]
+                if n_pressure != triangles.shape[0]:
+                    raise ValueError(
+                        f"reference mesh has {triangles.shape[0]} triangles but "
+                        f"body H5 has {n_pressure} pressure values per timestep. "
+                        "The reference mesh must share the body H5's triangulation "
+                        "(only vertex coordinates may differ, e.g. wind-aligned "
+                        "rotation versus a fixed reference frame)."
+                    )
+    else:
+        with h5py.File(body_h5, "r") as f:
+            triangles = f["Triangles"][:]
+            vertices = f["Geometry"][:]
     write_timeseries_geometry(output_path, triangles, vertices)
 
     time_steps_arr: list[float] = []
@@ -339,7 +362,19 @@ def process_xdmf_to_cp(
             for t_val, t_key in keys:
                 p_body = f_body["pressure"][t_key][:].astype(np.float64)
                 if probe_file is not None:
-                    p_ref = float(probe_file["pressure"][t_key][0])
+                    probe_arr = probe_file["pressure"][t_key][:].astype(np.float64)
+                    if cp_config.reference_pressure == "probe":
+                        # First probe point: the reference probe placed above
+                        # the body, the standard wind-tunnel choice.
+                        p_ref = float(probe_arr[0])
+                    elif cp_config.reference_pressure == "average":
+                        # Spatial mean across all probe points at this timestep.
+                        p_ref = float(probe_arr.mean())
+                    else:
+                        raise ValueError(
+                            f"unknown reference_pressure {cp_config.reference_pressure!r}; "
+                            "expected 'probe' or 'average'"
+                        )
                 else:
                     p_ref = 0.0
                 cp = (p_body - p_ref) * (multiplier / dynamic_pressure)
@@ -511,35 +546,10 @@ def transform_Cf(
         .reset_index()
     )
 
-    if nominal_area > 0:
-        Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
-        Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
-        Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area
-        Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
-    else:
-        region_group_by = geometry_df.groupby(["region_idx"])
-        rep_areas = {}
-        for region_idx, region_points in region_group_by:
-            pts_idx = region_points.point_idx.to_numpy()
-            (Lx, Ly, Lz), (Ax, Ay, Az) = get_representative_areas(
-                input_mesh=geometry, point_idx=pts_idx
-            )
-            rep_areas[region_idx[0]] = {
-                "ATx": Ax,
-                "ATy": Ay,
-                "ATz": Az,
-                "Lx": Lx,
-                "Ly": Ly,
-                "Lz": Lz,
-            }
-        rep_df = pd.DataFrame.from_dict(rep_areas, orient="index").reset_index()
-        rep_df = rep_df.rename(columns={"index": "region_idx"})
-        Cf_data = pd.merge(Cf_data, rep_df, on="region_idx")
-        Cf_data["Cfx"] = Cf_data["Fx"] / Cf_data["ATx"]
-        Cf_data["Cfy"] = Cf_data["Fy"] / Cf_data["ATy"]
-        Cf_data["Cfz"] = Cf_data["Fz"] / Cf_data["ATz"]
-        Cf_data.drop(columns=["Fx", "Fy", "Fz", "ATx", "ATy", "ATz"], inplace=True)
-
+    Cf_data["Cfx"] = Cf_data["Fx"] / nominal_area
+    Cf_data["Cfy"] = Cf_data["Fy"] / nominal_area
+    Cf_data["Cfz"] = Cf_data["Fz"] / nominal_area
+    Cf_data.drop(columns=["Fx", "Fy", "Fz"], inplace=True)
     return Cf_data
 
 
@@ -829,33 +839,10 @@ def transform_Cm(
         .reset_index()
     )
 
-    if nominal_volume > 0:
-        Cm_data["Cmx"] = Cm_data["Mx"] / nominal_volume
-        Cm_data["Cmy"] = Cm_data["My"] / nominal_volume
-        Cm_data["Cmz"] = Cm_data["Mz"] / nominal_volume
-        Cm_data.drop(columns=["Mx", "My", "Mz"], inplace=True)
-    else:
-        region_group_by = geometry_df.groupby(["region_idx"])
-        rep_volumes = {}
-        for region_idx, region_points in region_group_by:
-            pts_idx = region_points.point_idx.to_numpy()
-            (Lx, Ly, Lz), V_rep = get_representative_volume(
-                input_mesh=geometry, point_idx=pts_idx
-            )
-            rep_volumes[region_idx[0]] = {
-                "V_rep": V_rep,
-                "Lx": Lx,
-                "Ly": Ly,
-                "Lz": Lz,
-            }
-        rep_df = pd.DataFrame.from_dict(rep_volumes, orient="index").reset_index()
-        rep_df = rep_df.rename(columns={"index": "region_idx"})
-        Cm_data = pd.merge(Cm_data, rep_df, on="region_idx")
-        Cm_data["Cmx"] = Cm_data["Mx"] / Cm_data["V_rep"]
-        Cm_data["Cmy"] = Cm_data["My"] / Cm_data["V_rep"]
-        Cm_data["Cmz"] = Cm_data["Mz"] / Cm_data["V_rep"]
-        Cm_data.drop(columns=["Mx", "My", "Mz", "V_rep"], inplace=True)
-
+    Cm_data["Cmx"] = Cm_data["Mx"] / nominal_volume
+    Cm_data["Cmy"] = Cm_data["My"] / nominal_volume
+    Cm_data["Cmz"] = Cm_data["Mz"] / nominal_volume
+    Cm_data.drop(columns=["Mx", "My", "Mz"], inplace=True)
     return Cm_data
 
 

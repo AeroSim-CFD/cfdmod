@@ -23,6 +23,7 @@ from lnas import LnasFormat
 
 from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import (
+    read_processing_metadata,
     write_processing_metadata,
     write_stats_field,
     write_stats_xdmf,
@@ -38,7 +39,15 @@ from cfdmod.pressure.functions import (
     process_Cm,
     process_xdmf_to_cp,
 )
-from cfdmod.pressure.parameters import CeCaseConfig, CfCaseConfig, CmCaseConfig, CpCaseConfig
+from cfdmod.pressure.parameters import (
+    CeCaseConfig,
+    CfCaseConfig,
+    CmCaseConfig,
+    CpCaseConfig,
+    ExtremeGumbelParamsModel,
+    ExtremeMovingAverageParamsModel,
+    ParameterizedStatisticModel,
+)
 from cfdmod.pressure.path_manager import CePathManager, CfPathManager, CmPathManager, CpPathManager
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
 from cfdmod.utils import create_folders_for_file
@@ -54,6 +63,76 @@ def _coerce_case_cfg(source, model_cls):
     if isinstance(source, model_cls):
         return source
     return model_cls.from_file(pathlib.Path(source))
+
+
+def _read_cp_simul_scale(cp_h5: pathlib.Path) -> tuple[float | None, float | None]:
+    """Return (simul_U_H, simul_characteristic_length) from cp_h5's metadata.
+
+    Returns (None, None) if the file has no /processing_metadata or the
+    Cp config didn't carry these fields (legacy inputs).
+    """
+    try:
+        meta = read_processing_metadata(cp_h5, "/")
+    except (KeyError, OSError):
+        return None, None
+    cfg = meta.get("config") or {}
+    u_h = cfg.get("simul_U_H")
+    char_len = cfg.get("simul_characteristic_length")
+    return (
+        float(u_h) if u_h is not None else None,
+        float(char_len) if char_len is not None else None,
+    )
+
+
+def _inherit_full_scale_from_cp(case_cfg, cp_h5: pathlib.Path) -> None:
+    """Fill in any unset ``full_scale_*`` on Gumbel / Moving-Average stats
+    inside ``case_cfg`` by reading the simul-scale values persisted on cp_h5.
+
+    Mutates the case config in place. Only touches fields the user left as
+    ``None``; explicit user values are preserved. Statistics that don't
+    need full-scale fields (mean, min, max, ...) are untouched.
+    """
+    cp_u_h: float | None = None
+    cp_char_len: float | None = None
+    cached = False
+
+    coef_attr = next(
+        (
+            a
+            for a in (
+                "force_coefficient",
+                "moment_coefficient",
+                "shape_coefficient",
+                "pressure_coefficient",
+            )
+            if hasattr(case_cfg, a)
+        ),
+        None,
+    )
+    if coef_attr is None:
+        return
+    coef_dict = getattr(case_cfg, coef_attr)
+
+    for cfg in coef_dict.values():
+        for stat in cfg.statistics:
+            if not isinstance(stat, ParameterizedStatisticModel):
+                continue
+            params = stat.params
+            if not isinstance(
+                params, (ExtremeGumbelParamsModel, ExtremeMovingAverageParamsModel)
+            ):
+                continue
+            needs_u = params.full_scale_U_H is None
+            needs_l = params.full_scale_characteristic_length is None
+            if not (needs_u or needs_l):
+                continue
+            if not cached:
+                cp_u_h, cp_char_len = _read_cp_simul_scale(cp_h5)
+                cached = True
+            if needs_u and cp_u_h is not None:
+                params.full_scale_U_H = cp_u_h
+            if needs_l and cp_char_len is not None:
+                params.full_scale_characteristic_length = cp_char_len
 
 
 def _write_region_timeseries(
@@ -162,6 +241,11 @@ def run_cp(
 
     triangles = mesh.geometry.triangles
     vertices = mesh.geometry.vertices
+    # When the user supplied an external reference mesh, embed it in the cp_h5
+    # output instead of the body H5's per-direction coordinates. Downstream
+    # (Cf/Cm/Ce) reads geometry from cp_h5 by default, so the reference frame
+    # propagates without the user having to re-pass mesh_path each call.
+    mesh_override = (triangles, vertices) if mesh_path is not None else None
 
     for cfg_lbl, cfg in case_cfg.pressure_coefficient.items():
         logger.info(f"Processing Cp: {cfg_lbl}")
@@ -175,6 +259,7 @@ def run_cp(
             probe_h5=probe_h5,
             output_path=timeseries_path,
             cp_config=cfg,
+            mesh_override=mesh_override,
         )
 
         cfg_dump = cfg.model_dump()
@@ -328,6 +413,7 @@ def run_cf(
     is read from ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = _coerce_case_cfg(cfg_path, CfCaseConfig)
+    _inherit_full_scale_from_cp(case_cfg, cp_h5)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CfPathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
@@ -464,6 +550,7 @@ def run_cm(
     ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = _coerce_case_cfg(cfg_path, CmCaseConfig)
+    _inherit_full_scale_from_cp(case_cfg, cp_h5)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CmPathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()
@@ -519,6 +606,7 @@ def run_ce(
     ``cp_h5`` itself (single ``"all"`` surface).
     """
     case_cfg = _coerce_case_cfg(cfg_path, CeCaseConfig)
+    _inherit_full_scale_from_cp(case_cfg, cp_h5)
     mesh = mesh_from_h5(cp_h5) if mesh_path is None else load_mesh(mesh_path)
     path_manager = CePathManager(output_path=output)
     stats_h5 = path_manager.get_stats_h5_path()

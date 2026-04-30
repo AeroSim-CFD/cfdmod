@@ -36,7 +36,8 @@ Quickstart
            statistics=[BasicStatisticModel(stats="mean")],
            timestep_range=(150.0, 260.0),
            simul_U_H=1.0, simul_characteristic_length=10.0,
-           macroscopic_type="rho", reference_pressure="average",
+           # macroscopic_type defaults to 'pressure' (or 'rho')
+           # reference_pressure defaults to 'probe' (or 'average')
        )
    })
    run_cp(body_h5="body.h5", probe_h5="probe.h5",

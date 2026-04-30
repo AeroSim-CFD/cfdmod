@@ -103,7 +103,7 @@ def make_cp_cfg(
     statistics: Iterable | None = None,
     timestep_range: tuple[float, float] = (0.0, 1e9),
     macroscopic_type: str = "pressure",
-    reference_pressure: str = "average",
+    reference_pressure: str = "probe",
     simul_U_H: float = 1.0,
     simul_characteristic_length: float = 1.0,
     fluid_density: float = 1.0,
@@ -133,6 +133,7 @@ def make_cf_cfg(
     body_configs: list[BodyConfig] | None = None,
     statistics: Iterable | None = None,
     directions: list[str] | None = None,
+    nominal_area: float = 1.0,
 ) -> CfCaseConfig:
     if bodies is None:
         bodies = {"all": BodyDefinition(surfaces=[])}
@@ -149,6 +150,7 @@ def make_cf_cfg(
                 statistics=list(statistics),
                 bodies=body_configs,
                 directions=directions,
+                nominal_area=nominal_area,
                 transformation=TransformationConfig(),
             )
         },
@@ -162,6 +164,7 @@ def make_cm_cfg(
     body_configs: list[MomentBodyConfig] | None = None,
     statistics: Iterable | None = None,
     directions: list[str] | None = None,
+    nominal_volume: float = 1.0,
 ) -> CmCaseConfig:
     if bodies is None:
         bodies = {"all": BodyDefinition(surfaces=[])}
@@ -180,6 +183,7 @@ def make_cm_cfg(
                 statistics=list(statistics),
                 bodies=body_configs,
                 directions=directions,
+                nominal_volume=nominal_volume,
                 transformation=TransformationConfig(),
             )
         },

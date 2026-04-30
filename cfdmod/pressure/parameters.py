@@ -74,8 +74,11 @@ class ExtremeGumbelParamsModel(BaseModel):
     event_duration: float
     n_subdivisions: int = 10
     non_exceedance_probability: float = Field(0.78, gt=0, lt=1)
-    full_scale_U_H: float = Field(gt=0)
-    full_scale_characteristic_length: float = Field(gt=0)
+    # Optional in Cf/Cm: when omitted, the runner inherits from the Cp config
+    # used to produce the input cp_h5 (simul_U_H / simul_characteristic_length
+    # are persisted in /processing_metadata).
+    full_scale_U_H: float | None = Field(default=None, gt=0)
+    full_scale_characteristic_length: float | None = Field(default=None, gt=0)
 
     @property
     def yR(self):
@@ -92,8 +95,10 @@ class ExtremePeakParamsModel(BaseModel):
 class ExtremeMovingAverageParamsModel(BaseModel):
     method_type: Literal["Moving Average"] = "Moving Average"
     window_size_interval: float = Field(gt=0)
-    full_scale_U_H: float = Field(gt=0)
-    full_scale_characteristic_length: float = Field(gt=0)
+    # See ExtremeGumbelParamsModel: optional in Cf/Cm, inherited from the
+    # Cp metadata embedded in cp_h5 when omitted.
+    full_scale_U_H: float | None = Field(default=None, gt=0)
+    full_scale_characteristic_length: float | None = Field(default=None, gt=0)
 
 
 class MeanEquivalentParamsModel(BaseModel):
@@ -476,9 +481,28 @@ class CpConfig(HashableConfig, BasePressureConfig):
     macroscopic_type: Annotated[
         Literal["rho", "pressure"],
         Field(
-            "rho",
+            "pressure",
             title="Macroscopic type",
-            description="Macroscopic type in files, LBM density (rho) or pressure",
+            description=(
+                "Macroscopic field stored in the body H5. Options: "
+                "'pressure' (real pressure, no scaling) or 'rho' (LBM density; "
+                "(rho - rho_ref) is converted to pressure via cs^2 = 1/3). "
+                "Defaults to 'pressure' when omitted."
+            ),
+        ),
+    ]
+    reference_pressure: Annotated[
+        Literal["probe", "average"],
+        Field(
+            "probe",
+            title="Reference pressure",
+            description=(
+                "How p_ref is taken from the reference probe H5 each timestep. "
+                "Options: 'probe' (use the first probe point -- the reference "
+                "probe placed above the body, the standard wind-tunnel choice) "
+                "or 'average' (spatial mean across all probe points at that "
+                "timestep). Defaults to 'probe' when omitted."
+            ),
         ),
     ]
     fluid_density: Annotated[
@@ -528,9 +552,15 @@ class CfConfig(HashableConfig, BasePressureConfig):
         description="Bodies to process and their zoning config",
     )
     nominal_area: float = Field(
-        0,
+        ...,
+        gt=0,
         title="Nominal Area",
-        description="Nominal area for force coefficient calculation",
+        description=(
+            "Reference area used to non-dimensionalise Cf. Required and must "
+            "be > 0: the program does not pick a tribute area for you, since "
+            "without an explicit reference area the resulting Cf cannot be "
+            "converted back to real-scale forces unambiguously."
+        ),
     )
     directions: list[AxisDirections] = Field(
         ...,
@@ -589,9 +619,15 @@ class CmConfig(HashableConfig, BasePressureConfig):
         description="Bodies to process and their zoning config",
     )
     nominal_volume: float = Field(
-        0,
+        ...,
+        gt=0,
         title="Nominal Volume",
-        description="Nominal volume for moment coefficient. If zero, uses tribute volume",
+        description=(
+            "Reference volume used to non-dimensionalise Cm. Required and "
+            "must be > 0: the program does not pick a tribute volume for "
+            "you, since without an explicit reference volume the resulting "
+            "Cm cannot be converted back to real-scale moments unambiguously."
+        ),
     )
     directions: list[AxisDirections] = Field(
         ...,

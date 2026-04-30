@@ -61,13 +61,17 @@ cp_cfg = CpCaseConfig(
             timestep_range=(150.0, 260.0),
             simul_U_H=1.0,
             simul_characteristic_length=10.0,
-            macroscopic_type="rho",
-            reference_pressure="average",
+            # Optional: defaults are 'pressure' and 'probe' respectively.
+            # macroscopic_type: 'pressure' | 'rho'
+            # reference_pressure: 'probe' (point above body) | 'average'
         )
     }
 )
 
-# 1) Cp from body + probe; geometry is read from body_h5 by default.
+# 1) Cp from body + probe; geometry is read from body_h5 by default. Pass
+#    mesh_path= to embed a single fixed-frame reference mesh into the cp_h5
+#    output (useful when running several wind directions whose body H5s are
+#    rotated copies of each other) -- run_cf / run_cm inherit it from cp_h5.
 run_cp(
     body_h5="body.h5",
     probe_h5="probe.h5",
@@ -76,7 +80,9 @@ run_cp(
     # mesh_path optional; .lnas / .stl / .h5 / .xdmf all supported
 )
 
-# 2) Cf from the cp.time_series.h5 produced above.
+# 2) Cf from the cp.time_series.h5 produced above. nominal_area is required:
+#    cfdmod will not pick a tribute area for you (so the resulting Cf can be
+#    converted back to Forces unambiguously).
 run_cf(
     cp_h5="output/cp.default.time_series.h5",
     cfg_path=CfCaseConfig(
@@ -86,6 +92,7 @@ run_cf(
                 statistics=[BasicStatisticModel(stats="mean")],
                 bodies=[BodyConfig(name="my_body", sub_bodies=ZoningModel())],
                 directions=["x", "y", "z"],
+                nominal_area=100.0,  # m^2 -- e.g. building frontal area
                 transformation=TransformationConfig(),
             )
         },
@@ -96,6 +103,7 @@ run_cf(
 # 3) Cm with per-region overturning moments about each container's footprint
 #    base. lever_strategy="region_bbox_corners_xy" expands every body into
 #    four independent runs (xmin_ymin, xmin_ymax, xmax_ymin, xmax_ymax).
+#    nominal_volume is required (same rationale as nominal_area for Cf).
 run_cm(
     cp_h5="output/cp.default.time_series.h5",
     cfg_path=CmCaseConfig(
@@ -111,6 +119,7 @@ run_cm(
                     )
                 ],
                 directions=["x", "y", "z"],
+                nominal_volume=1000.0,  # m^3 -- e.g. building bounding-box volume
                 transformation=TransformationConfig(),
             )
         },

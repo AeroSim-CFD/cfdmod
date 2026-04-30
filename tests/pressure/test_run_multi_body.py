@@ -62,6 +62,7 @@ def test_run_cf_with_two_bodies(tmp_path):
                     BodyConfig(name="body_b", sub_bodies=zoning_full()),
                 ],
                 directions=["x"],
+                nominal_area=1.0,
                 transformation=TransformationConfig(),
             )
         },
@@ -93,6 +94,7 @@ def test_run_cm_with_two_bodies(tmp_path):
                     ),
                 ],
                 directions=["x"],
+                nominal_volume=1.0,
                 transformation=TransformationConfig(),
             )
         },
