@@ -35,7 +35,7 @@ def spectral_density_function(
     delta_t = timestamps[1] - timestamps[0]
     signal_frequency = 1 / delta_t
 
-    (xf, yf) = scipy.signal.periodogram(velocity_signal, signal_frequency, scaling="density")
+    xf, yf = scipy.signal.periodogram(velocity_signal, signal_frequency, scaling="density")
     st = np.std(velocity_signal)
     yf = xf * yf / st**2
     xf = xf * characteristic_length / reference_velocity  # Stroulhall number N = f * L / U

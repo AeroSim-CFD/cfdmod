@@ -10,38 +10,24 @@ __all__ = [
 
 
 class LoftParams(BaseModel):
-    loft_length: float = Field(
+    loft_radius: float = Field(
         ...,
-        title="Loft length",
-        description="Minimal length of the loft.",
+        title="Loft radius",
+        description="Radius of the circular loft projection from mesh center.",
     )
     mesh_element_size: float = Field(
         ...,
         title="Mesh element size",
         description="Target of the output mesh element size.",
     )
-    wind_source_angle: float = Field(
-        ...,
-        title="Wind source angle",
-        description="Angle for the wind source direction."
-        + "Rotated around +z axis, from the reference direction.",
-    )
     upwind_elevation: float = Field(
         ...,
-        title="Upwind elevation",
-        description="Elevation for upwind direction.",
-    )
-    cutoff_angle_projection: float = Field(
-        45,
-        title="Alignment between projection and edge cutoff",
-        description="Minimum alignment tolerated between projection direction and edge.",
+        title="Loft elevation",
+        description="Target Z elevation for the loft base.",
     )
 
 
 class LoftCaseConfig(BaseModel):
-    reference_direction: tuple[float, float, float] = Field(
-        [-1, 0, 0], title="Reference direction", description="Reference direction for 0° angle"
-    )
     cases: dict[str, LoftParams] = Field(
         ...,
         title="Loft cases",

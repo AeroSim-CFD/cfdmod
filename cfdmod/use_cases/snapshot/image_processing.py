@@ -49,7 +49,7 @@ def paste_overlay_image(
     image_to_overlay = Image.open(image_to_overlay_path)
     # scale
     scale = image_to_overlay_config.scale
-    (width, height) = (image_to_overlay.width, image_to_overlay.height)
+    width, height = (image_to_overlay.width, image_to_overlay.height)
     image_to_overlay = image_to_overlay.resize((int(width * scale), int(height * scale)))
     # transparency
     image_to_overlay = image_to_overlay.convert("RGBA")

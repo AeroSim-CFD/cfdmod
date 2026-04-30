@@ -7,7 +7,7 @@ __all__ = ["logger"]
 
 
 class CustomFormatter(logging.Formatter):
-    fmt_str = "[%(asctime)s] [%(levelname)s] - %(name)s - %(message)s (%(filename)s:%(lineno)d)"
+    fmt_str = "[%(asctime)s] [%(levelname)s] - %(name)s - %(message)s"
 
     FORMATS = {
         logging.DEBUG: f"{Fore.LIGHTMAGENTA_EX}{fmt_str}{Fore.RESET}",

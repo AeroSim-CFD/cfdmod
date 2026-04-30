@@ -1,11 +1,67 @@
 from __future__ import annotations
 
-__all__ = ["Profile"]
+__all__ = [
+    "Profile",
+    "EUCat",
+    "NBRCat",
+    "z0_cats_EU",
+    "p_cats_NBR",
+    "b_cats_NBR",
+    "get_EU_u_profile",
+    "get_NBR_u_profile",
+    "get_EU_cat_u_profile",
+    "get_NBR_cat_u_profile",
+]
 
 import pathlib
+from typing import Literal
 
 import numpy as np
 import pandas as pd
+
+EUCat = Literal["0", "I", "II", "III", "IV"]
+NBRCat = Literal["I", "II", "III", "IV", "V"]
+
+# EU Params
+z0_cats_EU = {"0": 0.003, "I": 0.01, "II": 0.05, "III": 0.3, "IV": 1}
+# NBR Params
+p_cats_NBR = {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31}
+b_cats_NBR = {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50}
+
+
+def get_EU_u_profile(
+    *, z: np.ndarray, H: float, z0: float, u_ref: float = 1, Fr: float = 0.65
+) -> np.ndarray:
+    arr_eu = np.log(z / z0) / np.log(H / z0)
+    return arr_eu * u_ref
+
+
+def get_NBR_u_profile(
+    *, z: np.ndarray, H: float, b: float, p: float, u_ref: float = 1, Fr: float = 0.65
+) -> np.ndarray:
+    S2 = lambda z: Fr * b * (z / 10) ** p
+    arr_nbr = S2(z) / S2(H)
+    return arr_nbr * u_ref
+
+
+def get_EU_cat_u_profile(
+    *, z: np.ndarray, H: float, cat: EUCat, u_ref: float = 1, Fr: float = 0.65
+) -> np.ndarray:
+    return get_EU_u_profile(z=z, H=H, z0=z0_cats_EU[cat], u_ref=u_ref, Fr=Fr)
+
+
+def get_NBR_cat_u_profile(
+    *, z: np.ndarray, H: float, cat: NBRCat, u_ref: float = 1, Fr: float = 0.65
+) -> np.ndarray:
+    return get_NBR_u_profile(z=z, H=H, p=p_cats_NBR[cat], b=b_cats_NBR[cat], u_ref=u_ref, Fr=Fr)
+
+
+def get_EU_Iu_profile(*, z: np.ndarray, z0: float) -> np.ndarray:
+    return 1 / np.log(z / z0)
+
+
+def get_EU_cat_Iu_profile(*, z: np.ndarray, cat: EUCat) -> np.ndarray:
+    return get_EU_Iu_profile(z=z, z0=z0_cats_EU[cat])
 
 
 class Profile:

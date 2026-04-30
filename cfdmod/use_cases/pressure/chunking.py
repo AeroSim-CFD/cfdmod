@@ -33,20 +33,6 @@ class HDFGroupInterface:
     def get_timestep_keys_for_group(cls, hdf_keys: list[str], group_key: str) -> list[str]:
         return [k for k in hdf_keys if k.split(cls.GROUP_PREFIX)[1] in group_key]
 
-    @classmethod
-    def filter_groups(
-        cls, group_keys: list[str], timestep_range: tuple[float, float]
-    ) -> list[str]:
-        steps = [int(key.replace(cls.TEMPORAL_PREFIX, "")) for key in group_keys]
-        lower_values = [x for x in steps if x <= timestep_range[0]]
-        if len(lower_values) == 0:
-            return [cls.time_key(step) for step in steps if step <= timestep_range[1]]
-        else:
-            initial_step = max(lower_values)
-            return [
-                cls.time_key(step) for step in steps if initial_step <= step <= timestep_range[1]
-            ]
-
 
 def split_into_chunks(
     time_series_df: pd.DataFrame, number_of_chunks: int, output_path: pathlib.Path

@@ -11,6 +11,7 @@ __all__ = [
     "ElementParams",
     "SpacingParams",
     "PositionParams",
+    "RadialParams",
 ]
 
 
@@ -80,6 +81,58 @@ class PositionParams(BaseModel):
         ),
         title="Bounding box",
         description="Definition of the inside volume in which to generate elements",
+    )
+    surfaces: dict[str, str] = Field(
+        ..., title="Surfaces dictionary", description="LNAS surface path keyed by label"
+    )
+
+    @classmethod
+    def from_file(cls, file_path: pathlib.Path):
+        if file_path.exists():
+            yaml_vals = read_yaml(file_path)
+            params = cls(**yaml_vals)
+            return params
+        else:
+            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
+
+
+class RadialParams(BaseModel):
+    element_params: ElementParams = Field(
+        ..., title="Element parameters", description="Object with element geometry parameters"
+    )
+    r_start: float = Field(
+        ...,
+        title="Start radius",
+        description="Inner radius of the roughness ring band",
+        gt=0,
+    )
+    r_end: float = Field(
+        ...,
+        title="End radius",
+        description="Outer radius of the roughness ring band",
+        gt=0,
+    )
+    radial_spacing: float = Field(
+        ...,
+        title="Radial spacing",
+        description="Distance between rings in the radial direction",
+        gt=0,
+    )
+    arc_spacing: float = Field(
+        ...,
+        title="Arc spacing",
+        description="Target arc-length spacing between fins along each ring",
+        gt=0,
+    )
+    ring_offset_distance: float = Field(
+        0.0,
+        title="Ring offset distance",
+        description="Arc-length distance to stagger alternating rings (converted to angle per ring as offset/r)",
+    )
+    center: tuple[float, float] = Field(
+        (0.0, 0.0),
+        title="Center",
+        description="XY center of the radial pattern",
     )
     surfaces: dict[str, str] = Field(
         ..., title="Surfaces dictionary", description="LNAS surface path keyed by label"

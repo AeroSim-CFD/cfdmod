@@ -23,7 +23,7 @@ class CfConfig(HashableConfig, BasePressureConfig):
         + "and assign to each a zoning config",
     )
     nominal_area: float = Field(
-        ...,
+        0,
         title="Nominal Area",
         description="Nominal area to use for calculation of force coefficient",
     )

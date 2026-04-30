@@ -22,9 +22,9 @@ class CmConfig(HashableConfig, BasePressureConfig):
         + "and assign to each a zoning config",
     )
     nominal_volume: float = Field(
-        ...,
+        0,
         title="Nominal Volume",
-        description="Nominal volume to use for calculation of moments coefficient",
+        description="Nominal volume to use for calculation of moments coefficient. If zero, uses tribute volume",
     )
     directions: list[AxisDirections] = Field(
         ...,
