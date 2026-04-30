@@ -70,6 +70,9 @@ __all__ = [
     "mesh_from_h5",
     "read_processing_metadata",
     "write_processing_metadata",
+    "read_timeseries_df",
+    "plot_timeseries",
+    "to_csv",
     # Notebook utils
     "mesh_summary",
     "show_config",
@@ -124,8 +127,11 @@ from cfdmod.io import (
     export_stl,
     load_mesh,
     mesh_from_h5,
+    plot_timeseries,
     read_processing_metadata,
     read_stl,
+    read_timeseries_df,
+    to_csv,
     write_processing_metadata,
 )
 from cfdmod.notebook_utils import mesh_summary, show_config, load_lnas

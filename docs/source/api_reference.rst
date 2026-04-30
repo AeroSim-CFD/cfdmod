@@ -131,6 +131,19 @@ write or read that block without depending on the layout details.
 
 .. autofunction:: cfdmod.read_processing_metadata
 
+Timeseries access
+-----------------
+
+Pull a coefficient timeseries out of any output H5 into a wide-form
+``pandas.DataFrame``, save it as CSV for spreadsheet ingest, or plot
+it with one matplotlib call.
+
+.. autofunction:: cfdmod.read_timeseries_df
+
+.. autofunction:: cfdmod.to_csv
+
+.. autofunction:: cfdmod.plot_timeseries
+
 Geometry I/O (STL)
 ------------------
 

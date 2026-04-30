@@ -27,6 +27,10 @@ __all__ = [
     # mesh resolver
     "load_mesh",
     "mesh_from_h5",
+    # timeseries DataFrame helpers
+    "read_timeseries_df",
+    "to_csv",
+    "plot_timeseries",
 ]
 
 from cfdmod.io.geometry.STL import read_stl, export_stl
@@ -45,6 +49,7 @@ from cfdmod.io.vtk.write_vtk import (
     merge_polydata,
 )
 from cfdmod.io.mesh import load_mesh, mesh_from_h5
+from cfdmod.io.timeseries import plot_timeseries, read_timeseries_df, to_csv
 from cfdmod.io.xdmf import (
     get_pressure_keys,
     filter_keys_by_range,
