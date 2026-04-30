@@ -1,7 +1,6 @@
 import pathlib
 
 import numpy as np
-import pytest
 from lnas import LnasFormat
 
 from cfdmod.roughness import RadialParams, radial_pattern

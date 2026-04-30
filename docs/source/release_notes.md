@@ -208,13 +208,25 @@ being smuggled into the statistics block:
   stats over a moving-average-smoothed signal, run
   `apply_filters([MovingAverageFilter(window=...)])` first and then
   run statistics over the filtered file.
-- `cfdmod.process_Cf`, `cfdmod.process_Cm`, `cfdmod.process_Ce`
-  removed from the top-level export list. They were inconsistent
-  with the rest of the public API (no `process_Cp` was ever
-  surfaced), and the canonical entry points are
-  `cfdmod.run_cf` / `run_cm` / `run_ce`. The functions still exist
-  at `cfdmod.pressure.process_Cf` etc. for users who genuinely want
-  the in-memory transform.
+- The pressure pipeline is a single chain now: `run_cp` -> optional
+  `apply_filters` -> `run_cf` / `run_cm` / `run_ce` -> stats merged
+  into `stats.{h5,xdmf}`. The in-memory transform helpers
+  (`process_xdmf_to_cp`, `process_Cf`, `process_Cm`, `process_Ce`,
+  `process_timeseries`, `process_surfaces`, `transform_Cf`,
+  `transform_Cm`, `transform_Ce`, `calculate_statistics`,
+  `tabulate_geometry_data`, `combine_stats_data_with_mesh`,
+  `add_lever_arm_to_geometry_df`, `get_indexing_mask`,
+  `get_representative_areas`, `get_representative_volume`,
+  `get_surface_dict`) and the data-class containers
+  (`GeometryData`, `ProcessedEntity`, `CommonOutput`, `CeOutput`)
+  are no longer part of the public API. They remain reachable as
+  `cfdmod.pressure.functions.*` / `cfdmod.pressure.geometry.*` for
+  users who need them in tests, but only `run_*`, `apply_filters`,
+  `calculate_statistics_from_h5`, the filter / config types, and the
+  zoning / body / statistics models are exposed from
+  `cfdmod.pressure` and the top-level package. Same goes for the
+  `cfdmod.process_Cf` / `process_Cm` / `process_Ce` top-level
+  re-exports that used to exist; those are gone.
 - The `cfdmod.analysis` package was removed. Inflow lives in a
   single top-level module now, `cfdmod.inflow`. Migration:
     - `from cfdmod.analysis.inflow.profile import InflowData,

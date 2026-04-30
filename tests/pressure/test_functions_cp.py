@@ -1,16 +1,12 @@
 """Tests for Cp functions (io/xdmf + process_xdmf_to_cp)."""
 
 import h5py
-import numpy as np
 import pytest
 
 from cfdmod.io.xdmf import (
     filter_keys_by_range,
     get_pressure_keys,
     read_step,
-    write_timeseries_geometry,
-    write_timeseries_meta,
-    write_timeseries_step,
 )
 from cfdmod.pressure.functions import process_xdmf_to_cp
 from cfdmod.pressure.parameters import CpConfig, BasicStatisticModel

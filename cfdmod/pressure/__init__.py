@@ -1,103 +1,72 @@
+"""Pressure module public API.
+
+The pressure pipeline is a single disk-first chain (run_cp -> run_cf /
+run_cm / run_ce, optionally interleaved with apply_filters). The
+in-memory transform helpers (process_xdmf_to_cp, process_Cf, ...) are
+implementation details consumed by run_*; they are reachable as
+``cfdmod.pressure.functions.process_*`` for unit tests but are not part
+of the public surface.
+"""
+
 __all__ = [
-    # Parameters
+    # Configs
     "BasePressureConfig",
-    "BasicStatisticModel",
-    "ParameterizedStatisticModel",
+    "CpConfig",
+    "CpCaseConfig",
+    "CfConfig",
+    "CfCaseConfig",
+    "CmConfig",
+    "CmCaseConfig",
+    "CeConfig",
+    "CeCaseConfig",
+    # Bodies / zoning
     "ZoningModel",
+    "ZoningConfig",
+    "ZoningBuilder",
     "BodyDefinition",
     "BodyConfig",
     "MomentBodyConfig",
+    # Statistics models
+    "BasicStatisticModel",
+    "ParameterizedStatisticModel",
+    "Statistics",
+    "ExtremeMethods",
     "AxisDirections",
-    # Cp
-    "CpConfig",
-    "CpCaseConfig",
-    "process_xdmf_to_cp",
-    "process_timeseries",
-    # Cf
-    "CfConfig",
-    "CfCaseConfig",
-    "get_representative_areas",
-    "transform_Cf",
-    "process_Cf",
-    # Cm
-    "CmConfig",
-    "CmCaseConfig",
-    "add_lever_arm_to_geometry_df",
-    "get_representative_volume",
-    "transform_Cm",
-    "process_Cm",
-    # Ce
-    "ZoningBuilder",
-    "ZoningConfig",
-    "CeConfig",
-    "CeCaseConfig",
-    "CeOutput",
-    "transform_Ce",
-    "get_surface_dict",
-    "process_surfaces",
-    "process_Ce",
-    # Geometry helpers
-    "GeometryData",
-    "ProcessedEntity",
-    "CommonOutput",
-    "get_indexing_mask",
-    "calculate_statistics",
-    "combine_stats_data_with_mesh",
-    "tabulate_geometry_data",
-    # Statistics runner
-    "calculate_statistics_from_h5",
-    # Filters
-    "MovingAverageFilter",
-    "FilterSpec",
-    "apply_filters",
-    # Run
+    # Pipeline entry points (the only way to drive the pipeline)
     "run_cp",
     "run_cf",
     "run_cm",
     "run_ce",
+    # Filter chain (opt-in pipeline step on any timeseries H5)
+    "MovingAverageFilter",
+    "FilterSpec",
+    "apply_filters",
+    # Stats reader (compute stats over an existing timeseries H5)
+    "calculate_statistics_from_h5",
 ]
 
+from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
 from cfdmod.pressure.parameters import (
+    AxisDirections,
     BasePressureConfig,
     BasicStatisticModel,
-    ParameterizedStatisticModel,
-    ZoningModel,
-    BodyDefinition,
     BodyConfig,
-    MomentBodyConfig,
-    AxisDirections,
-    CpConfig,
-    CpCaseConfig,
-    CfConfig,
+    BodyDefinition,
+    CeCaseConfig,
+    CeConfig,
     CfCaseConfig,
-    CmConfig,
+    CfConfig,
     CmCaseConfig,
+    CmConfig,
+    CpCaseConfig,
+    CpConfig,
+    ExtremeMethods,
+    MomentBodyConfig,
+    ParameterizedStatisticModel,
+    Statistics,
     ZoningBuilder,
     ZoningConfig,
-    CeConfig,
-    CeCaseConfig,
+    ZoningModel,
 )
-from cfdmod.pressure.functions import (
-    CommonOutput,
-    CeOutput,
-    process_xdmf_to_cp,
-    process_timeseries,
-    get_representative_areas,
-    transform_Cf,
-    process_Cf,
-    add_lever_arm_to_geometry_df,
-    get_representative_volume,
-    transform_Cm,
-    process_Cm,
-    transform_Ce,
-    get_surface_dict,
-    process_surfaces,
-    process_Ce,
-    get_indexing_mask,
-    calculate_statistics,
-    combine_stats_data_with_mesh,
-)
-from cfdmod.pressure.geometry import GeometryData, ProcessedEntity, tabulate_geometry_data
+from cfdmod.pressure.run import run_ce, run_cf, run_cm, run_cp
 from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
-from cfdmod.pressure.filters import MovingAverageFilter, FilterSpec, apply_filters
-from cfdmod.pressure.run import run_cp, run_cf, run_cm, run_ce

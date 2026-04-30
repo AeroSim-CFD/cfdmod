@@ -67,7 +67,6 @@ from cfdmod.pressure import (
     CmCaseConfig,
     CmConfig,
     MomentBodyConfig,
-    ZoningModel,
     run_cf,
     run_cm,
     run_cp,

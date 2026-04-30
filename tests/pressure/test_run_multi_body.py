@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import h5py
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure import (

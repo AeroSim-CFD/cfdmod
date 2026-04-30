@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import h5py
 
 from cfdmod.io.mesh import mesh_from_h5
 from cfdmod.pressure import (
