@@ -1,14 +1,15 @@
 import pathlib
 
 import numpy as np
-import pytest
 from lnas import LnasFormat
 
 from cfdmod.use_cases.roughness_gen import RadialParams, radial_pattern
 from cfdmod.use_cases.roughness_gen.parameters import ElementParams
 
 
-def _make_flat_surface(tmp_path: pathlib.Path, size: float = 300.0, z: float = 0.0) -> pathlib.Path:
+def _make_flat_surface(
+    tmp_path: pathlib.Path, size: float = 300.0, z: float = 0.0
+) -> pathlib.Path:
     triangles = np.array(
         [
             [[-size, -size, z], [size, -size, z], [size, size, z]],

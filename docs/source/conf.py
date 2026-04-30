@@ -95,13 +95,11 @@ html_theme = "shibuya"
 
 html_favicon = "_static/favicon.svg"
 html_title = "AeroSim CFDmod"
-html_context = {
-    "plausible_script": """
+html_context = {"plausible_script": """
     <!-- Plausible -->
     <script defer data-domain="aerosim.io" src="https://plausible.io/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"></script>
     <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
-    """
-}
+    """}
 
 # Theme options
 html_static_path = ["_static"]
