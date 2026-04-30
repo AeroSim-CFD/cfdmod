@@ -4,9 +4,9 @@ import lnas
 import numpy as np
 
 from cfdmod.io.geometry.STL import export_stl
-from cfdmod.logger import logger
 from cfdmod.loft.functions import generate_loft_surface
 from cfdmod.loft.parameters import LoftCaseConfig
+from cfdmod.logger import logger
 
 
 def run_loft(

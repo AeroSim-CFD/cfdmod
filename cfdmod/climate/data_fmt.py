@@ -1,10 +1,9 @@
-import pathlib
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from cfdmod.analytical.wind_profile import WindProfile
+from cfdmod.logger import logger
 
 
 def break_INMET_columns(data: pd.DataFrame) -> pd.DataFrame:
@@ -66,11 +65,11 @@ def validate_table(data: pd.DataFrame):
     error = False
     # check if gust > mean
     if data[data["u_mean_raw"] > data["u_gust_raw"]].shape[0] > 0:
-        print("There are mean values greater than gust values")
+        logger.warning("There are mean values greater than gust values")
         error = True
     # check if there are invalid angles:
     if data[(data["wind_direction"] < 0) | (data["wind_direction"] > 360)].shape[0] > 0:
-        print("There are angles outside the range [0,360]")
+        logger.warning("There are angles outside the range [0,360]")
         error = True
     # check if there are absurd velocities:
     if (
@@ -82,10 +81,10 @@ def validate_table(data: pd.DataFrame):
         ].shape[0]
         > 0
     ):
-        print("There are velocities outside the range [0,70]m/s")
+        logger.warning("There are velocities outside the range [0,70]m/s")
         error = True
     if not error:
-        print("The table has no invalid rows")
+        logger.info("The table has no invalid rows")
     return not error
 
 
@@ -144,7 +143,7 @@ def remove_date_ranges(
             remove_mask |= (datetime >= start) & (datetime < end)
         else:
             remove_mask |= datetime == range_to_remove
-    print("Number of values removed: ", remove_mask.sum())
+    logger.info("Number of values removed: %s", remove_mask.sum())
     return data[~remove_mask]
 
 
@@ -157,7 +156,7 @@ def select_date_ranges(
     select_mask = pd.Series(False, index=data.index)
     for start, end in ranges_to_select:
         select_mask |= (datetime >= start) & (datetime < end)
-    print("Number of values selected: ", select_mask.sum())
+    logger.info("Number of values selected: %s", select_mask.sum())
     return data[select_mask]
 
 

@@ -24,17 +24,14 @@ __all__ = [
     # Pressure Cf
     "CfConfig",
     "CfCaseConfig",
-    "process_Cf",
     "run_cf",
     # Pressure Cm
     "CmConfig",
     "CmCaseConfig",
-    "process_Cm",
     "run_cm",
     # Pressure Ce
     "CeConfig",
     "CeCaseConfig",
-    "process_Ce",
     "run_ce",
     # Filters
     "MovingAverageFilter",
@@ -105,7 +102,6 @@ from cfdmod.io import (
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
 from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
-from cfdmod.pressure.functions import process_Ce, process_Cf, process_Cm
 from cfdmod.pressure.parameters import (
     BasePressureConfig,
     BodyConfig,

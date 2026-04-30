@@ -24,6 +24,7 @@ from lnas import LnasFormat
 from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.xdmf import (
     read_processing_metadata,
+    read_timeseries_meta,
     write_processing_metadata,
     write_stats_field,
     write_stats_xdmf,
@@ -62,6 +63,25 @@ def _coerce_case_cfg(source, model_cls):
     if isinstance(source, model_cls):
         return source
     return model_cls.from_file(pathlib.Path(source))
+
+
+def _cp_time_steps_for(cp_h5: pathlib.Path, time_normalized: np.ndarray) -> np.ndarray:
+    """Given a Cf/Cm/Ce-derived ``time_normalized`` array, return the matching
+    ``time_steps`` (raw solver time) values from cp_h5's /meta.
+
+    Cf/Cm/Ce do not write their own time_steps; they inherit the time axis
+    Cp persisted. With ``CpConfig.normalize_time=False`` (the default) the
+    two arrays are identical, but with ``normalize_time=True`` they are not,
+    and writing the same array into both slots silently mislabels the
+    output. This helper recovers the raw partner via /meta lookup.
+    """
+    meta = read_timeseries_meta(cp_h5)
+    cp_norm = np.asarray(meta["time_normalized"], dtype=np.float64)
+    cp_raw = np.asarray(meta["time_steps"], dtype=np.float64)
+    if cp_norm.size == cp_raw.size and np.allclose(cp_norm, cp_raw):
+        return np.asarray(time_normalized, dtype=np.float64)
+    norm_to_raw = {float(n): float(r) for n, r in zip(cp_norm, cp_raw)}
+    return np.array([norm_to_raw[float(t)] for t in time_normalized], dtype=np.float64)
 
 
 def _read_cp_simul_scale(cp_h5: pathlib.Path) -> tuple[float | None, float | None]:
@@ -159,9 +179,7 @@ def _write_region_timeseries(
     # a region that has no Cp samples), the missing tri positions are filled
     # with NaN - same behaviour as process_surfaces' existing left-join warn.
     col_pos = {c: i for i, c in enumerate(data_df.columns)}
-    tri_col_idx = np.array(
-        [col_pos.get(r, -1) for r in region_idx_per_tri], dtype=np.int64
-    )
+    tri_col_idx = np.array([col_pos.get(r, -1) for r in region_idx_per_tri], dtype=np.int64)
     missing_mask = tri_col_idx < 0
 
     data_arr = data_df.to_numpy(dtype=np.float64)
@@ -265,7 +283,12 @@ def run_cp(
             "probe_h5": str(probe_h5),
             "mesh_path": str(mesh_path) if mesh_path is not None else f"<from {body_h5}>",
         }
-        write_processing_metadata(timeseries_path, "/", cfg_dump, extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs})
+        write_processing_metadata(
+            timeseries_path,
+            "/",
+            cfg_dump,
+            extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
+        )
 
         logger.info("Calculating Cp statistics from on-disk timeseries...")
         _write_stats_for_group(
@@ -332,9 +355,7 @@ def _run_body_coefficient(
             geometry_df.region_idx.str.contains(body_cfg.name)
         ].region_idx.to_numpy()
 
-        ts_path = path_manager.get_body_timeseries_path(
-            cfg_lbl=cfg_lbl, body_name=body_cfg.name
-        )
+        ts_path = path_manager.get_body_timeseries_path(cfg_lbl=cfg_lbl, body_name=body_cfg.name)
         create_folders_for_file(ts_path)
         if ts_path.exists():
             ts_path.unlink()
@@ -354,7 +375,7 @@ def _run_body_coefficient(
             )
 
         assert times is not None
-        write_timeseries_meta(ts_path, times, times)
+        write_timeseries_meta(ts_path, _cp_time_steps_for(cp_h5, times), times)
         write_temporal_xdmf(
             ts_path,
             ts_path.with_suffix(".xdmf"),
@@ -472,9 +493,7 @@ def _bbox_corners_xy_cases(
     return cases
 
 
-def _expand_moment_cases(
-    cfg, bodies_definition: dict, mesh: LnasFormat
-) -> list[tuple]:
+def _expand_moment_cases(cfg, bodies_definition: dict, mesh: LnasFormat) -> list[tuple]:
     """Resolve a moment cfg's bodies into one independent run per
     (body, lever-origin case) pair.
 
@@ -503,9 +522,7 @@ def _expand_moment_cases(
             continue
 
         for case_label, region_origins in case_map.items():
-            new_name = (
-                f"{body_cfg.name}.{case_label}" if case_label else body_cfg.name
-            )
+            new_name = f"{body_cfg.name}.{case_label}" if case_label else body_cfg.name
             derived = body_cfg.model_copy(
                 update={
                     "name": new_name,
@@ -617,9 +634,7 @@ def run_ce(
         # Build the unified cut mesh and per-cut-tri region label array.
         cut_mesh = ce_output.processed_entities[0].mesh.copy()
         if len(ce_output.processed_entities) > 1:
-            cut_mesh.join(
-                [entity.mesh.copy() for entity in ce_output.processed_entities[1:]]
-            )
+            cut_mesh.join([entity.mesh.copy() for entity in ce_output.processed_entities[1:]])
         cut_region_idx = ce_output.region_indexing_df["region_idx"].to_numpy()
 
         # Persist cut mesh as STL for ParaView/QC.
@@ -642,7 +657,7 @@ def run_ce(
             data_df=ce_output.data_df,
             group="ce",
         )
-        write_timeseries_meta(ts_path, times, times)
+        write_timeseries_meta(ts_path, _cp_time_steps_for(cp_h5, times), times)
         write_temporal_xdmf(ts_path, ts_path.with_suffix(".xdmf"), group="ce")
 
         cfg_dump = cfg.model_dump()

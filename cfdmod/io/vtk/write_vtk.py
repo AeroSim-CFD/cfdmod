@@ -123,9 +123,7 @@ def read_polydata(file_path: pathlib.Path) -> vtkPolyData:
     return polydata
 
 
-def write_polydata(
-    output_filename: pathlib.Path, poly_data: vtkPolyData | vtkAppendPolyData
-):
+def write_polydata(output_filename: pathlib.Path, poly_data: vtkPolyData | vtkAppendPolyData):
     """Writes a polydata object to file output
 
     Args:

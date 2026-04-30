@@ -17,7 +17,6 @@ from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.logger import logger
 from cfdmod.pressure.parameters import BodyConfig, CeConfig, MomentBodyConfig, ZoningModel
 
-
 # ---------------------------------------------------------------------------
 # Shared geometry helpers
 # ---------------------------------------------------------------------------
@@ -198,9 +197,7 @@ def _get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> Zonin
     else:
         zoning = config.zoning.global_zoning  # type: ignore
         if len(np.unique(np.round(mesh.normals, decimals=2), axis=0)) == 1:
-            ignore_axis = np.where(
-                np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max()
-            )[0][0]
+            ignore_axis = np.where(np.abs(mesh.normals[0]) == np.abs(mesh.normals[0]).max())[0][0]
             zoning = zoning.ignore_axis(ignore_axis)
 
     return zoning.offset_limits(0.1)
@@ -260,9 +257,7 @@ def generate_regions_mesh(
         ),
     )
     df_regions = geom_data.zoning_to_use.get_regions_df()
-    regions_mesh_triangles_indexing = get_indexing_mask(
-        mesh=regions_mesh, df_regions=df_regions
-    )
+    regions_mesh_triangles_indexing = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
     regions_mesh.apply_transformation(
         cfg.transformation.get_geometry_transformation(), invert_transf=True
     )

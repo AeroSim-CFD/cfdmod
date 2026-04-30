@@ -7,16 +7,15 @@ __all__ = ["migrate_body_h5", "migrate_probe_h5"]
 import pathlib
 from typing import Literal
 
-import h5py
 import numpy as np
 import pandas as pd
 from lnas import LnasFormat
 
 from cfdmod.io.xdmf import (
+    write_temporal_xdmf,
     write_timeseries_geometry,
     write_timeseries_meta,
     write_timeseries_step,
-    write_temporal_xdmf,
 )
 
 
@@ -46,9 +45,7 @@ def migrate_body_h5(
         output_h5.unlink()
 
     mesh = LnasFormat.from_file(mesh_path)
-    write_timeseries_geometry(
-        output_h5, mesh.geometry.triangles, mesh.geometry.vertices
-    )
+    write_timeseries_geometry(output_h5, mesh.geometry.triangles, mesh.geometry.vertices)
 
     multiplier = 1.0 / 3.0 if macroscopic_type == "rho" else 1.0
 

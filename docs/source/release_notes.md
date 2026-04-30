@@ -208,6 +208,13 @@ being smuggled into the statistics block:
   stats over a moving-average-smoothed signal, run
   `apply_filters([MovingAverageFilter(window=...)])` first and then
   run statistics over the filtered file.
+- `cfdmod.process_Cf`, `cfdmod.process_Cm`, `cfdmod.process_Ce`
+  removed from the top-level export list. They were inconsistent
+  with the rest of the public API (no `process_Cp` was ever
+  surfaced), and the canonical entry points are
+  `cfdmod.run_cf` / `run_cm` / `run_ce`. The functions still exist
+  at `cfdmod.pressure.process_Cf` etc. for users who genuinely want
+  the in-memory transform.
 - The `cfdmod.analysis` package was removed. Inflow lives in a
   single top-level module now, `cfdmod.inflow`. Migration:
     - `from cfdmod.analysis.inflow.profile import InflowData,
@@ -291,6 +298,14 @@ being smuggled into the statistics block:
   vtkXMLPolyDataWriter`) instead of the catch-all `import vtk`,
   avoiding an unnecessary load of the full VTK universe on first
   use.
+- Runtime dep floors bumped to the modern stack: `numpy>=2.0`,
+  `scipy>=1.13`, `pandas>=2.2`, `pydantic>=2.10`, `matplotlib>=3.9`.
+  Out-of-cap upper bounds relaxed to allow the current latest:
+  `ruamel-yaml<0.20`, `pyarrow<25`, `myst-parser<6`, `ipython<10`,
+  `ipykernel<8`, `pyvista<0.50`. Dev tooling brought to current
+  majors: `pytest>=9`, `black>=26`, `isort>=8`, `ruff>=0.15`,
+  `tox>=4.53`. `requires-python` stays at `>=3.10`; bump it (and
+  `tables`) when 3.10 support is dropped.
 
 ## v1.1.2
 

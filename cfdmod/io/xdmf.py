@@ -43,9 +43,7 @@ import numpy as np
 from ruamel.yaml import YAML
 
 
-def get_pressure_keys(
-    h5_path: pathlib.Path, group: str = "pressure"
-) -> list[tuple[float, str]]:
+def get_pressure_keys(h5_path: pathlib.Path, group: str = "pressure") -> list[tuple[float, str]]:
     """Return sorted (float_time, key_str) pairs from H5 group.
 
     Keys are expected in the form t{T} where T is the float time value.
@@ -117,9 +115,7 @@ def write_timeseries_meta(
             if key in meta:
                 del meta[key]
         meta.create_dataset("time_steps", data=np.array(time_steps, dtype=np.float64))
-        meta.create_dataset(
-            "time_normalized", data=np.array(time_normalized, dtype=np.float64)
-        )
+        meta.create_dataset("time_normalized", data=np.array(time_normalized, dtype=np.float64))
         if region_labels is not None:
             encoded = [s.encode() for s in region_labels]
             meta.create_dataset("region_labels", data=np.array(encoded))
@@ -269,8 +265,7 @@ def write_stats_xdmf(h5_path: pathlib.Path, xdmf_path: pathlib.Path) -> None:
             stats = sorted(
                 k
                 for k in obj.keys()
-                if k not in ("Triangles", "Geometry")
-                and isinstance(obj[k], h5py.Dataset)
+                if k not in ("Triangles", "Geometry") and isinstance(obj[k], h5py.Dataset)
             )
             grids.append((name, n_tri, n_verts, stats))
 

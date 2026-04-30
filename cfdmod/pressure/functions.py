@@ -50,13 +50,13 @@ import pandas as pd
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.xdmf import (
-    get_pressure_keys,
     filter_keys_by_range,
+    get_pressure_keys,
     read_timeseries_meta,
+    write_temporal_xdmf,
     write_timeseries_geometry,
     write_timeseries_meta,
     write_timeseries_step,
-    write_temporal_xdmf,
 )
 from cfdmod.logger import logger
 from cfdmod.pressure.geometry import (
@@ -72,6 +72,7 @@ from cfdmod.pressure.geometry import (
 )
 from cfdmod.pressure.parameters import (
     BasicStatisticModel,
+    BodyDefinition,
     CeConfig,
     CfConfig,
     CmConfig,
@@ -81,10 +82,8 @@ from cfdmod.pressure.parameters import (
     MomentBodyConfig,
     ParameterizedStatisticModel,
     StatisticsParamsModel,
-    BodyDefinition,
 )
 from cfdmod.utils import convert_dataframe_into_matrix
-
 
 # ---------------------------------------------------------------------------
 # CommonOutput
@@ -137,9 +136,7 @@ def gumbel_extreme_values(
     time = (timestep_arr - timestep_arr[0]) * CST_full_scale
     T0 = time[-1]
     window_size = max(int(params.peak_duration / (time[1] - time[0])), 1)
-    smooth_parent_cp = np.convolve(
-        hist_series, np.ones(window_size) / window_size, mode="valid"
-    )
+    smooth_parent_cp = np.convolve(hist_series, np.ones(window_size) / window_size, mode="valid")
     sub_arrays = np.array_split(smooth_parent_cp, params.n_subdivisions)
     cp_max = np.sort(np.array([np.max(sub) for sub in sub_arrays]))
     cp_min = np.sort(np.array([np.min(sub) for sub in sub_arrays]))[::-1]
@@ -179,9 +176,7 @@ def extreme_values_analysis(
             )
         )
     elif params.method_type == "Peak":
-        return data_df.apply(
-            lambda x: peak_extreme_values(params=params, hist_series=x)
-        )
+        return data_df.apply(lambda x: peak_extreme_values(params=params, hist_series=x))
     raise ValueError(f"Unknown method_type: {params.method_type}")
 
 
@@ -303,9 +298,7 @@ def process_xdmf_to_cp(
             per-timestep pressure array length.
     """
     if output_path.exists():
-        warnings.warn(
-            f"Output path {output_path} exists, deleting it.", RuntimeWarning
-        )
+        warnings.warn(f"Output path {output_path} exists, deleting it.", RuntimeWarning)
         output_path.unlink()
 
     keys = get_pressure_keys(body_h5, "pressure")
@@ -419,9 +412,7 @@ def process_timeseries(
         grp_cp = f_cp["cp"]
         for batch_start in range(0, len(keys), batch_size):
             batch_keys = keys[batch_start : batch_start + batch_size]
-            batch_data = np.stack(
-                [grp_cp[t_key][:].astype(np.float64) for _, t_key in batch_keys]
-            )
+            batch_data = np.stack([grp_cp[t_key][:].astype(np.float64) for _, t_key in batch_keys])
             n_tri = batch_data.shape[1]
             cols = [str(i) for i in range(n_tri)]
             batch_df = pd.DataFrame(batch_data, columns=cols)
@@ -579,9 +570,7 @@ def process_Cf(
         transformation=cfg.transformation,
     )
 
-    def wrapper_transform_Cf(
-        raw_cp: pd.DataFrame, geom_df: pd.DataFrame, geom: LnasGeometry
-    ):
+    def wrapper_transform_Cf(raw_cp: pd.DataFrame, geom_df: pd.DataFrame, geom: LnasGeometry):
         return transform_Cf(raw_cp, geom_df, geom, nominal_area=cfg.nominal_area)
 
     Cf_data = process_timeseries(
@@ -593,9 +582,7 @@ def process_Cf(
 
     region_definition_df = get_region_definition_dataframe(geometry_dict)
     length_df = Cf_data[["region_idx"]].drop_duplicates()
-    region_definition_df = pd.merge(
-        region_definition_df, length_df, on="region_idx", how="left"
-    )
+    region_definition_df = pd.merge(region_definition_df, length_df, on="region_idx", how="left")
 
     compiled_output = {}
     for direction_lbl in cfg.directions:
@@ -879,9 +866,7 @@ def process_Cm(
             geometry_df=geometry_df,
         )
 
-    def wrapper_transform_Cm(
-        raw_cp: pd.DataFrame, geom_df: pd.DataFrame, geom: LnasGeometry
-    ):
+    def wrapper_transform_Cm(raw_cp: pd.DataFrame, geom_df: pd.DataFrame, geom: LnasGeometry):
         return transform_Cm(raw_cp, geom_df, geom, nominal_volume=cfg.nominal_volume)
 
     Cm_data = process_timeseries(
@@ -893,9 +878,7 @@ def process_Cm(
 
     region_definition_df = get_region_definition_dataframe(geometry_dict)
     length_df = Cm_data[["region_idx"]].drop_duplicates()
-    region_definition_df = pd.merge(
-        region_definition_df, length_df, on="region_idx", how="left"
-    )
+    region_definition_df = pd.merge(region_definition_df, length_df, on="region_idx", how="left")
 
     compiled_output = {}
     for direction_lbl in cfg.directions:
@@ -1113,9 +1096,7 @@ def process_Ce(
         if set_lbl in cfg.zoning.exclude  # type: ignore
     ]
     if excluded_sfc_list:
-        excluded_sfcs, _ = mesh.geometry_from_list_surfaces(
-            surfaces_names=excluded_sfc_list
-        )
+        excluded_sfcs, _ = mesh.geometry_from_list_surfaces(surfaces_names=excluded_sfc_list)
         excluded_entities = [ProcessedEntity(mesh=excluded_sfcs)]
     else:
         excluded_entities = []

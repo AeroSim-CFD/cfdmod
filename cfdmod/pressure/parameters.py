@@ -43,7 +43,6 @@ __all__ = [
 ]
 
 import itertools
-import math
 import pathlib
 from typing import Annotated, Literal, get_args
 
@@ -130,6 +129,14 @@ class ParameterizedStatisticModel(BasicStatisticModel):
 # ---------------------------------------------------------------------------
 # Base pressure config
 # ---------------------------------------------------------------------------
+
+
+class _YamlConfig(BaseModel):
+    """Mixin for top-level case configs that load from a YAML file."""
+
+    @classmethod
+    def from_file(cls, filename: pathlib.Path):
+        return cls.model_validate(read_yaml(filename))
 
 
 class BasePressureConfig(BaseModel):
@@ -416,7 +423,7 @@ class ExceptionZoningModel(ZoningModel):
         return v
 
 
-class ZoningConfig(BaseModel):
+class ZoningConfig(_YamlConfig):
     global_zoning: Annotated[
         ZoningModel,
         Field(
@@ -484,11 +491,6 @@ class ZoningConfig(BaseModel):
     @property
     def surfaces_listed(self) -> list[str]:
         return self.surfaces_in_exception + self.no_zoning + self.exclude
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> ZoningConfig:
-        yaml_vals = read_yaml(filename)
-        return cls.model_validate(yaml_vals)
 
 
 # ---------------------------------------------------------------------------
@@ -576,7 +578,7 @@ class CpConfig(BasePressureConfig):
     ]
 
 
-class CpCaseConfig(BaseModel):
+class CpCaseConfig(_YamlConfig):
     pressure_coefficient: Annotated[
         dict[str, CpConfig],
         Field(
@@ -585,11 +587,6 @@ class CpCaseConfig(BaseModel):
             description="Dictionary with Pressure Coefficient configuration",
         ),
     ]
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CpCaseConfig:
-        yaml_vals = read_yaml(filename)
-        return cls(**yaml_vals)
 
 
 # ---------------------------------------------------------------------------
@@ -640,7 +637,7 @@ class CfConfig(BasePressureConfig):
     ]
 
 
-class CfCaseConfig(BaseModel):
+class CfCaseConfig(_YamlConfig):
     bodies: Annotated[
         dict[str, BodyDefinition],
         Field(..., title="Bodies definition", description="Named bodies definition"),
@@ -668,11 +665,6 @@ class CfCaseConfig(BaseModel):
             if len(all_sfc) != len(set(all_sfc)):
                 raise Exception(f"Config {cfg_lbl} repeats surface in more than one body.")
         return self
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CfCaseConfig:
-        yaml_vals = read_yaml(filename)
-        return cls(**yaml_vals)
 
 
 # ---------------------------------------------------------------------------
@@ -723,7 +715,7 @@ class CmConfig(BasePressureConfig):
     ]
 
 
-class CmCaseConfig(BaseModel):
+class CmCaseConfig(_YamlConfig):
     bodies: Annotated[
         dict[str, BodyDefinition],
         Field(..., title="Bodies definition", description="Named bodies definition"),
@@ -751,11 +743,6 @@ class CmCaseConfig(BaseModel):
             if len(all_sfc) != len(set(all_sfc)):
                 raise Exception(f"Config {cfg_lbl} repeats surface in more than one body.")
         return self
-
-    @classmethod
-    def from_file(cls, filename: pathlib.Path) -> CmCaseConfig:
-        yaml_vals = read_yaml(filename)
-        return cls(**yaml_vals)
 
 
 # ---------------------------------------------------------------------------
@@ -831,7 +818,7 @@ class CeConfig(BasePressureConfig):
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 
 
-class CeCaseConfig(BaseModel):
+class CeCaseConfig(_YamlConfig):
     shape_coefficient: Annotated[
         dict[str, CeConfig],
         Field(
@@ -843,8 +830,7 @@ class CeCaseConfig(BaseModel):
 
     @classmethod
     def from_file(cls, filename: pathlib.Path) -> CeCaseConfig:
-        yaml_vals = read_yaml(filename)
-        cfg = cls(**yaml_vals)
+        cfg = super().from_file(filename)
         for s in cfg.shape_coefficient.values():
             s.zoning._base_path = filename.parent  # type: ignore
             s.to_zoning()

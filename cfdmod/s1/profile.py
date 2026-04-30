@@ -39,7 +39,9 @@ def get_EU_u_profile(
 def get_NBR_u_profile(
     *, z: np.ndarray, H: float, b: float, p: float, u_ref: float = 1, Fr: float = 0.65
 ) -> np.ndarray:
-    S2 = lambda z: Fr * b * (z / 10) ** p
+    def S2(zz):
+        return Fr * b * (zz / 10) ** p
+
     arr_nbr = S2(z) / S2(H)
     return arr_nbr * u_ref
 

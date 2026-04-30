@@ -39,8 +39,7 @@ def _read_meta(h5_path: pathlib.Path) -> dict[float, float]:
             return {}
         meta = f["meta"]
         return {
-            float(t): float(tn)
-            for t, tn in zip(meta["time_steps"][:], meta["time_normalized"][:])
+            float(t): float(tn) for t, tn in zip(meta["time_steps"][:], meta["time_normalized"][:])
         }
 
 
@@ -108,9 +107,7 @@ def read_timeseries_df(
             keys = all_keys
 
         if not keys:
-            raise ValueError(
-                f"no timesteps in {h5_path}:/{group} for range {timestep_range}"
-            )
+            raise ValueError(f"no timesteps in {h5_path}:/{group} for range {timestep_range}")
 
         if triangles is not None:
             tri_idx = np.array(sorted(set(int(t) for t in triangles)))

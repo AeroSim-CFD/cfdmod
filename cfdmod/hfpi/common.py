@@ -208,7 +208,7 @@ def get_building_angle_rotate_across_along_wind(wind_direction: float, building_
 def first_derivative(series: dict[str, np.ndarray], dt: float) -> dict[str, np.ndarray]:
     velocity = {}
     for axis in series:
-        disp = disp_full[axis]
+        disp = series[axis]
         v = np.zeros_like(disp, dtype=np.float32)
         # backward diference for internal points
         v[1:] = (disp[1:] - disp[:-1]) / dt

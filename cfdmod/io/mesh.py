@@ -65,9 +65,7 @@ def mesh_from_h5(h5_path: pathlib.Path) -> LnasFormat:
         vertices = f["Geometry"][:].astype(np.float64)
 
     geom = LnasGeometry(vertices=vertices, triangles=triangles)
-    surfaces = {
-        _DEFAULT_SURFACE_NAME: np.arange(len(triangles), dtype=np.int32)
-    }
+    surfaces = {_DEFAULT_SURFACE_NAME: np.arange(len(triangles), dtype=np.int32)}
     return LnasFormat(version=_LNAS_VERSION, geometry=geom, surfaces=surfaces)
 
 
@@ -97,8 +95,7 @@ def load_mesh(source: pathlib.Path | LnasFormat) -> LnasFormat:
         h5_sibling = path.with_suffix(".h5")
         if not h5_sibling.exists():
             raise FileNotFoundError(
-                f"{path} references mesh data but the sibling H5 "
-                f"{h5_sibling} is missing."
+                f"{path} references mesh data but the sibling H5 " f"{h5_sibling} is missing."
             )
         return mesh_from_h5(h5_sibling)
 

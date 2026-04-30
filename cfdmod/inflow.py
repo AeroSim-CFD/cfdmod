@@ -131,9 +131,7 @@ class InflowData:
         elif hist_series_format == "h5":
             data = _read_inflow_h5(hist_series_path)
         else:
-            raise Exception(
-                f"Extension {hist_series_format} not supported for hist series!"
-            )
+            raise Exception(f"Extension {hist_series_format} not supported for hist series!")
         points = pd.read_csv(points_path)
         return InflowData(data=data, points=points)
 

@@ -9,14 +9,14 @@ requires-python = ">=3.10"
 readme = "README.md"
 license = "Apache-2.0"
 dependencies = [
-    "numpy>=1.24,<3",
-    "scipy>=1.11.2,<2",
-    "pandas>=2.1.0,<3",
-    "pydantic>=2.3,<3",
-    "ruamel-yaml>=0.18.5,<0.19",
+    "numpy>=2.0,<3",
+    "scipy>=1.13,<2",
+    "pandas>=2.2,<3",
+    "pydantic>=2.10,<3",
+    "ruamel-yaml>=0.18.5,<0.20",
     "colorama>=0.4.6,<0.5",
-    "matplotlib>=3.7.3,<4",
-    "pyarrow>=19.0.0,<20",
+    "matplotlib>=3.9,<4",
+    "pyarrow>=19.0.0,<25",
     "aerosim-lnas>=0.6.9,<0.7",
     "openpyxl>=3.1.5",
     "h5py>=3.15.1",
@@ -34,7 +34,7 @@ geometry = [
 ]
 docs = [
     "shibuya>=2026.0",
-    "myst-parser>=4.0,<5",
+    "myst-parser>=4.0,<6",
     "sphinx-autobuild>=2021.3.14",
     "nbsphinx>=0.9.3,<0.10",
     "sphinxcontrib-bibtex>=2.6.1,<3",
@@ -42,15 +42,15 @@ docs = [
 ]
 notebook = [
     "jupyter>=1.0.0,<2",
-    "ipython>=8.15.0,<9",
-    "ipykernel>=6.25.2,<7",
+    "ipython>=8.15.0,<10",
+    "ipykernel>=6.25.2,<8",
 ]
 vtk = [
     "vtk>=9.2.6,<10",
-    "pyvista>=0.44,<0.45",
+    "pyvista>=0.44,<0.50",
 ]
 # Required only for the legacy pandas-HDFStore compat readers in
-# cfdmod.analysis.inflow, cfdmod.hfpi.static, and cfdmod.pressure.migrate.
+# cfdmod.inflow, cfdmod.hfpi.static, and cfdmod.pressure.migrate.
 # Modern XDMF+H5 inputs go through h5py and don't need this.
 legacy = [
     "tables>=3.9.1,<4",
@@ -65,15 +65,17 @@ Repository = "https://github.com/AeroSim-CFD/cfdmod"
 
 [dependency-groups]
 dev = [
-    "black[jupyter]>=23.7.0",
-    "isort>=5.12.0",
-    "tox>=4.18.0,<5",
-    "autoflake>=2.2.1,<3",
-    "json-schema-for-humans>=1.0.2,<2",
-    "pytest>=8.3.2,<9",
-    "ruff>=0.6.8",
-    # tests/analysis/inflow + tests/pressure/test_migrate exercise the
-    # legacy HDFStore compat readers, so dev installs need pytables.
+    "black[jupyter]>=26",
+    "isort>=8",
+    "tox>=4.53",
+    "autoflake>=2.3",
+    "json-schema-for-humans>=1.5",
+    "pytest>=9",
+    "ruff>=0.15",
+    # tests/inflow + tests/pressure/test_migrate exercise the legacy
+    # HDFStore compat readers, so dev installs need pytables.
+    # (Held at <3.11 floor for py3.10 compatibility; bump alongside
+    # requires-python whenever py3.10 support is dropped.)
     "tables>=3.9.1,<4",
 ]
 

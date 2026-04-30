@@ -17,8 +17,6 @@ import pandas as pd
 from cfdmod.io.xdmf import filter_keys_by_range, get_pressure_keys
 from cfdmod.pressure.functions import (
     calculate_statistics,
-    gumbel_extreme_values,
-    peak_extreme_values,
 )
 from cfdmod.pressure.parameters import (
     BasicStatisticModel,
@@ -79,7 +77,6 @@ def _streaming_only(
     statistics: list[BasicStatisticModel | ParameterizedStatisticModel],
 ) -> pd.DataFrame:
     """Single-pass streaming statistics using Welford's algorithm."""
-    n_steps = len(keys)
     n = 0
     mean_acc: np.ndarray | None = None
     M2: np.ndarray | None = None
@@ -142,9 +139,7 @@ def _full_load(
 
     # Build a DataFrame compatible with calculate_statistics
     time_normalized = np.arange(len(keys), dtype=np.float64)
-    df = pd.DataFrame(
-        full_data, columns=[str(i) for i in range(n_points)]
-    )
+    df = pd.DataFrame(full_data, columns=[str(i) for i in range(n_points)])
     df["time_normalized"] = time_normalized
 
     return calculate_statistics(df, statistics_to_apply=statistics)

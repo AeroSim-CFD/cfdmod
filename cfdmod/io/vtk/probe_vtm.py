@@ -4,10 +4,10 @@ import pathlib
 from typing import Sequence
 
 import numpy as np
+from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkFiltersCore import vtkCompositeDataProbeFilter
 from vtkmodules.vtkFiltersSources import vtkLineSource
 from vtkmodules.vtkIOXML import vtkXMLMultiBlockDataReader
-from vtkmodules.util.numpy_support import vtk_to_numpy
 
 
 def read_vtm(multiblock_file: pathlib.Path) -> vtkXMLMultiBlockDataReader:
