@@ -111,6 +111,74 @@ def test_add_lever_arm_override_beats_strategy(geom_data, geometry_df):
     np.testing.assert_allclose(result_df["rz"].to_numpy(), [-100.0, -100.0])
 
 
+def test_add_lever_arm_handles_unassigned_sentinel(geom_data, geometry_df):
+    """Regression: a triangle whose centroid did not fall into any zoning
+    cell carries the ``-1`` sentinel that
+    :func:`cfdmod.pressure.geometry.get_indexing_mask` writes. The
+    resulting ``region_idx`` is the string ``"-1-<body>"``. Earlier
+    versions of ``_resolve_region_origin`` did
+    ``int(label.split("-", 1)[0])``, which on ``"-1-body"`` produces
+    ``int("")`` and crashes with ``ValueError`` -- so Cm blew up while
+    Cf (which only groups by the string label) silently stayed alive.
+
+    The fix is ``rsplit("-", 1)`` so the body suffix is peeled from the
+    right; this test pins that.
+    """
+    geometry_df = geometry_df.copy()
+    # Force the first triangle to look "unassigned" the way
+    # get_indexing_mask would have left it.
+    geometry_df.loc[0, "region_idx"] = "-1-body"
+
+    # The pre-fix call raised ValueError("invalid literal for int() with base 10: ''").
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(lever_origin=(0.0, 0.0, 10.0)),
+        geometry_df=geometry_df,
+    )
+    # Sentinel triangles fall through to the fixed-strategy branch, so
+    # they pick up the body's lever_origin (z=10) -- rz = -10 for both
+    # triangles regardless of their region label.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [-10.0, -10.0])
+
+
+def test_add_lever_arm_handles_unassigned_sentinel_region_base(geom_data, geometry_df):
+    """Same regression under ``lever_strategy="region_base"``: the
+    sentinel rows compute their own ``(mean, mean, min)`` from
+    ``local_idx_in_region`` instead of crashing on the int parse."""
+    geometry_df = geometry_df.copy()
+    geometry_df.loc[0, "region_idx"] = "-1-body"
+
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(lever_strategy="region_base"),
+        geometry_df=geometry_df,
+    )
+    # All triangles live on z=0, so the auto base z is 0 -> rz == 0.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [0.0, 0.0])
+
+
+def test_add_lever_arm_explicit_override_on_negative_key(geom_data, geometry_df):
+    """The override map keys on the parsed int. With the new rsplit
+    parser, a key like ``-1`` is honoured for sentinel rows."""
+    geometry_df = geometry_df.copy()
+    geometry_df.loc[0, "region_idx"] = "-1-body"
+
+    result_df = add_lever_arm_to_geometry_df(
+        geom_data=geom_data,
+        transformation=TransformationConfig(),
+        body_cfg=_moment_body(
+            lever_origin=(0.0, 0.0, 0.0),
+            region_lever_origins={-1: (0.0, 0.0, 100.0), 0: (0.0, 0.0, 0.0)},
+        ),
+        geometry_df=geometry_df,
+    )
+    # Only the sentinel row (first triangle) sits on the -1 override
+    # (z=100 -> rz = -100); the second still has region "0-body" -> rz = 0.
+    np.testing.assert_allclose(result_df["rz"].to_numpy(), [-100.0, 0.0])
+
+
 def test_lever_origin_cases_round_trip():
     """A MomentBodyConfig with lever_origin_cases preserves the dict."""
     body = MomentBodyConfig(
