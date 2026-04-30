@@ -140,9 +140,10 @@ def run_cp(
     """Compute Cp timeseries + stats.
 
     Outputs per config label:
-      - {output}/cp.{label}.time_series.h5 + .xdmf       (timeseries)
-      - {output}/stats.h5 + stats.xdmf                    (stats; embeds the
-        full mesh under /cp/{label}/ alongside stat datasets)
+
+    - ``{output}/cp.{label}.time_series.h5`` + ``.xdmf`` -- timeseries
+    - ``{output}/stats.h5`` + ``stats.xdmf`` -- stats; embeds the full
+      mesh under ``/cp/{label}/`` alongside stat datasets
 
     Args:
         body_h5: Body pressure XDMF+H5.
@@ -314,11 +315,13 @@ def run_cf(
 ) -> None:
     """Compute Cf per direction + stats.
 
-    Per body & cfg label:
-      - {output}/Cf.{label}.{body}.time_series.h5 + .xdmf     (one group per
-        direction: /cf_x, /cf_y, /cf_z, each with /t{T} arrays of length
-        n_body_tri)
-      - stats.h5: /cf_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+    Per body and cfg label:
+
+    - ``{output}/Cf.{label}.{body}.time_series.h5`` + ``.xdmf`` -- one group
+      per direction (``/cf_x``, ``/cf_y``, ``/cf_z``), each with ``/t{T}``
+      arrays of length ``n_body_tri``.
+    - ``stats.h5``: ``/cf_{dir}/{label}/{body}/{Triangles, Geometry,
+      stat...}``.
 
     ``mesh_path`` is optional and accepts ``.lnas``, ``.stl``, ``.h5``,
     ``.xdmf``, or a pre-loaded :class:`LnasFormat`. If omitted, the geometry
@@ -443,9 +446,11 @@ def run_cm(
 ) -> None:
     """Compute Cm per direction + stats. Same disk-first contract as run_cf.
 
-    Per body & cfg label:
-      - {output}/Cm.{label}.{body}.time_series.h5 + .xdmf
-      - stats.h5: /cm_{dir}/{label}/{body}/{Triangles, Geometry, stat...}
+    Per body and cfg label:
+
+    - ``{output}/Cm.{label}.{body}.time_series.h5`` + ``.xdmf``
+    - ``stats.h5``: ``/cm_{dir}/{label}/{body}/{Triangles, Geometry,
+      stat...}``
 
     Multi-case moment centers: when a ``MomentBodyConfig`` declares
     ``lever_origin_cases`` or ``lever_strategy="region_bbox_corners_xy"``,
@@ -501,10 +506,13 @@ def run_ce(
     timeseries and stats.
 
     Per cfg label:
-      - {output}/Ce.{label}.time_series.h5 + .xdmf
-        (root /Triangles+/Geometry = cut mesh; /ce/t{T} per timestep)
-      - {output}/Ce.{label}.regions.stl    (cut mesh as STL for QC/ParaView)
-      - stats.h5: /ce/{label}/{Triangles, Geometry, stat...}
+
+    - ``{output}/Ce.{label}.time_series.h5`` + ``.xdmf`` -- root
+      ``/Triangles`` + ``/Geometry`` is the cut mesh; ``/ce/t{T}`` per
+      timestep.
+    - ``{output}/Ce.{label}.regions.stl`` -- cut mesh as STL for
+      QC/ParaView.
+    - ``stats.h5``: ``/ce/{label}/{Triangles, Geometry, stat...}``.
 
     ``mesh_path`` accepts ``.lnas``, ``.stl``, ``.h5``, ``.xdmf``, or a
     pre-loaded :class:`LnasFormat`. If omitted, the geometry is read from
