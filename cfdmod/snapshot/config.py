@@ -3,13 +3,12 @@ from __future__ import annotations
 import pathlib
 from typing import Annotated, Union
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from cfdmod.config.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 
-class ImageConfig(HashableConfig):
+class ImageConfig(BaseModel):
     name: Annotated[str, Field(..., title="Image label", description="Label of the output image")]
     legend_config: Annotated[
         LegendConfig,
@@ -21,7 +20,7 @@ class ImageConfig(HashableConfig):
     ]
 
 
-class CropConfig(HashableConfig):
+class CropConfig(BaseModel):
     width_ratio: Annotated[
         float,
         Field(
@@ -44,7 +43,7 @@ class CropConfig(HashableConfig):
     ]
 
 
-class OverlayImageConfig(HashableConfig):
+class OverlayImageConfig(BaseModel):
     image_path: Annotated[
         pathlib.Path,
         Field(
@@ -95,7 +94,7 @@ class OverlayImageConfig(HashableConfig):
         raise ValueError("Image path must be a string or pathlib.Path")
 
 
-class OverlayTextConfig(HashableConfig):
+class OverlayTextConfig(BaseModel):
     text: Annotated[
         str,
         Field(
@@ -130,7 +129,7 @@ class OverlayTextConfig(HashableConfig):
     ]
 
 
-class TransformationConfig(HashableConfig):
+class TransformationConfig(BaseModel):
     translate: Annotated[
         tuple[float, float, float],
         Field(
@@ -165,7 +164,7 @@ class TransformationConfig(HashableConfig):
     ]
 
 
-class LegendConfig(HashableConfig):
+class LegendConfig(BaseModel):
     label: Annotated[
         str, Field(..., title="Legend name", description="The name of the legend in the image")
     ]
@@ -204,7 +203,7 @@ class LegendConfig(HashableConfig):
             return data
 
 
-class ColormapConfig(HashableConfig):
+class ColormapConfig(BaseModel):
     value_edges: Annotated[
         list[float],
         Field(
@@ -223,7 +222,7 @@ class ColormapConfig(HashableConfig):
     ]
 
 
-class CameraConfig(HashableConfig):
+class CameraConfig(BaseModel):
     zoom: Annotated[float, Field(1, title="Camera zoom", gt=0)]
     offset_position: Annotated[
         tuple[float, float],
@@ -245,7 +244,7 @@ class CameraConfig(HashableConfig):
     ]
 
 
-class ValueTagsConfig(HashableConfig):
+class ValueTagsConfig(BaseModel):
     spacing: Annotated[tuple[float, float] | None, Field(None, description="Spacing (x, y)")]
     padding: Annotated[
         tuple[float, float, float, float] | None,
@@ -328,7 +327,7 @@ class ValueTagsConfig(HashableConfig):
         raise ValueError("padding must be a float, a 2-tuple, or a 4-tuple of floats")
 
 
-class ProjectionConfig(HashableConfig):
+class ProjectionConfig(BaseModel):
     file_path: Annotated[
         pathlib.Path,
         Field(
@@ -372,7 +371,7 @@ class ProjectionConfig(HashableConfig):
     ]
 
 
-class SnapshotConfig(HashableConfig):
+class SnapshotConfig(BaseModel):
     projections: Annotated[
         dict[str, ProjectionConfig],
         Field(

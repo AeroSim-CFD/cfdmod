@@ -1,9 +1,8 @@
 import pathlib
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
-from cfdmod.config.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 __all__ = [
@@ -21,7 +20,7 @@ OffsetDirection = Annotated[
 ]
 
 
-class SpacingParams(HashableConfig):
+class SpacingParams(BaseModel):
     spacing: Annotated[
         tuple[float, float],
         Field(
@@ -51,7 +50,7 @@ class SpacingParams(HashableConfig):
     ]
 
 
-class ElementParams(HashableConfig):
+class ElementParams(BaseModel):
     height: Annotated[
         float,
         Field(
@@ -72,7 +71,7 @@ class ElementParams(HashableConfig):
     ]
 
 
-class BoundingBox(HashableConfig):
+class BoundingBox(BaseModel):
     start: Annotated[
         tuple[float, float, float],
         Field(
@@ -87,7 +86,7 @@ class BoundingBox(HashableConfig):
     ]
 
 
-class PositionParams(HashableConfig):
+class PositionParams(BaseModel):
     element_params: Annotated[
         ElementParams,
         Field(
@@ -124,7 +123,7 @@ class PositionParams(HashableConfig):
             raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
 
 
-class RadialParams(HashableConfig):
+class RadialParams(BaseModel):
     element_params: Annotated[
         ElementParams,
         Field(
@@ -198,7 +197,7 @@ class RadialParams(HashableConfig):
             raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
 
 
-class GenerationParams(HashableConfig):
+class GenerationParams(BaseModel):
     N_elements_x: Annotated[
         int,
         Field(

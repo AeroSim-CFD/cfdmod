@@ -1,9 +1,8 @@
 import pathlib
 from typing import Annotated
 
-from pydantic import Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
-from cfdmod.config.hashable import HashableConfig
 from cfdmod.utils import read_yaml
 
 __all__ = [
@@ -12,7 +11,7 @@ __all__ = [
 ]
 
 
-class LoftParams(HashableConfig):
+class LoftParams(BaseModel):
     loft_radius: Annotated[
         float,
         Field(
@@ -39,7 +38,7 @@ class LoftParams(HashableConfig):
     ]
 
 
-class LoftCaseConfig(HashableConfig):
+class LoftCaseConfig(BaseModel):
     cases: Annotated[
         dict[str, LoftParams],
         Field(

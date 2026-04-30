@@ -2,13 +2,14 @@
 
 Provides lightweight helpers for exploratory work in Jupyter notebooks.
 """
+
 import pathlib
 import pprint
 from typing import Union
 
 from lnas import LnasFormat
+from pydantic import BaseModel
 
-from cfdmod.config.hashable import HashableConfig
 from cfdmod.io.geometry.STL import read_stl
 
 
@@ -51,13 +52,14 @@ def mesh_summary(path: pathlib.Path) -> None:
     print(f"  z bounds  : [{mins[2]:.3f}, {maxs[2]:.3f}]")
 
 
-def show_config(config: HashableConfig) -> None:
-    """Pretty-print a HashableConfig as a dictionary.
+def show_config(config: BaseModel) -> None:
+    """Pretty-print a Pydantic config as a dictionary.
 
     Args:
-        config: Any HashableConfig instance (LoftCaseConfig, CpCaseConfig, etc.)
+        config: Any Pydantic ``BaseModel`` instance (LoftCaseConfig,
+            CpCaseConfig, etc.).
     """
-    pprint.pprint(config.to_dict())
+    pprint.pprint(config.model_dump())
 
 
 def load_lnas(path: Union[str, pathlib.Path]) -> LnasFormat:

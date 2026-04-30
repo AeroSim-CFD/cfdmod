@@ -24,9 +24,11 @@ and the geometry is read from the source H5 by default.
 Configuration models
 ====================
 
-All Pydantic models inherit from ``HashableConfig`` and support
-``.from_file(path)``, ``.from_dict({...})``, ``.model_dump()``, and
-``.to_yaml()``.
+All configuration types are plain Pydantic v2 ``BaseModel`` subclasses
+(``BasePressureConfig`` for the pressure coefficient configs, which itself
+extends ``BaseModel``). Each ``*CaseConfig`` exposes a ``from_file(path)``
+classmethod for loading from YAML; ``model_dump()`` / ``model_dump_json()``
+give back dict / JSON. There is no project-specific base class.
 
 Pressure coefficient (Cp)
 -------------------------

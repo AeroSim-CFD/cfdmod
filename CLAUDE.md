@@ -48,8 +48,6 @@ cfdmod/
         io/
             geometry/       STL I/O (export_stl, read_stl)
             vtk/            VTK/ParaView probe and write utilities
-        config/
-            hashable.py     HashableConfig base (Pydantic + SHA256, to_dict/to_yaml)
         analysis/
             inflow/         InflowData class and functions
         loft/               Terrain loft surface generation
@@ -76,7 +74,7 @@ module/
     __main__.py     python -m entry point -> calls cli.app()
     cli.py          Thin typer app (uses run.py functions)
     run.py          Pure Python orchestration (no argparse, no file paths)
-    parameters.py   Pydantic config models with from_file/from_dict/to_dict/to_yaml
+    parameters.py   Pydantic BaseModel config models with a from_file classmethod
     functions.py    Core computational logic
     [helpers].py    Supporting modules
 ```
@@ -105,21 +103,19 @@ After install, the `cfdmod` shell command is also available (via `[project.scrip
 
 ### Config models
 
-All config classes inherit from `HashableConfig` and support:
+All config classes are Pydantic v2 ``BaseModel`` subclasses (or
+``BasePressureConfig`` for the pressure-coefficient configs, which itself
+extends ``BaseModel``). The standard surface:
 
 ```python
-params = LoftParams.from_file("config.yaml")   # from YAML
-params = LoftParams.from_dict({...})            # from dict
-params = LoftParams(field=value, ...)           # from kwargs
-
-params.to_dict()   # -> dict
-params.to_yaml()   # -> YAML string
+params = LoftParams.from_file("config.yaml")   # YAML -> instance (per-class classmethod)
+params = LoftParams(**{...})                    # kwargs / dict
+params.model_dump()                             # -> dict
+params.model_dump_json()                        # -> JSON string
 ```
 
-### Backward-compatibility shims
-
-`cfdmod/api/` and `cfdmod/use_cases/` are retained as thin re-export shims so that
-existing scripts using old import paths continue to work. Do not add new code there.
+There is no project-specific config base class; field declarations follow the
+``Annotated[T, Field(...)]`` form from Pydantic v2.
 
 ---
 
@@ -128,7 +124,7 @@ existing scripts using old import paths continue to work. Do not add new code th
 `cfdmod.notebook_utils` provides lightweight helpers for exploratory work:
 
 - `mesh_summary(path)` - print triangle/vertex counts and bounding box for .lnas or .stl
-- `show_config(config)` - pretty-print any HashableConfig as a dict
+- `show_config(config)` - pretty-print any Pydantic ``BaseModel`` config as a dict
 - `load_lnas(path)` - load an .lnas file and return the LnasFormat object
 
 All three are also exported from the top-level `cfdmod` package.

@@ -50,7 +50,6 @@ from typing import Annotated, Literal, get_args
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from cfdmod.config.hashable import HashableConfig
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.utils import read_yaml
 
@@ -171,7 +170,7 @@ class BasePressureConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class ZoningModel(HashableConfig):
+class ZoningModel(BaseModel):
     x_intervals: Annotated[
         list[float],
         Field(
@@ -270,7 +269,7 @@ class ZoningModel(HashableConfig):
         return df
 
 
-class BodyDefinition(HashableConfig):
+class BodyDefinition(BaseModel):
     surfaces: Annotated[
         list[str],
         Field(..., title="Body's surfaces", description="List of surfaces that compose the body"),
@@ -283,7 +282,7 @@ class BodyDefinition(HashableConfig):
         return v
 
 
-class BodyConfig(HashableConfig):
+class BodyConfig(BaseModel):
     name: Annotated[
         str,
         Field(
@@ -497,7 +496,7 @@ class ZoningConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class CpConfig(HashableConfig, BasePressureConfig):
+class CpConfig(BasePressureConfig):
     """Configuration to calculate pressure coefficient."""
 
     timestep_range: Annotated[
@@ -577,7 +576,7 @@ class CpConfig(HashableConfig, BasePressureConfig):
     ]
 
 
-class CpCaseConfig(HashableConfig):
+class CpCaseConfig(BaseModel):
     pressure_coefficient: Annotated[
         dict[str, CpConfig],
         Field(
@@ -598,7 +597,7 @@ class CpCaseConfig(HashableConfig):
 # ---------------------------------------------------------------------------
 
 
-class CfConfig(HashableConfig, BasePressureConfig):
+class CfConfig(BasePressureConfig):
     """Configuration for force coefficient."""
 
     bodies: Annotated[
@@ -641,7 +640,7 @@ class CfConfig(HashableConfig, BasePressureConfig):
     ]
 
 
-class CfCaseConfig(HashableConfig):
+class CfCaseConfig(BaseModel):
     bodies: Annotated[
         dict[str, BodyDefinition],
         Field(..., title="Bodies definition", description="Named bodies definition"),
@@ -681,7 +680,7 @@ class CfCaseConfig(HashableConfig):
 # ---------------------------------------------------------------------------
 
 
-class CmConfig(HashableConfig, BasePressureConfig):
+class CmConfig(BasePressureConfig):
     """Configuration for moment coefficient."""
 
     bodies: Annotated[
@@ -724,7 +723,7 @@ class CmConfig(HashableConfig, BasePressureConfig):
     ]
 
 
-class CmCaseConfig(HashableConfig):
+class CmCaseConfig(BaseModel):
     bodies: Annotated[
         dict[str, BodyDefinition],
         Field(..., title="Bodies definition", description="Named bodies definition"),
@@ -764,7 +763,7 @@ class CmCaseConfig(HashableConfig):
 # ---------------------------------------------------------------------------
 
 
-class ZoningBuilder(HashableConfig):
+class ZoningBuilder(BaseModel):
     """Reference to an external YAML file containing ZoningConfig."""
 
     yaml: Annotated[
@@ -781,7 +780,7 @@ class ZoningBuilder(HashableConfig):
         return ZoningConfig.from_file(self._base_path / pathlib.Path(self.yaml))
 
 
-class CeConfig(HashableConfig, BasePressureConfig):
+class CeConfig(BasePressureConfig):
     """Configuration for shape coefficient."""
 
     zoning: Annotated[
@@ -832,7 +831,7 @@ class CeConfig(HashableConfig, BasePressureConfig):
             raise Exception("Surfaces inside a set cannot be listed in zoning")
 
 
-class CeCaseConfig(HashableConfig):
+class CeCaseConfig(BaseModel):
     shape_coefficient: Annotated[
         dict[str, CeConfig],
         Field(

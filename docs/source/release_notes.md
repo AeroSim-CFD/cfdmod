@@ -167,9 +167,20 @@ being smuggled into the statistics block:
   are now `stats.{h5,xdmf}` (was `results.{h5,xdmf}`).
 - `cfdmod.api` and `cfdmod.use_cases` shims have been **removed**.
   v1.x scripts that imported via these paths must update to the
-  top-level domain modules (`cfdmod.config`, `cfdmod.io`, and the
-  per-domain packages such as `cfdmod.loft`, `cfdmod.pressure`,
-  `cfdmod.roughness`, ...).
+  top-level domain modules (`cfdmod.io` and the per-domain packages
+  such as `cfdmod.loft`, `cfdmod.pressure`, `cfdmod.roughness`, ...).
+- `cfdmod.config` and `cfdmod.HashableConfig` have been **removed**.
+  The base class added a `to_yaml()` method that no caller used, a
+  `to_dict()` method that was a one-line wrapper around Pydantic's
+  built-in `model_dump()`, and a `sha256()` config-fingerprint helper
+  that only one scratch notebook ever called. Configs now subclass
+  `pydantic.BaseModel` directly. Migration:
+    - `config.to_dict()` -> `config.model_dump()`
+    - `config.to_yaml(path)` -> serialise via your YAML library of
+      choice (e.g. `ruamel.yaml.YAML().dump(config.model_dump(), fh)`)
+    - `config.sha256()` -> compute it externally:
+      `hashlib.sha256(config.model_dump_json().encode()).hexdigest()`
+  The per-`*CaseConfig` `from_file(path)` classmethods are unchanged.
 - Pre-typer argparse entry points were removed: `cfdmod.loft.main`,
   `cfdmod.roughness.main`, and `cfdmod.altimetry.main`. Each module
   now exposes a typer app at `cfdmod.<module>.cli:app`, registered
