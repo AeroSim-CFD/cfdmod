@@ -14,24 +14,26 @@ dependencies = [
     "pandas>=2.1.0,<3",
     "pydantic>=2.3,<3",
     "ruamel-yaml>=0.18.5,<0.19",
-    "tables>=3.9.1,<4",
     "colorama>=0.4.6,<0.5",
     "matplotlib>=3.7.3,<4",
     "pyarrow>=19.0.0,<20",
     "aerosim-lnas>=0.6.9,<0.7",
-    "filelock>=3.17.0",
     "openpyxl>=3.1.5",
     "h5py>=3.15.1",
     "typer>=0.24.1",
 ]
 
 [project.optional-dependencies]
+# Geometry helpers used by altimetry/loft. Trimesh is MIT-licensed.
+# pymeshlab is INTENTIONALLY NOT a dependency here (optional or otherwise):
+# its license is GPL, so installing it would force GPL on downstream users.
+# Code paths that need pymeshlab are documented and the user is expected to
+# install it explicitly (`pip install pymeshlab`) at their own license risk.
 geometry = [
-    "pymeshlab>=2023,<2024",
     "trimesh>=4.0,<5",
 ]
 docs = [
-    "sphinx-book-theme>=1.0.1,<2",
+    "shibuya>=2026.0",
     "myst-parser>=4.0,<5",
     "sphinx-autobuild>=2021.3.14",
     "nbsphinx>=0.9.3,<0.10",
@@ -46,6 +48,12 @@ notebook = [
 vtk = [
     "vtk>=9.2.6,<10",
     "pyvista>=0.44,<0.45",
+]
+# Required only for the legacy pandas-HDFStore compat readers in
+# cfdmod.analysis.inflow, cfdmod.hfpi.static, and cfdmod.pressure.migrate.
+# Modern XDMF+H5 inputs go through h5py and don't need this.
+legacy = [
+    "tables>=3.9.1,<4",
 ]
 
 [project.scripts]
@@ -64,6 +72,9 @@ dev = [
     "json-schema-for-humans>=1.0.2,<2",
     "pytest>=8.3.2,<9",
     "ruff>=0.6.8",
+    # tests/analysis/inflow + tests/pressure/test_migrate exercise the
+    # legacy HDFStore compat readers, so dev installs need pytables.
+    "tables>=3.9.1,<4",
 ]
 
 [tool.hatch.build.targets.sdist]
