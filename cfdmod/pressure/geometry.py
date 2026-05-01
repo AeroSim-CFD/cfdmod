@@ -295,18 +295,26 @@ def get_geometry_data(
 ) -> GeometryData:
     """Build a Cf/Cm GeometryData via the grouping pipeline.
 
+    Honors ``body_cfg.groupings`` when set (the explicit YAML chain);
+    otherwise builds the canonical ``[BySurface, ByZoning(sub_bodies)]``
+    chain via ``BodyConfig.resolved_groupings``.
+
     ``transformation`` is the same one applied to the working geometry
     by the caller -- spatial cells are evaluated in that frame.
 
     Empty ``sfc_list`` means "every surface in the mesh", matching the
     legacy convention used by the synthetic-surface code path.
     """
-    return build_geometry_data(
+    sfcs = list(sfc_list) if sfc_list else list(mesh.surfaces.keys())
+    geom, geometry_idx = mesh.geometry_from_list_surfaces(surfaces_names=sfcs)
+    chain = body_cfg.resolved_groupings(sfcs)
+    grouping = _apply_chain_in_transformed_frame(chain, mesh, transformation)
+    return GeometryData(
+        mesh=geom,
+        triangles_idxs=geometry_idx,
+        grouping=grouping,
+        spec_chain=chain,
         body_label=body_cfg.name,
-        sfc_list=sfc_list,
-        zoning=body_cfg.sub_bodies,
-        mesh=mesh,
-        transformation=transformation,
     )
 
 
