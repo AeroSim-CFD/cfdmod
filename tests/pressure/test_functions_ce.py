@@ -3,17 +3,32 @@
 import numpy as np
 import pandas as pd
 import pytest
-from lnas import LnasGeometry
+from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure.functions import calculate_statistics, process_surfaces, transform_Ce
 from cfdmod.pressure.geometry import (
-    GeometryData,
+    build_geometry_data,
     get_region_definition_dataframe,
     tabulate_geometry_data,
 )
 from cfdmod.pressure.parameters import BasicStatisticModel, CeConfig, ZoningConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
+
+
+def _ce_geom_data(mesh: LnasGeometry, zoning: ZoningModel, label: str = "sfc1"):
+    """Build a single-surface GeometryData for the Ce tests."""
+    parent = LnasFormat(
+        version="",
+        geometry=mesh,
+        surfaces={label: np.arange(mesh.triangles.shape[0], dtype=np.uint32)},
+    )
+    return build_geometry_data(
+        body_label=label,
+        sfc_list=[label],
+        zoning=zoning,
+        mesh=parent,
+    )
 
 pytestmark = pytest.mark.unit
 
@@ -52,9 +67,7 @@ def zoning():
 
 
 def test_get_region_definition_dataframe(mesh, zoning):
-    geom_dict = {
-        "sfc1": GeometryData(mesh=mesh, zoning_to_use=zoning, triangles_idxs=np.array([0, 1]))
-    }
+    geom_dict = {"sfc1": _ce_geom_data(mesh, zoning)}
     region_df = get_region_definition_dataframe(geom_dict)
 
     assert all(
@@ -63,9 +76,7 @@ def test_get_region_definition_dataframe(mesh, zoning):
 
 
 def test_transform_Ce(matrix_cp_data, zoning, mesh, cp_data):
-    geom_dict = {
-        "sfc1": GeometryData(mesh=mesh, zoning_to_use=zoning, triangles_idxs=np.array([0, 1]))
-    }
+    geom_dict = {"sfc1": _ce_geom_data(mesh, zoning)}
     geometry_df = tabulate_geometry_data(
         geom_dict,
         mesh_areas=mesh.areas,
@@ -81,9 +92,7 @@ def test_transform_Ce(matrix_cp_data, zoning, mesh, cp_data):
 
 
 def test_process_surfaces(mesh, zoning):
-    geom_dict = {
-        "sfc1": GeometryData(mesh=mesh, zoning_to_use=zoning, triangles_idxs=np.array([0, 1]))
-    }
+    geom_dict = {"sfc1": _ce_geom_data(mesh, zoning)}
     region_data = convert_dataframe_into_matrix(
         pd.DataFrame(
             {

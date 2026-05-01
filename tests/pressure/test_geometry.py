@@ -3,7 +3,7 @@ import pytest
 from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
-from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
+from cfdmod.pressure.geometry import build_geometry_data, tabulate_geometry_data
 from cfdmod.pressure.parameters import ZoningModel
 
 pytestmark = pytest.mark.unit
@@ -71,12 +71,14 @@ def test_combine_geometries():
 
 
 def test_tabulate_geometry(mesh):
-    zoning = ZoningModel(x_intervals=[0, 5, 10])
-    zoning.offset_limits(0.1)
+    zoning = ZoningModel(x_intervals=[0, 5, 10]).offset_limits(0.1)
 
     geom_dict = {
-        "sfc1": GeometryData(
-            mesh=mesh.geometry, zoning_to_use=zoning, triangles_idxs=np.array([0, 1])
+        "sfc1": build_geometry_data(
+            body_label="sfc1",
+            sfc_list=["sfc1", "sfc2"],
+            zoning=zoning,
+            mesh=mesh,
         )
     }
     transformation = TransformationConfig()

@@ -558,6 +558,7 @@ def process_Cf(
             body_cfg=body_cfg,
             sfc_list=bodies_definition[body_cfg.name].surfaces,
             mesh=mesh,
+            transformation=cfg.transformation,
         )
         geometry_dict[body_cfg.name] = geom_data
 
@@ -852,6 +853,7 @@ def process_Cm(
             body_cfg=body_cfg,
             sfc_list=bodies_definition[body_cfg.name].surfaces,
             mesh=mesh,
+            transformation=cfg.transformation,
         )
         geometry_dict[body_cfg.name] = geom_data
 
