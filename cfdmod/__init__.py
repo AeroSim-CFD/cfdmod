@@ -44,6 +44,8 @@ __all__ = [
     "GroupingSpec",
     "GroupingResult",
     "apply_groupings",
+    "dump_groupings",
+    "load_groupings",
     # Zoning
     "ZoningModel",
     "BodyDefinition",
@@ -115,6 +117,8 @@ from cfdmod.geometry import (
     GroupingResult,
     GroupingSpec,
     apply_groupings,
+    dump_groupings,
+    load_groupings,
 )
 from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
 from cfdmod.pressure.parameters import (

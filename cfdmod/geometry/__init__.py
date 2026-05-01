@@ -10,6 +10,8 @@ from cfdmod.geometry.grouping import (
     GroupingSpec,
     GroupingResult,
     apply_groupings,
+    dump_groupings,
+    load_groupings,
 )
 
 __all__ = [
@@ -19,4 +21,6 @@ __all__ = [
     "GroupingSpec",
     "GroupingResult",
     "apply_groupings",
+    "dump_groupings",
+    "load_groupings",
 ]

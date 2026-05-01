@@ -18,6 +18,7 @@ This module mirrors the architecture of
 """
 
 from cfdmod.geometry.grouping.base import GroupingResult, apply_groupings
+from cfdmod.geometry.grouping.io import dump_groupings, load_groupings
 from cfdmod.geometry.grouping.kinds.by_connectivity import ByConnectivityGrouping
 from cfdmod.geometry.grouping.kinds.by_surface import BySurfaceGrouping
 from cfdmod.geometry.grouping.kinds.by_zoning import ByZoningGrouping
@@ -30,4 +31,6 @@ __all__ = [
     "ByZoningGrouping",
     "ByConnectivityGrouping",
     "apply_groupings",
+    "dump_groupings",
+    "load_groupings",
 ]
