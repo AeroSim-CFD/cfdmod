@@ -37,6 +37,13 @@ __all__ = [
     "MovingAverageFilter",
     "FilterSpec",
     "apply_filters",
+    # Geometry grouping
+    "BySurfaceGrouping",
+    "ByZoningGrouping",
+    "ByConnectivityGrouping",
+    "GroupingSpec",
+    "GroupingResult",
+    "apply_groupings",
     # Zoning
     "ZoningModel",
     "BodyDefinition",
@@ -101,6 +108,14 @@ from cfdmod.io import (
 )
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
+from cfdmod.geometry import (
+    ByConnectivityGrouping,
+    BySurfaceGrouping,
+    ByZoningGrouping,
+    GroupingResult,
+    GroupingSpec,
+    apply_groupings,
+)
 from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
 from cfdmod.pressure.parameters import (
     BasePressureConfig,

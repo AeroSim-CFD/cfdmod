@@ -1,0 +1,25 @@
+"""Discriminated union of grouping specs.
+
+Add a new kind by:
+
+1. Creating ``cfdmod/geometry/grouping/kinds/<kind>.py`` that defines
+   ``<Kind>Grouping(BaseModel)`` with ``kind: Literal['<kind>']`` and an
+   ``apply_<kind>(spec, mesh, allowed) -> dict[str, np.ndarray]``.
+2. Adding the spec class to the ``GroupingSpec`` union below.
+3. Adding a dispatch branch in ``cfdmod.geometry.grouping.base._dispatch``.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from pydantic import Field
+
+from cfdmod.geometry.grouping.kinds.by_connectivity import ByConnectivityGrouping
+from cfdmod.geometry.grouping.kinds.by_surface import BySurfaceGrouping
+from cfdmod.geometry.grouping.kinds.by_zoning import ByZoningGrouping
+
+GroupingSpec = Annotated[
+    BySurfaceGrouping | ByZoningGrouping | ByConnectivityGrouping,
+    Field(discriminator="kind"),
+]
