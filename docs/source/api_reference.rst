@@ -112,6 +112,67 @@ Geometry / zoning
    :members:
    :show-inheritance:
 
+Triangle-grouping pipeline
+==========================
+
+A grouping pipeline partitions or selects triangles of a parent
+:class:`lnas.LnasFormat` mesh into named groups. It is the geometry
+counterpart to :mod:`cfdmod.pressure.filters` for time-series
+processing: specs are Pydantic models in a discriminated union,
+composed left-to-right with :func:`cfdmod.apply_groupings`, and a
+triangle may belong to **zero, one, or many** groups.
+
+The pressure pipeline (Cf, Cm, Ce) is built on top of this abstraction.
+The legacy ``BodyConfig.sub_bodies`` / ``CeConfig.zoning`` YAML form
+keeps working unchanged; the canonical
+``[BySurfaceGrouping, ByZoningGrouping]`` chain is synthesized
+internally. New configurations may instead set
+``BodyConfig.groupings`` to an explicit chain to express compositions
+the legacy fields cannot (for instance, splitting a body by
+shared-edge connectivity).
+
+Driver
+------
+
+.. autofunction:: cfdmod.apply_groupings
+
+.. autoclass:: cfdmod.GroupingResult
+   :members:
+
+Built-in grouping kinds
+-----------------------
+
+Each kind is dispatched on its ``kind`` discriminator in the
+:data:`cfdmod.GroupingSpec` union. A new kind is added by defining a
+new Pydantic model under ``cfdmod/geometry/grouping/kinds/`` with a
+unique ``kind`` literal, registering it in the union, and adding a
+dispatch branch in ``cfdmod.geometry.grouping.base._dispatch``.
+
+.. autoclass:: cfdmod.BySurfaceGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByZoningGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByConnectivityGrouping
+   :members:
+   :show-inheritance:
+
+Persistence
+-----------
+
+A grouping chain can be recorded alongside a coefficient's
+``processing_metadata`` block via the convention
+``{"groupings": cfdmod.dump_groupings(chain)}`` (sibling to
+``"filters"``); :func:`cfdmod.load_groupings` rehydrates the typed
+spec instances on read.
+
+.. autofunction:: cfdmod.dump_groupings
+
+.. autofunction:: cfdmod.load_groupings
+
 I/O helpers
 ===========
 
