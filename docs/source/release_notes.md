@@ -16,9 +16,37 @@ out of the box:
   `CeConfig.sets`).
 - `ByZoningGrouping` -- axis-aligned centroid binning into a
   Cartesian grid of regions (generalises `ZoningModel`).
+- `ByDivisionsGrouping` -- convenience wrapper over `ByZoningGrouping`
+  that splits each axis into `n_div_{x,y,z}` equal cells over the
+  candidate centroid bounding box.
+- `BySizeGrouping` -- convenience wrapper that builds cells of a
+  fixed `size_{x,y,z}` per axis anchored at the bounding-box minimum.
 - `ByConnectivityGrouping` -- one group per connected component of
   the (sub)mesh, defined by shared-edge adjacency. The first kind
   the legacy `sub_bodies` field could not express.
+- `ByNormalGrouping` -- bucket triangles by the cardinal direction
+  their outward normal best aligns with (windward / leeward / roof /
+  sidewall in one shot, with a tolerance angle).
+- `ByPlaneGrouping` -- bin centroids by signed distance from an
+  oriented plane. Generalises `ByZoningGrouping` to non-axis-aligned
+  half-space splits; the default produces two halves on either side
+  of the plane.
+- `ByPercentileGrouping` -- equal-count quantile bins along one axis,
+  for stable per-cell statistics when triangle density is uneven.
+- `ByCylindricalGrouping` -- Cartesian product of (r, theta, axial)
+  bins around a user-chosen cylinder axis. Natural fit for towers,
+  silos, chimneys and any partition that prefers cylindrical
+  coordinates over Cartesian.
+- `CustomGrouping` -- escape hatch for grouping logic the built-in
+  kinds cannot express: user supplies a Python callback (importable
+  dotted path or a direct callable) plus an opaque `params` dict, and
+  the callback returns the standard `{group_name: triangle_indices}`
+  mapping. Callback signature is fixed (`(mesh, candidate_idxs,
+  params) -> dict`); the driver validates indices are in range and
+  honor `restrict_to`. Dotted-path callbacks round-trip cleanly
+  through `dump_groupings` / `load_groupings`; direct callables are
+  serialised by deriving their import path when stable (lambdas and
+  local functions raise on serialise).
 
 Each spec exposes a `restrict_to: list[str] | None` field so later
 steps can scope their work to triangles already in earlier groups;

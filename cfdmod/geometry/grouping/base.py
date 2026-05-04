@@ -17,6 +17,22 @@ from cfdmod.geometry.grouping.kinds.by_connectivity import (
     ByConnectivityGrouping,
     apply_by_connectivity,
 )
+from cfdmod.geometry.grouping.kinds.by_custom import CustomGrouping, apply_by_custom
+from cfdmod.geometry.grouping.kinds.by_cylindrical import (
+    ByCylindricalGrouping,
+    apply_by_cylindrical,
+)
+from cfdmod.geometry.grouping.kinds.by_divisions import (
+    ByDivisionsGrouping,
+    apply_by_divisions,
+)
+from cfdmod.geometry.grouping.kinds.by_normal import ByNormalGrouping, apply_by_normal
+from cfdmod.geometry.grouping.kinds.by_percentile import (
+    ByPercentileGrouping,
+    apply_by_percentile,
+)
+from cfdmod.geometry.grouping.kinds.by_plane import ByPlaneGrouping, apply_by_plane
+from cfdmod.geometry.grouping.kinds.by_size import BySizeGrouping, apply_by_size
 from cfdmod.geometry.grouping.kinds.by_surface import BySurfaceGrouping, apply_by_surface
 from cfdmod.geometry.grouping.kinds.by_zoning import ByZoningGrouping, apply_by_zoning
 from cfdmod.geometry.grouping.specs import GroupingSpec
@@ -177,6 +193,20 @@ def _dispatch(
         return apply_by_surface(spec, mesh, allowed)
     if isinstance(spec, ByZoningGrouping):
         return apply_by_zoning(spec, mesh, allowed)
+    if isinstance(spec, ByDivisionsGrouping):
+        return apply_by_divisions(spec, mesh, allowed)
+    if isinstance(spec, BySizeGrouping):
+        return apply_by_size(spec, mesh, allowed)
     if isinstance(spec, ByConnectivityGrouping):
         return apply_by_connectivity(spec, mesh, allowed)
+    if isinstance(spec, ByNormalGrouping):
+        return apply_by_normal(spec, mesh, allowed)
+    if isinstance(spec, ByPlaneGrouping):
+        return apply_by_plane(spec, mesh, allowed)
+    if isinstance(spec, ByPercentileGrouping):
+        return apply_by_percentile(spec, mesh, allowed)
+    if isinstance(spec, ByCylindricalGrouping):
+        return apply_by_cylindrical(spec, mesh, allowed)
+    if isinstance(spec, CustomGrouping):
+        return apply_by_custom(spec, mesh, allowed)
     raise TypeError(f"unknown grouping kind: {type(spec).__name__}")

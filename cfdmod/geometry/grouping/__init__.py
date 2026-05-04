@@ -20,6 +20,13 @@ This module mirrors the architecture of
 from cfdmod.geometry.grouping.base import GroupingResult, apply_groupings
 from cfdmod.geometry.grouping.io import dump_groupings, load_groupings
 from cfdmod.geometry.grouping.kinds.by_connectivity import ByConnectivityGrouping
+from cfdmod.geometry.grouping.kinds.by_custom import CustomGrouping
+from cfdmod.geometry.grouping.kinds.by_cylindrical import ByCylindricalGrouping
+from cfdmod.geometry.grouping.kinds.by_divisions import ByDivisionsGrouping
+from cfdmod.geometry.grouping.kinds.by_normal import ByNormalGrouping
+from cfdmod.geometry.grouping.kinds.by_percentile import ByPercentileGrouping
+from cfdmod.geometry.grouping.kinds.by_plane import ByPlaneGrouping
+from cfdmod.geometry.grouping.kinds.by_size import BySizeGrouping
 from cfdmod.geometry.grouping.kinds.by_surface import BySurfaceGrouping
 from cfdmod.geometry.grouping.kinds.by_zoning import ByZoningGrouping
 from cfdmod.geometry.grouping.specs import GroupingSpec
@@ -29,7 +36,14 @@ __all__ = [
     "GroupingSpec",
     "BySurfaceGrouping",
     "ByZoningGrouping",
+    "ByDivisionsGrouping",
+    "BySizeGrouping",
     "ByConnectivityGrouping",
+    "ByNormalGrouping",
+    "ByPlaneGrouping",
+    "ByPercentileGrouping",
+    "ByCylindricalGrouping",
+    "CustomGrouping",
     "apply_groupings",
     "dump_groupings",
     "load_groupings",

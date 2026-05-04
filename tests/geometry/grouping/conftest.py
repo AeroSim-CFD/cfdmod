@@ -66,3 +66,41 @@ def grid_mesh() -> LnasFormat:
 
     surfaces = {"S": np.arange(n, dtype=np.uint32)}
     return LnasFormat(version="v1.0", geometry=geometry, surfaces=surfaces)
+
+
+def _face_triangles(face: str) -> np.ndarray:
+    """Two triangles tiling a unit-square face of the [0,1]^3 cube.
+
+    Triangles use a vertex order that yields a normal pointing outward
+    along the named face direction (one of ``+x``, ``-x``, ``+y``, ...).
+    Returns a (2, 3, 3) float32 array.
+    """
+    # Local frame on each face; orient so cross(v1-v0, v2-v0) points outward.
+    layouts: dict[str, list[tuple[float, float, float]]] = {
+        "+x": [(1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1)],
+        "-x": [(0, 0, 0), (0, 0, 1), (0, 1, 1), (0, 1, 0)],
+        "+y": [(0, 1, 0), (0, 1, 1), (1, 1, 1), (1, 1, 0)],
+        "-y": [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)],
+        "+z": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+        "-z": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 0, 0)],
+    }
+    quad = np.array(layouts[face], dtype=np.float32)
+    return np.stack([quad[[0, 1, 2]], quad[[0, 2, 3]]], axis=0)
+
+
+@pytest.fixture
+def cube_mesh() -> LnasFormat:
+    """Unit cube [0,1]^3 with two triangles per face (12 total).
+
+    Triangle order is +x, -x, +y, -y, +z, -z (two triangles per face,
+    consecutive). Outward normals match the face direction.
+    """
+    faces = ["+x", "-x", "+y", "-y", "+z", "-z"]
+    triangles = np.concatenate([_face_triangles(f) for f in faces], axis=0)  # (12, 3, 3)
+
+    n = triangles.shape[0]
+    vertices = triangles.reshape((n * 3, 3)).astype(np.float32)
+    tri_idx = np.arange(n * 3, dtype=np.uint32).reshape((n, 3))
+    geometry = LnasGeometry(vertices=vertices, triangles=tri_idx)
+    surfaces = {"cube": np.arange(n, dtype=np.uint32)}
+    return LnasFormat(version="v1.0", geometry=geometry, surfaces=surfaces)

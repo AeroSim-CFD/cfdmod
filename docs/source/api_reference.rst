@@ -156,7 +156,35 @@ dispatch branch in ``cfdmod.geometry.grouping.base._dispatch``.
    :members:
    :show-inheritance:
 
+.. autoclass:: cfdmod.ByDivisionsGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.BySizeGrouping
+   :members:
+   :show-inheritance:
+
 .. autoclass:: cfdmod.ByConnectivityGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByNormalGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByPlaneGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByPercentileGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.ByCylindricalGrouping
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.CustomGrouping
    :members:
    :show-inheritance:
 

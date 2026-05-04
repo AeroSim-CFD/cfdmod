@@ -6,8 +6,15 @@ import pytest
 
 from cfdmod.geometry import (
     ByConnectivityGrouping,
+    ByCylindricalGrouping,
+    ByDivisionsGrouping,
+    ByNormalGrouping,
+    ByPercentileGrouping,
+    ByPlaneGrouping,
+    BySizeGrouping,
     BySurfaceGrouping,
     ByZoningGrouping,
+    CustomGrouping,
     dump_groupings,
     load_groupings,
 )
@@ -35,12 +42,35 @@ def test_kind_discriminator_routes_to_right_class():
     serialized = [
         {"kind": "by_surface", "sets": {"x": ["A"]}},
         {"kind": "by_zoning", "x_intervals": [0.0, 1.0]},
+        {"kind": "by_divisions", "n_div_x": 4},
+        {"kind": "by_size", "size_x": 0.5},
         {"kind": "by_connectivity", "min_triangles": 1},
+        {"kind": "by_normal", "axes": ["+x", "-x"]},
+        {"kind": "by_plane", "point": [0, 0, 0], "normal": [1, 0, 0]},
+        {"kind": "by_percentile", "axis": "x", "n_quantiles": 4},
+        {
+            "kind": "by_cylindrical",
+            "origin": [0, 0, 0],
+            "axis": "z",
+            "theta_intervals_deg": [0, 90, 180, 270, 360],
+        },
+        {
+            "kind": "by_custom",
+            "callback": "tests.geometry.grouping._custom_callbacks.first_n",
+            "params": {"n": 3, "name": "head"},
+        },
     ]
     chain = load_groupings(serialized)
     assert isinstance(chain[0], BySurfaceGrouping)
     assert isinstance(chain[1], ByZoningGrouping)
-    assert isinstance(chain[2], ByConnectivityGrouping)
+    assert isinstance(chain[2], ByDivisionsGrouping)
+    assert isinstance(chain[3], BySizeGrouping)
+    assert isinstance(chain[4], ByConnectivityGrouping)
+    assert isinstance(chain[5], ByNormalGrouping)
+    assert isinstance(chain[6], ByPlaneGrouping)
+    assert isinstance(chain[7], ByPercentileGrouping)
+    assert isinstance(chain[8], ByCylindricalGrouping)
+    assert isinstance(chain[9], CustomGrouping)
 
 
 def test_unknown_kind_raises():
