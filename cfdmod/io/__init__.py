@@ -32,11 +32,15 @@ __all__ = [
     "read_timeseries_df",
     "to_csv",
     "plot_timeseries",
+    # inspect helpers (debug)
+    "inspect_h5",
+    "read_all_timesteps",
 ]
 
 from cfdmod.io.geometry.STL import read_stl, export_stl
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.io.geometry.region_meshing import create_regions_mesh
+from cfdmod.io.inspect import inspect_h5, read_all_timesteps
 from cfdmod.io.mesh import load_mesh, mesh_from_h5
 from cfdmod.io.timeseries import plot_timeseries, read_timeseries_df, to_csv
 from cfdmod.io.xdmf import (

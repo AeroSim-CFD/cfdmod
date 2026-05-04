@@ -73,6 +73,8 @@ __all__ = [
     "read_timeseries_df",
     "plot_timeseries",
     "to_csv",
+    "inspect_h5",
+    "read_all_timesteps",
     # Notebook utils
     "mesh_summary",
     "show_config",
@@ -90,9 +92,11 @@ from cfdmod.climate import (
 )
 from cfdmod.io import (
     export_stl,
+    inspect_h5,
     load_mesh,
     mesh_from_h5,
     plot_timeseries,
+    read_all_timesteps,
     read_processing_metadata,
     read_stl,
     read_timeseries_df,
