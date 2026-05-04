@@ -43,17 +43,22 @@ Filtering between coefficients
 
 A coefficient timeseries (Cp, Cf, Cm, Ce) is a normal XDMF+H5 file that
 can be passed through a chain of signal-processing filters using
-:func:`cfdmod.pressure.filters.apply_filters`. Filters are an opt-in
+:func:`cfdmod.filters.apply_filters_h5`. Filters are an opt-in
 pipeline step; the output is another timeseries H5 with the same
 on-disk shape, ready to feed the next stage. The applied chain is
 recorded in ``/processing_metadata`` so the lineage stays self-
 describing.
 
+The filter chain is also available as a pure-numpy entry point
+(:func:`cfdmod.filters.apply_filters`) for code that already has the
+timeseries in memory or wants to filter signals from sources other
+than cfdmod's H5 layout.
+
 .. code-block:: python
 
-   from cfdmod import MovingAverageFilter, apply_filters
+   from cfdmod import MovingAverageFilter, apply_filters_h5
 
-   apply_filters(
+   apply_filters_h5(
        input_h5="output/cp.default.time_series.h5",
        output_h5="output/cp.default.smoothed.time_series.h5",
        filters=[MovingAverageFilter(window=3.0)],   # in input time units

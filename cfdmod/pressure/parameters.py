@@ -53,77 +53,24 @@ from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.utils import read_yaml
 
 # ---------------------------------------------------------------------------
-# Statistics models
+# Statistics models live in cfdmod.statistics.specs now; re-exported here
+# for back-compat so existing ``from cfdmod.pressure.parameters import
+# BasicStatisticModel`` keeps working.
 # ---------------------------------------------------------------------------
 
-Statistics = Literal["max", "min", "rms", "mean", "mean_eq", "skewness", "kurtosis"]
-ExtremeMethods = Literal["Gumbel", "Peak", "Absolute"]
 AxisDirections = Literal["x", "y", "z"]
 
-
-class ExtremeAbsoluteParamsModel(BaseModel):
-    method_type: Literal["Absolute"] = "Absolute"
-
-
-class ExtremeGumbelParamsModel(BaseModel):
-    method_type: Literal["Gumbel"] = "Gumbel"
-    peak_duration: float
-    event_duration: float
-    n_subdivisions: int = 10
-    non_exceedance_probability: Annotated[float, Field(0.78, gt=0, lt=1)]
-    # Optional in Cf/Cm: when omitted, the runner inherits from the Cp config
-    # used to produce the input cp_h5 (simul_U_H / simul_characteristic_length
-    # are persisted in /processing_metadata).
-    full_scale_U_H: Annotated[float | None, Field(default=None, gt=0)]
-    full_scale_characteristic_length: Annotated[float | None, Field(default=None, gt=0)]
-
-    @property
-    def yR(self):
-        if not hasattr(self, "_yR"):
-            self._yR = -np.log(-np.log(self.non_exceedance_probability))
-        return self._yR
-
-
-class ExtremePeakParamsModel(BaseModel):
-    method_type: Literal["Peak"] = "Peak"
-    peak_factor: float
-
-
-class MeanEquivalentParamsModel(BaseModel):
-    scale_factor: Annotated[float, Field(default=0.61, gt=0, le=1)]
-
-
-StatisticsParamsModel = (
-    MeanEquivalentParamsModel
-    | ExtremeGumbelParamsModel
-    | ExtremePeakParamsModel
-    | ExtremeAbsoluteParamsModel
+from cfdmod.statistics.specs import (  # noqa: E402  (re-export)
+    BasicStatisticModel,
+    ExtremeAbsoluteParamsModel,
+    ExtremeGumbelParamsModel,
+    ExtremeMethods,
+    ExtremePeakParamsModel,
+    MeanEquivalentParamsModel,
+    ParameterizedStatisticModel,
+    Statistics,
+    StatisticsParamsModel,
 )
-
-
-class BasicStatisticModel(BaseModel):
-    stats: Statistics
-    display_name: str = ""
-
-
-class ParameterizedStatisticModel(BasicStatisticModel):
-    params: StatisticsParamsModel
-
-    @field_validator("params", mode="before")
-    def validate_params(cls, v):
-        if not isinstance(v, dict):
-            return v
-        if "method_type" in v:
-            if v["method_type"] == "Gumbel":
-                return ExtremeGumbelParamsModel(**v)
-            elif v["method_type"] == "Peak":
-                return ExtremePeakParamsModel(**v)
-            elif v["method_type"] == "Absolute":
-                return ExtremeAbsoluteParamsModel(**v)
-            else:
-                available = get_args(ExtremeMethods)
-                raise ValueError(f"Unknown method {v['method_type']}, available: {available}")
-        return MeanEquivalentParamsModel(**v)
 
 
 # ---------------------------------------------------------------------------

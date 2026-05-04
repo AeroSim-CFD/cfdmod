@@ -114,13 +114,19 @@ mesh from `cp_h5`, so the reference frame propagates without re-passing
 Signal-processing filters are now their own pipeline stage rather than
 being smuggled into the statistics block:
 
-- `cfdmod.pressure.filters.apply_filters(input_h5, output_h5,
+- `cfdmod.filters.apply_filters_h5(input_h5, output_h5,
   filters=[...], group=...)` reads any coefficient timeseries, applies
   the chain in order, and writes a new `*.time_series.h5` with the
   same on-disk shape (`/Triangles + /Geometry`, `/{group}/t{T}` per
   timestep, `/meta/...`, sibling temporal XDMF). The applied chain is
   recorded under `/processing_metadata` so the lineage is self-
-  describing.
+  describing. (Originally landed under `cfdmod.pressure.filters`; the
+  module moved to top-level `cfdmod.filters` in a follow-up so the
+  same chain can be applied to any timeseries, not just pressure
+  outputs. The pure-numpy entry point `cfdmod.filters.apply_filters`
+  is the in-memory core; `apply_filters_h5` is the file-based
+  wrapper. The old import path keeps working with a
+  `DeprecationWarning`.)
 - Initial filter type: `MovingAverageFilter(window=...)`. `window` is
   in the input file's own time-axis units (raw solver time by
   default; convective time when `normalize_time=True`). No implicit
@@ -138,9 +144,14 @@ being smuggled into the statistics block:
 
 - Disk-first stats contract. Every coefficient persists its full per-triangle
   timeseries to an XDMF+H5 file *before* statistics are computed. Statistics
-  are then read back from disk via
-  `cfdmod.pressure.statistics_runner.calculate_statistics_from_h5` so memory
-  pressure no longer scales with the number of timesteps.
+  are then read back from disk via `cfdmod.statistics.apply_statistics_h5`
+  so memory pressure no longer scales with the number of timesteps.
+  (Originally landed under `cfdmod.pressure.statistics_runner`; the module
+  moved to top-level `cfdmod.statistics` in a follow-up so the same
+  dispatch can compute stats over any timeseries, not just pressure
+  outputs. The pure-numpy entry point `cfdmod.statistics.apply_statistics`
+  is the in-memory core; `apply_statistics_h5` is the file-based wrapper.
+  The old import path keeps working with a `DeprecationWarning`.)
 - Single combined `stats.{h5,xdmf}` for the whole run, with an embedded mesh
   per leaf group. `write_stats_xdmf` walks the H5 tree and emits one
   `<Grid>` per `(coefficient, body[, direction[, case]])` triple, each on

@@ -37,6 +37,10 @@ __all__ = [
     "MovingAverageFilter",
     "FilterSpec",
     "apply_filters",
+    "apply_filters_h5",
+    # Statistics
+    "apply_statistics",
+    "apply_statistics_h5",
     # Zoning
     "ZoningModel",
     "BodyDefinition",
@@ -105,7 +109,13 @@ from cfdmod.io import (
 )
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
-from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
+from cfdmod.filters import (
+    FilterSpec,
+    MovingAverageFilter,
+    apply_filters,
+    apply_filters_h5,
+)
+from cfdmod.statistics import apply_statistics, apply_statistics_h5
 from cfdmod.pressure.parameters import (
     BasePressureConfig,
     BodyConfig,

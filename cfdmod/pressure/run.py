@@ -4,10 +4,10 @@ Pure Python entry points called by cli.py. No argparse or file-path logic here.
 
 Pipeline contract: every coefficient first persists its full per-triangle
 timeseries to disk (XDMF+H5), then computes statistics from that on-disk
-file via cfdmod.pressure.statistics_runner.calculate_statistics_from_h5.
-Stats are appended to a single combined stats.h5 with an embedded mesh
-per leaf group (so different sub-meshes - body subsets for Cf/Cm, sliced
-regions mesh for Ce - coexist without length collisions).
+file via cfdmod.statistics.apply_statistics_h5. Stats are appended to a
+single combined stats.h5 with an embedded mesh per leaf group (so
+different sub-meshes - body subsets for Cf/Cm, sliced regions mesh for
+Ce - coexist without length collisions).
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from cfdmod.pressure.parameters import (
     ParameterizedStatisticModel,
 )
 from cfdmod.pressure.path_manager import CePathManager, CfPathManager, CmPathManager, CpPathManager
-from cfdmod.pressure.statistics_runner import calculate_statistics_from_h5
+from cfdmod.statistics import apply_statistics_h5
 from cfdmod.utils import create_folders_for_file
 
 
@@ -202,7 +202,7 @@ def _write_stats_for_group(
 ) -> None:
     """Compute stats from an on-disk timeseries group and append to stats.h5
     under ``stats_group`` with the embedded mesh."""
-    stats_df = calculate_statistics_from_h5(
+    stats_df = apply_statistics_h5(
         h5_path=timeseries_path,
         group=timeseries_group,
         statistics=statistics,
