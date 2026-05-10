@@ -36,6 +36,9 @@ __all__ = [
     "build_s1",
     "PedestrianComfortConfig",
     "build_pedestrian_comfort",
+    "DynamicAnalysisConfig",
+    "build_dynamic_response",
+    "identity_solver",
 ]
 
 from cfdmod.core.recipes.ce import CeRecipeConfig, ce_pipeline
@@ -45,5 +48,10 @@ from cfdmod.core.recipes.cp import CpRecipeConfig, build_cp, cp_pipeline
 from cfdmod.core.recipes.pedestrian_comfort import (
     PedestrianComfortConfig,
     build_pedestrian_comfort,
+)
+from cfdmod.core.recipes.dynamic import (
+    DynamicAnalysisConfig,
+    build_dynamic_response,
+    identity_solver,
 )
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline
