@@ -24,6 +24,10 @@ __all__ = [
     "field_series_for_groups",
     "FilterByGroupingParams",
     "filter_by_grouping",
+    "ModalProjectionParams",
+    "modal_projection",
+    "ModalRecompositionParams",
+    "modal_recomposition",
 ]
 
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
@@ -33,5 +37,13 @@ from cfdmod.core.ops.data_source_create.field_series_for_groups import (
 from cfdmod.core.ops.data_source_create.filter_by_grouping import (
     FilterByGroupingParams,
     filter_by_grouping,
+)
+from cfdmod.core.ops.data_source_create.modal_projection import (
+    ModalProjectionParams,
+    modal_projection,
+)
+from cfdmod.core.ops.data_source_create.modal_recomposition import (
+    ModalRecompositionParams,
+    modal_recomposition,
 )
 from cfdmod.core.ops.data_source_create.statistics import StatisticsParams, compute_statistics
