@@ -44,6 +44,7 @@ import h5py
 import numpy as np
 from pydantic import BaseModel, Field
 
+from cfdmod.core.ops.field.moving_average import window_in_samples as _window_in_samples_core
 from cfdmod.io.xdmf import (
     get_pressure_keys,
     read_timeseries_meta,
@@ -88,13 +89,13 @@ FilterSpec = Annotated[MovingAverageFilter, Field(discriminator="kind")]
 
 
 def _window_in_samples(window: float, dt: float) -> int:
-    """Convert a time-units window to an odd integer sample count >= 1."""
-    n = int(round(window / dt))
-    if n < 1:
-        n = 1
-    if n % 2 == 0:
-        n += 1
-    return n
+    """Convert a time-units window to an odd integer sample count >= 1.
+
+    Thin wrapper over :func:`cfdmod.core.ops.field.moving_average.window_in_samples`
+    so the legacy and the v3 core share one source of truth for the
+    odd-integer rounding rule.
+    """
+    return _window_in_samples_core(window, dt)
 
 
 def _apply_one(
