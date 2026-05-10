@@ -11,6 +11,28 @@ from __future__ import annotations
 __all__ = [
     "MovingAverageParams",
     "moving_average",
+    "AddParams",
+    "SubParams",
+    "MulParams",
+    "DivParams",
+    "ScaleParams",
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "scale",
 ]
 
+from cfdmod.core.ops.field.algebra import (
+    AddParams,
+    DivParams,
+    MulParams,
+    ScaleParams,
+    SubParams,
+    add,
+    div,
+    mul,
+    scale,
+    sub,
+)
 from cfdmod.core.ops.field.moving_average import MovingAverageParams, moving_average
