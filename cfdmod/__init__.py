@@ -77,6 +77,27 @@ __all__ = [
     "mesh_summary",
     "show_config",
     "load_lnas",
+    # v3 paradigm: data sources, ops, recipes (issue #131)
+    "DataSource",
+    "SurfaceDataSource",
+    "VolumeDataSource",
+    "PointsDataSource",
+    "GroupsDataSource",
+    "ModesDataSource",
+    "TimeAxis",
+    "Topology",
+    "ElementMeta",
+    "Grouping",
+    "FieldMeta",
+    "Container",
+    "Pipeline",
+    "compose",
+    "MemoryStorage",
+    "MemoryFieldStore",
+    "XdmfH5Storage",
+    "H5FieldStore",
+    "core_ops",
+    "recipes",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -139,3 +160,27 @@ from cfdmod.s1 import (
     get_NBR_cat_u_profile,
     get_NBR_u_profile,
 )
+
+# v3 paradigm exports (issue #131). The legacy public symbols above are
+# unchanged; the new names live next to them and become the canonical
+# entry points for new code.
+from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
+from cfdmod.adapters.xdmf_h5 import H5FieldStore, XdmfH5Storage
+from cfdmod.core import (
+    Container,
+    DataSource,
+    ElementMeta,
+    FieldMeta,
+    Grouping,
+    GroupsDataSource,
+    ModesDataSource,
+    Pipeline,
+    PointsDataSource,
+    SurfaceDataSource,
+    TimeAxis,
+    Topology,
+    VolumeDataSource,
+    compose,
+)
+from cfdmod.core import ops as core_ops
+from cfdmod.core import recipes
