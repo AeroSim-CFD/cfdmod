@@ -31,9 +31,19 @@ __all__ = [
     "CeRecipeConfig",
     "cm_pipeline",
     "CmRecipeConfig",
+    "S1RecipeConfig",
+    "s1_pipeline",
+    "build_s1",
+    "PedestrianComfortConfig",
+    "build_pedestrian_comfort",
 ]
 
 from cfdmod.core.recipes.ce import CeRecipeConfig, ce_pipeline
 from cfdmod.core.recipes.cf import CfRecipeConfig, cf_pipeline
 from cfdmod.core.recipes.cm import CmRecipeConfig, cm_pipeline
 from cfdmod.core.recipes.cp import CpRecipeConfig, build_cp, cp_pipeline
+from cfdmod.core.recipes.pedestrian_comfort import (
+    PedestrianComfortConfig,
+    build_pedestrian_comfort,
+)
+from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline

@@ -70,7 +70,9 @@ def classify_broadcast(
     lhs_is_2d = len(lhs_shape) == 2
     rhs_is_2d = len(rhs_shape) == 2
 
-    if lhs_is_2d and rhs_is_2d and lhs_shape == rhs_shape:
+    if lhs_shape == rhs_shape:
+        # Covers both (n_elements,) vs (n_elements,) (time-aggregated
+        # element-wise) and (n_elements, n_t) vs (n_elements, n_t).
         return "elementwise"
 
     if lhs_is_2d and rhs_is_2d and lhs_shape[1] == rhs_shape[1] and rhs_shape[0] == 1:

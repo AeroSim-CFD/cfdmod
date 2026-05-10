@@ -28,6 +28,10 @@ __all__ = [
     "modal_projection",
     "ModalRecompositionParams",
     "modal_recomposition",
+    "ProbeExtractionParams",
+    "probe_extraction",
+    "ProfileInterpolationParams",
+    "profile_interpolation",
 ]
 
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
@@ -45,5 +49,13 @@ from cfdmod.core.ops.data_source_create.modal_projection import (
 from cfdmod.core.ops.data_source_create.modal_recomposition import (
     ModalRecompositionParams,
     modal_recomposition,
+)
+from cfdmod.core.ops.data_source_create.probe_extraction import (
+    ProbeExtractionParams,
+    probe_extraction,
+)
+from cfdmod.core.ops.data_source_create.profile_interpolation import (
+    ProfileInterpolationParams,
+    profile_interpolation,
 )
 from cfdmod.core.ops.data_source_create.statistics import StatisticsParams, compute_statistics
