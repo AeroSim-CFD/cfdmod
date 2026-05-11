@@ -41,6 +41,7 @@ import numpy as np
 from cfdmod.adapters.xdmf_h5.field_store import H5FieldStore
 from cfdmod.core.data_source import (
     DataSource,
+    GroupsDataSource,
     PointsDataSource,
     SurfaceDataSource,
 )
@@ -225,6 +226,14 @@ class XdmfH5Storage:
     # --- Write -------------------------------------------------------------
 
     def write_data_source(self, key: str, ds: DataSource) -> None:
+        # GroupsDataSource is special: it has no topology of its own,
+        # but it does carry parent_topology + parent_grouping. We
+        # broadcast per-group values back to the parent's triangles so
+        # the on-disk h5 is a regular surface timeseries that ParaView
+        # can render. The result matches the legacy run_cf output.
+        if isinstance(ds, GroupsDataSource):
+            ds = _groups_to_parent_surface(ds)
+
         if ds.topology is None:
             raise ValueError(
                 f"XdmfH5Storage cannot write a DataSource with no topology (kind={ds.kind!r})."
@@ -287,6 +296,47 @@ class XdmfH5Storage:
                 _xdmf.write_stats_xdmf(h5_path, xdmf_path)
             elif groups_for_xdmf:
                 _xdmf.write_temporal_xdmf(h5_path, xdmf_path, groups_for_xdmf)
+
+
+def _groups_to_parent_surface(ds: GroupsDataSource) -> SurfaceDataSource:
+    """Broadcast a GroupsDataSource back onto its parent surface.
+
+    Returns a :class:`SurfaceDataSource` over the parent's triangles
+    with each parent triangle taking the value of the group it belongs
+    to. Triangles in ungrouped territory (``-1``) get NaN.
+    """
+    from cfdmod.adapters.memory import MemoryFieldStore
+    from cfdmod.core.field_meta import FieldMeta
+
+    parent_indices = ds.parent_grouping.indices
+    group_ids = ds.groupings[ds.parent_grouping.name].indices  # row index -> group id
+    # Map group id -> row index in the groups source.
+    row_for_gid = {int(gid): row for row, gid in enumerate(group_ids)}
+    n_parent = ds.parent_topology.n_elements
+
+    out_arrays: dict[str, np.ndarray] = {}
+    out_meta: dict[str, FieldMeta] = {}
+    for fname in ds.fields.keys():
+        arr = np.asarray(ds.fields.read(fname), dtype=np.float64)
+        if arr.ndim == 2:
+            broadcast = np.full((n_parent, arr.shape[1]), np.nan, dtype=np.float64)
+        else:
+            broadcast = np.full(n_parent, np.nan, dtype=np.float64)
+        for tri in range(n_parent):
+            gid = int(parent_indices[tri])
+            if gid not in row_for_gid:
+                continue
+            broadcast[tri] = arr[row_for_gid[gid]]
+        out_arrays[fname] = broadcast
+        out_meta[fname] = ds.field_meta.get(fname, FieldMeta(name=fname))
+
+    return SurfaceDataSource(
+        time=ds.time,
+        topology=ds.parent_topology,
+        elements=ElementMeta(),
+        fields=MemoryFieldStore(out_arrays),
+        field_meta=out_meta,
+    )
 
 
 def _connectivity_for_write(topology: Topology) -> np.ndarray:

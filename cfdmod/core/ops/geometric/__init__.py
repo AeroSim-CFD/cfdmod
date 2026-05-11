@@ -8,7 +8,10 @@ Per issue #131:
 - Group-belonging index (just index assignment, no new geometry).
 
 The first three are placeholders for now; only :func:`attach_grouping`
-lands here in Phase 5 because the Cf/Cm/Ce recipes need it.
+lands here in Phase 5 because the Cf/Cm/Ce recipes need it. The mesh
+adapters (:func:`mesh_attach`, :func:`body_grouping`) ship next to it
+because they are the canonical bridge between an ``.lnas`` mesh on
+disk and a v3 :class:`DataSource`.
 """
 
 from __future__ import annotations
@@ -16,6 +19,15 @@ from __future__ import annotations
 __all__ = [
     "AttachGroupingParams",
     "attach_grouping",
+    "MeshAttachParams",
+    "mesh_attach",
+    "BodyGroupingParams",
+    "body_grouping",
+    "ZoningGroupingParams",
+    "zoning_grouping",
 ]
 
 from cfdmod.core.ops.geometric.attach_grouping import AttachGroupingParams, attach_grouping
+from cfdmod.core.ops.geometric.body_grouping import BodyGroupingParams, body_grouping
+from cfdmod.core.ops.geometric.mesh_attach import MeshAttachParams, mesh_attach
+from cfdmod.core.ops.geometric.zoning_grouping import ZoningGroupingParams, zoning_grouping

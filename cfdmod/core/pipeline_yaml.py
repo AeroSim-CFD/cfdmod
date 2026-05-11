@@ -148,18 +148,31 @@ def _populate_default_registry() -> None:
     from cfdmod.core.ops.field import (
         AddParams,
         DivParams,
+        ForceContributionParams,
+        MomentContributionParams,
         MovingAverageParams,
         MulParams,
         ScaleParams,
         SubParams,
         add,
         div,
+        force_contribution,
+        moment_contribution,
         moving_average,
         mul,
         scale,
         sub,
     )
-    from cfdmod.core.ops.geometric import AttachGroupingParams, attach_grouping
+    from cfdmod.core.ops.geometric import (
+        AttachGroupingParams,
+        BodyGroupingParams,
+        MeshAttachParams,
+        ZoningGroupingParams,
+        attach_grouping,
+        body_grouping,
+        mesh_attach,
+        zoning_grouping,
+    )
     from cfdmod.core.ops.time import (
         RescaleTimeParams,
         TranslateParams,
@@ -177,6 +190,11 @@ def _populate_default_registry() -> None:
         ("moving_average", moving_average, MovingAverageParams),
         ("scale", scale, ScaleParams),
         ("attach_grouping", attach_grouping, AttachGroupingParams),
+        ("mesh_attach", mesh_attach, MeshAttachParams),
+        ("body_grouping", body_grouping, BodyGroupingParams),
+        ("zoning_grouping", zoning_grouping, ZoningGroupingParams),
+        ("force_contribution", force_contribution, ForceContributionParams),
+        ("moment_contribution", moment_contribution, MomentContributionParams),
         ("filter_by_grouping", filter_by_grouping, FilterByGroupingParams),
         ("field_series_for_groups", field_series_for_groups, FieldSeriesForGroupsParams),
         ("statistics", compute_statistics, StatisticsParams),
@@ -310,11 +328,39 @@ def _resolve_key(template_root: str | None, path: str) -> str:
     return str(pathlib.Path(template_root) / pp)
 
 
-def _step_params(step: OpSpec, params_cls: type[BaseModel]) -> BaseModel:
-    """Build the params model from the step's extras."""
+# Step-level fields whose values are paths the user wrote relative to
+# the template's root. The runner resolves them to absolute paths before
+# building the op's params model so ops never need to know about the
+# YAML's location.
+_PATHLIKE_FIELDS = frozenset({"mesh", "mesh_path", "lnas", "csv"})
+
+
+def _resolve_pathlike(value: object, template_root: str | None) -> object:
+    if not isinstance(value, str) or template_root is None:
+        return value
+    pp = pathlib.Path(value)
+    if pp.is_absolute():
+        return value
+    return str(pathlib.Path(template_root) / pp)
+
+
+def _step_params(
+    step: OpSpec,
+    params_cls: type[BaseModel],
+    template_root: str | None,
+) -> BaseModel:
+    """Build the params model from the step's extras.
+
+    String fields whose name is in :data:`_PATHLIKE_FIELDS` are
+    resolved against ``template_root`` so users can write relative
+    paths in YAML.
+    """
     raw = step.model_dump()
     for key in ("id", "kind", "source", "rhs"):
         raw.pop(key, None)
+    for key, value in list(raw.items()):
+        if key in _PATHLIKE_FIELDS:
+            raw[key] = _resolve_pathlike(value, template_root)
     return params_cls.model_validate(raw)
 
 
@@ -355,7 +401,7 @@ def run_template(
                 f"step {step_id!r} references unknown source {step.source!r}"
             )
         ds = bindings[step.source]
-        params = _step_params(step, params_cls)
+        params = _step_params(step, params_cls, template.root)
 
         if arity == "binary":
             if step.rhs is None:

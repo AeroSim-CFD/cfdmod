@@ -1,0 +1,63 @@
+# Cf pipeline template (v3 schema).
+#
+# Reads a Cp time series (produced by the cp.yaml template above) and
+# returns the per-body force coefficients per direction.
+#
+# Steps
+#   1. mesh_attach: pull areas + normals + centroids from the lnas mesh.
+#   2. body_grouping: assign each triangle to a body from the bodies dict.
+#   3. force_contribution: per-triangle cf_x / cf_y / cf_z from cp.
+#   4. field_series_for_groups: sum each cf_<dir> per body.
+#   5. statistics: per-body, per-direction mean / rms / peak.
+name: cf_default
+
+inputs:
+  cp:
+    kind: surface
+    path: ./out/cp.time_series
+
+pipeline:
+  - id: cp_with_mesh
+    kind: mesh_attach
+    source: cp
+    mesh: ../galpao/galpao.normalized.lnas
+
+  - id: cp_grouped
+    kind: body_grouping
+    source: cp_with_mesh
+    mesh: ../galpao/galpao.normalized.lnas
+    bodies:
+      building: []
+
+  - id: cp_with_forces
+    kind: force_contribution
+    source: cp_grouped
+    field: cp
+    nominal_area: 100.0
+    directions: [x, y, z]
+
+  - id: cf_x
+    kind: field_series_for_groups
+    source: cp_with_forces
+    grouping: body
+    field: cf_x
+    agg: sum
+
+  - id: cf_y
+    kind: field_series_for_groups
+    source: cp_with_forces
+    grouping: body
+    field: cf_y
+    agg: sum
+
+  - id: cf_z
+    kind: field_series_for_groups
+    source: cp_with_forces
+    grouping: body
+    field: cf_z
+    agg: sum
+
+outputs:
+  cf_x: {source: cf_x, path: ./out/cf_x.time_series}
+  cf_y: {source: cf_y, path: ./out/cf_y.time_series}
+  cf_z: {source: cf_z, path: ./out/cf_z.time_series}

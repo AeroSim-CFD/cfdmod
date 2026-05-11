@@ -21,6 +21,10 @@ __all__ = [
     "mul",
     "div",
     "scale",
+    "ForceContributionParams",
+    "force_contribution",
+    "MomentContributionParams",
+    "moment_contribution",
 ]
 
 from cfdmod.core.ops.field.algebra import (
@@ -34,5 +38,13 @@ from cfdmod.core.ops.field.algebra import (
     mul,
     scale,
     sub,
+)
+from cfdmod.core.ops.field.force_contribution import (
+    ForceContributionParams,
+    force_contribution,
+)
+from cfdmod.core.ops.field.moment_contribution import (
+    MomentContributionParams,
+    moment_contribution,
 )
 from cfdmod.core.ops.field.moving_average import MovingAverageParams, moving_average

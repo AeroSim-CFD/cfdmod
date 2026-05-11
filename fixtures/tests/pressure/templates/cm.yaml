@@ -1,0 +1,70 @@
+# Cm pipeline template (v3 schema).
+#
+# Reads a Cp time series and produces per-body moment coefficients.
+# Composes:
+#   1. mesh_attach -> areas, normals, centroids on the cp source.
+#   2. body_grouping -> body assignment per triangle.
+#   3. force_contribution -> per-triangle cf_x/cf_y/cf_z.
+#   4. moment_contribution -> per-triangle cm_x/cm_y/cm_z about a chosen
+#      lever_origin. Reuses cf_<dir> from step 3.
+#   5. field_series_for_groups -> sum the cm_<dir> over each body.
+name: cm_default
+
+inputs:
+  cp:
+    kind: surface
+    path: ./out/cp.time_series
+
+pipeline:
+  - id: cp_with_mesh
+    kind: mesh_attach
+    source: cp
+    mesh: ../galpao/galpao.normalized.lnas
+
+  - id: cp_grouped
+    kind: body_grouping
+    source: cp_with_mesh
+    mesh: ../galpao/galpao.normalized.lnas
+    bodies:
+      building: []
+
+  - id: with_forces
+    kind: force_contribution
+    source: cp_grouped
+    field: cp
+    nominal_area: 100.0
+    directions: [x, y, z]
+
+  - id: with_moments
+    kind: moment_contribution
+    source: with_forces
+    lever_origin: [0.0, 10.0, 10.0]
+    nominal_area: 100.0
+    nominal_volume: 10.0
+    directions: [x, y, z]
+
+  - id: cm_x
+    kind: field_series_for_groups
+    source: with_moments
+    grouping: body
+    field: cm_x
+    agg: sum
+
+  - id: cm_y
+    kind: field_series_for_groups
+    source: with_moments
+    grouping: body
+    field: cm_y
+    agg: sum
+
+  - id: cm_z
+    kind: field_series_for_groups
+    source: with_moments
+    grouping: body
+    field: cm_z
+    agg: sum
+
+outputs:
+  cm_x: {source: cm_x, path: ./out/cm_x.time_series}
+  cm_y: {source: cm_y, path: ./out/cm_y.time_series}
+  cm_z: {source: cm_z, path: ./out/cm_z.time_series}
