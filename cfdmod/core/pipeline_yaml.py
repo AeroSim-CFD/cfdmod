@@ -283,7 +283,7 @@ def load_template(path: pathlib.Path | str) -> PipelineTemplate:
     resolved against the template's own location, not the caller's
     cwd.
     """
-    p = pathlib.Path(path)
+    p = pathlib.Path(path).resolve()
     data = read_yaml(p)
     if "root" not in data:
         data["root"] = str(p.parent)

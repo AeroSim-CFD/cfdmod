@@ -1,8 +1,11 @@
+import pathlib
+
 import typer
 
 from cfdmod.altimetry.cli import app as altimetry_app
 from cfdmod.loft.cli import app as loft_app
 from cfdmod.pressure.cli import app as pressure_app
+from cfdmod.recipes import run_yaml
 from cfdmod.roughness.cli import app as roughness_app
 
 app = typer.Typer()
@@ -10,6 +13,25 @@ app.add_typer(altimetry_app, name="altimetry")
 app.add_typer(loft_app, name="loft")
 app.add_typer(pressure_app, name="pressure")
 app.add_typer(roughness_app, name="roughness")
+
+
+@app.command("run")
+def run(
+    template: pathlib.Path = typer.Argument(..., help="Path to a v3 pipeline YAML template."),
+    output_root: pathlib.Path | None = typer.Option(
+        None,
+        "--output-root",
+        help="Optional storage root override. Defaults to filesystem root so the YAML paths resolve as-is.",
+    ),
+) -> None:
+    """Execute a v3 pipeline template (cfdmod.core.pipeline_yaml).
+
+    The template declares its own inputs, pipeline steps, and outputs;
+    this command just loads the YAML and runs it via XdmfH5Storage.
+    """
+    bindings = run_yaml(template, output_root=output_root)
+    typer.echo(f"ran template '{template}': {len(bindings)} bindings produced.")
+
 
 if __name__ == "__main__":
     app()

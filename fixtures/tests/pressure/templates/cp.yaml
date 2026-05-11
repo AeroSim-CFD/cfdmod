@@ -1,0 +1,51 @@
+# Cp pipeline template (v3 schema).
+#
+# Reads body pressure and a static-pressure probe from disk, computes
+# Cp = (p - p_ref) / dyn_pressure, optionally rescales time, and writes
+# the time-resolved Cp series plus mean/rms/peak statistics.
+#
+# Anything you'd previously have configured under
+# pressure_coefficient.default.statistics in cp_params.yaml now lives
+# under the `statistics` step. Everything else is pipeline composition.
+name: cp_default
+
+inputs:
+  body:
+    kind: surface
+    path: ../data/bodies.galpao
+  p_ref:
+    kind: points
+    path: ../data/points.static_pressure
+
+pipeline:
+  # 1. Subtract the static reference per timestep (column-wise broadcast,
+  #    rule 2). The result lives on a new "cp" field on the body source.
+  - id: cp_unscaled
+    kind: sub
+    source: body
+    rhs: p_ref
+    field: pressure
+    out: cp
+
+  # 2. Divide by dynamic pressure. q_inf = 0.5 * rho * U_H^2
+  #    Here U_H = 0.05, rho = 1.0 -> q = 0.00125. Scale = 1 / q.
+  - id: cp_t
+    kind: scale
+    source: cp_unscaled
+    field: cp
+    factor: 800.0
+
+  # 3. Per-element statistics over the full time axis.
+  - id: cp_stats
+    kind: statistics
+    source: cp_t
+    field: cp
+    kinds: [mean, rms, min, max]
+
+outputs:
+  cp_timeseries:
+    source: cp_t
+    path: ./out/cp.time_series
+  cp_stats:
+    source: cp_stats
+    path: ./out/cp.stats

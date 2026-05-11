@@ -39,6 +39,7 @@ __all__ = [
     "DynamicAnalysisConfig",
     "build_dynamic_response",
     "identity_solver",
+    "run_yaml",
 ]
 
 from cfdmod.core.recipes.ce import CeRecipeConfig, ce_pipeline
@@ -54,4 +55,5 @@ from cfdmod.core.recipes.dynamic import (
     build_dynamic_response,
     identity_solver,
 )
+from cfdmod.core.recipes.run_yaml import run_yaml
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline
