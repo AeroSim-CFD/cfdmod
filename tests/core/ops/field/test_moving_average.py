@@ -1,6 +1,6 @@
 """Unit tests for the moving-average field op.
 
-Equivalence with the legacy ``cfdmod.pressure.filters._apply_one``
+Equivalence with a hand-rolled centred reflect-edge convolution
 implementation is asserted on a synthetic series so any future change
 to the rounding rule or padding mode shows up.
 """
@@ -17,7 +17,6 @@ from cfdmod.core.ops.field.moving_average import (
     moving_average,
     window_in_samples,
 )
-from cfdmod.pressure.filters import MovingAverageFilter, _apply_one
 
 
 def _surface(values: np.ndarray, dt: float = 0.1) -> SurfaceDataSource:
@@ -48,20 +47,27 @@ def test_moving_average_window_one_is_identity():
     np.testing.assert_array_equal(out.fields.read("pressure"), data)
 
 
-def test_moving_average_matches_legacy():
-    """v3 op must produce the same numbers as the legacy _apply_one."""
+def test_moving_average_matches_hand_computed():
+    """Reproduces the centred reflect-edge convolution against an
+    independent hand-rolled implementation. Locks in the rounding rule
+    (odd-integer sample count) and edge-padding behaviour."""
     rng = np.random.default_rng(42)
     n_elements, n_timesteps = 4, 50
     data = rng.normal(size=(n_elements, n_timesteps))
     dt = 0.05
     ds = _surface(data, dt=dt)
+    window = 0.5
 
-    out = moving_average(ds, MovingAverageParams(window=0.5))
+    out = moving_average(ds, MovingAverageParams(window=window))
 
-    # Legacy operates on (n_time, n_tri); transpose for the comparison.
-    legacy_in = data.T.copy()
-    legacy_out = _apply_one(MovingAverageFilter(window=0.5), legacy_in, dt)
-    np.testing.assert_allclose(out.fields.read("pressure"), legacy_out.T, rtol=1e-12)
+    n = window_in_samples(window, dt)
+    kernel = np.ones(n, dtype=np.float64) / n
+    pad = n // 2
+    padded = np.pad(data, ((0, 0), (pad, pad)), mode="edge")
+    expected = np.stack(
+        [np.convolve(padded[i], kernel, mode="valid") for i in range(n_elements)]
+    )
+    np.testing.assert_allclose(out.fields.read("pressure"), expected, rtol=1e-12)
 
 
 def test_moving_average_smooths_step_function():

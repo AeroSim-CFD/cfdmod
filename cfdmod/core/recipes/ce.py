@@ -4,9 +4,10 @@ Per the odt: a Cp data source plus a planar (zoning) grouping yields a
 groups data source whose rows are the zoning regions. Each row is the
 area-weighted mean Cp on that region.
 
-Mesh slicing along zoning planes itself is *outside* the small-data
-recipe -- it lives in the legacy ``cfdmod.pressure.geometry`` module.
 The recipe here assumes the zoning grouping is already attached.
+The centroid-based assignment lives in the
+:func:`cfdmod.core.ops.geometric.zoning_grouping` op; see the YAML
+template under ``fixtures/tests/pressure/templates/ce.yaml``.
 """
 
 from __future__ import annotations

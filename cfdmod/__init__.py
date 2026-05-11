@@ -15,33 +15,9 @@ __all__ = [
     "build_single_element",
     "linear_pattern",
     "radial_pattern",
-    # Pressure base
-    "BasePressureConfig",
-    # Pressure Cp
-    "CpConfig",
-    "CpCaseConfig",
-    "run_cp",
-    # Pressure Cf
-    "CfConfig",
-    "CfCaseConfig",
-    "run_cf",
-    # Pressure Cm
-    "CmConfig",
-    "CmCaseConfig",
-    "run_cm",
-    # Pressure Ce
-    "CeConfig",
-    "CeCaseConfig",
-    "run_ce",
-    # Filters
-    "MovingAverageFilter",
-    "FilterSpec",
-    "apply_filters",
-    # Zoning
-    "ZoningModel",
-    "BodyDefinition",
-    "BodyConfig",
-    "MomentBodyConfig",
+    # Pressure (v2 entry points removed in v3; use `cfdmod run <template.yaml>`
+    # or the v3 recipes -- see notebooks/tutorials/ and
+    # fixtures/tests/pressure/templates/).
     # S1
     "Profile",
     "EUCat",
@@ -127,23 +103,6 @@ from cfdmod.io import (
 )
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
-from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
-from cfdmod.pressure.parameters import (
-    BasePressureConfig,
-    BodyConfig,
-    BodyDefinition,
-    CeCaseConfig,
-    CeConfig,
-    CfCaseConfig,
-    CfConfig,
-    CmCaseConfig,
-    CmConfig,
-    CpCaseConfig,
-    CpConfig,
-    MomentBodyConfig,
-    ZoningModel,
-)
-from cfdmod.pressure.run import run_ce, run_cf, run_cm, run_cp
 from cfdmod.roughness import (
     BoundingBox,
     ElementParams,

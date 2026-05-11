@@ -13,9 +13,10 @@ When the input has multiple direction-component fields
 (``cp_x``, ``cp_y``, ``cp_z``) the recipe produces one output field per
 direction, all on the same groups data source.
 
-The recipe is the small-data analogue of
-``cfdmod.pressure.functions.process_Cf``. The legacy disk-first
-``run_cf`` keeps producing identical XDMF output until v3.
+For a full disk-first pipeline (mesh attachment, body grouping,
+per-direction force contribution, statistics), see the YAML template
+under ``fixtures/tests/pressure/templates/cf.yaml`` and the
+``cfdmod run`` CLI command.
 """
 
 from __future__ import annotations

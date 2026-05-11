@@ -6,17 +6,19 @@ no I/O, no logging. They are run by the shell (CLI / notebook), which
 sources ``DataSource`` instances from a :class:`Storage` and writes the
 results back.
 
-Phase 4-7 deliverables:
+Available recipes:
 
 - :mod:`cfdmod.core.recipes.cp` -- pressure coefficient.
 - :mod:`cfdmod.core.recipes.cf`, :mod:`.cm`, :mod:`.ce` -- force,
-  moment, shape coefficients (Phase 5).
+  moment, shape coefficients.
 - :mod:`cfdmod.core.recipes.s1`,
-  :mod:`cfdmod.core.recipes.pedestrian_comfort` (Phase 7).
+  :mod:`cfdmod.core.recipes.pedestrian_comfort`.
+- :mod:`cfdmod.core.recipes.dynamic` -- modal-coordinate response.
 
-The recipes here always run on the small-data path (``MemoryStorage``).
-The legacy disk-first paths in ``cfdmod/pressure/run.py`` and
-``cfdmod/inflow.py`` remain as the production entry points until v3.0.
+End-to-end pipelines also assemble from YAML templates -- see
+:func:`run_yaml` and the templates under
+``fixtures/tests/pressure/templates/``. The legacy disk-first Python
+entry points (``cfdmod.pressure.run.run_cp`` etc.) were removed in v3.
 """
 
 from __future__ import annotations

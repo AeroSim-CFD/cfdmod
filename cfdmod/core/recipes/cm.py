@@ -6,8 +6,9 @@ already pre-multiplied by the lever arm. The aggregation is a *sum*
 (net moment over the body), not an area-weighted mean.
 
 Lever-arm computation is left to the caller -- the data source must
-already carry ``cm_<dir>`` fields. The legacy ``run_cm`` provides the
-end-to-end disk-first equivalent.
+already carry ``cm_<dir>`` fields. For the end-to-end disk-first
+pipeline (mesh attachment, force + moment contribution, statistics),
+see the YAML template under ``fixtures/tests/pressure/templates/cm.yaml``.
 """
 
 from __future__ import annotations

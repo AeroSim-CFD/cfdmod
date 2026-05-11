@@ -1,17 +1,18 @@
 """Multi-format mesh loader.
 
-Pipeline entry points (run_cp/cf/cm/ce) accept the mesh as either a file path
-or an already-loaded :class:`lnas.LnasFormat`. Path inputs dispatch by suffix:
+The v3 pressure pipeline ops (``mesh_attach``, ``body_grouping``) accept
+the mesh as a file path resolved against the template's root. This
+helper handles the path dispatch by suffix:
 
 - ``.lnas`` -> :func:`lnas.LnasFormat.from_file` (preserves authored surfaces)
 - ``.stl``  -> :func:`lnas.LnasFormat.from_stl` (single ``"all"`` surface)
 - ``.h5``   -> read ``/Triangles + /Geometry``, single ``"all"`` surface
 - ``.xdmf`` -> redirect to the sibling ``.h5`` (XDMF is metadata only)
 
-Files that already have authored surface labels (``.lnas``) keep them. The
-other formats produce one synthetic ``"all"`` surface covering every triangle,
-so :class:`BodyDefinition` configs targeting that surface (or
-``surfaces=[]`` for "use everything") work uniformly.
+Files that already have authored surface labels (``.lnas``) keep them.
+The other formats produce one synthetic ``"all"`` surface covering
+every triangle, so YAML templates targeting that surface (or
+``surfaces: []`` for "use everything") work uniformly.
 """
 
 from __future__ import annotations
