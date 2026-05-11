@@ -28,6 +28,13 @@ from cfdmod.core.data_source import (
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.grouping import Grouping, elements_in_group, groups_in
 from cfdmod.core.pipeline import Pipeline, compose, identity
+from cfdmod.core.pipeline_yaml import (
+    OP_REGISTRY,
+    PipelineTemplate,
+    load_template,
+    register_op,
+    run_template,
+)
 from cfdmod.core.protocols import FieldStore, Logger, Pool, Storage
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import CellType, ElementMeta, Topology
@@ -55,4 +62,9 @@ __all__ = [
     "CellType",
     "ElementMeta",
     "Topology",
+    "load_template",
+    "run_template",
+    "PipelineTemplate",
+    "OP_REGISTRY",
+    "register_op",
 ]
