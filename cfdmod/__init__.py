@@ -98,6 +98,11 @@ __all__ = [
     "H5FieldStore",
     "core_ops",
     "recipes",
+    "load_template",
+    "run_template",
+    "PipelineTemplate",
+    "register_op",
+    "OP_REGISTRY",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -167,6 +172,7 @@ from cfdmod.s1 import (
 from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
 from cfdmod.adapters.xdmf_h5 import H5FieldStore, XdmfH5Storage
 from cfdmod.core import (
+    OP_REGISTRY,
     Container,
     DataSource,
     ElementMeta,
@@ -175,12 +181,24 @@ from cfdmod.core import (
     GroupsDataSource,
     ModesDataSource,
     Pipeline,
+    PipelineTemplate,
     PointsDataSource,
     SurfaceDataSource,
     TimeAxis,
     Topology,
     VolumeDataSource,
     compose,
+    load_template,
+    register_op,
+    run_template,
 )
 from cfdmod.core import ops as core_ops
 from cfdmod.core import recipes
+
+# Expose cfdmod.recipes and cfdmod.ops as importable submodule paths so
+# users can write `from cfdmod.recipes import build_cp` without reaching
+# into cfdmod.core.
+import sys as _sys
+
+_sys.modules.setdefault("cfdmod.recipes", recipes)
+_sys.modules.setdefault("cfdmod.ops", core_ops)
