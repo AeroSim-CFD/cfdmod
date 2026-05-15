@@ -19,6 +19,7 @@ pipeline:
   - id: cp_zoned
     kind: zoning_grouping
     source: cp_with_mesh
+    mesh: ../galpao/galpao.normalized.lnas
     x_intervals: [0.0, 125.0, 250.0]
     y_intervals: [0.0, 80.0, 170.0]
     z_intervals: [0.0, 10.0, 20.0]

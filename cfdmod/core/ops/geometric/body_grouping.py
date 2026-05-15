@@ -10,6 +10,11 @@ returns the source with a :class:`Grouping` attached under the
 configured name (default ``"body"``). Triangles not in any body get
 ``-1``. Triangles in multiple bodies (overlapping surface lists) take
 the first matching body id.
+
+The partitioning itself is delegated to the canonical triangle-grouping
+pipeline in :mod:`cfdmod.geometry.grouping` (a :class:`BySurfaceGrouping`
+spec applied via :func:`apply_groupings`); this op only adapts the
+result into the per-element index array carried by a v3 :class:`Grouping`.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ from pydantic import ConfigDict
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.grouping import Grouping
 from cfdmod.core.ops import OpParams
+from cfdmod.geometry.grouping import BySurfaceGrouping, apply_groupings
 
 
 class BodyGroupingParams(OpParams):
@@ -56,14 +62,18 @@ def body_grouping(ds: DataSource, p: BodyGroupingParams) -> DataSource:
             f"{ds.n_elements} elements."
         )
 
+    sets = {
+        body_name: (surfaces if surfaces else list(lnas.surfaces.keys()))
+        for body_name, surfaces in p.bodies.items()
+    }
+    result = apply_groupings(lnas, [BySurfaceGrouping(sets=sets)])
+
     indices = np.full(ds.n_elements, -1, dtype=np.int32)
     id_to_label: dict[int, str] = {}
-
-    for i, (body_name, surfaces) in enumerate(p.bodies.items()):
-        sfcs = surfaces if surfaces else list(lnas.surfaces.keys())
-        _, geom_idx = lnas.geometry_from_list_surfaces(surfaces_names=sfcs)
-        unassigned = indices[geom_idx] == -1
-        indices[geom_idx[unassigned]] = i
+    for i, body_name in enumerate(p.bodies.keys()):
+        tris = result.groups[body_name]
+        unassigned = indices[tris] == -1
+        indices[tris[unassigned]] = i
         id_to_label[i] = body_name
 
     grouping = Grouping(name=p.name, indices=indices, id_to_label=id_to_label)
