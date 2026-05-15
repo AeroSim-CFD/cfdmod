@@ -1,5 +1,90 @@
 # Release Notes
 
+## Unreleased
+
+### Triangle-grouping pipeline (`cfdmod.geometry.grouping`)
+
+A new top-level subpackage promotes triangle grouping to a
+first-class pipeline step, mirroring the v2.0 filter pipeline for
+time-series. Specs are Pydantic models in a discriminated union
+(`GroupingSpec`), composed left-to-right with `apply_groupings`, and
+a triangle may belong to zero, one, or many groups. Three kinds ship
+out of the box:
+
+- `BySurfaceGrouping` -- collect named LNAS surfaces into one or
+  more groups (generalises the legacy `BodyDefinition.surfaces` and
+  `CeConfig.sets`).
+- `ByZoningGrouping` -- axis-aligned centroid binning into a
+  Cartesian grid of regions (generalises `ZoningModel`).
+- `ByDivisionsGrouping` -- convenience wrapper over `ByZoningGrouping`
+  that splits each axis into `n_div_{x,y,z}` equal cells over the
+  candidate centroid bounding box.
+- `BySizeGrouping` -- convenience wrapper that builds cells of a
+  fixed `size_{x,y,z}` per axis anchored at the bounding-box minimum.
+- `ByConnectivityGrouping` -- one group per connected component of
+  the (sub)mesh, defined by shared-edge adjacency. The first kind
+  the legacy `sub_bodies` field could not express.
+- `ByNormalGrouping` -- bucket triangles by the cardinal direction
+  their outward normal best aligns with (windward / leeward / roof /
+  sidewall in one shot, with a tolerance angle).
+- `ByPlaneGrouping` -- bin centroids by signed distance from an
+  oriented plane. Generalises `ByZoningGrouping` to non-axis-aligned
+  half-space splits; the default produces two halves on either side
+  of the plane.
+- `ByPercentileGrouping` -- equal-count quantile bins along one axis,
+  for stable per-cell statistics when triangle density is uneven.
+- `ByCylindricalGrouping` -- Cartesian product of (r, theta, axial)
+  bins around a user-chosen cylinder axis. Natural fit for towers,
+  silos, chimneys and any partition that prefers cylindrical
+  coordinates over Cartesian.
+- `CustomGrouping` -- escape hatch for grouping logic the built-in
+  kinds cannot express: user supplies a Python callback (importable
+  dotted path or a direct callable) plus an opaque `params` dict, and
+  the callback returns the standard `{group_name: triangle_indices}`
+  mapping. Callback signature is fixed (`(mesh, candidate_idxs,
+  params) -> dict`); the driver validates indices are in range and
+  honor `restrict_to`. Dotted-path callbacks round-trip cleanly
+  through `dump_groupings` / `load_groupings`; direct callables are
+  serialised by deriving their import path when stable (lambdas and
+  local functions raise on serialise).
+
+Each spec exposes a `restrict_to: list[str] | None` field so later
+steps can scope their work to triangles already in earlier groups;
+this is how the legacy `surface -> sub_body` nesting is reproduced.
+
+`BodyConfig` (and `MomentBodyConfig`) gain an opt-in
+`groupings: list[GroupingSpec] | None` field. When set, it replaces
+the implicit `[BySurface, ByZoning(sub_bodies)]` chain entirely;
+mixing it with a non-default `sub_bodies` is rejected. The legacy
+YAML form (`sub_bodies` only) keeps working untouched -- the
+canonical chain is synthesized internally via
+`BodyConfig.resolved_groupings(sfc_list)`.
+
+Internally, `cfdmod/pressure/geometry.py` was refactored to consume
+`GroupingResult` end-to-end. `GeometryData.zoning_to_use` is gone;
+the new fields are `grouping`, `spec_chain`, and `body_label`.
+Region labels (`"{idx}-{body}"` and the `"-1-{body}"` sentinel for
+unbinned triangles) are byte-identical with the legacy output, so
+existing downstream consumers, notebooks, and `process_container_pack`
+runs are unaffected.
+
+`CeConfig.zoning` keeps its current per-surface, normal-axis-aware
+shape; promoting it onto the same explicit-chain pattern is tracked
+as a follow-up.
+
+A grouping chain may be persisted alongside the existing `filters`
+chain in `processing_metadata`:
+
+```python
+write_processing_metadata(h5, "/", {
+    "filters": [spec.model_dump() for spec in filter_chain],
+    "groupings": dump_groupings(grouping_chain),
+})
+```
+
+See `fixtures/tests/pressure/Cf_params_groupings.yaml` for the new
+explicit YAML form, and the API reference for the full surface.
+
 ## v2.0.1
 
 Patch release on top of v2.0.0 covering the worked-notebook polish

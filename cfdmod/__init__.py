@@ -18,6 +18,23 @@ __all__ = [
     # Pressure (v2 entry points removed in v3; use `cfdmod run <template.yaml>`
     # or the v3 recipes -- see notebooks/tutorials/ and
     # fixtures/tests/pressure/templates/).
+    # Geometry grouping (canonical triangle-grouping pipeline -- the v3
+    # ops in cfdmod.core.ops.geometric delegate to apply_groupings).
+    "BySurfaceGrouping",
+    "ByZoningGrouping",
+    "ByDivisionsGrouping",
+    "BySizeGrouping",
+    "ByConnectivityGrouping",
+    "ByNormalGrouping",
+    "ByPlaneGrouping",
+    "ByPercentileGrouping",
+    "ByCylindricalGrouping",
+    "CustomGrouping",
+    "GroupingSpec",
+    "GroupingResult",
+    "apply_groupings",
+    "dump_groupings",
+    "load_groupings",
     # S1
     "Profile",
     "EUCat",
@@ -89,6 +106,23 @@ from cfdmod.climate import (
     directional_weibull_fit,
     fit_gumbel,
     fit_weibull,
+)
+from cfdmod.geometry import (
+    ByConnectivityGrouping,
+    ByCylindricalGrouping,
+    ByDivisionsGrouping,
+    ByNormalGrouping,
+    ByPercentileGrouping,
+    ByPlaneGrouping,
+    BySizeGrouping,
+    BySurfaceGrouping,
+    ByZoningGrouping,
+    CustomGrouping,
+    GroupingResult,
+    GroupingSpec,
+    apply_groupings,
+    dump_groupings,
+    load_groupings,
 )
 from cfdmod.io import (
     export_stl,

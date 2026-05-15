@@ -340,6 +340,22 @@ def write_processing_metadata(
     HDF5 attributes on that group, plus the YAML serialization as a
     sibling string dataset for round-trip reproducibility.
 
+    The ``config`` dict is generic - callers compose whatever keys they
+    need. By convention, pipeline chains live under top-level keys named
+    after the pipeline kind:
+
+    - ``"filters"``: ``list[dict]`` produced by
+      ``[spec.model_dump() for spec in filter_specs]``
+      (see :mod:`cfdmod.pressure.filters`).
+    - ``"groupings"``: ``list[dict]`` produced by
+      :func:`cfdmod.geometry.grouping.dump_groupings` for the chain of
+      triangle-grouping specs that defined this group's regions.
+
+    Either or both may be present. ``read_processing_metadata`` parses
+    the YAML back to a dict; the per-pipeline ``load_*`` helpers (e.g.
+    :func:`cfdmod.geometry.grouping.load_groupings`) re-hydrate the
+    typed spec instances.
+
     Attributes:
         config_yaml: full config serialized to YAML (string)
         produced_at: ISO-8601 UTC timestamp
