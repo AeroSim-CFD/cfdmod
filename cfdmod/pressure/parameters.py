@@ -148,14 +148,20 @@ class BasePressureConfig(BaseModel):
     statistics: Annotated[
         list[BasicStatisticModel | ParameterizedStatisticModel],
         Field(
-            ...,
+            default_factory=list,
             title="List of statistics",
-            description="List of statistics to calculate from pressure coefficient signal",
+            description=(
+                "List of statistics to calculate from pressure coefficient signal. "
+                "Optional; default is an empty list, which skips the stats step "
+                "entirely (no stats.h5 / stats.xdmf written for this case)."
+            ),
         ),
     ]
 
     @field_validator("statistics", mode="before")
     def validate_statistics(cls, v):
+        if v is None or len(v) == 0:
+            return []
         if isinstance(v[0], dict):
             stats_types = [s["stats"] for s in v]
         else:

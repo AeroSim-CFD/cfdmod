@@ -4,10 +4,12 @@ import h5py
 import pytest
 
 from cfdmod.io.xdmf import filter_keys_by_range, get_pressure_keys, read_step
+from cfdmod.pressure import run_cp
 from cfdmod.pressure.functions import process_xdmf_to_cp
 from cfdmod.pressure.parameters import BasicStatisticModel, CpConfig
 from tests.pressure.conftest import BUILDING_BODY_H5 as BODY_H5
 from tests.pressure.conftest import BUILDING_PROBE_H5 as PROBE_H5
+from tests.pressure.conftest import make_cp_cfg
 
 pytestmark = pytest.mark.integration
 
@@ -133,3 +135,31 @@ def test_process_xdmf_to_cp_does_not_modify_inputs(tmp_path):
         assert sorted(f.keys()) == body_keys_before
     with h5py.File(probe_copy, "r") as f:
         assert sorted(f.keys()) == probe_keys_before
+
+
+def test_cpconfig_statistics_optional_default_empty():
+    """Statistics is optional; default is an empty list (skips stats step)."""
+    cfg = CpConfig(
+        timestep_range=(0.0, 1.0),
+        simul_U_H=1.0,
+        simul_characteristic_length=1.0,
+    )
+    assert cfg.statistics == []
+
+
+def test_run_cp_skips_stats_when_statistics_empty(tmp_path):
+    """With statistics=[], run_cp writes the timeseries but no stats.h5/.xdmf."""
+    cfg = make_cp_cfg(statistics=[])
+    run_cp(body_h5=BODY_H5, probe_h5=PROBE_H5, cfg_path=cfg, output=tmp_path)
+    assert (tmp_path / "cp.default.time_series.h5").exists()
+    assert (tmp_path / "cp.default.time_series.xdmf").exists()
+    assert not (tmp_path / "stats.h5").exists()
+    assert not (tmp_path / "stats.xdmf").exists()
+
+
+def test_run_cp_writes_stats_when_statistics_nonempty(tmp_path):
+    """Sanity check: the stats step still runs when statistics is non-empty."""
+    cfg = make_cp_cfg()  # default = [BasicStatisticModel(stats='mean')]
+    run_cp(body_h5=BODY_H5, probe_h5=PROBE_H5, cfg_path=cfg, output=tmp_path)
+    assert (tmp_path / "stats.h5").exists()
+    assert (tmp_path / "stats.xdmf").exists()

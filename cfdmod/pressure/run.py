@@ -285,25 +285,28 @@ def run_cp(
             extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
         )
 
-        logger.info("Calculating Cp statistics from on-disk timeseries...")
-        _write_stats_for_group(
-            stats_h5,
-            timeseries_path=timeseries_path,
-            timeseries_group="cp",
-            stats_group=f"cp/{cfg_lbl}",
-            statistics=cfg.statistics,
-            triangles=triangles,
-            vertices=vertices,
-        )
-        write_processing_metadata(
-            stats_h5,
-            f"cp/{cfg_lbl}",
-            cfg_dump,
-            extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
-        )
+        if cfg.statistics:
+            logger.info("Calculating Cp statistics from on-disk timeseries...")
+            _write_stats_for_group(
+                stats_h5,
+                timeseries_path=timeseries_path,
+                timeseries_group="cp",
+                stats_group=f"cp/{cfg_lbl}",
+                statistics=cfg.statistics,
+                triangles=triangles,
+                vertices=vertices,
+            )
+            write_processing_metadata(
+                stats_h5,
+                f"cp/{cfg_lbl}",
+                cfg_dump,
+                extra={"coefficient": "cp", "cfg_lbl": cfg_lbl, **ts_inputs},
+            )
 
-        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
-        logger.info(f"Cp stats written for config '{cfg_lbl}'")
+            write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
+            logger.info(f"Cp stats written for config '{cfg_lbl}'")
+        else:
+            logger.info(f"Cp '{cfg_lbl}': statistics list is empty; skipping stats step")
 
 
 def _run_body_coefficient(
@@ -386,23 +389,24 @@ def _run_body_coefficient(
         }
         write_processing_metadata(ts_path, "/", cfg_dump, extra=meta_extra)
 
-        for direction in cfg.directions:
-            stats_grp = f"{coef}_{direction}/{cfg_lbl}/{body_cfg.name}"
-            _write_stats_for_group(
-                stats_h5,
-                timeseries_path=ts_path,
-                timeseries_group=f"{coef}_{direction}",
-                stats_group=stats_grp,
-                statistics=cfg.statistics,
-                triangles=body_geom.triangles,
-                vertices=body_geom.vertices,
-            )
-            write_processing_metadata(
-                stats_h5,
-                stats_grp,
-                cfg_dump,
-                extra={**meta_extra, "direction": direction},
-            )
+        if cfg.statistics:
+            for direction in cfg.directions:
+                stats_grp = f"{coef}_{direction}/{cfg_lbl}/{body_cfg.name}"
+                _write_stats_for_group(
+                    stats_h5,
+                    timeseries_path=ts_path,
+                    timeseries_group=f"{coef}_{direction}",
+                    stats_group=stats_grp,
+                    statistics=cfg.statistics,
+                    triangles=body_geom.triangles,
+                    vertices=body_geom.vertices,
+                )
+                write_processing_metadata(
+                    stats_h5,
+                    stats_grp,
+                    cfg_dump,
+                    extra={**meta_extra, "direction": direction},
+                )
 
 
 def run_cf(
@@ -445,8 +449,11 @@ def run_cf(
             path_manager=path_manager,
             stats_h5=stats_h5,
         )
-        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
-        logger.info(f"Cf stats written for config '{cfg_lbl}'")
+        if cfg.statistics and stats_h5.exists():
+            write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
+            logger.info(f"Cf stats written for config '{cfg_lbl}'")
+        else:
+            logger.info(f"Cf '{cfg_lbl}': statistics list is empty; skipping stats step")
 
 
 def _bbox_corners_xy_cases(
@@ -573,6 +580,7 @@ def run_cm(
                 f"Cm cases: expanded {len(cfg.bodies)} body(ies) into "
                 f"{len(runs)} independent runs"
             )
+        any_stats = False
         for run_cfg, run_bodies_def in runs:
             _run_body_coefficient(
                 coef="cm",
@@ -585,8 +593,12 @@ def run_cm(
                 path_manager=path_manager,
                 stats_h5=stats_h5,
             )
-        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
-        logger.info(f"Cm stats written for config '{cfg_lbl}'")
+            any_stats = any_stats or bool(run_cfg.statistics)
+        if any_stats and stats_h5.exists():
+            write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
+            logger.info(f"Cm stats written for config '{cfg_lbl}'")
+        else:
+            logger.info(f"Cm '{cfg_lbl}': statistics list is empty; skipping stats step")
 
 
 def run_ce(
@@ -664,16 +676,19 @@ def run_ce(
         }
         write_processing_metadata(ts_path, "/", cfg_dump, extra=meta_extra)
 
-        _write_stats_for_group(
-            stats_h5,
-            timeseries_path=ts_path,
-            timeseries_group="ce",
-            stats_group=f"ce/{cfg_lbl}",
-            statistics=cfg.statistics,
-            triangles=cut_mesh.triangles,
-            vertices=cut_mesh.vertices,
-        )
-        write_processing_metadata(stats_h5, f"ce/{cfg_lbl}", cfg_dump, extra=meta_extra)
+        if cfg.statistics:
+            _write_stats_for_group(
+                stats_h5,
+                timeseries_path=ts_path,
+                timeseries_group="ce",
+                stats_group=f"ce/{cfg_lbl}",
+                statistics=cfg.statistics,
+                triangles=cut_mesh.triangles,
+                vertices=cut_mesh.vertices,
+            )
+            write_processing_metadata(stats_h5, f"ce/{cfg_lbl}", cfg_dump, extra=meta_extra)
 
-        write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
-        logger.info(f"Ce stats written for config '{cfg_lbl}'")
+            write_stats_xdmf(stats_h5, path_manager.get_stats_xdmf_path())
+            logger.info(f"Ce stats written for config '{cfg_lbl}'")
+        else:
+            logger.info(f"Ce '{cfg_lbl}': statistics list is empty; skipping stats step")
