@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pathlib
-
 import h5py
-import numpy as np
 import pytest
 from lnas import LnasFormat
 
@@ -20,7 +17,6 @@ from cfdmod.regroup.parameters import (
     RegroupConfig,
 )
 from cfdmod.regroup.run import expand_regroup_chain, run_regroup
-
 from tests.regroup.conftest import GALPAO_CP_H5, make_synthetic_cp_h5
 
 
@@ -106,11 +102,7 @@ def test_run_regroup_per_triangle_preserves_total_columns(small_mesh, tmp_path):
     make_synthetic_cp_h5(in_h5, n_triangles=8, n_steps=2)
 
     cfg = RegroupConfig(
-        groupings=[
-            ByZoningGrouping(
-                x_intervals=[0.0, 1.0, 2.001], name_template="r{idx}"
-            )
-        ],
+        groupings=[ByZoningGrouping(x_intervals=[0.0, 1.0, 2.001], name_template="r{idx}")],
         aggregation="per_triangle",
         timeseries_group="cp",
     )
@@ -159,9 +151,7 @@ def test_run_regroup_sliced_two_container(two_container_mesh, tmp_path):
     assert n_cols == new.geometry.triangles.shape[0]
 
 
-@pytest.mark.skipif(
-    not GALPAO_CP_H5.exists(), reason="galpao Cp fixture not available"
-)
+@pytest.mark.skipif(not GALPAO_CP_H5.exists(), reason="galpao Cp fixture not available")
 def test_run_regroup_on_galpao_fixture(tmp_path):
     """Sanity-check on the real Cp fixture: zoning + per_triangle round-trip."""
     from cfdmod.io.mesh import mesh_from_h5

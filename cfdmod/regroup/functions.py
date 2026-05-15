@@ -99,9 +99,7 @@ def build_regroup_mapping(
     if transformation is None:
         return apply_groupings(mesh, groupings)
     mesh_for_binning = mesh.copy()
-    mesh_for_binning.geometry.apply_transformation(
-        transformation.get_geometry_transformation()
-    )
+    mesh_for_binning.geometry.apply_transformation(transformation.get_geometry_transformation())
     return apply_groupings(mesh_for_binning, groupings)
 
 
@@ -189,9 +187,7 @@ def build_regrouped_mesh(
     new_surfaces: dict[str, np.ndarray] = {}
     cursor = 0
     for name, parent_idxs in zip(names, parents):
-        new_surfaces[name] = np.arange(
-            cursor, cursor + parent_idxs.size, dtype=np.int32
-        )
+        new_surfaces[name] = np.arange(cursor, cursor + parent_idxs.size, dtype=np.int32)
         cursor += parent_idxs.size
 
     new_lnas = LnasFormat(
@@ -283,9 +279,7 @@ def slice_triangles_with_parents(
             new_normals = []
             new_parents = []
             for i in range(cur_verts.shape[0]):
-                fragments = _slice_one_triangle(
-                    cur_verts[i], cur_normals[i], axis, float(v)
-                )
+                fragments = _slice_one_triangle(cur_verts[i], cur_normals[i], axis, float(v))
                 new_verts.append(fragments)
                 new_normals.append(np.tile(cur_normals[i], (fragments.shape[0], 1)))
                 new_parents.append(np.full(fragments.shape[0], cur_parents[i], dtype=np.int64))
@@ -421,9 +415,7 @@ def build_sliced_regrouped_mesh(
             fragments_group_acc.append(name_to_idx[group_name])
 
     if not fragments_verts_acc:
-        raise ValueError(
-            "regroup (sliced): no fragments produced; check intervals/extents."
-        )
+        raise ValueError("regroup (sliced): no fragments produced; check intervals/extents.")
 
     fragments_verts_arr = np.stack(fragments_verts_acc, axis=0)
     parent_arr = np.asarray(fragments_parent_acc, dtype=np.int64)
@@ -499,9 +491,7 @@ def _resolve_leaf_groups_for_parent(
 
 def _per_triangle_region_labels(index: RegroupIndex) -> list[str]:
     """One label per output triangle, naming the group it belongs to."""
-    return [
-        index.output_group_names[int(g)] for g in index.triangle_group_idx.tolist()
-    ]
+    return [index.output_group_names[int(g)] for g in index.triangle_group_idx.tolist()]
 
 
 def apply_regroup_to_timeseries(
@@ -532,9 +522,7 @@ def apply_regroup_to_timeseries(
 
     keys = get_pressure_keys(input_h5, group=group)
     if not keys:
-        raise ValueError(
-            f"regroup: input H5 {input_h5} has no timesteps under /{group}/"
-        )
+        raise ValueError(f"regroup: input H5 {input_h5} has no timesteps under /{group}/")
 
     n_parent_expected = int(regroup_index.new_to_parent.max()) + 1
     with h5py.File(input_h5, "r") as f:
@@ -562,9 +550,7 @@ def apply_regroup_to_timeseries(
         triangle_group_idx = regroup_index.triangle_group_idx
         for _t_val, key in keys:
             in_col = read_step(input_h5, key, group)
-            per_group = np.empty(
-                len(regroup_index.output_group_names), dtype=np.float64
-            )
+            per_group = np.empty(len(regroup_index.output_group_names), dtype=np.float64)
             for gi, (parents, weights) in enumerate(
                 zip(regroup_index.group_parents, regroup_index.group_weights)
             ):
@@ -572,9 +558,7 @@ def apply_regroup_to_timeseries(
             out_col = per_group[triangle_group_idx]
             write_timeseries_step(output_h5, group, key, out_col)
     else:
-        raise ValueError(
-            f"regroup: unknown aggregation {regroup_index.aggregation!r}"
-        )
+        raise ValueError(f"regroup: unknown aggregation {regroup_index.aggregation!r}")
 
     write_timeseries_meta(
         output_h5,

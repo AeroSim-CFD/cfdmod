@@ -19,7 +19,6 @@ from cfdmod.geometry.grouping import (
     ByDivisionsGrouping,
     ByZoningGrouping,
     GroupingSpec,
-    apply_groupings,
 )
 from cfdmod.geometry.grouping.kinds.by_divisions import _intervals_from_count
 from cfdmod.io.geometry.transformation_config import TransformationConfig
@@ -31,8 +30,8 @@ from cfdmod.io.xdmf import (
 from cfdmod.logger import logger
 from cfdmod.regroup.functions import (
     apply_regroup_to_timeseries,
-    build_regrouped_mesh,
     build_regroup_mapping,
+    build_regrouped_mesh,
     build_sliced_regrouped_mesh,
 )
 from cfdmod.regroup.parameters import (
@@ -196,8 +195,8 @@ def expand_regroup_chain(
     parent_triangles: dict[str, np.ndarray] = {}
     for spec in chain:
         if isinstance(spec, BySizeRoundedPerComponent):
-            new_specs, new_consumed, new_intervals, new_triangles = (
-                _expand_one_per_component(spec, mesh, expanded, transformation)
+            new_specs, new_consumed, new_intervals, new_triangles = _expand_one_per_component(
+                spec, mesh, expanded, transformation
             )
             expanded.extend(new_specs)
             consumed |= new_consumed
@@ -226,9 +225,11 @@ def _resolve_global_intervals(
         elif isinstance(spec, ByDivisionsGrouping):
             # ByDivisionsGrouping resolves to a ByZoningGrouping; bbox-derived.
             cents = mesh.geometry.triangle_vertices.mean(axis=1)
-            allowed = np.concatenate(
-                [grouping.groups[n] for n in (spec.restrict_to or [])]
-            ) if spec.restrict_to else np.arange(cents.shape[0], dtype=np.int64)
+            allowed = (
+                np.concatenate([grouping.groups[n] for n in (spec.restrict_to or [])])
+                if spec.restrict_to
+                else np.arange(cents.shape[0], dtype=np.int64)
+            )
             if allowed.size == 0:
                 continue
             cand = cents[allowed]
@@ -241,9 +242,13 @@ def _resolve_global_intervals(
             )
     if last_zoning is None:
         return None
-    all_idxs = np.unique(
-        np.concatenate([np.asarray(idxs, dtype=np.int64) for idxs in grouping.groups.values()])
-    ) if grouping.groups else np.array([], dtype=np.int64)
+    all_idxs = (
+        np.unique(
+            np.concatenate([np.asarray(idxs, dtype=np.int64) for idxs in grouping.groups.values()])
+        )
+        if grouping.groups
+        else np.array([], dtype=np.int64)
+    )
     return (
         (
             list(last_zoning.x_intervals),
@@ -300,9 +305,7 @@ def run_regroup(
     output_dir.mkdir(parents=True, exist_ok=True)
     timeseries = pathlib.Path(timeseries)
 
-    input_geometry_path = (
-        pathlib.Path(geometry) if not isinstance(geometry, LnasFormat) else None
-    )
+    input_geometry_path = pathlib.Path(geometry) if not isinstance(geometry, LnasFormat) else None
     mesh = load_mesh(geometry)
 
     expanded, consumed, parent_intervals, parent_triangles = expand_regroup_chain(
@@ -318,12 +321,9 @@ def run_regroup(
         kept = {n: idxs for n, idxs in grouping.groups.items() if n not in consumed}
         from cfdmod.geometry.grouping import GroupingResult
 
-        grouping = GroupingResult(
-            parent_n_triangles=grouping.parent_n_triangles, groups=kept
-        )
+        grouping = GroupingResult(parent_n_triangles=grouping.parent_n_triangles, groups=kept)
         logger.info(
-            f"regroup: dropped {len(consumed)} consumed parent group(s): "
-            f"{sorted(consumed)}"
+            f"regroup: dropped {len(consumed)} consumed parent group(s): " f"{sorted(consumed)}"
         )
     if not grouping.groups and cfg.unassigned_policy == "drop":
         raise ValueError(

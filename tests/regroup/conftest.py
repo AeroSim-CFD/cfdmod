@@ -7,7 +7,8 @@ import pathlib
 import h5py
 import numpy as np
 import pytest
-from lnas import LnasFormat, LnasGeometry, fmt as _lnas_fmt
+from lnas import LnasFormat, LnasGeometry
+from lnas import fmt as _lnas_fmt
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 PRESSURE_DATA = REPO_ROOT / "fixtures" / "tests" / "pressure" / "data"

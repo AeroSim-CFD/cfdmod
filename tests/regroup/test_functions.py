@@ -5,20 +5,18 @@ from __future__ import annotations
 import h5py
 import numpy as np
 import pytest
-from lnas import LnasFormat, LnasGeometry, fmt as _lnas_fmt
+from lnas import LnasFormat
 
 from cfdmod.geometry.grouping import (
     ByConnectivityGrouping,
     ByZoningGrouping,
-    apply_groupings,
 )
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.regroup.functions import (
     apply_regroup_to_timeseries,
-    build_regrouped_mesh,
     build_regroup_mapping,
+    build_regrouped_mesh,
 )
-
 from tests.regroup.conftest import make_synthetic_cp_h5
 
 
@@ -104,12 +102,8 @@ def test_area_weighted_mean_aggregates_per_group(small_mesh, tmp_path):
 def test_per_triangle_rejects_overlap(small_mesh):
     # Two specs that both assign the same triangles -> overlap.
     chain = [
-        ByZoningGrouping(
-            x_intervals=[0.0, 2.001], name_template="full_a"
-        ),
-        ByZoningGrouping(
-            x_intervals=[0.0, 2.001], name_template="full_b"
-        ),
+        ByZoningGrouping(x_intervals=[0.0, 2.001], name_template="full_a"),
+        ByZoningGrouping(x_intervals=[0.0, 2.001], name_template="full_b"),
     ]
     grouping = build_regroup_mapping(small_mesh, chain, transformation=None)
     with pytest.raises(ValueError, match="per_triangle aggregation requires"):
@@ -208,9 +202,7 @@ def test_slice_triangles_with_parents_actually_cuts():
         [float("-inf"), float("inf")],
         [float("-inf"), float("inf")],
     )
-    verts, _normals, parents_out = slice_triangles_with_parents(
-        tri, normals, parents, intervals
-    )
+    verts, _normals, parents_out = slice_triangles_with_parents(tri, normals, parents, intervals)
     # The triangle straddles the x=1 plane, so it slices.
     assert verts.shape[0] >= 2
     # Every fragment retains the parent index.
@@ -219,12 +211,8 @@ def test_slice_triangles_with_parents_actually_cuts():
 
 def test_two_container_connectivity_split(two_container_mesh):
     """Connectivity isolates the two containers as separate groups."""
-    chain = [
-        ByConnectivityGrouping(name_template="container_{idx}", min_triangles=4)
-    ]
-    grouping = build_regroup_mapping(
-        two_container_mesh, chain, transformation=None
-    )
+    chain = [ByConnectivityGrouping(name_template="container_{idx}", min_triangles=4)]
+    grouping = build_regroup_mapping(two_container_mesh, chain, transformation=None)
     assert len(grouping.groups) == 2
     sizes = sorted(int(idxs.size) for idxs in grouping.groups.values())
     # Container A: 4*6*2 = 48 triangles; Container B: 2*3*2 = 12 triangles.

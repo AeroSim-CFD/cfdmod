@@ -12,7 +12,6 @@ from cfdmod.geometry import (
     dump_groupings,
     load_groupings,
 )
-
 from tests.geometry.grouping._custom_callbacks import first_n, split_by_threshold
 
 _DOTTED = "tests.geometry.grouping._custom_callbacks.split_by_threshold"
@@ -31,7 +30,8 @@ def test_inline_callable_runs_and_returns_groups(grid_mesh):
 
 def test_dotted_path_callback_resolves(grid_mesh):
     spec = CustomGrouping(
-        callback=_DOTTED, params={"axis": "x", "threshold": 1.5},
+        callback=_DOTTED,
+        params={"axis": "x", "threshold": 1.5},
     )
     res = apply_groupings(grid_mesh, [spec])
     assert sorted(res.groups["below"].tolist()) == [0, 1, 3]
@@ -52,9 +52,7 @@ def test_restrict_to_filters_candidates(two_square_mesh):
         restrict_to=["a_only"],
     )
     res = apply_groupings(two_square_mesh, [surfs, spec])
-    assert sorted(res.groups["all_in_a"].tolist()) == sorted(
-        res.groups["a_only"].tolist()
-    )
+    assert sorted(res.groups["all_in_a"].tolist()) == sorted(res.groups["a_only"].tolist())
 
 
 def test_callback_returning_out_of_range_raises(grid_mesh):
@@ -93,9 +91,7 @@ def test_non_string_group_name_raises(grid_mesh):
 
 
 def test_dotted_path_round_trip():
-    chain = [
-        CustomGrouping(callback=_DOTTED, params={"axis": "x", "threshold": 1.5})
-    ]
+    chain = [CustomGrouping(callback=_DOTTED, params={"axis": "x", "threshold": 1.5})]
     serialised = dump_groupings(chain)
     assert serialised[0]["callback"] == _DOTTED
     rehydrated = load_groupings(serialised)
