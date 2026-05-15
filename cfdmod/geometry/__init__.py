@@ -8,6 +8,7 @@ from cfdmod.geometry.grouping import (
     ByZoningGrouping,
     ByDivisionsGrouping,
     BySizeGrouping,
+    BySizeRoundedPerComponent,
     ByConnectivityGrouping,
     ByNormalGrouping,
     ByPlaneGrouping,
@@ -16,8 +17,10 @@ from cfdmod.geometry.grouping import (
     CustomGrouping,
     GroupingSpec,
     GroupingResult,
+    RegroupSpec,
     apply_groupings,
     dump_groupings,
+    expand_size_rounded_chain,
     load_groupings,
 )
 
@@ -26,6 +29,7 @@ __all__ = [
     "ByZoningGrouping",
     "ByDivisionsGrouping",
     "BySizeGrouping",
+    "BySizeRoundedPerComponent",
     "ByConnectivityGrouping",
     "ByNormalGrouping",
     "ByPlaneGrouping",
@@ -34,7 +38,9 @@ __all__ = [
     "CustomGrouping",
     "GroupingSpec",
     "GroupingResult",
+    "RegroupSpec",
     "apply_groupings",
     "dump_groupings",
+    "expand_size_rounded_chain",
     "load_groupings",
 ]

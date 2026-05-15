@@ -167,10 +167,12 @@ def _populate_default_registry() -> None:
         AttachGroupingParams,
         BodyGroupingParams,
         MeshAttachParams,
+        RegroupTopologyParams,
         ZoningGroupingParams,
         attach_grouping,
         body_grouping,
         mesh_attach,
+        regroup_topology,
         zoning_grouping,
     )
     from cfdmod.core.ops.time import (
@@ -193,6 +195,7 @@ def _populate_default_registry() -> None:
         ("mesh_attach", mesh_attach, MeshAttachParams),
         ("body_grouping", body_grouping, BodyGroupingParams),
         ("zoning_grouping", zoning_grouping, ZoningGroupingParams),
+        ("regroup_topology", regroup_topology, RegroupTopologyParams),
         ("force_contribution", force_contribution, ForceContributionParams),
         ("moment_contribution", moment_contribution, MomentContributionParams),
         ("filter_by_grouping", filter_by_grouping, FilterByGroupingParams),

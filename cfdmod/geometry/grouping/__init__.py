@@ -29,6 +29,11 @@ from cfdmod.geometry.grouping.kinds.by_plane import ByPlaneGrouping
 from cfdmod.geometry.grouping.kinds.by_size import BySizeGrouping
 from cfdmod.geometry.grouping.kinds.by_surface import BySurfaceGrouping
 from cfdmod.geometry.grouping.kinds.by_zoning import ByZoningGrouping
+from cfdmod.geometry.grouping.regroup import (
+    BySizeRoundedPerComponent,
+    RegroupSpec,
+    expand_size_rounded_chain,
+)
 from cfdmod.geometry.grouping.specs import GroupingSpec
 
 __all__ = [
@@ -44,7 +49,10 @@ __all__ = [
     "ByPercentileGrouping",
     "ByCylindricalGrouping",
     "CustomGrouping",
+    "BySizeRoundedPerComponent",
+    "RegroupSpec",
     "apply_groupings",
     "dump_groupings",
     "load_groupings",
+    "expand_size_rounded_chain",
 ]

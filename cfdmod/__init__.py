@@ -32,9 +32,15 @@ __all__ = [
     "CustomGrouping",
     "GroupingSpec",
     "GroupingResult",
+    "BySizeRoundedPerComponent",
+    "RegroupSpec",
     "apply_groupings",
     "dump_groupings",
     "load_groupings",
+    "expand_size_rounded_chain",
+    # Topology regrouping op (v3)
+    "RegroupTopologyParams",
+    "regroup_topology",
     # S1
     "Profile",
     "EUCat",
@@ -115,13 +121,16 @@ from cfdmod.geometry import (
     ByPercentileGrouping,
     ByPlaneGrouping,
     BySizeGrouping,
+    BySizeRoundedPerComponent,
     BySurfaceGrouping,
     ByZoningGrouping,
     CustomGrouping,
     GroupingResult,
     GroupingSpec,
+    RegroupSpec,
     apply_groupings,
     dump_groupings,
+    expand_size_rounded_chain,
     load_groupings,
 )
 from cfdmod.io import (
@@ -187,6 +196,7 @@ from cfdmod.core import (
 )
 from cfdmod.core import ops as core_ops
 from cfdmod.core import recipes
+from cfdmod.core.ops.geometric import RegroupTopologyParams, regroup_topology
 
 # Expose cfdmod.recipes and cfdmod.ops as importable submodule paths so
 # users can write `from cfdmod.recipes import build_cp` without reaching
