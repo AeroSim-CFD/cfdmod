@@ -23,5 +23,3 @@ def test_parent_n_triangles_recorded(two_square_mesh):
     spec = BySurfaceGrouping(sets={"all": ["A", "B"]})
     res = apply_groupings(two_square_mesh, [spec])
     assert res.parent_n_triangles == 4
-
-

@@ -74,8 +74,7 @@ class CustomGrouping(BaseModel):
         if isinstance(v, str):
             if "." not in v:
                 raise ValueError(
-                    f"callback string must be a dotted import path "
-                    f"('module.func'), got {v!r}"
+                    f"callback string must be a dotted import path " f"('module.func'), got {v!r}"
                 )
             return v
         if callable(v):
@@ -110,9 +109,7 @@ def _resolve_callback(cb: Any):
     module = importlib.import_module(module_name)
     fn = getattr(module, fn_name, None)
     if fn is None or not callable(fn):
-        raise ValueError(
-            f"CustomGrouping callback path {cb!r} did not resolve to a callable"
-        )
+        raise ValueError(f"CustomGrouping callback path {cb!r} did not resolve to a callable")
     return fn
 
 
@@ -144,9 +141,7 @@ def apply_by_custom(
     out: dict[str, np.ndarray] = {}
     for name, idxs in raw.items():
         if not isinstance(name, str):
-            raise TypeError(
-                f"CustomGrouping group names must be str; got {type(name).__name__}"
-            )
+            raise TypeError(f"CustomGrouping group names must be str; got {type(name).__name__}")
         arr = np.unique(np.asarray(idxs, dtype=np.int64).ravel())
         if arr.size > 0:
             if arr[0] < 0 or arr[-1] >= n_parent:

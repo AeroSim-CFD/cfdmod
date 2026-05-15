@@ -1,0 +1,19 @@
+# Sample regroup config for the container use case:
+# split into connected components, then subdivide each container into
+# ~2m x 3m cells with rounded division counts (so a 6.3m extent -> 2 cells
+# of ~3.15m, not 3 cells with overshoot).
+
+groupings:
+  - kind: by_connectivity
+    name_template: "container_{idx}"
+    min_triangles: 4
+  - kind: by_size_rounded_per_component
+    target_size_x: 2.0
+    target_size_y: 3.0
+    name_template: "{parent}_r{idx}"
+    min_n_div: 1
+
+aggregation: area_weighted_mean
+timeseries_group: cp
+output_geometry_format: lnas
+unassigned_policy: drop

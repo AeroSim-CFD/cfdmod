@@ -79,7 +79,9 @@ class GroupingResult:
             name_arrs.append(np.full(len(idxs), name, dtype=object))
         return pd.DataFrame(
             {
-                "triangle_idx": np.concatenate(tri_arrs) if tri_arrs else np.empty(0, dtype=np.int64),
+                "triangle_idx": (
+                    np.concatenate(tri_arrs) if tri_arrs else np.empty(0, dtype=np.int64)
+                ),
                 "group_name": pd.array(np.concatenate(name_arrs), dtype="string"),
             }
         )

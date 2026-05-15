@@ -81,9 +81,7 @@ def _intervals_from_size(lo: float, hi: float, size: float | None) -> list[float
         return [float("-inf"), float("inf")]
     extent = hi - lo
     n_cells = max(1, math.ceil(extent / size)) if extent > 0 else 1
-    edges_arr = np.array(
-        [lo + i * size for i in range(n_cells + 1)], dtype=np.float64
-    )
+    edges_arr = np.array([lo + i * size for i in range(n_cells + 1)], dtype=np.float64)
     edges_arr = edges_arr.astype(np.float32).astype(np.float64)
     # Make the upper edge strictly exceed the max centroid so it is
     # included; ByZoning uses [lower, upper) semantics.

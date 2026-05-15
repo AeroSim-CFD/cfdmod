@@ -11,7 +11,9 @@ import pytest
 from lnas import LnasFormat, LnasGeometry
 
 
-def _square(z: float, x_offset: float = 0.0, y_offset: float = 0.0, size: float = 1.0) -> np.ndarray:
+def _square(
+    z: float, x_offset: float = 0.0, y_offset: float = 0.0, size: float = 1.0
+) -> np.ndarray:
     """Two triangles tiling [0,size]x[0,size] at height z, offset in x/y."""
     s = size
     v = np.array(

@@ -93,6 +93,16 @@ __all__ = [
     "mesh_summary",
     "show_config",
     "load_lnas",
+    # Regroup
+    "RegroupConfig",
+    "BySizeRoundedPerComponent",
+    "RegroupSpec",
+    "RegroupIndex",
+    "build_regroup_mapping",
+    "build_regrouped_mesh",
+    "apply_regroup_to_timeseries",
+    "expand_regroup_chain",
+    "run_regroup",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -151,6 +161,17 @@ from cfdmod.pressure.parameters import (
     ZoningModel,
 )
 from cfdmod.pressure.run import run_ce, run_cf, run_cm, run_cp
+from cfdmod.regroup import (
+    BySizeRoundedPerComponent,
+    RegroupConfig,
+    RegroupIndex,
+    RegroupSpec,
+    apply_regroup_to_timeseries,
+    build_regrouped_mesh,
+    build_regroup_mapping,
+    expand_regroup_chain,
+    run_regroup,
+)
 from cfdmod.roughness import (
     BoundingBox,
     ElementParams,

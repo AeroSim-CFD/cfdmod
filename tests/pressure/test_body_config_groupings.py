@@ -29,14 +29,18 @@ def simple_mesh() -> LnasFormat:
     """4-triangle mesh with two named surfaces (A: tris 0-1, B: tris 2-3)."""
     vertices = np.array(
         [
-            [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-            [2, 0, 0], [3, 0, 0], [3, 1, 0], [2, 1, 0],
+            [0, 0, 0],
+            [1, 0, 0],
+            [1, 1, 0],
+            [0, 1, 0],
+            [2, 0, 0],
+            [3, 0, 0],
+            [3, 1, 0],
+            [2, 1, 0],
         ],
         dtype=np.float32,
     )
-    triangles = np.array(
-        [[0, 1, 2], [0, 2, 3], [4, 5, 6], [4, 6, 7]], dtype=np.uint32
-    )
+    triangles = np.array([[0, 1, 2], [0, 2, 3], [4, 5, 6], [4, 6, 7]], dtype=np.uint32)
     geometry = LnasGeometry(vertices=vertices, triangles=triangles)
     return LnasFormat(
         version="v1.0",
@@ -105,8 +109,7 @@ def test_get_geometry_data_honors_explicit_groupings(simple_mesh):
     # group at all (the user dropped the canonical ByZoning step).
     assert "pack" in data.grouping.groups
     assert sorted(data.grouping.groups["pack"].tolist()) == [0, 1]
-    assert all(not name.endswith("-pack") or name == "pack"
-               for name in data.grouping.groups)
+    assert all(not name.endswith("-pack") or name == "pack" for name in data.grouping.groups)
 
 
 def test_moment_body_inherits_groupings_field():
@@ -153,6 +156,4 @@ def test_legacy_chain_round_trip_via_canonical_template(simple_mesh):
     )
     assert set(legacy.grouping.groups) == set(direct.grouping.groups)
     for name in legacy.grouping.groups:
-        np.testing.assert_array_equal(
-            legacy.grouping.groups[name], direct.grouping.groups[name]
-        )
+        np.testing.assert_array_equal(legacy.grouping.groups[name], direct.grouping.groups[name])

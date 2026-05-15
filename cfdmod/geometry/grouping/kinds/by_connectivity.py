@@ -82,12 +82,8 @@ def _connected_components(
 
     # Build the (sorted vertex pair) -> list of candidate positions map.
     cand_tris = triangles[candidate_idxs]  # (n, 3)
-    edges_a = np.stack(
-        [cand_tris[:, 0], cand_tris[:, 1], cand_tris[:, 2]], axis=0
-    )  # (3, n)
-    edges_b = np.stack(
-        [cand_tris[:, 1], cand_tris[:, 2], cand_tris[:, 0]], axis=0
-    )  # (3, n)
+    edges_a = np.stack([cand_tris[:, 0], cand_tris[:, 1], cand_tris[:, 2]], axis=0)  # (3, n)
+    edges_b = np.stack([cand_tris[:, 1], cand_tris[:, 2], cand_tris[:, 0]], axis=0)  # (3, n)
     lo = np.minimum(edges_a, edges_b).astype(np.int64)  # (3, n)
     hi = np.maximum(edges_a, edges_b).astype(np.int64)  # (3, n)
 
