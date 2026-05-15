@@ -36,9 +36,7 @@ def body_geom():
 
 
 def test_transform_to_Cf(body_geom, cp_data):
-    parent = LnasFormat(
-        version="", geometry=body_geom, surfaces={"body": np.array([0, 1])}
-    )
+    parent = LnasFormat(version="", geometry=body_geom, surfaces={"body": np.array([0, 1])})
     geom_data = build_geometry_data(
         body_label="body",
         sfc_list=["body"],

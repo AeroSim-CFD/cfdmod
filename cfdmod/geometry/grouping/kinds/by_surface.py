@@ -52,9 +52,7 @@ class BySurfaceGrouping(BaseModel):
             if not name:
                 raise ValueError("BySurfaceGrouping.sets: group name must be non-empty")
             if len(surfaces) != len(set(surfaces)):
-                raise ValueError(
-                    f"BySurfaceGrouping.sets[{name!r}]: surface names must be unique"
-                )
+                raise ValueError(f"BySurfaceGrouping.sets[{name!r}]: surface names must be unique")
         return v
 
 
@@ -93,9 +91,7 @@ def apply_by_surface(
             )
         idxs_parts = [np.asarray(mesh.surfaces[s], dtype=np.int64) for s in surface_names]
         merged = (
-            np.unique(np.concatenate(idxs_parts))
-            if idxs_parts
-            else np.empty(0, dtype=np.int64)
+            np.unique(np.concatenate(idxs_parts)) if idxs_parts else np.empty(0, dtype=np.int64)
         )
         out[group_name] = merged
         used_in_sets.update(surface_names)

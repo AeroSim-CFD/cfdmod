@@ -41,9 +41,7 @@ def body_geom():
 
 @pytest.fixture()
 def geom_data(body_geom):
-    parent = LnasFormat(
-        version="", geometry=body_geom, surfaces={"body": np.array([0, 1])}
-    )
+    parent = LnasFormat(version="", geometry=body_geom, surfaces={"body": np.array([0, 1])})
     yield build_geometry_data(
         body_label="body",
         sfc_list=["body"],

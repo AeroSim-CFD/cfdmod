@@ -113,9 +113,7 @@ def _apply_chain_in_transformed_frame(
     ``get_region_indexing`` flow.
     """
     mesh_for_binning = mesh.copy()
-    mesh_for_binning.geometry.apply_transformation(
-        transformation.get_geometry_transformation()
-    )
+    mesh_for_binning.geometry.apply_transformation(transformation.get_geometry_transformation())
     return apply_groupings(mesh_for_binning, chain)
 
 
@@ -405,9 +403,7 @@ def generate_regions_mesh(
         ),
     )
     df_regions = _zoning_regions_df(spec)
-    regions_mesh_triangles_indexing = get_indexing_mask(
-        mesh=regions_mesh, df_regions=df_regions
-    )
+    regions_mesh_triangles_indexing = get_indexing_mask(mesh=regions_mesh, df_regions=df_regions)
     regions_mesh.apply_transformation(
         cfg.transformation.get_geometry_transformation(), invert_transf=True
     )

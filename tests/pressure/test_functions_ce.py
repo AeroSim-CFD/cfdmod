@@ -30,6 +30,7 @@ def _ce_geom_data(mesh: LnasGeometry, zoning: ZoningModel, label: str = "sfc1"):
         mesh=parent,
     )
 
+
 pytestmark = pytest.mark.unit
 
 

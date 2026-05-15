@@ -134,6 +134,9 @@ skip_glob = ["**/__init__.py"] # avoid circular imports
 
 [tool.ruff]
 lint.fixable = ["ALL"]
+# Notebooks frequently re-define helpers across cells (didactic style); F811
+# (redefinition of unused name) is noise there.
+lint.per-file-ignores = { "*.ipynb" = ["F811"] }
 # Exclude a variety of commonly ignored directories.
 exclude = [
     "consulting",

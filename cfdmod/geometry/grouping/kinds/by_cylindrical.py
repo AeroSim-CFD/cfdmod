@@ -81,8 +81,7 @@ class ByCylindricalGrouping(BaseModel):
         Field(
             "r{idx}",
             description=(
-                "Format string. Placeholders: "
-                "{idx} (linear), {ir}, {it}, {iz} (per-axis)."
+                "Format string. Placeholders: " "{idx} (linear), {ir}, {it}, {iz} (per-axis)."
             ),
         ),
     ]
@@ -178,9 +177,12 @@ def apply_by_cylindrical(
         # whose normalised theta is exactly 360 due to floating-point quirks.
         thi_eff = float(np.nextafter(thi, np.inf)) if thi == 360.0 else thi
         in_cell = (
-            (r >= rlo) & (r < rhi)
-            & (theta >= tlo) & (theta < thi_eff)
-            & (axial >= zlo) & (axial < zhi)
+            (r >= rlo)
+            & (r < rhi)
+            & (theta >= tlo)
+            & (theta < thi_eff)
+            & (axial >= zlo)
+            & (axial < zhi)
         )
         cell_idxs = cand[in_cell]
         if cell_idxs.size > 0:

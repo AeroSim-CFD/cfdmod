@@ -29,9 +29,7 @@ def test_unbinned_triangles_simply_omitted(grid_mesh):
 
 
 def test_name_template_with_axis_indices(grid_mesh):
-    spec = ByZoningGrouping(
-        x_intervals=[0.0, 1.0, 2.0, 3.0], name_template="x{ix}"
-    )
+    spec = ByZoningGrouping(x_intervals=[0.0, 1.0, 2.0, 3.0], name_template="x{ix}")
     res = apply_groupings(grid_mesh, [spec])
     assert set(res.groups) == {"x0", "x1", "x2"}
 
