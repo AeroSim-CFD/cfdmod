@@ -33,9 +33,11 @@ def test_expand_per_component_rounded_division_count(two_container_mesh):
             name_template="{parent}_r{idx}",
         ),
     ]
-    expanded, consumed = expand_regroup_chain(
+    expanded, consumed, parent_intervals, parent_triangles = expand_regroup_chain(
         chain, two_container_mesh, transformation=None
     )
+    assert set(parent_intervals.keys()) == {"cc0", "cc1"}
+    assert set(parent_triangles.keys()) == {"cc0", "cc1"}
     # First spec preserved; one ByDivisionsGrouping per component appended;
     # both connectivity components consumed (they're scaffolding).
     assert isinstance(expanded[0], ByConnectivityGrouping)
@@ -120,6 +122,41 @@ def test_run_regroup_per_triangle_preserves_total_columns(small_mesh, tmp_path):
         out_col = f["cp"][first_key][:]
     # 2x2 grid = 8 triangles, all inside the zoning.
     assert out_col.shape == (8,)
+
+
+def test_run_regroup_sliced_two_container(two_container_mesh, tmp_path):
+    """Sliced mode on the two-container fixture: fragments inherit parent ids,
+    output surface count matches the leaf cells, and HDF5 columns line up."""
+    in_h5 = tmp_path / "in.h5"
+    n_tri = two_container_mesh.geometry.triangles.shape[0]
+    make_synthetic_cp_h5(in_h5, n_triangles=n_tri, n_steps=2, seed=11)
+
+    cfg = RegroupConfig(
+        groupings=[
+            ByConnectivityGrouping(name_template="cc{idx}", min_triangles=4),
+            BySizeRoundedPerComponent(
+                target_size_x=2.0,
+                target_size_y=3.0,
+                name_template="{parent}_r{idx}",
+            ),
+        ],
+        aggregation="sliced",
+        timeseries_group="cp",
+    )
+    out_dir = tmp_path / "out"
+    run_regroup(cfg, two_container_mesh, in_h5, out_dir)
+
+    new = LnasFormat.from_file(out_dir / "geometry.lnas")
+    # Same 5 leaf surfaces as the un-sliced run, but more triangles (fragments).
+    assert len(new.surfaces) == 5
+    assert new.geometry.triangles.shape[0] >= n_tri  # fragments only multiply
+
+    with h5py.File(out_dir / "cp.regrouped.h5", "r") as f:
+        keys = sorted(k for k in f["cp"].keys() if k.startswith("t"))
+        assert len(keys) == 2
+        n_cols = f["cp"][keys[0]].shape[0]
+    # Cardinality match: one HDF5 column per output triangle.
+    assert n_cols == new.geometry.triangles.shape[0]
 
 
 @pytest.mark.skipif(

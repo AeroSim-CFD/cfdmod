@@ -140,10 +140,18 @@ class RegroupConfig(BaseModel):
         Field(None, description="Optional pre-binning transformation."),
     ]
     aggregation: Annotated[
-        Literal["per_triangle", "area_weighted_mean"],
+        Literal["per_triangle", "area_weighted_mean", "sliced"],
         Field(
             "area_weighted_mean",
-            description="Per-group HDF5 column policy.",
+            description=(
+                "Per-group HDF5 column policy. "
+                "'per_triangle': one column per parent triangle, reordered. "
+                "'area_weighted_mean': one aggregated value per group, broadcast. "
+                "'sliced': geometrically slice triangles at the cell boundaries "
+                "(Ce-style 90-degree cuts) so output triangles never straddle "
+                "two cells; per-fragment columns inherit their parent triangle's "
+                "value."
+            ),
         ),
     ]
     timeseries_group: Annotated[

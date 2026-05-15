@@ -17,9 +17,11 @@ from lnas import LnasFormat
 
 from cfdmod.geometry.grouping import (
     ByDivisionsGrouping,
+    ByZoningGrouping,
     GroupingSpec,
     apply_groupings,
 )
+from cfdmod.geometry.grouping.kinds.by_divisions import _intervals_from_count
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.io.mesh import load_mesh
 from cfdmod.io.xdmf import (
@@ -31,6 +33,7 @@ from cfdmod.regroup.functions import (
     apply_regroup_to_timeseries,
     build_regrouped_mesh,
     build_regroup_mapping,
+    build_sliced_regrouped_mesh,
 )
 from cfdmod.regroup.parameters import (
     BySizeRoundedPerComponent,
@@ -61,12 +64,20 @@ def _rounded_division_count(extent: float, target: float, min_n: int) -> int:
     return max(min_n, n)
 
 
+_IntervalsTriple = tuple[list[float], list[float], list[float]]
+
+
 def _expand_one_per_component(
     spec: BySizeRoundedPerComponent,
     mesh: LnasFormat,
     prior_chain: list[GroupingSpec],
     transformation: TransformationConfig | None,
-) -> tuple[list[GroupingSpec], set[str]]:
+) -> tuple[
+    list[GroupingSpec],
+    set[str],
+    dict[str, _IntervalsTriple],
+    dict[str, np.ndarray],
+]:
     """Expand a fan-out spec into one ``ByDivisionsGrouping`` per parent group.
 
     Returns ``(new_specs, consumed_parent_names)``. The consumed names
@@ -104,11 +115,14 @@ def _expand_one_per_component(
 
     expanded: list[GroupingSpec] = []
     consumed: set[str] = set()
+    parent_intervals: dict[str, _IntervalsTriple] = {}
+    parent_triangles: dict[str, np.ndarray] = {}
     for parent_name in parent_names:
         parent_idxs = np.asarray(prior.groups[parent_name], dtype=np.int64)
         if parent_idxs.size == 0:
             continue
         consumed.add(parent_name)
+        parent_triangles[parent_name] = parent_idxs
         cents = _restricted_centroids(mesh_for_binning, parent_idxs)
         lo = cents.min(axis=0)
         hi = cents.max(axis=0)
@@ -142,6 +156,11 @@ def _expand_one_per_component(
                 restrict_to=[parent_name],
             )
         )
+        parent_intervals[parent_name] = (
+            _intervals_from_count(float(lo[0]), float(hi[0]), n_x),
+            _intervals_from_count(float(lo[1]), float(hi[1]), n_y),
+            _intervals_from_count(float(lo[2]), float(hi[2]), n_z),
+        )
 
         logger.info(
             f"  expand[{parent_name}]: extents=({hi[0] - lo[0]:.3f}, "
@@ -149,33 +168,90 @@ def _expand_one_per_component(
             f"n_div=({n_x}, {n_y}, {n_z})"
         )
 
-    return expanded, consumed
+    return expanded, consumed, parent_intervals, parent_triangles
 
 
 def expand_regroup_chain(
     chain: list[RegroupSpec],
     mesh: LnasFormat,
     transformation: TransformationConfig | None,
-) -> tuple[list[GroupingSpec], set[str]]:
+) -> tuple[
+    list[GroupingSpec],
+    set[str],
+    dict[str, _IntervalsTriple],
+    dict[str, np.ndarray],
+]:
     """Resolve any regroup-local specs into plain ``GroupingSpec`` entries.
 
-    Returns ``(expanded_specs, consumed_group_names)``. Consumed names
-    are intermediate parent groups that ``BySizeRoundedPerComponent``
-    has fanned out over; ``run_regroup`` drops them from the final
-    grouping so output surfaces are the leaf cells only.
+    Returns ``(expanded_specs, consumed_group_names, parent_intervals,
+    parent_triangles)``. ``consumed`` names are intermediate parent
+    groups that ``BySizeRoundedPerComponent`` has fanned out over;
+    ``parent_intervals`` and ``parent_triangles`` carry the per-parent
+    cut planes and triangle indices needed to drive the ``"sliced"``
+    aggregation mode (empty dicts when no fan-out happened).
     """
     expanded: list[GroupingSpec] = []
     consumed: set[str] = set()
+    parent_intervals: dict[str, _IntervalsTriple] = {}
+    parent_triangles: dict[str, np.ndarray] = {}
     for spec in chain:
         if isinstance(spec, BySizeRoundedPerComponent):
-            new_specs, new_consumed = _expand_one_per_component(
-                spec, mesh, expanded, transformation
+            new_specs, new_consumed, new_intervals, new_triangles = (
+                _expand_one_per_component(spec, mesh, expanded, transformation)
             )
             expanded.extend(new_specs)
             consumed |= new_consumed
+            parent_intervals.update(new_intervals)
+            parent_triangles.update(new_triangles)
         else:
             expanded.append(spec)
-    return expanded, consumed
+    return expanded, consumed, parent_intervals, parent_triangles
+
+
+def _resolve_global_intervals(
+    expanded: list[GroupingSpec],
+    grouping,
+    mesh: LnasFormat,
+) -> tuple[_IntervalsTriple, np.ndarray] | None:
+    """For a chain whose only zoning is a single trailing ByZoning/Divisions,
+    return ``((x, y, z), all_grouped_triangle_idxs)``; else None.
+
+    Used by sliced mode when the user wrote a one-shot zoning config (not a
+    BySizeRoundedPerComponent fan-out). Picks the last zoning-like spec.
+    """
+    last_zoning: ByZoningGrouping | None = None
+    for spec in expanded:
+        if isinstance(spec, ByZoningGrouping):
+            last_zoning = spec
+        elif isinstance(spec, ByDivisionsGrouping):
+            # ByDivisionsGrouping resolves to a ByZoningGrouping; bbox-derived.
+            cents = mesh.geometry.triangle_vertices.mean(axis=1)
+            allowed = np.concatenate(
+                [grouping.groups[n] for n in (spec.restrict_to or [])]
+            ) if spec.restrict_to else np.arange(cents.shape[0], dtype=np.int64)
+            if allowed.size == 0:
+                continue
+            cand = cents[allowed]
+            lo = cand.min(axis=0)
+            hi = cand.max(axis=0)
+            last_zoning = ByZoningGrouping(
+                x_intervals=_intervals_from_count(float(lo[0]), float(hi[0]), spec.n_div_x),
+                y_intervals=_intervals_from_count(float(lo[1]), float(hi[1]), spec.n_div_y),
+                z_intervals=_intervals_from_count(float(lo[2]), float(hi[2]), spec.n_div_z),
+            )
+    if last_zoning is None:
+        return None
+    all_idxs = np.unique(
+        np.concatenate([np.asarray(idxs, dtype=np.int64) for idxs in grouping.groups.values()])
+    ) if grouping.groups else np.array([], dtype=np.int64)
+    return (
+        (
+            list(last_zoning.x_intervals),
+            list(last_zoning.y_intervals),
+            list(last_zoning.z_intervals),
+        ),
+        all_idxs,
+    )
 
 
 def _record_processing_metadata(
@@ -229,7 +305,9 @@ def run_regroup(
     )
     mesh = load_mesh(geometry)
 
-    expanded, consumed = expand_regroup_chain(cfg.groupings, mesh, cfg.transformation)
+    expanded, consumed, parent_intervals, parent_triangles = expand_regroup_chain(
+        cfg.groupings, mesh, cfg.transformation
+    )
     if not expanded:
         raise ValueError(
             "regroup: chain expanded to zero specs (no work to do); check the config."
@@ -252,12 +330,39 @@ def run_regroup(
             "regroup: chain produced zero non-empty groups and unassigned_policy='drop'."
         )
 
-    new_lnas, regroup_index = build_regrouped_mesh(
-        mesh,
-        grouping,
-        aggregation=cfg.aggregation,
-        unassigned_policy=cfg.unassigned_policy,
-    )
+    if cfg.aggregation == "sliced":
+        if not parent_intervals:
+            # No fan-out happened. Try to extract a single trailing zoning to
+            # use as the global cut. Fall back to error otherwise.
+            global_resolved = _resolve_global_intervals(expanded, grouping, mesh)
+            if global_resolved is None:
+                raise ValueError(
+                    "regroup (sliced): could not resolve cut intervals from the chain. "
+                    "Use a chain with BySizeRoundedPerComponent or a trailing "
+                    "ByZoningGrouping / ByDivisionsGrouping."
+                )
+            global_intervals, global_idxs = global_resolved
+            parent_intervals = {"*": global_intervals}
+            parent_triangles = {"*": global_idxs}
+
+        logger.info(
+            f"regroup (sliced): slicing {len(parent_intervals)} parent "
+            f"component(s) along axis-aligned cut planes..."
+        )
+        new_lnas, regroup_index = build_sliced_regrouped_mesh(
+            mesh,
+            grouping,
+            parent_intervals=parent_intervals,
+            parent_triangles=parent_triangles,
+            unassigned_policy=cfg.unassigned_policy,
+        )
+    else:
+        new_lnas, regroup_index = build_regrouped_mesh(
+            mesh,
+            grouping,
+            aggregation=cfg.aggregation,
+            unassigned_policy=cfg.unassigned_policy,
+        )
 
     out_lnas = output_dir / "geometry.lnas"
     new_lnas.to_file(out_lnas)

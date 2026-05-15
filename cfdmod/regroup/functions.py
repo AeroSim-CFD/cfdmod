@@ -34,6 +34,7 @@ from cfdmod.geometry.grouping import (
     GroupingSpec,
     apply_groupings,
 )
+from cfdmod.io.geometry.region_meshing import slice_triangle
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.io.xdmf import (
     get_pressure_keys,
@@ -49,7 +50,9 @@ __all__ = [
     "RegroupIndex",
     "build_regroup_mapping",
     "build_regrouped_mesh",
+    "build_sliced_regrouped_mesh",
     "apply_regroup_to_timeseries",
+    "slice_triangles_with_parents",
 ]
 
 
@@ -225,6 +228,275 @@ def build_regrouped_mesh(
     return new_lnas, index
 
 
+def _slice_one_triangle(
+    tri_verts: np.ndarray,
+    tri_normal: np.ndarray,
+    axis: int,
+    axis_value: float,
+) -> np.ndarray:
+    """Slice a single triangle along an axis-aligned plane.
+
+    Returns ``(N, 3, 3)`` post-slice triangle vertex arrays; ``N >= 1``.
+    Skips slicing when the triangle is parallel to the cut plane (its
+    normal is dominantly along ``axis``) or lies entirely on one side.
+    """
+    if np.abs(tri_normal).max() == np.abs(tri_normal)[axis]:
+        return tri_verts.reshape(1, 3, 3).astype(np.float64)
+    if tri_verts[:, axis].max() < axis_value or tri_verts[:, axis].min() > axis_value:
+        return tri_verts.reshape(1, 3, 3).astype(np.float64)
+    return slice_triangle(tri_verts, axis, axis_value).astype(np.float64)
+
+
+def slice_triangles_with_parents(
+    tri_verts: np.ndarray,
+    tri_normals: np.ndarray,
+    parent_idxs: np.ndarray,
+    intervals: tuple[list[float], list[float], list[float]],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Slice triangles along axis-aligned planes, tracking parent indices.
+
+    Args:
+        tri_verts: ``(n, 3, 3)`` per-triangle vertex array.
+        tri_normals: ``(n, 3)`` per-triangle outward normal.
+        parent_idxs: ``(n,)`` int64 - the parent (input-mesh) triangle each
+            row of ``tri_verts`` came from.
+        intervals: per-axis interval edges; non-finite values (``inf`` /
+            ``-inf``) are skipped (sentinels for "no binning on this axis").
+
+    Returns:
+        ``(verts, normals, parent_per_fragment)``:
+        - ``verts``: ``(m, 3, 3)`` post-slice triangle vertex arrays.
+        - ``normals``: ``(m, 3)`` per-fragment normals (inherited from parent).
+        - ``parent_per_fragment``: ``(m,)`` int64 - parent triangle index
+          for each fragment (== input ``parent_idxs[i]`` for any fragment
+          derived from input row ``i``).
+    """
+    cur_verts = tri_verts.astype(np.float64).copy()
+    cur_normals = tri_normals.astype(np.float64).copy()
+    cur_parents = np.asarray(parent_idxs, dtype=np.int64).copy()
+
+    for axis in range(3):
+        for v in intervals[axis]:
+            if not np.isfinite(v):
+                continue
+            new_verts = []
+            new_normals = []
+            new_parents = []
+            for i in range(cur_verts.shape[0]):
+                fragments = _slice_one_triangle(
+                    cur_verts[i], cur_normals[i], axis, float(v)
+                )
+                new_verts.append(fragments)
+                new_normals.append(np.tile(cur_normals[i], (fragments.shape[0], 1)))
+                new_parents.append(np.full(fragments.shape[0], cur_parents[i], dtype=np.int64))
+            cur_verts = np.concatenate(new_verts, axis=0)
+            cur_normals = np.concatenate(new_normals, axis=0)
+            cur_parents = np.concatenate(new_parents, axis=0)
+
+    return cur_verts, cur_normals, cur_parents
+
+
+def _bin_centroid_to_cell(
+    centroid: np.ndarray,
+    intervals: tuple[list[float], list[float], list[float]],
+) -> tuple[int, int, int]:
+    """Return ``(ix, iy, iz)`` cell index of a centroid; -1 if outside any axis."""
+    out = []
+    for axis in range(3):
+        edges = intervals[axis]
+        idx = -1
+        for j in range(len(edges) - 1):
+            lo = edges[j]
+            hi = edges[j + 1]
+            if lo <= centroid[axis] < hi:
+                idx = j
+                break
+        out.append(idx)
+    return tuple(out)  # type: ignore[return-value]
+
+
+def _build_geometry_from_fragments(
+    fragments_verts: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Deduplicate vertices and return ``(vertices, triangles)`` arrays."""
+    if fragments_verts.shape[0] == 0:
+        return (
+            np.zeros((0, 3), dtype=np.float64),
+            np.zeros((0, 3), dtype=np.int32),
+        )
+    n = fragments_verts.shape[0]
+    flat = fragments_verts.reshape(n * 3, 3).astype(np.float64)
+    unique_verts, inverse = np.unique(flat, axis=0, return_inverse=True)
+    triangles = inverse.reshape(n, 3).astype(np.int32)
+    return unique_verts, triangles
+
+
+def build_sliced_regrouped_mesh(
+    mesh: LnasFormat,
+    grouping: GroupingResult,
+    parent_intervals: dict[str, tuple[list[float], list[float], list[float]]],
+    parent_triangles: dict[str, np.ndarray],
+    *,
+    unassigned_policy: Literal["drop", "keep_as_unassigned"] = "drop",
+) -> tuple[LnasFormat, RegroupIndex]:
+    """Slice each parent's triangles along its intervals; emit cell-labelled mesh.
+
+    For each ``(parent_name, intervals)`` pair:
+    1. Take the parent triangles (``parent_triangles[parent_name]``).
+    2. Slice them along ``intervals`` (per-axis 90-degree cuts), tracking
+       which input triangle each fragment came from.
+    3. Bin each fragment's centroid into one cell of the parent's grid.
+    4. Append the fragment to the output, labelled by cell.
+
+    Output ``LnasFormat`` carries one named surface per ``(parent, cell)``
+    that has at least one fragment (matches ``grouping.groups`` keys).
+    The returned ``RegroupIndex`` has aggregation ``"sliced"`` and
+    ``new_to_parent`` mapping each output triangle position to its parent
+    input-mesh triangle index, so per-timestep gather copies the parent's
+    value to all of its fragments.
+    """
+    fragments_verts_acc = []
+    fragments_parent_acc = []
+    fragments_group_acc = []
+    output_group_names: list[str] = []
+    name_to_idx: dict[str, int] = {}
+
+    valid_group_names = set(grouping.groups.keys())
+
+    parent_tri_vertices = mesh.geometry.triangle_vertices
+    parent_tri_normals = mesh.geometry.normals
+
+    for parent_name, intervals in parent_intervals.items():
+        parent_idxs = np.asarray(parent_triangles[parent_name], dtype=np.int64)
+        if parent_idxs.size == 0:
+            continue
+
+        verts = parent_tri_vertices[parent_idxs]
+        normals = parent_tri_normals[parent_idxs]
+
+        frag_verts, _frag_normals, frag_parent = slice_triangles_with_parents(
+            verts, normals, parent_idxs, intervals
+        )
+
+        centroids = frag_verts.mean(axis=1)
+
+        # The expanded ByDivisionsGrouping's name_template is
+        # "{sub_template}" with placeholders {idx}/{ix}/{iy}/{iz}. We resolve
+        # the cell name from the grouping result's keys: a fragment's parent
+        # belongs to a leaf group, and the fragment's centroid bin tells us
+        # which leaf. We just check membership of the parent in each leaf
+        # group (cheap; few leaves per parent).
+        # For each fragment, find which leaf group its parent belongs to,
+        # and verify by centroid. Two-pass approach: build per-parent a
+        # mapping cell_idx -> group_name from the leaf groups.
+        leaf_for_parent_axis = _resolve_leaf_groups_for_parent(
+            grouping=grouping,
+            parent_idxs=parent_idxs,
+            intervals=intervals,
+            mesh=mesh,
+        )
+
+        for frag_i in range(frag_verts.shape[0]):
+            cell = _bin_centroid_to_cell(centroids[frag_i], intervals)
+            if any(c < 0 for c in cell):
+                if unassigned_policy == "drop":
+                    continue
+                group_name = _UNASSIGNED_NAME
+            else:
+                group_name = leaf_for_parent_axis.get(cell)
+                if group_name is None:
+                    if unassigned_policy == "drop":
+                        continue
+                    group_name = _UNASSIGNED_NAME
+                elif group_name not in valid_group_names:
+                    if unassigned_policy == "drop":
+                        continue
+
+            if group_name not in name_to_idx:
+                name_to_idx[group_name] = len(output_group_names)
+                output_group_names.append(group_name)
+
+            fragments_verts_acc.append(frag_verts[frag_i])
+            fragments_parent_acc.append(int(frag_parent[frag_i]))
+            fragments_group_acc.append(name_to_idx[group_name])
+
+    if not fragments_verts_acc:
+        raise ValueError(
+            "regroup (sliced): no fragments produced; check intervals/extents."
+        )
+
+    fragments_verts_arr = np.stack(fragments_verts_acc, axis=0)
+    parent_arr = np.asarray(fragments_parent_acc, dtype=np.int64)
+    group_arr = np.asarray(fragments_group_acc, dtype=np.int64)
+
+    # Sort fragments so each output surface is contiguous.
+    order = np.lexsort((np.arange(group_arr.size), group_arr))
+    fragments_verts_arr = fragments_verts_arr[order]
+    parent_arr = parent_arr[order]
+    group_arr = group_arr[order]
+
+    vertices, triangles = _build_geometry_from_fragments(fragments_verts_arr)
+    new_geom = LnasGeometry(vertices=vertices, triangles=triangles)
+
+    new_surfaces: dict[str, np.ndarray] = {}
+    cursor = 0
+    for gi, name in enumerate(output_group_names):
+        count = int((group_arr == gi).sum())
+        if count == 0:
+            continue
+        new_surfaces[name] = np.arange(cursor, cursor + count, dtype=np.int32)
+        cursor += count
+
+    new_lnas = LnasFormat(
+        version=mesh.version,
+        geometry=new_geom,
+        surfaces=new_surfaces,
+    )
+
+    index = RegroupIndex(
+        aggregation="sliced",
+        new_to_parent=parent_arr,
+        output_group_names=list(new_surfaces.keys()),
+        triangle_group_idx=group_arr,
+        group_parents=[],
+        group_weights=[],
+    )
+    return new_lnas, index
+
+
+def _resolve_leaf_groups_for_parent(
+    grouping: GroupingResult,
+    parent_idxs: np.ndarray,
+    intervals: tuple[list[float], list[float], list[float]],
+    mesh: LnasFormat,
+) -> dict[tuple[int, int, int], str]:
+    """For one parent's triangles, map cell ``(ix, iy, iz)`` -> leaf group name.
+
+    Resolved by binning each parent triangle's centroid and reading off
+    the leaf group it landed in. Cells with no parent triangles are
+    absent from the returned dict (those are interior / hollow cells).
+    """
+    parent_set = set(int(i) for i in parent_idxs)
+    leaf_for_parent: dict[int, str] = {}
+    for name, idxs in grouping.groups.items():
+        for t in idxs:
+            ti = int(t)
+            if ti in parent_set:
+                leaf_for_parent[ti] = name
+
+    centroids = mesh.geometry.triangle_vertices.mean(axis=1)
+    out: dict[tuple[int, int, int], str] = {}
+    for parent_tri in parent_idxs:
+        cell = _bin_centroid_to_cell(centroids[int(parent_tri)], intervals)
+        if any(c < 0 for c in cell):
+            continue
+        name = leaf_for_parent.get(int(parent_tri))
+        if name is None:
+            continue
+        out[cell] = name
+    return out
+
+
 def _per_triangle_region_labels(index: RegroupIndex) -> list[str]:
     """One label per output triangle, naming the group it belongs to."""
     return [
@@ -280,7 +552,7 @@ def apply_regroup_to_timeseries(
         f"{len(regroup_index.output_group_names)} group(s) to {output_h5}"
     )
 
-    if regroup_index.aggregation == "per_triangle":
+    if regroup_index.aggregation in ("per_triangle", "sliced"):
         gather = regroup_index.new_to_parent
         for _t_val, key in keys:
             in_col = read_step(input_h5, key, group)

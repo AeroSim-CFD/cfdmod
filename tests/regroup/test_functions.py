@@ -174,6 +174,49 @@ def test_transformation_moves_binning_frame(small_mesh):
     assert world_r0 != rot_r0
 
 
+def test_slice_triangles_with_parents_no_planes_passthrough(small_mesh):
+    from cfdmod.regroup.functions import slice_triangles_with_parents
+
+    n = small_mesh.geometry.triangles.shape[0]
+    parent_idxs = np.arange(n, dtype=np.int64)
+    intervals = (
+        [float("-inf"), float("inf")],
+        [float("-inf"), float("inf")],
+        [float("-inf"), float("inf")],
+    )
+    verts, normals, parents = slice_triangles_with_parents(
+        small_mesh.geometry.triangle_vertices,
+        small_mesh.geometry.normals,
+        parent_idxs,
+        intervals,
+    )
+    # No finite cut planes -> no slicing happens; identity output.
+    assert verts.shape == (n, 3, 3)
+    assert parents.tolist() == parent_idxs.tolist()
+
+
+def test_slice_triangles_with_parents_actually_cuts():
+    """A single z-plane triangle straddling x=1.0 must split into 2 sub-tris."""
+    from cfdmod.regroup.functions import slice_triangles_with_parents
+
+    # One triangle in the XY plane spanning x=[0,2], y=[0,1], normal +z.
+    tri = np.array([[[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 1.0, 0.0]]])
+    normals = np.array([[0.0, 0.0, 1.0]])
+    parents = np.array([42], dtype=np.int64)
+    intervals = (
+        [float("-inf"), 1.0, float("inf")],
+        [float("-inf"), float("inf")],
+        [float("-inf"), float("inf")],
+    )
+    verts, _normals, parents_out = slice_triangles_with_parents(
+        tri, normals, parents, intervals
+    )
+    # The triangle straddles the x=1 plane, so it slices.
+    assert verts.shape[0] >= 2
+    # Every fragment retains the parent index.
+    assert np.all(parents_out == 42)
+
+
 def test_two_container_connectivity_split(two_container_mesh):
     """Connectivity isolates the two containers as separate groups."""
     chain = [
