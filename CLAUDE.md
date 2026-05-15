@@ -24,6 +24,7 @@
 - Configuration via YAML + Pydantic v2 `BaseModel` with `from_file(path)` classmethods.
 - External mesh format: `aerosim-lnas` (`LnasFormat`, `LnasGeometry`). Prefer lnas over trimesh for loading STL/LNAS surfaces.
 - Testing: pytest, fixture files under `fixtures/tests/`, tests mirror source structure under `tests/`.
+- **Plans for issues belong on the issue.** When you produce an implementation plan tied to an existing GitHub issue, post it as a comment on that issue (`gh issue comment <n>`) so the design lives next to the work item.
 
 ---
 
