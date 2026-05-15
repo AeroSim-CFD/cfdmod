@@ -49,6 +49,11 @@ from typing import Annotated, Literal, get_args
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from cfdmod.geometry.grouping import (
+    BySurfaceGrouping,
+    ByZoningGrouping,
+    GroupingSpec,
+)
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.utils import read_yaml
 
@@ -319,6 +324,63 @@ class BodyConfig(BaseModel):
             description="Intervals that section the body into sub-bodies",
         ),
     ]
+    groupings: Annotated[
+        list[GroupingSpec] | None,
+        Field(
+            None,
+            title="Triangle-grouping pipeline (replaces sub_bodies when set)",
+            description=(
+                "Optional explicit triangle-grouping chain. When set, replaces "
+                "the implicit (BySurface + ByZoning(sub_bodies)) chain entirely. "
+                "Use this to express groupings the canonical chain cannot, e.g. "
+                "by_connectivity or arbitrary sub-set composition. Setting both "
+                "groupings and a non-default sub_bodies is rejected to keep the "
+                "active chain unambiguous."
+            ),
+        ),
+    ]
+
+    @model_validator(mode="after")
+    def _check_groupings_vs_sub_bodies(self) -> "BodyConfig":
+        if self.groupings is None:
+            return self
+        # sub_bodies has a default, so we treat the default value as
+        # "not set". Any non-default zoning + an explicit groupings chain
+        # is ambiguous.
+        sb = self.sub_bodies
+        is_default = (
+            sb.x_intervals == [float("-inf"), float("inf")]
+            and sb.y_intervals == [float("-inf"), float("inf")]
+            and sb.z_intervals == [float("-inf"), float("inf")]
+        )
+        if not is_default:
+            raise ValueError(
+                f"BodyConfig {self.name!r}: cannot set both 'groupings' and "
+                "a non-default 'sub_bodies'; the explicit chain takes precedence "
+                "but mixing is ambiguous. Move the zoning into the chain."
+            )
+        return self
+
+    def resolved_groupings(self, sfc_list: list[str]) -> list[GroupingSpec]:
+        """Return the grouping chain to apply for this body.
+
+        Honors an explicit ``groupings`` field when set; otherwise builds
+        the canonical ``[BySurface, ByZoning(sub_bodies)]`` chain that
+        reproduces the legacy region-label format.
+        """
+        if self.groupings is not None:
+            return list(self.groupings)
+        sfcs = list(sfc_list) if sfc_list else []
+        return [
+            BySurfaceGrouping(sets={self.name: sfcs}),
+            ByZoningGrouping(
+                x_intervals=list(self.sub_bodies.x_intervals),
+                y_intervals=list(self.sub_bodies.y_intervals),
+                z_intervals=list(self.sub_bodies.z_intervals),
+                name_template="{idx}-" + self.name,
+                restrict_to=[self.name],
+            ),
+        ]
 
 
 class MomentBodyConfig(BodyConfig):

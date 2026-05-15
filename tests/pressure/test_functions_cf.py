@@ -7,7 +7,7 @@ from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure.functions import calculate_statistics, transform_Cf
-from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
+from cfdmod.pressure.geometry import build_geometry_data, tabulate_geometry_data
 from cfdmod.pressure.parameters import BasicStatisticModel, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
@@ -36,8 +36,14 @@ def body_geom():
 
 
 def test_transform_to_Cf(body_geom, cp_data):
-    geom_data = GeometryData(
-        mesh=body_geom, zoning_to_use=ZoningModel(), triangles_idxs=np.array([0, 1])
+    parent = LnasFormat(
+        version="", geometry=body_geom, surfaces={"body": np.array([0, 1])}
+    )
+    geom_data = build_geometry_data(
+        body_label="body",
+        sfc_list=["body"],
+        zoning=ZoningModel(),
+        mesh=parent,
     )
     geometry_dict = {"body": geom_data}
     geometry_df = tabulate_geometry_data(
@@ -71,10 +77,11 @@ def test_liquid_coefficients(body_geom):
     )
     upper_mesh.join(lnas_fmts=[lower_mesh], surfaces_suffixes=["_lower"])
 
-    geom_data = GeometryData(
-        mesh=upper_mesh.geometry,
-        zoning_to_use=ZoningModel(),
-        triangles_idxs=np.array([0, 1, 2, 3]),
+    geom_data = build_geometry_data(
+        body_label="body",
+        sfc_list=list(upper_mesh.surfaces.keys()),
+        zoning=ZoningModel(),
+        mesh=upper_mesh,
     )
     geometry_dict = {"body": geom_data}
     geometry_df = tabulate_geometry_data(

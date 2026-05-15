@@ -3,11 +3,11 @@
 import numpy as np
 import pandas as pd
 import pytest
-from lnas import LnasGeometry
+from lnas import LnasFormat, LnasGeometry
 
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.pressure.functions import add_lever_arm_to_geometry_df, transform_Cm
-from cfdmod.pressure.geometry import GeometryData, tabulate_geometry_data
+from cfdmod.pressure.geometry import build_geometry_data, tabulate_geometry_data
 from cfdmod.pressure.parameters import MomentBodyConfig, ZoningModel
 from cfdmod.utils import convert_dataframe_into_matrix
 
@@ -41,8 +41,14 @@ def body_geom():
 
 @pytest.fixture()
 def geom_data(body_geom):
-    yield GeometryData(
-        mesh=body_geom, zoning_to_use=ZoningModel(), triangles_idxs=np.array([0, 1])
+    parent = LnasFormat(
+        version="", geometry=body_geom, surfaces={"body": np.array([0, 1])}
+    )
+    yield build_geometry_data(
+        body_label="body",
+        sfc_list=["body"],
+        zoning=ZoningModel(),
+        mesh=parent,
     )
 
 
