@@ -103,6 +103,10 @@ __all__ = [
     "apply_regroup_to_timeseries",
     "expand_regroup_chain",
     "run_regroup",
+    # Remesh
+    "merge_coplanar",
+    "decimate_qem",
+    "remesh_per_group",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -172,6 +176,7 @@ from cfdmod.regroup import (
     expand_regroup_chain,
     run_regroup,
 )
+from cfdmod.remesh import decimate_qem, merge_coplanar, remesh_per_group
 from cfdmod.roughness import (
     BoundingBox,
     ElementParams,

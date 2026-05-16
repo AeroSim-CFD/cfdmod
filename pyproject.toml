@@ -29,8 +29,14 @@ dependencies = [
 # its license is GPL, so installing it would force GPL on downstream users.
 # Code paths that need pymeshlab are documented and the user is expected to
 # install it explicitly (`pip install pymeshlab`) at their own license risk.
+# fast-simplification (under [project.optional-dependencies].remesh below)
+# is the approved QEM decimator: MIT-licensed, wraps the
+# Fast-Quadric-Mesh-Simplification C++ implementation.
 geometry = [
     "trimesh>=4.0,<5",
+]
+remesh = [
+    "fast-simplification>=0.1,<1",
 ]
 docs = [
     "shibuya>=2026.0",
