@@ -357,3 +357,170 @@ def test_remesh_per_group_empty_surface_preserved():
     out = remesh_per_group(mesh)
     assert "right" in out.surfaces
     assert out.surfaces["right"].size == 0
+
+
+# ---------------------------------------------------------------------------
+# Hardening regressions (covers fixes from the PR-136 review)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_merge_coplanar_handles_flipped_winding_in_one_triangle():
+    """A coplanar fan with one triangle flipped (anti-parallel normal) should
+    still be detected as one coplanar component and collapse to 2 triangles.
+
+    Without anti-parallel handling, the flipped triangle's normal fails the
+    same-direction cosine test and the fan splits into two components, leaving
+    the mesh effectively un-merged.
+    """
+    v, t = _subdivided_square(n=4)
+    # Flip the winding of one interior triangle (index 5; arbitrary).
+    t_mixed = t.copy()
+    flip_idx = 5
+    t_mixed[flip_idx] = t_mixed[flip_idx][::-1]
+    new_v, new_t = merge_coplanar(v, t_mixed)
+    # With anti-parallel handling, the whole fan collapses to 2 triangles.
+    # Without it, you'd see closer to t.shape[0] - 1 because of the orphaned
+    # flipped triangle; assert tightly so a regression is loud.
+    assert new_t.shape[0] == 2
+
+
+@pytest.mark.unit
+def test_merge_coplanar_fully_collinear_loop_falls_back_silently():
+    """A 'fan' whose boundary loop is degenerate (all vertices collinear after
+    drop) cannot be ear-clipped; the function must fall back to keeping the
+    original triangles instead of crashing.
+    """
+    # Three triangles all sharing a single vertical line plus one extra interior
+    # vertex placed strictly on the line (degenerate). Constructed so all the
+    # boundary vertices collapse to two points after the collinear-drop pass.
+    v = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [3.0, 0.0, 0.0],
+        ],
+        dtype=np.float64,
+    )
+    # Degenerate (zero-area) triangles. merge_coplanar should treat them as
+    # invalid and leave them alone.
+    t = np.array([[0, 1, 2], [1, 2, 3]], dtype=np.int64)
+    new_v, new_t = merge_coplanar(v, t)
+    assert new_t.shape[0] == t.shape[0]  # fallback, no crash
+
+
+@pytest.mark.unit
+def test_decimate_qem_warns_on_closed_surface():
+    """A closed sub-mesh (no boundary edges) emits a RuntimeWarning so the
+    caller knows QEM has nothing protecting it from over-collapse.
+    """
+    pytest.importorskip("fast_simplification")
+    # Tetrahedron: 4 vertices, 4 triangles, no boundary edges.
+    v = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        dtype=np.float64,
+    )
+    t = np.array(
+        [
+            [0, 2, 1],
+            [0, 1, 3],
+            [0, 3, 2],
+            [1, 2, 3],
+        ],
+        dtype=np.int32,
+    )
+    with pytest.warns(RuntimeWarning, match="closed surface"):
+        decimate_qem(v, t, target_reduction=0.5)
+
+
+@pytest.mark.unit
+def test_merge_coplanar_multi_loop_component_falls_back_with_log(caplog):
+    """An annular coplanar component (square with a square hole, all coplanar)
+    cannot be ear-clipped as a single loop; the function should keep the
+    original triangles and emit a debug-level log.
+    """
+    import logging
+
+    # Outer square corners (CCW), inner square hole corners (CW from outer pov).
+    v = np.array(
+        [
+            # outer
+            [0.0, 0.0, 0.0],  # 0
+            [3.0, 0.0, 0.0],  # 1
+            [3.0, 3.0, 0.0],  # 2
+            [0.0, 3.0, 0.0],  # 3
+            # inner hole
+            [1.0, 1.0, 0.0],  # 4
+            [2.0, 1.0, 0.0],  # 5
+            [2.0, 2.0, 0.0],  # 6
+            [1.0, 2.0, 0.0],  # 7
+        ],
+        dtype=np.float64,
+    )
+    # 8 triangles spanning the annulus, all in the same plane.
+    t = np.array(
+        [
+            [0, 1, 4],
+            [1, 5, 4],
+            [1, 2, 5],
+            [2, 6, 5],
+            [2, 3, 6],
+            [3, 7, 6],
+            [3, 0, 7],
+            [0, 4, 7],
+        ],
+        dtype=np.int64,
+    )
+    with caplog.at_level(logging.DEBUG, logger="cfdmod"):
+        new_v, new_t = merge_coplanar(v, t)
+    # Fallback: triangle count unchanged.
+    assert new_t.shape[0] == t.shape[0]
+    # At least one fallback log line was emitted.
+    assert any("merge_coplanar" in rec.message for rec in caplog.records)
+
+
+@pytest.mark.unit
+def test_remesh_per_group_seam_dedup_tolerance_merges_near_identical_vertices():
+    """With ``seam_rel_tol > 0`` (default), two surfaces that share a boundary
+    vertex up to sub-float drift end up with that vertex *merged* in the output.
+    """
+    # Two adjacent flat quads: 'left' covers x in [0, 1], 'right' covers
+    # x in [1, 2]. They share the edge at x=1 but with one of the shared
+    # vertex coords perturbed by a tiny amount on the 'right' side.
+    v_left = np.array(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+        dtype=np.float64,
+    )
+    t_left = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int64)
+    eps = 1e-14  # well below the default seam_rel_tol * bbox_diag
+    v_right = np.array(
+        [
+            [1.0 + eps, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [2.0, 1.0, 0.0],
+            [1.0 + eps, 1.0, 0.0],
+        ],
+        dtype=np.float64,
+    )
+    t_right = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int64)
+    vertices = np.concatenate([v_left, v_right], axis=0)
+    triangles = np.concatenate([t_left, t_right + v_left.shape[0]], axis=0).astype(np.uint32)
+    mesh = LnasFormat(
+        version=_lnas_fmt._CURRENT_VERSION,
+        geometry=LnasGeometry(vertices=vertices, triangles=triangles),
+        surfaces={
+            "left": np.array([0, 1], dtype=np.uint32),
+            "right": np.array([2, 3], dtype=np.uint32),
+        },
+    )
+    out = remesh_per_group(mesh)
+    # 4 quad corners + 2 inner-seam corners (both quads collapse to 2 tris each,
+    # bordering at the seam). With seam dedup the inner seam vertices are
+    # shared: 4 outer corners + 2 seam vertices = 6.
+    assert out.geometry.vertices.shape[0] == 6

@@ -15,15 +15,31 @@ Two operations, both per-sub-mesh (one named surface == one sub-mesh):
 :func:`remesh_per_group` dispatches both over the surfaces of an
 ``LnasFormat`` and restitches the per-group outputs into a fresh
 ``LnasFormat`` whose surfaces map one-to-one to the input's.
+
+API convention:
+
+- :func:`merge_coplanar` and :func:`decimate_qem` take **raw**
+  ``(vertices, triangles)`` arrays -- they operate on a single sub-mesh and
+  know nothing about surfaces. Use them when you have one extracted region
+  in hand and want to coarsen it.
+- :func:`remesh_per_group` takes a full :class:`lnas.LnasFormat` with named
+  surfaces, dispatches the two array-level operations over each surface, and
+  restitches the per-surface outputs back into a fresh ``LnasFormat``.
+
+All three functions are exported from ``cfdmod.remesh`` and re-exported at
+the top-level ``cfdmod`` package.
 """
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from typing import Iterable
 
 import numpy as np
 from lnas import LnasFormat, LnasGeometry
+
+from cfdmod.logger import logger
 
 __all__ = [
     "merge_coplanar",
@@ -62,11 +78,11 @@ def _coplanar_components(
 ) -> list[list[int]]:
     """Union-find over edge-adjacent triangles that share a plane.
 
-    Triangles are merged if they share an edge AND their unit normals agree
-    within ``1 - normal_tol`` (cosine) AND their plane offsets match within
-    ``plane_tol``. Normals are taken at face value (no anti-parallel handling)
-    -- for the intended ``regroup`` outputs all triangles in a group inherit a
-    consistent orientation from their parent.
+    Triangles are merged if they share an edge AND their normals are
+    parallel within ``normal_tol`` (cosine, allowing anti-parallel) AND
+    their plane offsets match within ``plane_tol`` (with the offset sign
+    flipped when the two normals are anti-parallel, so a flipped triangle
+    on the same physical plane is still recognised).
     """
     n = triangles.shape[0]
     parent = np.arange(n, dtype=np.int64)
@@ -99,9 +115,16 @@ def _coplanar_components(
                 if not (valid[t1] and valid[t2]):
                     continue
                 cos = float(np.dot(normals[t1], normals[t2]))
-                if cos < cos_threshold:
+                if abs(cos) < cos_threshold:
                     continue
-                if abs(float(plane_d[t1] - plane_d[t2])) > plane_tol:
+                # Anti-parallel normals describe the same physical plane
+                # when d1 + d2 ~= 0 (d2 is computed against -n1). Same-
+                # direction normals require d1 - d2 ~= 0.
+                if cos > 0:
+                    plane_diff = abs(float(plane_d[t1] - plane_d[t2]))
+                else:
+                    plane_diff = abs(float(plane_d[t1] + plane_d[t2]))
+                if plane_diff > plane_tol:
                     continue
                 union(t1, t2)
 
@@ -117,44 +140,58 @@ def _extract_boundary_loops(
 ) -> list[list[int]] | None:
     """Walk the boundary of a coplanar component into closed vertex loops.
 
-    Returns ``None`` if the boundary half-edges cannot be chained into closed
-    loops (malformed input). For a single topological disk this returns a
-    one-element list containing the outer loop.
+    Uses undirected edge counts to identify boundary edges, so inconsistent
+    triangle winding across the component does not poison the boundary set.
+    Returns ``None`` for closed components (no boundary edges) or for
+    boundaries whose vertices have anything other than exactly two boundary
+    neighbours (branching / pinched topology).
     """
-    directed: dict[tuple[int, int], int] = defaultdict(int)
+    undirected: dict[tuple[int, int], int] = defaultdict(int)
     for ti in component:
         t = triangles[ti]
         for a, b in ((int(t[0]), int(t[1])), (int(t[1]), int(t[2])), (int(t[2]), int(t[0]))):
-            directed[(a, b)] += 1
+            key = (a, b) if a < b else (b, a)
+            undirected[key] += 1
 
-    boundary_he: set[tuple[int, int]] = set()
-    for (a, b), count in directed.items():
-        if count > 0 and directed.get((b, a), 0) == 0:
-            boundary_he.add((a, b))
+    boundary_edges = {k for k, v in undirected.items() if v == 1}
+    if not boundary_edges:
+        return None
 
-    out_map: dict[int, list[int]] = defaultdict(list)
-    for a, b in boundary_he:
-        out_map[a].append(b)
+    neighbours: dict[int, list[int]] = defaultdict(list)
+    for a, b in boundary_edges:
+        neighbours[a].append(b)
+        neighbours[b].append(a)
+    # A simple loop visits every boundary vertex with exactly two neighbours.
+    for nbrs in neighbours.values():
+        if len(nbrs) != 2:
+            return None
 
+    def edge_key(a: int, b: int) -> tuple[int, int]:
+        return (a, b) if a < b else (b, a)
+
+    visited_edges: set[tuple[int, int]] = set()
     loops: list[list[int]] = []
-    remaining = set(boundary_he)
-    while remaining:
-        start_a, start_b = next(iter(remaining))
+    edges_in_order = sorted(boundary_edges)
+    for start_edge in edges_in_order:
+        if start_edge in visited_edges:
+            continue
+        start_a, start_b = start_edge
         loop = [start_a]
+        prev = start_a
         curr = start_b
-        remaining.discard((start_a, start_b))
+        visited_edges.add(start_edge)
         while curr != start_a:
             loop.append(curr)
-            advanced = False
-            for nxt in out_map[curr]:
-                edge = (curr, nxt)
-                if edge in remaining:
-                    remaining.discard(edge)
-                    curr = nxt
-                    advanced = True
-                    break
-            if not advanced:
+            next_candidates = [
+                n for n in neighbours[curr] if n != prev and edge_key(curr, n) not in visited_edges
+            ]
+            if not next_candidates:
+                # Should never happen given the 2-neighbour invariant; defensive.
                 return None
+            nxt = next_candidates[0]
+            visited_edges.add(edge_key(curr, nxt))
+            prev = curr
+            curr = nxt
         loops.append(loop)
     return loops
 
@@ -190,13 +227,18 @@ def _point_in_triangle_2d(p: np.ndarray, a: np.ndarray, b: np.ndarray, c: np.nda
 def _drop_collinear_loop_vertices(
     loop_indices: list[int],
     vertices: np.ndarray,
-    tol: float = 1e-12,
+    tol: float,
 ) -> list[int]:
     """Drop polygon vertices that sit on the straight edge between their two
-    neighbors. The boundary walk of a coplanar fan inevitably picks up
+    neighbours. The boundary walk of a coplanar fan inevitably picks up
     interior-of-original-edge vertices (e.g., the mid-edge vertices of a
     subdivided square); they make the polygon look as if it has many corners
     when the minimum triangulation only needs the true corners.
+
+    ``tol`` is an absolute length threshold on the cross-product magnitude
+    ``|(b - a) x (c - b)|`` (so it has units of [length]^2). Callers should
+    scale it by the mesh's bbox diagonal so it stays meaningful in any unit
+    system.
     """
     if len(loop_indices) <= 3:
         return list(loop_indices)
@@ -290,27 +332,44 @@ def _earclip_loop(
     return triangles_out
 
 
+def _bbox_diagonal(vertices: np.ndarray) -> float:
+    if vertices.shape[0] == 0:
+        return 0.0
+    diag = vertices.max(axis=0) - vertices.min(axis=0)
+    return float(np.linalg.norm(diag))
+
+
 def merge_coplanar(
     vertices: np.ndarray,
     triangles: np.ndarray,
     normal_tol: float = 1e-6,
     plane_tol: float = 1e-9,
+    collinear_rel_tol: float = 1e-9,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Collapse coplanar adjacent triangles into the minimum triangulation of their region.
 
     Within each connected component of edge-adjacent triangles that share a
-    plane (orientation and offset within tolerance), the interior triangulation
-    is replaced by a fresh ear-clipped triangulation of the component's
-    boundary loop. Components with multiple boundary loops (annular topology)
-    or for which ear-clipping fails to make progress are kept as-is.
+    plane (within ``normal_tol`` on the unit normal and ``plane_tol`` on the
+    plane offset, with anti-parallel normals treated as the same plane), the
+    interior triangulation is replaced by a fresh ear-clipped triangulation
+    of the component's boundary loop. Components with multiple boundary loops
+    (annular topology) or for which ear-clipping fails to make progress are
+    kept as-is, and a ``logger.debug`` message is emitted so callers can see
+    when fallback triggers.
 
     Args:
         vertices: ``(V, 3)`` input vertex array.
         triangles: ``(T, 3)`` input triangle array of vertex indices.
-        normal_tol: Max angular deviation (as ``1 - cos(theta)``) for two
-            adjacent triangles to be considered coplanar.
+        normal_tol: Max angular deviation (as ``1 - |cos(theta)|``) for two
+            adjacent triangles to be considered coplanar. Uses the absolute
+            cosine so flipped (anti-parallel) triangles on the same physical
+            plane are also merged.
         plane_tol: Max absolute deviation of plane offsets (``n . v0``) for
             two adjacent triangles to be considered coplanar.
+        collinear_rel_tol: Relative tolerance for the collinear-vertex drop
+            pass on the boundary loop. The absolute threshold is
+            ``collinear_rel_tol * bbox_diagonal^2`` so the behaviour is
+            independent of mesh units.
 
     Returns:
         ``(new_vertices, new_triangles)``. Unused vertices are dropped; the
@@ -325,6 +384,12 @@ def merge_coplanar(
 
     normals, plane_d, valid = _triangle_planes(vertices, triangles)
     components = _coplanar_components(triangles, normals, plane_d, valid, normal_tol, plane_tol)
+
+    # Scale the collinear tolerance by the mesh size so the threshold is
+    # meaningful in any unit system. The cross product compared against this
+    # threshold has units of [length]^2.
+    bbox_diag = _bbox_diagonal(vertices)
+    collinear_tol = max(collinear_rel_tol * bbox_diag * bbox_diag, 1e-18)
 
     out_triangles: list[tuple[int, int, int]] = []
     for comp in components:
@@ -345,15 +410,37 @@ def merge_coplanar(
             continue
 
         loops = _extract_boundary_loops(comp, triangles)
-        if loops is None or len(loops) != 1:
+        if loops is None:
+            logger.debug(
+                "merge_coplanar: malformed or closed boundary for coplanar component "
+                "of %d triangle(s); keeping originals",
+                len(comp),
+            )
+            for ti in comp:
+                t = triangles[ti]
+                out_triangles.append((int(t[0]), int(t[1]), int(t[2])))
+            continue
+        if len(loops) != 1:
+            logger.debug(
+                "merge_coplanar: coplanar component of %d triangle(s) has %d "
+                "boundary loops (annular topology not yet supported); keeping originals",
+                len(comp),
+                len(loops),
+            )
             for ti in comp:
                 t = triangles[ti]
                 out_triangles.append((int(t[0]), int(t[1]), int(t[2])))
             continue
 
-        loop = _drop_collinear_loop_vertices(loops[0], vertices)
+        loop = _drop_collinear_loop_vertices(loops[0], vertices, collinear_tol)
         retri = _earclip_loop(loop, vertices, ref_normal)
         if retri is None:
+            logger.debug(
+                "merge_coplanar: ear-clipping failed for coplanar component of "
+                "%d triangle(s) with %d boundary vertices; keeping originals",
+                len(comp),
+                len(loop),
+            )
             for ti in comp:
                 t = triangles[ti]
                 out_triangles.append((int(t[0]), int(t[1]), int(t[2])))
@@ -375,6 +462,16 @@ def merge_coplanar(
     return new_vertices, new_tris.astype(np.int32)
 
 
+def _has_open_boundary(triangles: np.ndarray) -> bool:
+    """True if at least one undirected edge is incident to exactly one triangle."""
+    counts: dict[tuple[int, int], int] = defaultdict(int)
+    for t in triangles:
+        for a, b in ((int(t[0]), int(t[1])), (int(t[1]), int(t[2])), (int(t[2]), int(t[0]))):
+            key = (a, b) if a < b else (b, a)
+            counts[key] += 1
+    return any(c == 1 for c in counts.values())
+
+
 def decimate_qem(
     vertices: np.ndarray,
     triangles: np.ndarray,
@@ -385,9 +482,15 @@ def decimate_qem(
 
     Mesh boundaries (vertices and edges on the boundary of the input
     sub-mesh) are preserved implicitly by the underlying algorithm and are
-    never collapsed; this means a per-surface call leaves the group boundary
+    never collapsed; a per-surface call therefore leaves the group boundary
     intact and adjacent groups still match exactly at their shared edges
     after each is decimated independently.
+
+    **Closed surfaces** (sub-meshes with no boundary edges, e.g. a watertight
+    sphere) have no boundary for the algorithm to protect, so a high
+    ``target_reduction`` can collapse them aggressively. A ``RuntimeWarning``
+    is emitted in that case; consider running ``fast_simplification.simplify``
+    directly with ``lossless=True`` if you need a bounded-error path.
 
     Args:
         vertices: ``(V, 3)`` input vertex array.
@@ -418,6 +521,16 @@ def decimate_qem(
 
     if target_reduction <= 0.0 or triangles_arr.shape[0] <= 1:
         return vertices_arr.copy(), triangles_arr.copy()
+
+    if not _has_open_boundary(triangles_arr):
+        warnings.warn(
+            "decimate_qem: input sub-mesh has no boundary edges (closed surface); "
+            "QEM has nothing to protect and may collapse it aggressively at high "
+            "target_reduction. Consider fast_simplification.simplify(lossless=True) "
+            "directly, or feed a sub-mesh with an open boundary.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     new_v, new_t = fast_simplification.simplify(
         vertices_arr,
@@ -456,12 +569,13 @@ def remesh_per_group(
     aggressiveness: float = 7.0,
     normal_tol: float = 1e-6,
     plane_tol: float = 1e-9,
+    seam_rel_tol: float = 1e-9,
 ) -> LnasFormat:
     """Per-surface remesh of an ``LnasFormat``.
 
     For each surface in ``mesh.surfaces``, extract its triangles into a
-    sub-mesh, run ``merge_coplanar`` (if ``coplanar_merge``) and then
-    ``decimate_qem`` (if ``target_reduction > 0``) on it, and restitch the
+    sub-mesh, run :func:`merge_coplanar` (if ``coplanar_merge``) and then
+    :func:`decimate_qem` (if ``target_reduction > 0``), and restitch the
     per-surface outputs into a fresh ``LnasFormat`` with the same surface
     names.
 
@@ -479,6 +593,12 @@ def remesh_per_group(
             after the coplanar pass with this reduction fraction.
         aggressiveness: Forwarded to ``decimate_qem``.
         normal_tol, plane_tol: Forwarded to ``merge_coplanar``.
+        seam_rel_tol: Relative tolerance for merging shared boundary vertices
+            between adjacent surfaces in the restitched output. The absolute
+            threshold is ``seam_rel_tol * bbox_diagonal``. ``0`` disables and
+            falls back to exact-equality dedup. Tolerance-based dedup matters
+            once :func:`decimate_qem` is enabled because QEM can synthesise
+            new vertex positions that drift below float-equality.
 
     Returns:
         A fresh ``LnasFormat`` with one named surface per input surface
@@ -529,7 +649,12 @@ def remesh_per_group(
         new_vertices = np.zeros((0, 3), dtype=np.float64)
         new_triangles = np.zeros((0, 3), dtype=np.int32)
 
-    new_vertices, new_triangles = _dedupe_vertices(new_vertices, new_triangles)
+    # Scale the seam-dedup tolerance by the parent mesh's bbox so neighbouring
+    # surfaces that share a boundary vertex still share it in the output even
+    # after the per-surface processing (especially decimate_qem) perturbs the
+    # exact coords slightly.
+    dedup_tol = seam_rel_tol * _bbox_diagonal(parent_vertices) if seam_rel_tol > 0 else 0.0
+    new_vertices, new_triangles = _dedupe_vertices(new_vertices, new_triangles, tol=dedup_tol)
 
     new_geom = LnasGeometry(vertices=new_vertices, triangles=new_triangles)
     return LnasFormat(
@@ -539,15 +664,39 @@ def remesh_per_group(
     )
 
 
-def _dedupe_vertices(vertices: np.ndarray, triangles: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _dedupe_vertices(
+    vertices: np.ndarray,
+    triangles: np.ndarray,
+    tol: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
     """Merge identical vertices across the stitched-together per-surface chunks.
 
     Each surface's sub-mesh keeps its own copy of any shared boundary vertex;
     deduplicating here lets neighbouring surfaces share those vertices in the
-    output. Uses ``np.unique`` on the full vertex array (exact-equality match).
+    output. When ``tol > 0`` vertices are quantised to a grid of that size
+    before the unique-merge -- enough to absorb the sub-float-precision drift
+    that :func:`decimate_qem` can introduce on a shared boundary, while still
+    keeping distinct vertices distinct as long as they are separated by more
+    than ``tol``. When ``tol == 0`` an exact-equality unique is used (the
+    coplanar-merge-only path always produces bit-identical seam coords, so
+    this is the cheaper default).
     """
     if vertices.shape[0] == 0:
         return vertices, triangles
+    if tol > 0.0:
+        # Quantise to the nearest multiple of `tol`, then unique on the
+        # quantised values. Reconstruct output positions from the first input
+        # vertex that mapped into each cluster (preserves whatever precision
+        # the caller already had).
+        quantised = np.round(vertices / tol)
+        unique_q, inverse = np.unique(quantised, axis=0, return_inverse=True)
+        first_idx = np.full(unique_q.shape[0], -1, dtype=np.int64)
+        for orig_i, q_i in enumerate(inverse):
+            if first_idx[q_i] == -1:
+                first_idx[q_i] = orig_i
+        new_vertices = vertices[first_idx]
+        new_triangles = inverse[triangles].astype(np.int32)
+        return new_vertices, new_triangles
     unique, inverse = np.unique(vertices, axis=0, return_inverse=True)
     new_triangles = inverse[triangles].astype(np.int32)
     return unique, new_triangles

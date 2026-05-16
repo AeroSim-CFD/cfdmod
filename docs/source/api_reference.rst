@@ -252,6 +252,36 @@ into the v2 XDMF+H5 layout.
 
 .. autofunction:: cfdmod.pressure.migrate.migrate_probe_h5
 
+Remesh (geometry coarsening)
+============================
+
+``cfdmod.remesh`` is a small API-only module for coarsening grouped
+``LnasFormat`` meshes -- typically the output of the ``regroup`` pipeline,
+where each named surface holds many triangles that came out of the
+``aggregation="sliced"`` 90-degree cuts. The default path is **exact
+coplanar-fan collapse** (lossless, numpy-only); a flat NxN-subdivided
+square inside one surface comes back as 2 triangles, a curved patch
+unchanged.
+
+The module follows a small convention split. The two array-level
+functions take raw ``(vertices, triangles)`` and operate on a single
+sub-mesh:
+
+.. autofunction:: cfdmod.merge_coplanar
+
+.. autofunction:: cfdmod.decimate_qem
+
+``decimate_qem`` requires the optional ``fast-simplification`` dep
+(``pip install 'aerosim-cfdmod[remesh]'``); calling it without that extra
+raises ``ImportError`` with a clear install hint.
+
+The top-level entry point dispatches both array-level operations over
+every named surface in an ``LnasFormat`` and restitches the per-surface
+outputs back into a fresh ``LnasFormat`` (same surface names,
+``vertex`` order recompacted, optional tolerance-based seam dedup):
+
+.. autofunction:: cfdmod.remesh_per_group
+
 Notebook utilities
 ==================
 
