@@ -107,6 +107,8 @@ __all__ = [
     "merge_coplanar",
     "decimate_qem",
     "remesh_per_group",
+    "run_container_pipeline",
+    "PipelineResult",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -176,7 +178,13 @@ from cfdmod.regroup import (
     expand_regroup_chain,
     run_regroup,
 )
-from cfdmod.remesh import decimate_qem, merge_coplanar, remesh_per_group
+from cfdmod.remesh import (
+    PipelineResult,
+    decimate_qem,
+    merge_coplanar,
+    remesh_per_group,
+    run_container_pipeline,
+)
 from cfdmod.roughness import (
     BoundingBox,
     ElementParams,

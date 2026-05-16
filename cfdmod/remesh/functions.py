@@ -675,25 +675,27 @@ def _dedupe_vertices(
     deduplicating here lets neighbouring surfaces share those vertices in the
     output. When ``tol > 0`` vertices are quantised to a grid of that size
     before the unique-merge -- enough to absorb the sub-float-precision drift
-    that :func:`decimate_qem` can introduce on a shared boundary, while still
-    keeping distinct vertices distinct as long as they are separated by more
-    than ``tol``. When ``tol == 0`` an exact-equality unique is used (the
-    coplanar-merge-only path always produces bit-identical seam coords, so
-    this is the cheaper default).
+    that :func:`decimate_qem` can introduce on a shared boundary. The
+    quantisation has the standard grid-cell limitation: in the worst case
+    two vertices straddling a grid boundary can stay distinct even when they
+    are separated by less than ``tol``, but any pair separated by more than
+    ``sqrt(3) * tol`` is guaranteed to remain distinct. For the documented
+    use case (absorbing sub-1e-9 drift on a metre-scale mesh) the worst-case
+    miss is well below any meaningful feature. When ``tol == 0`` an
+    exact-equality unique is used (the coplanar-merge-only path always
+    produces bit-identical seam coords, so this is the cheaper default).
     """
     if vertices.shape[0] == 0:
         return vertices, triangles
     if tol > 0.0:
         # Quantise to the nearest multiple of `tol`, then unique on the
-        # quantised values. Reconstruct output positions from the first input
-        # vertex that mapped into each cluster (preserves whatever precision
-        # the caller already had).
+        # quantised values. ``return_index`` gives the first-occurrence index
+        # of each unique row in one shot -- preserves the caller's precision
+        # by reusing the original (un-quantised) coords for the survivors.
         quantised = np.round(vertices / tol)
-        unique_q, inverse = np.unique(quantised, axis=0, return_inverse=True)
-        first_idx = np.full(unique_q.shape[0], -1, dtype=np.int64)
-        for orig_i, q_i in enumerate(inverse):
-            if first_idx[q_i] == -1:
-                first_idx[q_i] = orig_i
+        _, first_idx, inverse = np.unique(
+            quantised, axis=0, return_index=True, return_inverse=True
+        )
         new_vertices = vertices[first_idx]
         new_triangles = inverse[triangles].astype(np.int32)
         return new_vertices, new_triangles

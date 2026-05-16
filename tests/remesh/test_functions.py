@@ -386,14 +386,11 @@ def test_merge_coplanar_handles_flipped_winding_in_one_triangle():
 
 
 @pytest.mark.unit
-def test_merge_coplanar_fully_collinear_loop_falls_back_silently():
-    """A 'fan' whose boundary loop is degenerate (all vertices collinear after
-    drop) cannot be ear-clipped; the function must fall back to keeping the
-    original triangles instead of crashing.
+def test_merge_coplanar_degenerate_triangles_are_kept_as_is():
+    """Zero-area input triangles are marked invalid in ``_triangle_planes``
+    and skipped at the coplanar-union step, so they survive untouched in
+    the output (no crash, no merge).
     """
-    # Three triangles all sharing a single vertical line plus one extra interior
-    # vertex placed strictly on the line (degenerate). Constructed so all the
-    # boundary vertices collapse to two points after the collinear-drop pass.
     v = np.array(
         [
             [0.0, 0.0, 0.0],
@@ -403,11 +400,50 @@ def test_merge_coplanar_fully_collinear_loop_falls_back_silently():
         ],
         dtype=np.float64,
     )
-    # Degenerate (zero-area) triangles. merge_coplanar should treat them as
-    # invalid and leave them alone.
+    # All three vertices of each triangle are collinear -> zero area.
     t = np.array([[0, 1, 2], [1, 2, 3]], dtype=np.int64)
     new_v, new_t = merge_coplanar(v, t)
-    assert new_t.shape[0] == t.shape[0]  # fallback, no crash
+    assert new_t.shape[0] == t.shape[0]
+
+
+@pytest.mark.unit
+def test_merge_coplanar_branching_boundary_falls_back_with_log(caplog):
+    """A coplanar component whose boundary has a branching vertex (more than
+    two boundary neighbours) cannot be walked as a simple loop. The function
+    must fall back and emit the ``malformed or closed boundary`` debug log.
+    """
+    import logging
+
+    # Three coplanar triangles all sharing the non-manifold edge (0, 1) on z=0.
+    # That edge has count=3 in the undirected map (not boundary), but vertices
+    # 0 and 1 each carry three boundary half-edges out to {2, 3, 4}. So both
+    # have degree 3 in the boundary graph and the 2-neighbour invariant fails.
+    v = np.array(
+        [
+            [0.0, 0.0, 0.0],  # 0
+            [1.0, 0.0, 0.0],  # 1
+            [-1.0, 1.0, 0.0],  # 2
+            [-1.0, -1.0, 0.0],  # 3
+            [2.0, 1.0, 0.0],  # 4
+        ],
+        dtype=np.float64,
+    )
+    t = np.array(
+        [
+            [0, 1, 2],
+            [0, 3, 1],
+            [0, 1, 4],
+        ],
+        dtype=np.int64,
+    )
+    with caplog.at_level(logging.DEBUG, logger="cfdmod"):
+        new_v, new_t = merge_coplanar(v, t)
+    # Fallback: original triangle count preserved.
+    assert new_t.shape[0] == t.shape[0]
+    # Log message names the function and the fallback reason.
+    assert any(
+        "merge_coplanar" in rec.message and "boundary" in rec.message for rec in caplog.records
+    )
 
 
 @pytest.mark.unit
