@@ -17,8 +17,6 @@ __all__ = [
     "merge_coplanar",
     "decimate_qem",
     "remesh_per_group",
-    "run_container_pipeline",
-    "PipelineResult",
 ]
 
 from cfdmod.remesh.functions import (
@@ -26,4 +24,3 @@ from cfdmod.remesh.functions import (
     merge_coplanar,
     remesh_per_group,
 )
-from cfdmod.remesh.pipeline import PipelineResult, run_container_pipeline
