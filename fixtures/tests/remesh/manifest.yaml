@@ -1,0 +1,30 @@
+source:
+  body_h5: output/sim_results/results_container/SN/bodies.body_cp body.h5
+  probe_h5: output/sim_results/results_container/SN/points.point_cp ref.h5
+selection:
+  n_containers: 6
+  components_picked:
+    first (cc0): first 2
+    second (cc1): first 2
+    last (cc30): last 2
+  container_names:
+  - cc0_c0
+  - cc0_c1
+  - cc1_c0
+  - cc1_c1
+  - cc30_c34
+  - cc30_c35
+  n_parent_triangles: 121
+regroup_config:
+  min_triangles: 4
+  target_size_x: 6.34
+  target_size_y: 2.58
+  target_size_z: 2.6
+timesteps:
+  n_kept: 100
+  first: t159.987732
+  last: t175.400116
+expected_outputs:
+  n_containers_after_regroup: ~6 (depends on connectivity in the subset)
+  n_per_face_buckets: <= 36 (6 containers x up to 6 axis-aligned faces)
+  n_coarse_triangles: ~12 (2 per face, modulo coplanar merge collapse)

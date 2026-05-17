@@ -1,6 +1,12 @@
 .vscode
 output/
 
+# Claude Code: keep tracked content (agents, shared commands), ignore
+# per-developer overrides and ephemeral agent worktrees.
+.claude/worktrees/
+.claude/settings.local.json
+.claude/*.local.json
+
 # User case-data dumps that occasionally land in the repo root.
 # Repo-root-only patterns -- fixtures live under fixtures/ and stay tracked.
 /bodies.*.h5
