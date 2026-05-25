@@ -1,6 +1,17 @@
 # Release Notes
 
-## Unreleased
+## v2.1.0
+
+Minor release on top of v2.0.1. Three geometry-preprocessing
+subpackages land -- the triangle-grouping pipeline
+(`cfdmod.geometry.grouping`), the regroup module (`cfdmod.regroup`),
+and the remesh module (`cfdmod.remesh`) -- all exported from the
+top-level `cfdmod` package and driven from the new notebooks. The
+release also relaxes the dependency version bounds so `aerosim-cfdmod`
+can be co-installed as a library without forcing resolution conflicts
+on consumers. No breaking changes to existing public APIs; the legacy
+`sub_bodies` YAML form and the v2.0 Cp/Cf/Cm/Ce output layout are
+unchanged.
 
 ### Triangle-grouping pipeline (`cfdmod.geometry.grouping`)
 
@@ -84,6 +95,64 @@ write_processing_metadata(h5, "/", {
 
 See `fixtures/tests/pressure/Cf_params_groupings.yaml` for the new
 explicit YAML form, and the API reference for the full surface.
+
+### Regroup module (`cfdmod.regroup`)
+
+A standalone preprocessing module that takes a geometry plus a
+per-triangle HDF5 timeseries (Cp-style: rows = timesteps, columns =
+parent triangle ids), applies a chain of triangle-grouping specs
+(Ce-style 90-degree zoning cuts, connectivity-based container
+separation, etc.), and writes two aligned outputs:
+
+- a new `LnasFormat` mesh with one named surface per group, and
+- a new HDF5 timeseries whose columns line up with the new triangle
+  order (`per_triangle` mode) or whose values are area-weighted
+  aggregates per group broadcast over each group's triangles
+  (`area_weighted_mean` mode).
+
+It reuses `cfdmod.geometry.grouping` for all binning kinds and adds
+one regroup-local spec, `BySizeRoundedPerComponent`, that fans out
+per-component target-size subdivisions (resolved by `run_regroup`).
+The module follows the standard domain layout (config / cli / run /
+functions) and is runnable as `python -m cfdmod.regroup`. New public
+symbols exported from the top-level package: `RegroupConfig`,
+`RegroupSpec`, `RegroupIndex`, `BySizeRoundedPerComponent`,
+`build_regroup_mapping`, `build_regrouped_mesh`,
+`apply_regroup_to_timeseries`, `expand_regroup_chain`, `run_regroup`.
+Driven end-to-end from the new `notebooks/regroup_containers.ipynb`,
+which folds slice + per-face aggregation + remesh into a single
+in-memory pipeline.
+
+### Remesh module (`cfdmod.remesh`)
+
+Per-group triangle coarsening for grouped `LnasFormat` meshes. The
+default path is exact coplanar-fan merging: within each group,
+adjacent triangles that share a plane are replaced by the minimum
+triangulation of their joined region (a flat NxN-subdivided square
+collapses to 2 triangles). It is lossless, deterministic, and pulls
+in no external dependency. An opt-in path runs Quadric Error Metrics
+(QEM) decimation on top via `fast-simplification` (MIT-licensed,
+available through the new `remesh` extra) for groups on curved
+surfaces where coplanar merge cannot reduce the count further.
+
+API surface only -- no CLI, no YAML config, no HDF5 I/O -- intended
+for in-process use from notebooks and debugging scripts. New public
+symbols exported from the top-level package: `merge_coplanar`,
+`decimate_qem`, `remesh_per_group`.
+
+### Relaxed dependency bounds
+
+The runtime dependency pins were loosened from capped ranges to
+floors-only so `aerosim-cfdmod` can be co-installed as a library
+without forcing version-resolution conflicts on downstream projects
+(for example one that needs pandas 3.x). The upper caps were dropped
+from `numpy`, `scipy`, `pandas`, `pydantic`, `ruamel-yaml`,
+`colorama`, `matplotlib`, `pyarrow`, and `aerosim-lnas`, and from the
+`geometry`, `remesh`, and `vtk` optional extras. Lower bounds (the
+minimum tested versions) are unchanged. The `legacy`/`dev` `tables`
+pin keeps its `<4` cap, which guards Python 3.10 support. Consuming
+applications should pin exact versions themselves; this library only
+declares floors.
 
 ## v2.0.1
 
