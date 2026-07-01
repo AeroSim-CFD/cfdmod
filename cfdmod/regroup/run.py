@@ -323,7 +323,7 @@ def run_regroup(
 
         grouping = GroupingResult(parent_n_triangles=grouping.parent_n_triangles, groups=kept)
         logger.info(
-            f"regroup: dropped {len(consumed)} consumed parent group(s): " f"{sorted(consumed)}"
+            f"regroup: dropped {len(consumed)} consumed parent group(s): {sorted(consumed)}"
         )
     if not grouping.groups and cfg.unassigned_policy == "drop":
         raise ValueError(

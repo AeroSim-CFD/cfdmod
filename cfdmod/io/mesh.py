@@ -95,7 +95,7 @@ def load_mesh(source: pathlib.Path | LnasFormat) -> LnasFormat:
         h5_sibling = path.with_suffix(".h5")
         if not h5_sibling.exists():
             raise FileNotFoundError(
-                f"{path} references mesh data but the sibling H5 " f"{h5_sibling} is missing."
+                f"{path} references mesh data but the sibling H5 {h5_sibling} is missing."
             )
         return mesh_from_h5(h5_sibling)
 
@@ -103,6 +103,5 @@ def load_mesh(source: pathlib.Path | LnasFormat) -> LnasFormat:
         return mesh_from_h5(path)
 
     raise ValueError(
-        f"Unsupported mesh format {suffix!r} for {path}. "
-        "Expected one of: .lnas, .stl, .h5, .xdmf."
+        f"Unsupported mesh format {suffix!r} for {path}. Expected one of: .lnas, .stl, .h5, .xdmf."
     )

@@ -577,8 +577,7 @@ def run_cm(
         runs = _expand_moment_cases(cfg, case_cfg.bodies, mesh)
         if len(runs) != len(cfg.bodies):
             logger.info(
-                f"Cm cases: expanded {len(cfg.bodies)} body(ies) into "
-                f"{len(runs)} independent runs"
+                f"Cm cases: expanded {len(cfg.bodies)} body(ies) into {len(runs)} independent runs"
             )
         any_stats = False
         for run_cfg, run_bodies_def in runs:
