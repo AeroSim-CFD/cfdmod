@@ -22,15 +22,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Upgrade pip
-        run: |
-          pip install black[jupyter] isort ruff
+      - name: Install ruff
+        run: pip install ruff
 
-      - name: Run isort
-        run: isort --check-only .
+      - name: Run ruff format check
+        run: ruff format --check .
 
-      - name: Run black
-        run: black --config ./pyproject.toml --check .
-
-      - name: Run ruff
+      - name: Run ruff check
         run: ruff check .

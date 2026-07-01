@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 
-from json_schema_for_humans.generate import generate_from_filename
-
-from cfdmod.loft.parameters import LoftCaseConfig
 from cfdmod.pressure.cp_config import CpCaseConfig
 from cfdmod.pressure.force.Cf_config import CfCaseConfig
 from cfdmod.pressure.moment.Cm_config import CmCaseConfig
 from cfdmod.pressure.shape.Ce_config import CeCaseConfig
+from json_schema_for_humans.generate import generate_from_filename
+
+from cfdmod.loft.parameters import LoftCaseConfig
 from cfdmod.roughness.parameters import GenerationParams, PositionParams
 
 

@@ -347,7 +347,9 @@ def _get_surface_zoning(mesh: LnasGeometry, sfc: str, config: CeConfig) -> Zonin
         zoning = ZoningModel(**{})
     elif sfc in config.zoning.surfaces_in_exception:  # type: ignore
         zoning = [
-            cfg for cfg in config.zoning.exceptions.values() if sfc in cfg.surfaces  # type: ignore
+            cfg
+            for cfg in config.zoning.exceptions.values()
+            if sfc in cfg.surfaces  # type: ignore
         ][0]
     else:
         zoning = config.zoning.global_zoning  # type: ignore

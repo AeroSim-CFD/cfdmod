@@ -74,7 +74,7 @@ class CustomGrouping(BaseModel):
         if isinstance(v, str):
             if "." not in v:
                 raise ValueError(
-                    f"callback string must be a dotted import path " f"('module.func'), got {v!r}"
+                    f"callback string must be a dotted import path ('module.func'), got {v!r}"
                 )
             return v
         if callable(v):
@@ -134,8 +134,7 @@ def apply_by_custom(
 
     if not isinstance(raw, dict):
         raise TypeError(
-            f"CustomGrouping callback must return dict[str, np.ndarray]; "
-            f"got {type(raw).__name__}"
+            f"CustomGrouping callback must return dict[str, np.ndarray]; got {type(raw).__name__}"
         )
 
     out: dict[str, np.ndarray] = {}

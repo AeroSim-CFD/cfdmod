@@ -428,9 +428,9 @@ def test_perf_run_cf(synthetic_cp_h5, tmp_path):
     rss_delta = max(0.0, _max_rss_mb() - rss_before)
 
     assert elapsed < _BUDGET_CF_S, f"run_cf took {elapsed:.1f}s > budget {_BUDGET_CF_S}s"
-    assert (
-        rss_delta < _BUDGET_PEAK_RSS_MB
-    ), f"run_cf added {rss_delta:.0f} MiB peak RSS > budget {_BUDGET_PEAK_RSS_MB} MiB"
+    assert rss_delta < _BUDGET_PEAK_RSS_MB, (
+        f"run_cf added {rss_delta:.0f} MiB peak RSS > budget {_BUDGET_PEAK_RSS_MB} MiB"
+    )
 
     leaves = {n for n, *_ in iter_stats_leaves(tmp_path / "stats.h5") if n.startswith("cf_")}
     assert leaves == {

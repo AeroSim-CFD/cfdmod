@@ -246,7 +246,7 @@ def plot_global_stats_per_direction(
     kwargs_dyn = [
         kwargs
         | dict(
-            txt_lg=rf"{text_dyn}, $\xi={xi*100:.2f}$%",
+            txt_lg=rf"{text_dyn}, $\xi={xi * 100:.2f}$%",
             plot_mean=False,
             color=colors_eq[i],
             language=language,

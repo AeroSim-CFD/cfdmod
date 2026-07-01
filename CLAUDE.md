@@ -20,7 +20,7 @@
   Use plain ASCII only: `->` not arrows, `x` not multiplication sign, `u_mean` not Greek letters, `^2` not superscripts.
   For equations in legends, feel free to use Latex notation for equations and special symbols in Latex representation.
 - **No inline comments in python3 -c "..." terminal commands** (shell escaping issues).
-- Python >= 3.10; formatting with black + isort; linting with ruff.
+- Python >= 3.10; formatting, import-sorting, and linting all via ruff (`ruff format` + `ruff check`).
 - Configuration via YAML + Pydantic v2 `BaseModel` with `from_file(path)` classmethods.
 - External mesh format: `aerosim-lnas` (`LnasFormat`, `LnasGeometry`). Prefer lnas over trimesh for loading STL/LNAS surfaces.
 - Testing: pytest, fixture files under `fixtures/tests/`, tests mirror source structure under `tests/`.

@@ -287,16 +287,16 @@ class ValueTagsConfig(BaseModel):
     @classmethod
     def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
         cols = data.keys()
-        if ("x" in cols) or (("y" in cols)) and not (("x" in cols) and (("y" in cols))):
+        if ("x" in cols) or ("y" in cols) and not (("x" in cols) and ("y" in cols)):
             ValueError("Exact position set for x or y, but one is empty. Both must be specified.")
-        elif ("x" in cols) and (("y" in cols)):
+        elif ("x" in cols) and ("y" in cols):
             # exact has precedence over floating
             data["spacing"] = None
             data["padding"] = None
         elif (
             ("spacing" in cols)
-            or (("padding" in cols))
-            and not (("spacing" in cols) and (("padding" in cols)))
+            or ("padding" in cols)
+            and not (("spacing" in cols) and ("padding" in cols))
         ):
             ValueError(
                 "Floating position set for spacing or padding, but one is empty. Both must be specified."

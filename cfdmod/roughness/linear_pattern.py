@@ -51,8 +51,8 @@ def linear_pattern(
         # In that way, the row index is i+1
         # For each replication, calculate the spacing between the rows.
         # For odd rows, apply the offset value.
-        full_triangles[
-            i * triangles.shape[0] : (i + 1) * triangles.shape[0], :, :
-        ] += spacing_array * i + offset_array * (i % 2)
+        full_triangles[i * triangles.shape[0] : (i + 1) * triangles.shape[0], :, :] += (
+            spacing_array * i + offset_array * (i % 2)
+        )
 
     return full_triangles, full_normals
