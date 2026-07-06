@@ -1,5 +1,53 @@
 # Release Notes
 
+## v3.0.0
+
+Major release. Introduces the v3 data-source paradigm (issue #131) and
+**hard-removes the v2 pressure module**. All Cp/Cf/Cm/Ce work now flows
+through pipeline-as-YAML templates executed via `cfdmod run
+<template.yaml>` or the Python `run_template` API. This is a breaking
+change: the v2 `cfdmod.pressure` package and its ~20 top-level exports
+(`CpCaseConfig`, `run_cp`, `MovingAverageFilter`, `apply_filters`,
+`ZoningModel`, ...) are gone.
+
+### v3 foundation
+
+- Frozen `DataSource` (five kinds), affine `TimeAxis`, `Topology`,
+  `Container`, and the `FieldStore`/`Storage` protocols with in-memory
+  and XDMF+H5 adapters.
+- Time ops and the `moving_average` field op; field-algebra wrappers,
+  `compute_statistics`, and grouping ops.
+- `modal_projection` / `modal_recomposition` and the dynamic-analysis
+  recipe with an injected modal solver.
+- S1, pedestrian comfort, probe extraction, profile interpolation, and
+  1-D algebra.
+- Cp/Cf/Cm/Ce expressed as composable recipe helpers and shipped as
+  example templates under `fixtures/tests/pressure/templates/`.
+
+### YAML pipeline + CLI
+
+- `cfdmod.core.pipeline_yaml`: parse a steps array, walk inputs ->
+  pipeline -> outputs, and dispatch each step into the op registry
+  (step-id cross references, binary-op rhs resolution, path-like-field
+  resolution against the template `root:`).
+- `cfdmod run <template.yaml>` CLI entry point.
+- Four introductory tutorial notebooks (`01_data_sources`,
+  `02_recipes`, `03_pipelines`, `04_containers`) that run end-to-end on
+  synthetic data.
+
+### Migration
+
+| v2 | v3 equivalent |
+|---|---|
+| `cp_params.yaml` + `run_cp(...)` | `cp.yaml` template + `cfdmod run cp.yaml` |
+| `Cf_params.yaml` + `run_cf(...)` | `cf.yaml` template |
+| `Cm_params.yaml` + `run_cm(...)` | `cm.yaml` template |
+| `Ce_params.yaml` + `run_ce(...)` | `ce.yaml` template |
+| `apply_filters(...)` with `MovingAverageFilter` | `moving_average` op step |
+| `CpCaseConfig` Python instance | `CpRecipeConfig` |
+
+See the v3 migration guide for the full mapping.
+
 ## v2.1.0
 
 Minor release on top of v2.0.1. Three geometry-preprocessing

@@ -8,7 +8,6 @@ from cfdmod.io.geometry.region_meshing import (
     slice_triangle,
     triangulate_tri,
 )
-from cfdmod.pressure.parameters import ZoningModel
 
 pytestmark = pytest.mark.unit
 
@@ -60,11 +59,14 @@ def test_create_regions_mesh():
     vertices = np.array([[0, 0, 0], [0, 10, 0], [10, 0, 0], [10, 10, 0]], dtype=np.float32)
     triangles = np.array([[0, 1, 2], [1, 3, 2]])
     mock_mesh = LnasGeometry(vertices, triangles)
-    zoning = ZoningModel(x_intervals=[0, 5, 10], y_intervals=[0, 10], z_intervals=[0, 10])
-    zoning = zoning.offset_limits(0.1)
-    region_mesh = create_regions_mesh(
-        mock_mesh, (zoning.x_intervals, zoning.y_intervals, zoning.z_intervals)
-    )
+    # Expand the outer bounds slightly past the mesh so the outermost
+    # interval edges fall outside the mesh and don't trigger degenerate
+    # boundary slices (the legacy ZoningModel.offset_limits convention).
+    eps = 0.1
+    x_intervals = [0.0 - eps, 5.0, 10.0 + eps]
+    y_intervals = [0.0 - eps, 10.0 + eps]
+    z_intervals = [0.0 - eps, 10.0 + eps]
+    region_mesh = create_regions_mesh(mock_mesh, (x_intervals, y_intervals, z_intervals))
 
     assert len(region_mesh.vertices) == 7
     assert len(region_mesh.triangles) == 6

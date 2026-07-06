@@ -32,7 +32,10 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
           cd docs
-          uv run make html  # Build HTML docs
+          # --no-project: build against the docs env installed above without
+          # re-syncing .venv to uv.lock (the lock pins markdown-it-py 3.0.0 as a
+          # transitive dep, which lacks make_fence_rule and breaks myst-parser).
+          uv run --no-project make html  # Build HTML docs
           cd ..
 
       - name: Deploy to GitHub Pages

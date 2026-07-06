@@ -1,0 +1,39 @@
+name: Property Tests (nightly)
+
+# The property-marked hypothesis tests (issue #141) run in the normal test
+# pipeline at hypothesis' default example budget. This job reruns only those
+# tests on a schedule with a much larger budget so rare falsifying inputs get
+# found without slowing every PR. Also runnable on demand.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  property:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: |
+          pip install uv
+          uv venv
+
+      - name: Install dependencies with uv
+        run: uv pip install .[vtk,lnas,geometry]
+
+      - name: Run property tests with a large example budget
+        # The "ci" hypothesis profile (registered in tests/conftest.py) raises
+        # max_examples to 1000; the property tests do not pin their own budget.
+        run: uv run pytest -m property --hypothesis-profile ci

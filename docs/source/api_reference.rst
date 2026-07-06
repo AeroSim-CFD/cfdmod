@@ -9,106 +9,133 @@ deeper module paths are also stable.
 Top-level entry points
 ======================
 
-The pipeline is driven through four functions, one per coefficient. They
-accept either a YAML config path or an in-memory case-config instance,
-and the geometry is read from the source H5 by default.
+Post-processing is expressed as a **pipeline template**: a YAML document
+declaring inputs, a sequence of composable ops, and outputs. Templates run
+from the command line or in Python; the same recipe code runs whether the
+backend is an in-memory store (notebooks, tests) or the on-disk XDMF+H5
+store (production). See :doc:`architecture/data_sources` for the paradigm
+and :doc:`architecture/v3_migration` for the mapping from the legacy
+per-coefficient functions.
 
-.. autofunction:: cfdmod.run_cp
+.. code-block:: bash
 
-.. autofunction:: cfdmod.run_cf
+   cfdmod run path/to/template.yaml
 
-.. autofunction:: cfdmod.run_cm
+.. autofunction:: cfdmod.load_template
 
-.. autofunction:: cfdmod.run_ce
+.. autofunction:: cfdmod.run_template
 
-Configuration models
-====================
-
-All configuration types are plain Pydantic v2 ``BaseModel`` subclasses
-(``BasePressureConfig`` for the pressure coefficient configs, which itself
-extends ``BaseModel``). Each ``*CaseConfig`` exposes a ``from_file(path)``
-classmethod for loading from YAML; ``model_dump()`` / ``model_dump_json()``
-give back dict / JSON. There is no project-specific base class.
-
-Pressure coefficient (Cp)
--------------------------
-
-.. autoclass:: cfdmod.CpConfig
+.. autoclass:: cfdmod.PipelineTemplate
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.CpCaseConfig
+The op registry backing the template loader is extensible; register a new
+op with :func:`cfdmod.register_op` and inspect the built-ins in
+:data:`cfdmod.OP_REGISTRY`.
+
+.. autofunction:: cfdmod.register_op
+
+Data sources
+============
+
+Every result -- pressures on a surface, cell values in a volume, probe
+timeseries, group aggregates, modal coordinates -- is carried by a frozen
+:class:`cfdmod.DataSource`: elements on one axis, timesteps on the other,
+one or more named fields sharing that shape, plus element / time / field
+metadata. Ops consume and produce data sources; a
+:class:`cfdmod.Pipeline` (built with :func:`cfdmod.compose`) chains them.
+
+.. autoclass:: cfdmod.DataSource
    :members:
    :show-inheritance:
 
-Force coefficient (Cf)
-----------------------
-
-.. autoclass:: cfdmod.CfConfig
-   :members:
+.. autoclass:: cfdmod.SurfaceDataSource
    :show-inheritance:
 
-.. autoclass:: cfdmod.CfCaseConfig
-   :members:
+.. autoclass:: cfdmod.VolumeDataSource
    :show-inheritance:
 
-Moment coefficient (Cm)
------------------------
-
-.. autoclass:: cfdmod.CmConfig
-   :members:
+.. autoclass:: cfdmod.PointsDataSource
    :show-inheritance:
 
-.. autoclass:: cfdmod.CmCaseConfig
-   :members:
+.. autoclass:: cfdmod.GroupsDataSource
    :show-inheritance:
 
-.. autoclass:: cfdmod.MomentBodyConfig
-   :members:
+.. autoclass:: cfdmod.ModesDataSource
    :show-inheritance:
 
-The Cm body config is the place to configure the moment center per region.
-Three strategies are supported:
-
-- ``lever_strategy="fixed"`` -- single ``lever_origin`` for the body
-  (default).
-- ``lever_strategy="region_base"`` -- each region uses
-  ``(mean_x, mean_y, min_z)`` of its triangle vertices, i.e. the
-  footprint centroid at the lowest z. Useful for overturning moments
-  about the base of each container.
-- ``lever_strategy="region_bbox_corners_xy"`` -- expand the body into
-  four independent runs (``xmin_ymin``, ``xmin_ymax``, ``xmax_ymin``,
-  ``xmax_ymax``); each run produces its own timeseries file and stats
-  group. Useful for a worst-case overturning-moment scan around the
-  footprint.
-
-Per-region overrides via ``region_lever_origins`` (single run) or
-``lever_origin_cases`` (multi-run scan) take precedence over the
-strategy.
-
-Shape coefficient (Ce)
-----------------------
-
-.. autoclass:: cfdmod.CeConfig
-   :members:
-   :show-inheritance:
-
-.. autoclass:: cfdmod.CeCaseConfig
-   :members:
-   :show-inheritance:
-
-Geometry / zoning
+Axes and topology
 -----------------
 
-.. autoclass:: cfdmod.BodyDefinition
+.. autoclass:: cfdmod.TimeAxis
+   :members:
+
+.. autoclass:: cfdmod.Topology
+   :members:
+
+.. autoclass:: cfdmod.FieldMeta
+   :members:
+
+.. autoclass:: cfdmod.Grouping
+   :members:
+
+Containers
+----------
+
+A :class:`cfdmod.Container` aggregates many data sources under complex
+keys (case, direction, ...), the way a parametric study fans out over
+inflow angles.
+
+.. autoclass:: cfdmod.Container
+   :members:
+
+Pipelines and storage
+---------------------
+
+.. autoclass:: cfdmod.Pipeline
+   :members:
+
+.. autofunction:: cfdmod.compose
+
+.. autoclass:: cfdmod.MemoryStorage
+   :members:
+
+.. autoclass:: cfdmod.XdmfH5Storage
+   :members:
+
+Recipe configs
+==============
+
+The pressure and wind recipes ship as small-data Pydantic configs under
+:mod:`cfdmod.core.recipes`; each mirrors one legacy ``*CaseConfig`` and
+builds the equivalent pipeline. Example templates live under
+``fixtures/tests/pressure/templates/``.
+
+.. autoclass:: cfdmod.core.recipes.CpRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.BodyConfig
+.. autoclass:: cfdmod.core.recipes.CfRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.ZoningModel
+.. autoclass:: cfdmod.core.recipes.CmRecipeConfig
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.core.recipes.CeRecipeConfig
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.core.recipes.S1RecipeConfig
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.core.recipes.DynamicAnalysisConfig
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.core.recipes.PedestrianComfortConfig
    :members:
    :show-inheritance:
 
@@ -116,20 +143,18 @@ Triangle-grouping pipeline
 ==========================
 
 A grouping pipeline partitions or selects triangles of a parent
-:class:`lnas.LnasFormat` mesh into named groups. It is the geometry
-counterpart to :mod:`cfdmod.pressure.filters` for time-series
-processing: specs are Pydantic models in a discriminated union,
-composed left-to-right with :func:`cfdmod.apply_groupings`, and a
-triangle may belong to **zero, one, or many** groups.
+:class:`lnas.LnasFormat` mesh into named groups: specs are Pydantic
+models in a discriminated union, composed left-to-right with
+:func:`cfdmod.apply_groupings`, and a triangle may belong to **zero,
+one, or many** groups.
 
-The pressure pipeline (Cf, Cm, Ce) is built on top of this abstraction.
-The legacy ``BodyConfig.sub_bodies`` / ``CeConfig.zoning`` YAML form
-keeps working unchanged; the canonical
-``[BySurfaceGrouping, ByZoningGrouping]`` chain is synthesized
-internally. New configurations may instead set
-``BodyConfig.groupings`` to an explicit chain to express compositions
-the legacy fields cannot (for instance, splitting a body by
-shared-edge connectivity).
+The force / moment / shape recipes (Cf, Cm, Ce) are built on top of this
+abstraction: the ``body_grouping`` and ``zoning_grouping`` ops attach a
+grouping to a :class:`cfdmod.SurfaceDataSource`, and per-group field
+series are then aggregated onto a :class:`cfdmod.GroupsDataSource`. An
+explicit chain (for instance, splitting a body by shared-edge
+connectivity) is expressed by composing the built-in grouping kinds
+below.
 
 Driver
 ------
@@ -241,16 +266,6 @@ Geometry I/O (STL)
 .. autofunction:: cfdmod.read_stl
 
 .. autofunction:: cfdmod.export_stl
-
-Migration (legacy formats)
-==========================
-
-The migration helpers convert legacy pandas-HDFStore body / probe files
-into the v2 XDMF+H5 layout.
-
-.. autofunction:: cfdmod.pressure.migrate.migrate_body_h5
-
-.. autofunction:: cfdmod.pressure.migrate.migrate_probe_h5
 
 Remesh (geometry coarsening)
 ============================

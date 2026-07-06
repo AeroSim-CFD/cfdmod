@@ -68,89 +68,57 @@ It is used for **primary and secondary structures design**, such as **canopies**
 It can also be used for evaluating the resultant wind torsional effect over a **building** or the **building paviments**.
 It can be seen as the **resulting torsion effect** of the wind induced stress over a body.
 
-Lever-origin strategies
-=======================
+Lever origin
+============
 
-The moment center per region is configured on
-:class:`cfdmod.MomentBodyConfig`. v2 supports three strategies:
+The moment is taken about a single ``lever_origin`` point, configured on
+the ``moment_contribution`` op:
 
-- ``lever_strategy="fixed"`` (default) -- every triangle uses the body's
-  ``lever_origin`` tuple.
-- ``lever_strategy="region_base"`` -- per region, the moment center is
-  derived from the region's triangle vertices as
-  :math:`(\overline{x}, \overline{y}, \min z)`. This matches the
-  *footprint centroid at the lowest z* and is the natural choice for
-  overturning moments about the base of each container.
-- ``lever_strategy="region_bbox_corners_xy"`` -- expand the body into
-  four independent runs (``xmin_ymin``, ``xmin_ymax``, ``xmax_ymin``,
-  ``xmax_ymax``); each run lands as its own
-  ``Cm.{cfg_lbl}.{body}.{case}.time_series.{h5,xdmf}`` plus its own
-  ``stats.h5`` subgroup. Useful for a worst-case overturning-moment
-  scan around the footprint.
+.. code-block:: yaml
 
-For HFPI-style analyses where the center of mass per region is known
-externally, set ``region_lever_origins={region_int: (x, y, z), ...}`` --
-that overrides the strategy on those regions only. To scan an arbitrary
-labelled set of candidate centers, use
-``lever_origin_cases={"label": {region_int: (x, y, z), ...}, ...}``;
-each case becomes an independent run with the same naming convention as
-``region_bbox_corners_xy``.
+   - id: with_moments
+     kind: moment_contribution
+     source: with_forces
+     lever_origin: [0.0, 10.0, 10.0]
+     nominal_area: 100.0
+     nominal_volume: 10.0
+     directions: [x, y, z]
+
+To scan several candidate centers (for instance a worst-case overturning
+moment about each footprint corner), run the template once per
+``lever_origin`` and keep the outputs side by side -- each run is an
+independent pipeline.
 
 Artifacts
 =========
 
-The user provides:
-
-#. **Cp timeseries XDMF+H5** produced by ``run_cp``.
-#. **Parameters** (``CmCaseConfig``): bodies, sub-body zoning, and the
-   lever-origin spec described above. Pass either a YAML path or an
-   in-memory instance.
-#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``. Only
-   the LNAS variant carries authored surfaces; the others present the
-   mesh as a single ``"all"`` surface. When omitted, the geometry comes
-   from the cp timeseries H5.
-
-Outputs (flat under ``output``):
-
-#. ``Cm.{cfg_lbl}.{body}[.{case}].time_series.{h5,xdmf}`` -- one file
-   per body (or per case, when a multi-case strategy is in use). Each
-   file embeds the body's mesh and carries ``cm_x`` / ``cm_y`` /
-   ``cm_z`` groups -- pick the direction from the ParaView Attribute
-   selector on the same animation.
-#. ``stats.h5`` / ``stats.xdmf`` -- combined statistics; Cm lands under
-   ``/cm_{x,y,z}/{cfg_lbl}/{body}[.{case}]/`` with the body's mesh
-   embedded so the ``<Grid>`` references topology of matching length.
-#. Each output H5 carries the post-processing config under
-   ``/processing_metadata/``.
+The Cm template reads a **Cp time series** (``kind: surface``, produced by
+the Cp template) and composes ``mesh_attach`` -> ``body_grouping`` ->
+``force_contribution`` -> ``moment_contribution`` ->
+``field_series_for_groups``. The moment op reuses the ``cf_<dir>`` fields
+produced upstream. The output is one ``GroupsDataSource`` per direction
+(``cm_x`` / ``cm_y`` / ``cm_z``) with one row per body.
 
 Usage
 =====
 
-Reference parameters file:
+Run the shipped template:
 
-.. literalinclude:: /_static/pressure/Cm_params.yaml
-    :language: yaml
+.. code-block:: bash
 
-From Python:
+   cfdmod run fixtures/tests/pressure/templates/cm.yaml
+
+or from Python:
 
 .. code-block:: python
 
-   from cfdmod import run_cm, CmCaseConfig
-   run_cm(
-       cp_h5="output/cp.default.time_series.h5",
-       cfg_path=CmCaseConfig.from_file("cm.yaml"),
-       output="output",
-       # mesh_path optional; omitting it reads geometry from the cp H5
-   )
+   from cfdmod import load_template, run_template, XdmfH5Storage
 
-CLI:
+   bindings = run_template(load_template("cm.yaml"), storage=XdmfH5Storage(root="."))
+   cm_z = bindings["cm_z"]          # GroupsDataSource, one row per body
 
-.. code-block:: Bash
-
-   python -m cfdmod pressure cm \
-      --cp     {CP_TIMESERIES_H5} \
-      --config {CONFIG_PATH} \
-      --output {OUTPUT_PATH}
+The `calculate_Cm.ipynb <calculate_Cm.ipynb>`_ notebook walks through this
+template step by step.
 
 The Sphinx-bundled `calculate_Cm.ipynb <calculate_Cm.ipynb>`_ notebook
 covers a single body with a fixed lever origin; for the multi-region

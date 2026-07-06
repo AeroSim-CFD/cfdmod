@@ -57,7 +57,7 @@ def show_config(config: BaseModel) -> None:
 
     Args:
         config: Any Pydantic ``BaseModel`` instance (LoftCaseConfig,
-            CpCaseConfig, etc.).
+            CpRecipeConfig, etc.).
     """
     pprint.pprint(config.model_dump())
 

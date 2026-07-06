@@ -1,0 +1,39 @@
+"""Geometric ops -- modify the elements axis metadata of a data source.
+
+Per issue #131:
+
+- Rigid-body transformation (updates positions + normals).
+- Rescale (updates areas + volumes).
+- Assume position and size of a given geometry (same element count).
+- Group-belonging index (just index assignment, no new geometry).
+
+The first three are placeholders for now; only :func:`attach_grouping`
+lands here in Phase 5 because the Cf/Cm/Ce recipes need it. The mesh
+adapters (:func:`mesh_attach`, :func:`body_grouping`) ship next to it
+because they are the canonical bridge between an ``.lnas`` mesh on
+disk and a v3 :class:`DataSource`.
+"""
+
+from __future__ import annotations
+
+__all__ = [
+    "AttachGroupingParams",
+    "attach_grouping",
+    "MeshAttachParams",
+    "mesh_attach",
+    "BodyGroupingParams",
+    "body_grouping",
+    "ZoningGroupingParams",
+    "zoning_grouping",
+    "RegroupTopologyParams",
+    "regroup_topology",
+]
+
+from cfdmod.core.ops.geometric.attach_grouping import AttachGroupingParams, attach_grouping
+from cfdmod.core.ops.geometric.body_grouping import BodyGroupingParams, body_grouping
+from cfdmod.core.ops.geometric.mesh_attach import MeshAttachParams, mesh_attach
+from cfdmod.core.ops.geometric.regroup_topology import (
+    RegroupTopologyParams,
+    regroup_topology,
+)
+from cfdmod.core.ops.geometric.zoning_grouping import ZoningGroupingParams, zoning_grouping

@@ -195,27 +195,24 @@ example). In ``cfdmod`` this is exposed as a separate first-class step
 on the timeseries -- not as a stats method -- so the smoothing decision
 is explicit, traceable, and reusable across stats configurations.
 
-.. code-block:: python
+.. code-block:: yaml
 
-    from cfdmod import MovingAverageFilter, apply_filters
+    - id: cp_smoothed
+      kind: moving_average
+      source: cp_t
+      field: cp
+      window: 3.0        # window in input time units
+      out: cp
 
-    apply_filters(
-        input_h5="output/cp.default.time_series.h5",
-        output_h5="output/cp.default.smoothed.time_series.h5",
-        filters=[MovingAverageFilter(window=3.0)],   # window in input time units
-        group="cp",
-    )
+The step writes a smoothed ``cp`` field onto the same data source, which
+downstream steps (Cf, Cm, statistics) then consume in place of the raw
+Cp. Because the step lives in the template, the smoothing decision is
+recorded alongside every other op that produced the output.
 
-The output is a normal ``*.time_series.h5`` (same layout as ``run_cp``'s
-output) that downstream ``run_cf`` / ``run_cm`` / statistics consume in
-place of the raw Cp. The applied chain is recorded under the file's
-``/processing_metadata`` so the lineage is self-describing.
-
-``MovingAverageFilter.window`` is in the same units as the input file's
-time axis (raw solver time when ``CpConfig.normalize_time=False``, the
-default; convective time when ``True``). The filter does no implicit
-unit conversion. The image below illustrates the effect of a moving
-average on a noisy signal:
+The ``window`` is in the same units as the source's time axis (raw solver
+time by default; convective time if a ``rescale`` step normalized it
+first). The op does no implicit unit conversion. The image below
+illustrates the effect of a moving average on a noisy signal:
 
 .. image:: /_static/pressure/moving_avg.png
     :width: 60 %

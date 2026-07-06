@@ -15,29 +15,11 @@ __all__ = [
     "build_single_element",
     "linear_pattern",
     "radial_pattern",
-    # Pressure base
-    "BasePressureConfig",
-    # Pressure Cp
-    "CpConfig",
-    "CpCaseConfig",
-    "run_cp",
-    # Pressure Cf
-    "CfConfig",
-    "CfCaseConfig",
-    "run_cf",
-    # Pressure Cm
-    "CmConfig",
-    "CmCaseConfig",
-    "run_cm",
-    # Pressure Ce
-    "CeConfig",
-    "CeCaseConfig",
-    "run_ce",
-    # Filters
-    "MovingAverageFilter",
-    "FilterSpec",
-    "apply_filters",
-    # Geometry grouping
+    # Pressure (v2 entry points removed in v3; use `cfdmod run <template.yaml>`
+    # or the v3 recipes -- see notebooks/tutorials/ and
+    # fixtures/tests/pressure/templates/).
+    # Geometry grouping (canonical triangle-grouping pipeline -- the v3
+    # ops in cfdmod.core.ops.geometric delegate to apply_groupings).
     "BySurfaceGrouping",
     "ByZoningGrouping",
     "ByDivisionsGrouping",
@@ -50,14 +32,15 @@ __all__ = [
     "CustomGrouping",
     "GroupingSpec",
     "GroupingResult",
+    "BySizeRoundedPerComponent",
+    "RegroupSpec",
     "apply_groupings",
     "dump_groupings",
     "load_groupings",
-    # Zoning
-    "ZoningModel",
-    "BodyDefinition",
-    "BodyConfig",
-    "MomentBodyConfig",
+    "expand_size_rounded_chain",
+    # Topology regrouping op (v3)
+    "RegroupTopologyParams",
+    "regroup_topology",
     # S1
     "Profile",
     "EUCat",
@@ -93,10 +76,34 @@ __all__ = [
     "mesh_summary",
     "show_config",
     "load_lnas",
+    # v3 paradigm: data sources, ops, recipes (issue #131)
+    "DataSource",
+    "SurfaceDataSource",
+    "VolumeDataSource",
+    "PointsDataSource",
+    "GroupsDataSource",
+    "ModesDataSource",
+    "TimeAxis",
+    "Topology",
+    "ElementMeta",
+    "Grouping",
+    "FieldMeta",
+    "Container",
+    "Pipeline",
+    "compose",
+    "MemoryStorage",
+    "MemoryFieldStore",
+    "XdmfH5Storage",
+    "H5FieldStore",
+    "core_ops",
+    "recipes",
+    "load_template",
+    "run_template",
+    "PipelineTemplate",
+    "register_op",
+    "OP_REGISTRY",
     # Regroup
     "RegroupConfig",
-    "BySizeRoundedPerComponent",
-    "RegroupSpec",
     "RegroupIndex",
     "build_regroup_mapping",
     "build_regrouped_mesh",
@@ -118,6 +125,26 @@ from cfdmod.climate import (
     fit_gumbel,
     fit_weibull,
 )
+from cfdmod.geometry import (
+    ByConnectivityGrouping,
+    ByCylindricalGrouping,
+    ByDivisionsGrouping,
+    ByNormalGrouping,
+    ByPercentileGrouping,
+    ByPlaneGrouping,
+    BySizeGrouping,
+    BySizeRoundedPerComponent,
+    BySurfaceGrouping,
+    ByZoningGrouping,
+    CustomGrouping,
+    GroupingResult,
+    GroupingSpec,
+    RegroupSpec,
+    apply_groupings,
+    dump_groupings,
+    expand_size_rounded_chain,
+    load_groupings,
+)
 from cfdmod.io import (
     export_stl,
     load_mesh,
@@ -131,48 +158,12 @@ from cfdmod.io import (
 )
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
-from cfdmod.geometry import (
-    ByConnectivityGrouping,
-    ByCylindricalGrouping,
-    ByDivisionsGrouping,
-    ByNormalGrouping,
-    ByPercentileGrouping,
-    ByPlaneGrouping,
-    BySizeGrouping,
-    BySurfaceGrouping,
-    ByZoningGrouping,
-    CustomGrouping,
-    GroupingResult,
-    GroupingSpec,
-    apply_groupings,
-    dump_groupings,
-    load_groupings,
-)
-from cfdmod.pressure.filters import FilterSpec, MovingAverageFilter, apply_filters
-from cfdmod.pressure.parameters import (
-    BasePressureConfig,
-    BodyConfig,
-    BodyDefinition,
-    CeCaseConfig,
-    CeConfig,
-    CfCaseConfig,
-    CfConfig,
-    CmCaseConfig,
-    CmConfig,
-    CpCaseConfig,
-    CpConfig,
-    MomentBodyConfig,
-    ZoningModel,
-)
-from cfdmod.pressure.run import run_ce, run_cf, run_cm, run_cp
 from cfdmod.regroup import (
-    BySizeRoundedPerComponent,
     RegroupConfig,
     RegroupIndex,
-    RegroupSpec,
     apply_regroup_to_timeseries,
-    build_regrouped_mesh,
     build_regroup_mapping,
+    build_regrouped_mesh,
     expand_regroup_chain,
     run_regroup,
 )
@@ -198,3 +189,41 @@ from cfdmod.s1 import (
     get_NBR_cat_u_profile,
     get_NBR_u_profile,
 )
+
+# v3 paradigm exports (issue #131). The legacy public symbols above are
+# unchanged; the new names live next to them and become the canonical
+# entry points for new code.
+from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
+from cfdmod.adapters.xdmf_h5 import H5FieldStore, XdmfH5Storage
+from cfdmod.core import (
+    OP_REGISTRY,
+    Container,
+    DataSource,
+    ElementMeta,
+    FieldMeta,
+    Grouping,
+    GroupsDataSource,
+    ModesDataSource,
+    Pipeline,
+    PipelineTemplate,
+    PointsDataSource,
+    SurfaceDataSource,
+    TimeAxis,
+    Topology,
+    VolumeDataSource,
+    compose,
+    load_template,
+    register_op,
+    run_template,
+)
+from cfdmod.core import ops as core_ops
+from cfdmod.core import recipes
+from cfdmod.core.ops.geometric import RegroupTopologyParams, regroup_topology
+
+# Expose cfdmod.recipes and cfdmod.ops as importable submodule paths so
+# users can write `from cfdmod.recipes import build_cp` without reaching
+# into cfdmod.core.
+import sys as _sys
+
+_sys.modules.setdefault("cfdmod.recipes", recipes)
+_sys.modules.setdefault("cfdmod.ops", core_ops)

@@ -1,0 +1,36 @@
+# Ce pipeline template (v3 schema).
+#
+# Per-zone shape coefficient via area-weighted-mean of Cp. Zones come
+# from a 3D box grid (x_intervals x y_intervals x z_intervals);
+# triangles are assigned by centroid.
+name: ce_default
+
+inputs:
+  cp:
+    kind: surface
+    path: ./out/cp.time_series
+
+pipeline:
+  - id: cp_with_mesh
+    kind: mesh_attach
+    source: cp
+    mesh: ../galpao/galpao.normalized.lnas
+
+  - id: cp_zoned
+    kind: zoning_grouping
+    source: cp_with_mesh
+    mesh: ../galpao/galpao.normalized.lnas
+    x_intervals: [0.0, 125.0, 250.0]
+    y_intervals: [0.0, 80.0, 170.0]
+    z_intervals: [0.0, 10.0, 20.0]
+
+  - id: ce
+    kind: field_series_for_groups
+    source: cp_zoned
+    grouping: zone
+    field: cp
+    agg: area_weighted_mean
+    out: ce
+
+outputs:
+  ce: {source: ce, path: ./out/ce.time_series}
