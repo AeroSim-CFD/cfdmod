@@ -133,6 +133,13 @@ class TimeAxis(BaseModel):
             raise ValueError("Cannot window a time-aggregated axis.")
         if end < start:
             raise ValueError(f"window end={end} < start={start}")
+        first_time = self.initial_time
+        last_time = self.time_at(self.n_timesteps - 1)
+        if end < first_time or start > last_time:
+            raise ValueError(
+                f"window [{start}, {end}] does not overlap the data time "
+                f"range [{first_time}, {last_time}]"
+            )
         i0 = self.index_for_time(start)
         i1 = self.index_for_time(end)
         if i1 < i0:

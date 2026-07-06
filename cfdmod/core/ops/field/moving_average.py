@@ -97,4 +97,11 @@ def moving_average(ds: DataSource, p: MovingAverageParams) -> DataSource:
     out = _convolve_rows(arr, n)
 
     target = p.out or p.field
-    return ds.with_field(target, out, meta=ds.field_meta.get(p.field))
+    src_meta = ds.field_meta.get(p.field)
+    # Keep the source meta (unit/scale) but rename to the target so the
+    # stored field's meta.name matches its key when out != field.
+    if src_meta is not None and target != p.field:
+        out_meta = src_meta.model_copy(update={"name": target})
+    else:
+        out_meta = src_meta
+    return ds.with_field(target, out, meta=out_meta)

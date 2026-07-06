@@ -51,15 +51,23 @@ from cfdmod.core.topology import ElementMeta, Topology
 from cfdmod.io import xdmf as _xdmf
 
 _RESERVED_ROOT_KEYS = frozenset({"Triangles", "Geometry", "Connectivity", "meta"})
+# Geometry datasets embedded inside a stats group (so write_stats_xdmf can
+# emit one Grid per group). They are topology, not stat fields, and must be
+# skipped when reconstructing the field list on read.
+_RESERVED_GROUP_DATASETS = frozenset({"Triangles", "Geometry", "Connectivity"})
+# Synthetic h5 group holding stats that had no group prefix on the source
+# (e.g. a Cp stats source with bare fields mean/rms/...). Stripped on read so
+# the round-trip restores the original bare field names.
+_BARE_STATS_GROUP = "stats"
 
 
 def _kind_from_key(key: str) -> str:
     """Infer DataSource kind from the filename stem.
 
-    The cfdmod v2 file-naming convention prefixes each h5 with the
-    target kind: ``bodies.*``, ``cp_t.*``, ``stats.*`` for surfaces;
-    ``points.*`` for probes. Anything else defaults to surface, which
-    is the most common case.
+    A ``points.*`` stem is read as a points (probe) source; every other
+    stem defaults to surface, which is the most common case (``bodies.*``,
+    ``cp_t.*``, ``stats.*``, ...). The prefix is the only signal -- a probe
+    file must therefore be named ``points.*`` to be read back as points.
     """
     stem = pathlib.Path(key).name
     if stem.startswith("points."):
@@ -168,7 +176,11 @@ class XdmfH5Storage:
                 obj = f[name]
                 if not isinstance(obj, h5py.Group):
                     continue
-                children = [k for k in obj.keys() if isinstance(obj[k], h5py.Dataset)]
+                children = [
+                    k
+                    for k in obj.keys()
+                    if isinstance(obj[k], h5py.Dataset) and k not in _RESERVED_GROUP_DATASETS
+                ]
                 if not children:
                     continue
                 # Stats layout: per-stat datasets directly under the group, no t-prefix.
@@ -180,7 +192,12 @@ class XdmfH5Storage:
                 else:
                     time_aggregated = True
                     for stat_name in children:
-                        field_groups[f"{name}/{stat_name}"] = f"{name}/{stat_name}"
+                        # Bare-stat sources are written under the synthetic
+                        # "stats" group; strip it so the field name round-trips.
+                        field_name = (
+                            stat_name if name == _BARE_STATS_GROUP else f"{name}/{stat_name}"
+                        )
+                        field_groups[field_name] = f"{name}/{stat_name}"
 
         # Topology + ElementMeta
         kind = _kind_from_key(key)
@@ -266,7 +283,7 @@ class XdmfH5Storage:
                 group, _, stat = fname.partition("/")
                 if not stat:
                     stat = group
-                    group = "stats"
+                    group = _BARE_STATS_GROUP
                 _xdmf.write_stats_field(
                     h5_path,
                     group=group,

@@ -183,4 +183,6 @@ def div(
     out: str | None = None,
 ) -> DataSource:
     """Field-level division (e.g. profile / reference for S1)."""
+    if isinstance(rhs, (int, float)) and rhs == 0:
+        raise ValueError("div: scalar divisor is 0")
     return _apply(lhs, rhs, field=field, out_field=out, op=np.divide)

@@ -82,24 +82,34 @@ class H5FieldStore:
 
     def keys(self) -> Iterable[str]:
         seen = set(self._overlay.keys())
-        for k in self._field_groups.keys():
-            if k not in seen:
-                seen.add(k)
+        seen.update(self._field_groups.keys())
         return list(seen)
 
     def shape(self, name: str) -> tuple[int, ...]:
-        if name in list(self._overlay.keys()):
+        if name in self._overlay.keys():
             return self._overlay.shape(name)
         if name not in self._field_groups:
             raise KeyError(f"H5FieldStore has no field {name!r}")
         if self._time_aggregated:
-            return (self._n_elements,)
+            # Read the real on-disk shape rather than assuming (n_elements,);
+            # a stat may be broadcast differently and we must not mask that.
+            with h5py.File(self._h5_path, "r") as f:
+                return tuple(f[self._field_groups[name]].shape)
         return (self._n_elements, len(self._time_keys))
 
     def dtype(self, name: str):
-        if name in list(self._overlay.keys()):
+        if name in self._overlay.keys():
             return self._overlay.dtype(name)
-        return np.dtype("float64")
+        if name not in self._field_groups:
+            raise KeyError(f"H5FieldStore has no field {name!r}")
+        group_path = self._field_groups[name]
+        with h5py.File(self._h5_path, "r") as f:
+            if self._time_aggregated:
+                return f[group_path].dtype
+            # Timeseries: field_groups[name] is a t-keyed group; read one slab.
+            if not self._time_keys:
+                return np.dtype("float64")
+            return f[group_path][self._time_keys[0]].dtype
 
     # --- Read --------------------------------------------------------------
 

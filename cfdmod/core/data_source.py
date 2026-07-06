@@ -134,22 +134,34 @@ class DataSource(BaseModel):
 
     # ----- Functional updates -------------------------------------------------
 
+    def _copy_validated(self, **update: Any) -> "DataSource":
+        """``model_copy`` + re-run the consistency validators.
+
+        Pydantic's ``model_copy(update=...)`` does *not* re-run validators,
+        so a functional update could otherwise build a shape-inconsistent
+        (frozen) DataSource silently. Re-validating keeps the invariants
+        the frozen model advertises true after every update, not just at
+        first construction.
+        """
+        updated = self.model_copy(update=update)
+        return type(self).model_validate(dict(updated.__dict__))
+
     def with_time(self, new_time: TimeAxis) -> "DataSource":
         """Return a copy with a new :class:`TimeAxis`. Field shapes must
         already match the new axis -- this is a metadata update only."""
-        return self.model_copy(update={"time": new_time})
+        return self._copy_validated(time=new_time)
 
     def with_topology(self, new_topology: Topology) -> "DataSource":
-        return self.model_copy(update={"topology": new_topology})
+        return self._copy_validated(topology=new_topology)
 
     def with_elements(self, new_elements: ElementMeta) -> "DataSource":
-        return self.model_copy(update={"elements": new_elements})
+        return self._copy_validated(elements=new_elements)
 
     def with_grouping(self, grouping: Grouping) -> "DataSource":
         """Add or replace a grouping. The grouping name is the key."""
         new_groupings = dict(self.groupings)
         new_groupings[grouping.name] = grouping
-        return self.model_copy(update={"groupings": new_groupings})
+        return self._copy_validated(groupings=new_groupings)
 
     def without_grouping(self, name: str) -> "DataSource":
         new_groupings = {k: v for k, v in self.groupings.items() if k != name}
@@ -166,7 +178,7 @@ class DataSource(BaseModel):
         new_store = self.fields.with_field(name, value)
         new_meta = dict(self.field_meta)
         new_meta[name] = meta or FieldMeta(name=name)
-        return self.model_copy(update={"fields": new_store, "field_meta": new_meta})
+        return self._copy_validated(fields=new_store, field_meta=new_meta)
 
     def with_attrs(self, **updates: Any) -> "DataSource":
         new_attrs = dict(self.attrs)
