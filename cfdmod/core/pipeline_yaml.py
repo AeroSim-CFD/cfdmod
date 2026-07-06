@@ -443,6 +443,110 @@ def load_template(path: pathlib.Path | str) -> PipelineTemplate:
     return template
 
 
+# Points sources carry coordinates intrinsically, so ``position`` element
+# metadata is treated as available on any points binding even before an op
+# populates ElementMeta.position explicitly.
+_INTRINSIC_META = {"points": frozenset({"position"})}
+
+
+class _BindingState:
+    """Symbolic description of a binding tracked during static validation.
+
+    Carries the data-source ``kind``, the set of available field names
+    (``None`` = "unknown", i.e. not declared -> field checks are skipped
+    to avoid false positives), and the set of available element-metadata
+    keys.
+    """
+
+    __slots__ = ("kind", "fields", "meta")
+
+    def __init__(self, kind: str, fields: frozenset[str] | None, meta: frozenset[str]) -> None:
+        self.kind = kind
+        self.fields = fields
+        self.meta = meta
+
+
+def _seed_meta(kind: str) -> frozenset[str]:
+    return _INTRINSIC_META.get(kind, frozenset())
+
+
+def _input_state(spec: "InputSpec") -> _BindingState:
+    fields = frozenset({spec.field}) if spec.field else None
+    return _BindingState(spec.kind, fields, _seed_meta(spec.kind))
+
+
+def _consumed_fields(params: BaseModel) -> frozenset[str]:
+    fn = getattr(params, "consumed_fields", None)
+    return frozenset(fn()) if callable(fn) else frozenset()
+
+
+def _produced_fields(params: BaseModel) -> frozenset[str]:
+    fn = getattr(params, "produced_fields", None)
+    return frozenset(fn()) if callable(fn) else frozenset()
+
+
+def _next_state(
+    params_cls: type[BaseModel], params: BaseModel, src: _BindingState
+) -> _BindingState:
+    """Compute the output binding state of an op applied to ``src``."""
+    produces = getattr(params_cls, "produces", "same")
+    produces_meta = frozenset(getattr(params_cls, "produces_element_meta", frozenset()))
+    replaces = bool(getattr(params_cls, "replaces_fields", False))
+
+    kind = src.kind if produces == "same" else produces
+    if produces == "same":
+        meta = src.meta | produces_meta
+    else:
+        # Fresh source: only the metadata the op sets, plus the new kind's
+        # intrinsic metadata.
+        meta = produces_meta | _seed_meta(kind)
+
+    if replaces:
+        fields: frozenset[str] | None = _produced_fields(params)
+    elif src.fields is None:
+        fields = None
+    else:
+        fields = src.fields | _produced_fields(params)
+    return _BindingState(kind, fields, meta)
+
+
+def _check_contract(
+    step_id: str,
+    step_kind: str,
+    params_cls: type[BaseModel],
+    params: BaseModel,
+    src: _BindingState,
+) -> None:
+    """Validate one op against its source binding's kind / meta / fields.
+
+    Strict on kind and element metadata (both deterministic); permissive
+    on fields when the source's field set is unknown (undeclared input),
+    so a valid template is never rejected for a field the linter merely
+    could not see.
+    """
+    consumes = getattr(params_cls, "consumes", None)
+    if consumes is not None and src.kind not in consumes:
+        raise ValueError(
+            f"step {step_id!r} ({step_kind!r}) consumes a {sorted(consumes)} data source "
+            f"but its source is kind {src.kind!r}"
+        )
+
+    missing_meta = frozenset(getattr(params_cls, "requires_element_meta", frozenset())) - src.meta
+    if missing_meta:
+        raise ValueError(
+            f"step {step_id!r} ({step_kind!r}) requires element metadata {sorted(missing_meta)} "
+            f"not present on its source; attach it upstream (e.g. mesh_attach)"
+        )
+
+    if src.fields is not None:
+        missing_fields = _consumed_fields(params) - src.fields
+        if missing_fields:
+            raise ValueError(
+                f"step {step_id!r} ({step_kind!r}) reads field(s) {sorted(missing_fields)} "
+                f"not present on its source; available: {sorted(src.fields)}"
+            )
+
+
 def validate_template(template: PipelineTemplate) -> None:
     """Statically validate a template before any I/O.
 
@@ -450,13 +554,24 @@ def validate_template(template: PipelineTemplate) -> None:
     hit: unknown op kinds, dangling ``source`` / ``rhs`` references,
     duplicate step ids (or an id colliding with an input name), a ``rhs``
     on a unary op, and per-step params errors (missing required fields,
-    typo'd fields caught by ``extra="forbid"``). Called by
-    :func:`load_template`; also usable standalone on a programmatically
-    built template.
+    typo'd fields caught by ``extra="forbid"``).
+
+    It also runs a symbolic contract pass over the op catalog (issue
+    #147): each step's declared ``consumes`` kind and ``requires_element_meta``
+    are checked against the source binding, and field reads are checked when
+    the field set is known. This catches graph-wiring mistakes -- e.g. a
+    ``force_contribution`` before ``mesh_attach``, or a surface-only op on a
+    points binding -- that a visual pipeline editor produces. The pass is
+    strict on kind / metadata (deterministic) and permissive on fields when
+    the source's fields were not declared. Called by :func:`load_template`;
+    also usable standalone on a programmatically built template.
     """
     _populate_default_registry()
 
     known: set[str] = set(template.inputs)
+    states: dict[str, _BindingState] = {
+        name: _input_state(spec) for name, spec in template.inputs.items()
+    }
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
         if step.kind not in OP_REGISTRY:
@@ -482,7 +597,10 @@ def validate_template(template: PipelineTemplate) -> None:
             )
         # Build the params model so missing/typo'd fields fail here, not
         # after every input has already been read from disk.
-        _step_params(step, params_cls, template.root)
+        params = _step_params(step, params_cls, template.root)
+        # Symbolic contract check + state propagation.
+        src_state = states[step.source]
+        _check_contract(step_id, step.kind, params_cls, params, src_state)
         # Register the id last so a step cannot reference itself, and so a
         # duplicate id (or a clash with an input name) is caught.
         if step_id in known:
@@ -491,6 +609,7 @@ def validate_template(template: PipelineTemplate) -> None:
                 "not collide with an input name"
             )
         known.add(step_id)
+        states[step_id] = _next_state(params_cls, params, src_state)
 
     for out_name, out in template.outputs.items():
         if out.source not in known:
