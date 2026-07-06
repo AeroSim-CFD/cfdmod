@@ -17,6 +17,13 @@ public API in ``cfdmod`` remains unchanged.
 from __future__ import annotations
 
 from cfdmod.core.container import Container
+from cfdmod.core.errors import (
+    CfdmodError,
+    OpError,
+    StorageKeyError,
+    TemplateError,
+    TemplateReferenceError,
+)
 from cfdmod.core.data_source import (
     DataSource,
     GroupsDataSource,
@@ -73,4 +80,9 @@ __all__ = [
     "OpInfo",
     "list_ops",
     "op_info",
+    "CfdmodError",
+    "TemplateError",
+    "TemplateReferenceError",
+    "OpError",
+    "StorageKeyError",
 ]

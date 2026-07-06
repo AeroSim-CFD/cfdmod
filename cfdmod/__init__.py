@@ -107,6 +107,12 @@ __all__ = [
     "OpInfo",
     "list_ops",
     "op_info",
+    # Errors (issue #147)
+    "CfdmodError",
+    "TemplateError",
+    "TemplateReferenceError",
+    "OpError",
+    "StorageKeyError",
     # Regroup
     "RegroupConfig",
     "RegroupIndex",
@@ -233,6 +239,12 @@ _SYMBOL_MODULE: dict[str, str] = {
     "OpInfo": "cfdmod.core",
     "list_ops": "cfdmod.core",
     "op_info": "cfdmod.core",
+    # Errors
+    "CfdmodError": "cfdmod.core",
+    "TemplateError": "cfdmod.core",
+    "TemplateReferenceError": "cfdmod.core",
+    "OpError": "cfdmod.core",
+    "StorageKeyError": "cfdmod.core",
     # Storage adapters (pull h5py -- lazy on purpose)
     "MemoryStorage": "cfdmod.adapters.memory",
     "MemoryFieldStore": "cfdmod.adapters.memory",

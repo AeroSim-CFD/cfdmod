@@ -86,6 +86,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.json_schema import GenerateJsonSchema
 
 from cfdmod.core.data_source import DataSource
+from cfdmod.core.errors import (
+    CfdmodError,
+    OpError,
+    TemplateError,
+    TemplateReferenceError,
+)
 from cfdmod.core.protocols import Storage
 from cfdmod.utils import read_yaml
 
@@ -526,14 +532,14 @@ def _check_contract(
     """
     consumes = getattr(params_cls, "consumes", None)
     if consumes is not None and src.kind not in consumes:
-        raise ValueError(
+        raise TemplateError(
             f"step {step_id!r} ({step_kind!r}) consumes a {sorted(consumes)} data source "
             f"but its source is kind {src.kind!r}"
         )
 
     missing_meta = frozenset(getattr(params_cls, "requires_element_meta", frozenset())) - src.meta
     if missing_meta:
-        raise ValueError(
+        raise TemplateError(
             f"step {step_id!r} ({step_kind!r}) requires element metadata {sorted(missing_meta)} "
             f"not present on its source; attach it upstream (e.g. mesh_attach)"
         )
@@ -541,7 +547,7 @@ def _check_contract(
     if src.fields is not None:
         missing_fields = _consumed_fields(params) - src.fields
         if missing_fields:
-            raise ValueError(
+            raise TemplateError(
                 f"step {step_id!r} ({step_kind!r}) reads field(s) {sorted(missing_fields)} "
                 f"not present on its source; available: {sorted(src.fields)}"
             )
@@ -575,23 +581,25 @@ def validate_template(template: PipelineTemplate) -> None:
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
         if step.kind not in OP_REGISTRY:
-            raise KeyError(
+            raise TemplateReferenceError(
                 f"unknown op kind {step.kind!r} at step {step_id!r}; "
                 f"registered kinds: {sorted(OP_REGISTRY)}"
             )
         arity, _, params_cls = OP_REGISTRY[step.kind]
         if step.source not in known:
-            raise KeyError(
+            raise TemplateReferenceError(
                 f"step {step_id!r} references unknown source {step.source!r}; "
                 f"known so far: {sorted(known)}"
             )
         if arity == "binary":
             if step.rhs is None:
-                raise ValueError(f"step {step_id!r} is binary ({step.kind!r}) but has no rhs")
+                raise TemplateError(f"step {step_id!r} is binary ({step.kind!r}) but has no rhs")
             if step.rhs not in known:
-                raise KeyError(f"step {step_id!r} references unknown rhs {step.rhs!r}")
+                raise TemplateReferenceError(
+                    f"step {step_id!r} references unknown rhs {step.rhs!r}"
+                )
         elif step.rhs is not None:
-            raise ValueError(
+            raise TemplateError(
                 f"step {step_id!r} is unary ({step.kind!r}) but has a rhs {step.rhs!r}; "
                 "rhs is only valid on binary ops (add/sub/mul/div)"
             )
@@ -604,7 +612,7 @@ def validate_template(template: PipelineTemplate) -> None:
         # Register the id last so a step cannot reference itself, and so a
         # duplicate id (or a clash with an input name) is caught.
         if step_id in known:
-            raise ValueError(
+            raise TemplateError(
                 f"duplicate step id {step_id!r}; ids must be unique and must "
                 "not collide with an input name"
             )
@@ -613,7 +621,7 @@ def validate_template(template: PipelineTemplate) -> None:
 
     for out_name, out in template.outputs.items():
         if out.source not in known:
-            raise KeyError(
+            raise TemplateReferenceError(
                 f"output {out_name!r} references unknown source {out.source!r}; "
                 f"known: {sorted(known)}"
             )
@@ -702,7 +710,7 @@ def run_template(
         # from the filename, so a misnamed/misdeclared input would flow in
         # as the wrong kind silently. Assert the loaded kind matches.
         if ds.kind != spec.kind:
-            raise ValueError(
+            raise TemplateError(
                 f"input {name!r} declares kind {spec.kind!r} but the source at "
                 f"{spec.path!r} loaded as kind {ds.kind!r}"
             )
@@ -712,32 +720,51 @@ def run_template(
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
         if step.kind not in OP_REGISTRY:
-            raise KeyError(
+            raise TemplateReferenceError(
                 f"unknown op kind {step.kind!r} at step {step_id!r}; "
                 f"registered kinds: {sorted(OP_REGISTRY)}"
             )
         arity, fn, params_cls = OP_REGISTRY[step.kind]
 
         if step.source not in bindings:
-            raise KeyError(f"step {step_id!r} references unknown source {step.source!r}")
+            raise TemplateReferenceError(
+                f"step {step_id!r} references unknown source {step.source!r}"
+            )
         ds = bindings[step.source]
         params = _step_params(step, params_cls, template.root)
 
         if arity == "binary":
             if step.rhs is None:
-                raise ValueError(f"step {step_id!r} is binary but has no rhs")
+                raise TemplateError(f"step {step_id!r} is binary but has no rhs")
             if step.rhs not in bindings:
-                raise KeyError(f"step {step_id!r} references unknown rhs {step.rhs!r}")
-            result = fn(ds, bindings[step.rhs], params)
-        else:
-            result = fn(ds, params)
+                raise TemplateReferenceError(
+                    f"step {step_id!r} references unknown rhs {step.rhs!r}"
+                )
+
+        # Execute the op. A failure inside the op is wrapped as OpError with
+        # the failing step id / kind, so a consumer can map it precisely
+        # (rather than string-matching a bare exception) -- but cfdmod's own
+        # TemplateError / TemplateReferenceError pass through untouched.
+        try:
+            if arity == "binary":
+                result = fn(ds, bindings[step.rhs], params)
+            else:
+                result = fn(ds, params)
+        except CfdmodError:
+            raise
+        except Exception as exc:
+            raise OpError(
+                f"step {step_id!r} ({step.kind!r}) raised while executing: {exc}",
+                step_id=step_id,
+                op_kind=step.kind,
+            ) from exc
 
         bindings[step_id] = result
 
     # 3. Write outputs.
     for _, out in template.outputs.items():
         if out.source not in bindings:
-            raise KeyError(f"output references unknown source {out.source!r}")
+            raise TemplateReferenceError(f"output references unknown source {out.source!r}")
         key = _resolve_key(template.root, out.path)
         storage.write_data_source(key, bindings[out.source])
 

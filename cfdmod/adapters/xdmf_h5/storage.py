@@ -45,6 +45,7 @@ from cfdmod.core.data_source import (
     PointsDataSource,
     SurfaceDataSource,
 )
+from cfdmod.core.errors import StorageKeyError
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import ElementMeta, Topology
@@ -146,7 +147,9 @@ class XdmfH5Storage:
     def read_data_source(self, key: str) -> DataSource:
         h5_path = self.h5_path(key)
         if not h5_path.exists():
-            raise KeyError(f"XdmfH5Storage has no data source under key {key!r} ({h5_path})")
+            raise StorageKeyError(
+                f"XdmfH5Storage has no data source under key {key!r} ({h5_path})"
+            )
 
         with h5py.File(h5_path, "r") as f:
             if "Triangles" not in f or "Geometry" not in f:
