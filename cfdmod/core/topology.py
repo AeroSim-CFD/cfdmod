@@ -173,7 +173,7 @@ class ElementMeta(BaseModel):
     annotations: Annotated[
         dict[str, Any],
         Field(default_factory=dict, description="Free-form per-element metadata."),
-    ] = {}
+    ]
 
     @field_validator("position", "normal", mode="before")
     @classmethod
