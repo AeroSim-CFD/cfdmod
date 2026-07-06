@@ -45,7 +45,7 @@ from cfdmod.core.pipeline_yaml import (
     register_op,
     run_template,
 )
-from cfdmod.core.protocols import FieldStore, Logger, Pool, Storage
+from cfdmod.core.protocols import BlobStore, FieldStore, Logger, Pool, Storage
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import CellType, ElementMeta, Topology
 
@@ -66,6 +66,7 @@ __all__ = [
     "identity",
     "FieldStore",
     "Storage",
+    "BlobStore",
     "Logger",
     "Pool",
     "TimeAxis",

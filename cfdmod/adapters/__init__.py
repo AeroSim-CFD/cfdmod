@@ -23,8 +23,10 @@ from typing import Any
 __all__ = [
     "MemoryFieldStore",
     "MemoryStorage",
+    "MemoryBlobStore",
     "H5FieldStore",
     "XdmfH5Storage",
+    "XdmfH5BlobStorage",
 ]
 
 # Lazy so importing the light in-RAM adapter (which the ops layer does) does
@@ -33,8 +35,10 @@ __all__ = [
 _SYMBOL_MODULE = {
     "MemoryFieldStore": "cfdmod.adapters.memory",
     "MemoryStorage": "cfdmod.adapters.memory",
+    "MemoryBlobStore": "cfdmod.adapters.memory",
     "H5FieldStore": "cfdmod.adapters.xdmf_h5",
     "XdmfH5Storage": "cfdmod.adapters.xdmf_h5",
+    "XdmfH5BlobStorage": "cfdmod.adapters.xdmf_h5",
 }
 
 
