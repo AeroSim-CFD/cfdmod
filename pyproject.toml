@@ -78,6 +78,10 @@ dev = [
     "tox>=4.53",
     "json-schema-for-humans>=1.5",
     "pytest>=9",
+    # Property-based / fuzz testing for the v3 data-source layer (issue #141).
+    # Test-only; drives the strategies in tests/strategies.py and the
+    # ``property``-marked tests.
+    "hypothesis>=6",
     "ruff>=0.15",
     # tests/inflow + tests/pressure/test_migrate exercise the legacy
     # HDFStore compat readers, so dev installs need pytables.
@@ -112,6 +116,7 @@ markers = [
     "unit: pure-function tests with no real-data fixtures or pipeline orchestration",
     "integration: end-to-end pipeline tests that exercise multiple components together",
     "perf: pipeline performance benchmarks on synthetic big data; opt-in via -m perf",
+    "property: hypothesis-driven generative tests over the v3 data-source layer; run with a larger example budget nightly via -m property",
 ]
 
 [tool.ruff]
