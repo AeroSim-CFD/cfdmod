@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from pydantic import ValidationError
 
 from cfdmod.core.grouping import Grouping
@@ -40,7 +40,6 @@ def _revalidates(ds) -> bool:
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_metadata_updates_preserve_n_elements(ds) -> None:
     n = ds.n_elements
@@ -56,7 +55,6 @@ def test_metadata_updates_preserve_n_elements(ds) -> None:
     assert _revalidates(dropped)
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_compatible_with_time_preserves_shape(ds) -> None:
     # A translate keeps n_timesteps, so field shapes still match -> consistent.
@@ -67,7 +65,6 @@ def test_compatible_with_time_preserves_shape(ds) -> None:
     assert _revalidates(updated)
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_valid_with_field_stays_consistent(ds) -> None:
     n = ds.n_elements
@@ -83,7 +80,6 @@ def test_valid_with_field_stays_consistent(ds) -> None:
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_with_field_wrong_leading_axis_raises(ds) -> None:
     bad = np.zeros((ds.n_elements + 1,), dtype=np.float64)
@@ -91,7 +87,6 @@ def test_with_field_wrong_leading_axis_raises(ds) -> None:
         ds.with_field("bad", bad)
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_with_grouping_wrong_size_raises(ds) -> None:
     bad = Grouping(name="bad", indices=np.zeros(ds.n_elements + 1, dtype=np.int32))
@@ -99,7 +94,6 @@ def test_with_grouping_wrong_size_raises(ds) -> None:
         ds.with_grouping(bad)
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_with_elements_wrong_size_raises(ds) -> None:
     bad = ElementMeta(position=np.zeros((ds.n_elements + 1, 3), dtype=np.float64))
@@ -107,7 +101,6 @@ def test_with_elements_wrong_size_raises(ds) -> None:
         ds.with_elements(bad)
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_with_time_incompatible_axis_raises(ds) -> None:
     if ds.time.is_time_aggregated:

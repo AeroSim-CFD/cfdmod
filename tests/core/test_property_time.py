@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as hnp
 
@@ -37,7 +37,6 @@ def _finite(**kw):
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=75)
 @given(axis=sty.time_axes(aggregated=False), data=st.data())
 def test_window_is_contiguous_slice(axis: TimeAxis, data) -> None:
     times = axis.times()
@@ -59,7 +58,6 @@ def test_window_is_contiguous_slice(axis: TimeAxis, data) -> None:
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=75)
 @given(axis=sty.time_axes(), k=_finite(min_value=1e-3, max_value=1e3))
 def test_rescale_roundtrip_recovers_axis(axis: TimeAxis, k: float) -> None:
     back = axis.rescale(k).rescale(1.0 / k)
@@ -92,7 +90,6 @@ def _timeseries_source(draw):
     return _timeseries(arr, dt)
 
 
-@settings(max_examples=75)
 @given(ds=_timeseries_source())
 def test_moving_average_one_sample_is_identity(ds: PointsDataSource) -> None:
     # window == dt rounds to a single sample -> identity.
@@ -101,14 +98,12 @@ def test_moving_average_one_sample_is_identity(ds: PointsDataSource) -> None:
     assert np.array_equal(out.fields.read("v"), ds.fields.read("v"))
 
 
-@settings(max_examples=75)
 @given(ds=_timeseries_source(), window=_finite(min_value=1e-2, max_value=50.0))
 def test_moving_average_preserves_shape(ds: PointsDataSource, window: float) -> None:
     out = moving_average(ds, MovingAverageParams(window=window, field="v"))
     assert out.fields.read("v").shape == ds.fields.read("v").shape
 
 
-@settings(max_examples=75)
 @given(
     n=st.integers(min_value=1, max_value=4),
     nt=st.integers(min_value=2, max_value=8),

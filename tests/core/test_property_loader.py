@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
@@ -94,7 +94,6 @@ def _raises(thunk) -> bool:
         return True
 
 
-@settings(max_examples=60)
 @given(
     mutation=st.sampled_from(MUTATIONS),
     factor=st.floats(min_value=-1e3, max_value=1e3, allow_nan=False, allow_infinity=False),

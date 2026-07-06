@@ -83,7 +83,6 @@ def _assert_persisted_equal(a: DataSource, b: DataSource) -> None:
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=50)
 @given(ds=sty.data_sources())
 def test_memory_roundtrip_preserves_source(ds: DataSource) -> None:
     storage = MemoryStorage()
@@ -101,11 +100,7 @@ def test_memory_roundtrip_preserves_source(ds: DataSource) -> None:
 # ---------------------------------------------------------------------------
 
 
-@settings(
-    max_examples=50,
-    deadline=None,
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-)
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(ds=sty.roundtrippable_data_sources())
 def test_xdmf_h5_roundtrip_preserves_persisted_subset(
     ds: DataSource, tmp_path: pathlib.Path
@@ -122,11 +117,7 @@ def test_xdmf_h5_roundtrip_preserves_persisted_subset(
 # ---------------------------------------------------------------------------
 
 
-@settings(
-    max_examples=50,
-    deadline=None,
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-)
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(ds=sty.roundtrippable_data_sources())
 def test_backends_agree(ds: DataSource, tmp_path: pathlib.Path) -> None:
     key = _key_for(ds)

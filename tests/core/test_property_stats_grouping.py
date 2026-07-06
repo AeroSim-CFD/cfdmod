@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as hnp
 
@@ -58,7 +58,6 @@ def _row_arrays(draw):
     return arr, np.array(sorted(members), dtype=np.int64)
 
 
-@settings(max_examples=75)
 @given(payload=_row_arrays())
 def test_aggregate_min_le_mean_le_max(payload) -> None:
     arr, members = payload
@@ -69,7 +68,6 @@ def test_aggregate_min_le_mean_le_max(payload) -> None:
     assert np.all(me <= mx + 1e-9)
 
 
-@settings(max_examples=75)
 @given(payload=_row_arrays(), weight=_finite(min_value=1e-3, max_value=1e3))
 def test_area_weighted_mean_equals_mean_for_equal_weights(payload, weight: float) -> None:
     arr, members = payload
@@ -79,7 +77,6 @@ def test_area_weighted_mean_equals_mean_for_equal_weights(payload, weight: float
     assert np.allclose(aw, me, rtol=1e-9, atol=1e-9)
 
 
-@settings(max_examples=75)
 @given(payload=_row_arrays())
 def test_sum_equals_mean_times_n_for_full_group(payload) -> None:
     arr, _members = payload
@@ -106,7 +103,6 @@ def _timeseries_arrays(draw):
     return draw(hnp.arrays(np.float64, (n, nt), elements=_finite(min_value=-1e6, max_value=1e6)))
 
 
-@settings(max_examples=75)
 @given(arr=_timeseries_arrays())
 def test_statistics_match_numpy(arr: np.ndarray) -> None:
     ds = _points_timeseries(arr)

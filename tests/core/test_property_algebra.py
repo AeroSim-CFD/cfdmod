@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as hnp
 
@@ -63,7 +63,6 @@ def _arrays(draw, *, allow_1d: bool = True):
     return draw(hnp.arrays(np.float64, shape, elements=_finite(min_value=-1e6, max_value=1e6)))
 
 
-@settings(max_examples=50)
 @given(arr=_arrays())
 def test_sub_self_is_zero(arr: np.ndarray) -> None:
     a = _points(arr)
@@ -71,7 +70,6 @@ def test_sub_self_is_zero(arr: np.ndarray) -> None:
     assert np.array_equal(out.fields.read(FIELD), np.zeros_like(arr))
 
 
-@settings(max_examples=50)
 @given(
     arr=_arrays(),
     k=st.one_of(_finite(min_value=1e-3, max_value=1e3), _finite(min_value=-1e3, max_value=-1e-3)),
@@ -83,7 +81,6 @@ def test_mul_then_div_recovers_original(arr: np.ndarray, k: float) -> None:
     assert np.allclose(back.fields.read(FIELD), arr, rtol=1e-9, atol=1e-9)
 
 
-@settings(max_examples=50)
 @given(data=st.data())
 def test_add_and_mul_commute_elementwise(data) -> None:
     arr1 = data.draw(_arrays())
@@ -102,7 +99,6 @@ def test_add_and_mul_commute_elementwise(data) -> None:
     )
 
 
-@settings(max_examples=50)
 @given(
     n=st.integers(min_value=1, max_value=6),
     nt=st.integers(min_value=1, max_value=5),
