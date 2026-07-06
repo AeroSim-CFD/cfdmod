@@ -74,12 +74,16 @@ __all__ = [
     "run_template",
     "load_template",
     "validate_template",
+    "OpInfo",
+    "list_ops",
+    "op_info",
 ]
 
 import pathlib
 from typing import Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.json_schema import GenerateJsonSchema
 
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.protocols import Storage
@@ -109,11 +113,23 @@ def register_op(
     *,
     arity: Literal["unary", "binary"] = "unary",
 ) -> None:
-    """Register an op under ``kind``.
+    """Register an op under ``kind`` -- the public extension point.
 
-    Idempotent: re-registering the same kind replaces the entry. Used
-    to plug in extension ops without monkey-patching the registry
-    constant.
+    A consumer adds a custom op by writing a function
+    ``fn(ds, params) -> DataSource`` (or ``fn(ds, rhs, params)`` for a
+    binary op) and a ``params_cls``, then calling this. The op is then a
+    first-class citizen: it is usable in YAML/dict templates under its
+    ``kind``, validated by :func:`validate_template`, and listed by
+    :func:`list_ops`.
+
+    For the op's data-source contract (``consumes`` / ``produces`` /
+    ``requires_element_meta`` / ...) to be picked up by the catalog and
+    the template linter, ``params_cls`` should subclass
+    :class:`cfdmod.core.ops.OpParams` and set those class attributes; a
+    plain ``BaseModel`` still registers but is treated as unconstrained.
+
+    Idempotent: re-registering the same kind replaces the entry, so a
+    consumer can also override a built-in.
     """
     OP_REGISTRY[kind] = (arity, fn, params_cls)
 
@@ -219,6 +235,111 @@ def _populate_default_registry() -> None:
         ("div", div, DivParams),
     ]:
         register_op(kind, fn, cls, arity="binary")
+
+
+# ---------------------------------------------------------------------------
+# Public op catalog (issue #147)
+# ---------------------------------------------------------------------------
+
+# The op registry is populated eagerly at import (bottom of this module), so a
+# consumer can enumerate the op set without first running a template. The
+# catalog below turns the registry into a stable, dependency-light description
+# a node-based pipeline editor can consume: op kinds, arities, data-source
+# contracts, and per-op parameter JSON Schemas.
+
+
+class _LenientJsonSchema(GenerateJsonSchema):
+    """JSON-schema generator that degrades gracefully on opaque types.
+
+    Some op params carry numpy arrays or whole value objects (e.g.
+    :class:`~cfdmod.core.grouping.Grouping`) that have no JSON-schema
+    representation. Rather than fail the whole catalog, emit an empty
+    (``{}`` = "any") schema for those fields; every scalar / string /
+    enum field still renders normally for a form-building consumer.
+    """
+
+    def handle_invalid_for_json_schema(self, schema: object, error_info: str) -> dict:
+        return {}
+
+
+def _op_family(params_cls: type[BaseModel]) -> str:
+    """Resolve the op family for a params class.
+
+    An explicit ``op_family`` class attribute wins (custom ops set it);
+    otherwise the family is inferred from the subpackage the op lives in,
+    so built-in ops need no per-op bookkeeping. Families mirror
+    :data:`cfdmod.core.ops.OpKind`.
+    """
+    declared = getattr(params_cls, "op_family", None)
+    if declared:
+        return declared
+    mod = params_cls.__module__
+    if ".ops.time." in mod:
+        return "time"
+    if ".ops.geometric." in mod:
+        return "geometric"
+    if ".ops.data_source_create." in mod:
+        return "source_create"
+    return "field"
+
+
+class OpInfo(BaseModel):
+    """Machine-readable description of one registered op.
+
+    This is the unit returned by :func:`list_ops` / :func:`op_info`. It
+    carries everything a consumer needs to render an op and validate a
+    graph statically: the op ``kind`` (the string written under a step's
+    ``kind:`` in a template), its ``arity``, its data-source contract, and
+    the JSON Schema of its parameters.
+    """
+
+    kind: str
+    family: str
+    arity: Literal["unary", "binary"]
+    consumes: list[str] | None
+    produces: str
+    requires_element_meta: list[str]
+    produces_element_meta: list[str]
+    replaces_fields: bool
+    params_schema: dict
+
+
+def _op_info(kind: str, entry: OpEntry) -> OpInfo:
+    arity, _, params_cls = entry
+    consumes = getattr(params_cls, "consumes", None)
+    return OpInfo(
+        kind=kind,
+        family=_op_family(params_cls),
+        arity=arity,
+        consumes=None if consumes is None else sorted(consumes),
+        produces=getattr(params_cls, "produces", "same"),
+        requires_element_meta=sorted(getattr(params_cls, "requires_element_meta", frozenset())),
+        produces_element_meta=sorted(getattr(params_cls, "produces_element_meta", frozenset())),
+        replaces_fields=bool(getattr(params_cls, "replaces_fields", False)),
+        params_schema=params_cls.model_json_schema(schema_generator=_LenientJsonSchema),
+    )
+
+
+def list_ops() -> list[OpInfo]:
+    """Return the full op catalog, sorted by kind.
+
+    Enumerates every registered op (built-ins plus any registered via
+    :func:`register_op`) with its contract and parameter schema. Populates
+    the registry on first call if it has not been already.
+    """
+    _populate_default_registry()
+    return [_op_info(kind, OP_REGISTRY[kind]) for kind in sorted(OP_REGISTRY)]
+
+
+def op_info(kind: str) -> OpInfo:
+    """Return the :class:`OpInfo` for a single op kind.
+
+    Raises ``KeyError`` if the kind is not registered.
+    """
+    _populate_default_registry()
+    if kind not in OP_REGISTRY:
+        raise KeyError(f"unknown op kind {kind!r}; registered kinds: {sorted(OP_REGISTRY)}")
+    return _op_info(kind, OP_REGISTRY[kind])
 
 
 # ---------------------------------------------------------------------------
@@ -502,3 +623,9 @@ def run_template(
         storage.write_data_source(key, bindings[out.source])
 
     return bindings
+
+
+# Populate the op registry at import so consumers can enumerate ops (via
+# list_ops / op_info / OP_REGISTRY) without first running a template. Safe:
+# no op module imports this module, so there is no cycle.
+_populate_default_registry()

@@ -102,6 +102,9 @@ __all__ = [
     "PipelineTemplate",
     "register_op",
     "OP_REGISTRY",
+    "OpInfo",
+    "list_ops",
+    "op_info",
     # Regroup
     "RegroupConfig",
     "RegroupIndex",
@@ -204,6 +207,7 @@ from cfdmod.core import (
     Grouping,
     GroupsDataSource,
     ModesDataSource,
+    OpInfo,
     Pipeline,
     PipelineTemplate,
     PointsDataSource,
@@ -212,7 +216,9 @@ from cfdmod.core import (
     Topology,
     VolumeDataSource,
     compose,
+    list_ops,
     load_template,
+    op_info,
     register_op,
     run_template,
 )

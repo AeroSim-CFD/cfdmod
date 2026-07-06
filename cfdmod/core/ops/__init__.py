@@ -74,6 +74,11 @@ class OpParams(BaseModel):
     chunkable_along: ClassVar[frozenset[str]] = frozenset()
 
     # --- service contract (issue #147) ---------------------------------
+    # Op family (time/geometric/source_create/field). Built-in ops leave
+    # this None and are classified by their module path; custom ops
+    # defined outside cfdmod set it explicitly so the catalog reports the
+    # right family.
+    op_family: ClassVar[OpKind | None] = None
     consumes: ClassVar[frozenset[DataSourceKind] | None] = None
     produces: ClassVar[str] = "same"
     requires_element_meta: ClassVar[frozenset[str]] = frozenset()

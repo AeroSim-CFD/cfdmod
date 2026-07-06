@@ -30,8 +30,11 @@ from cfdmod.core.grouping import Grouping, elements_in_group, groups_in
 from cfdmod.core.pipeline import Pipeline, compose, identity
 from cfdmod.core.pipeline_yaml import (
     OP_REGISTRY,
+    OpInfo,
     PipelineTemplate,
+    list_ops,
     load_template,
+    op_info,
     register_op,
     run_template,
 )
@@ -67,4 +70,7 @@ __all__ = [
     "PipelineTemplate",
     "OP_REGISTRY",
     "register_op",
+    "OpInfo",
+    "list_ops",
+    "op_info",
 ]
