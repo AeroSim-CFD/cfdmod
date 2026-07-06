@@ -10,7 +10,7 @@ def break_INMET_columns(data: pd.DataFrame) -> pd.DataFrame:
     """Clean wind data from INMET (Instituto Nacional de Meteorologia) source and separate by year"""
     data["Hora Medicao"] = data["Hora Medicao"].astype("Int64")  # handles NaN problems
     data["datetime"] = data.apply(
-        lambda row: f"{row['Data Medicao']}T{row['Hora Medicao']//100:02}:00:00", axis=1
+        lambda row: f"{row['Data Medicao']}T{row['Hora Medicao'] // 100:02}:00:00", axis=1
     )
     data["u_mean_raw"] = data["VENTO, VELOCIDADE HORARIA(m/s)"]
     data["u_gust_raw"] = data["VENTO, RAJADA MAXIMA(m/s)"]

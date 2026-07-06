@@ -1,6 +1,6 @@
 [project]
 name = "aerosim-cfdmod"
-version = "2.0.1"
+version = "2.1.0"
 description = "Tools for analysis of CFD cases"
 authors = [
     { name = "Waine Oliveira Jr", email = "waine@aerosim.io" },
@@ -8,16 +8,20 @@ authors = [
 requires-python = ">=3.10"
 readme = "README.md"
 license = "Apache-2.0"
+# Lower bounds are the minimum tested versions; upper caps are intentionally
+# omitted so this library can be co-installed as a dependency without forcing
+# resolution conflicts on consumers (e.g. a project that needs pandas 3.x).
+# Keep these as floors only -- pin in the consuming application, not here.
 dependencies = [
-    "numpy>=2.0,<3",
-    "scipy>=1.13,<2",
-    "pandas>=2.2,<3",
-    "pydantic>=2.10,<3",
-    "ruamel-yaml>=0.18.5,<0.20",
-    "colorama>=0.4.6,<0.5",
-    "matplotlib>=3.9,<4",
-    "pyarrow>=19.0.0,<25",
-    "aerosim-lnas>=0.6.9,<0.7",
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "pandas>=2.2",
+    "pydantic>=2.10",
+    "ruamel-yaml>=0.18.5",
+    "colorama>=0.4.6",
+    "matplotlib>=3.9",
+    "pyarrow>=19.0.0",
+    "aerosim-lnas>=0.6.9",
     "openpyxl>=3.1.5",
     "h5py>=3.15.1",
     "typer>=0.24.1",
@@ -29,8 +33,14 @@ dependencies = [
 # its license is GPL, so installing it would force GPL on downstream users.
 # Code paths that need pymeshlab are documented and the user is expected to
 # install it explicitly (`pip install pymeshlab`) at their own license risk.
+# fast-simplification (under [project.optional-dependencies].remesh below)
+# is the approved QEM decimator: MIT-licensed, wraps the
+# Fast-Quadric-Mesh-Simplification C++ implementation.
 geometry = [
-    "trimesh>=4.0,<5",
+    "trimesh>=4.0",
+]
+remesh = [
+    "fast-simplification>=0.1",
 ]
 docs = [
     "shibuya>=2026.0",
@@ -46,8 +56,8 @@ notebook = [
     "ipykernel>=6.25.2,<8",
 ]
 vtk = [
-    "vtk>=9.2.6,<10",
-    "pyvista>=0.44,<0.50",
+    "vtk>=9.2.6",
+    "pyvista>=0.44",
 ]
 # Required only for the legacy pandas-HDFStore compat readers in
 # cfdmod.inflow, cfdmod.hfpi.static, and cfdmod.pressure.migrate.
@@ -65,10 +75,7 @@ Repository = "https://github.com/AeroSim-CFD/cfdmod"
 
 [dependency-groups]
 dev = [
-    "black[jupyter]>=26",
-    "isort>=8",
     "tox>=4.53",
-    "autoflake>=2.3",
     "json-schema-for-humans>=1.5",
     "pytest>=9",
     "ruff>=0.15",
@@ -107,33 +114,15 @@ markers = [
     "perf: pipeline performance benchmarks on synthetic big data; opt-in via -m perf",
 ]
 
-[tool.black]
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-include = '(\.pyi?$|\.ipynb)'
-line-length = 99
-target-version = ['py310']
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 99
-src_paths = ["cfdmod", "tests", "notebooks"]
-skip_glob = ["**/__init__.py"] # avoid circular imports
-
 [tool.ruff]
 lint.fixable = ["ALL"]
+# Enable import sorting (replaces isort; equivalent to isort's black profile).
+lint.extend-select = ["I"]
+# Notebooks frequently re-define helpers across cells (didactic style); F811
+# (redefinition of unused name) is noise there. __init__.py files are exempt
+# from import sorting (I001) to avoid reordering that breaks circular imports
+# (previously isort's ``skip_glob = ["**/__init__.py"]``).
+lint.per-file-ignores = { "*.ipynb" = ["F811"], "**/__init__.py" = ["I001"] }
 # Exclude a variety of commonly ignored directories.
 exclude = [
     "consulting",
@@ -162,3 +151,8 @@ exclude = [
 ]
 line-length = 99
 target-version = "py310"
+
+# ``ruff format`` replaces black (same style, line-length 99). It formats
+# .py and .ipynb by default, matching the old black[jupyter] setup.
+[tool.ruff.format]
+quote-style = "double"

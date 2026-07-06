@@ -102,6 +102,18 @@ __all__ = [
     "PipelineTemplate",
     "register_op",
     "OP_REGISTRY",
+    # Regroup
+    "RegroupConfig",
+    "RegroupIndex",
+    "build_regroup_mapping",
+    "build_regrouped_mesh",
+    "apply_regroup_to_timeseries",
+    "expand_regroup_chain",
+    "run_regroup",
+    # Remesh
+    "merge_coplanar",
+    "decimate_qem",
+    "remesh_per_group",
 ]
 
 from cfdmod.inflow import InflowData, NormalizationParameters
@@ -146,6 +158,16 @@ from cfdmod.io import (
 )
 from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
 from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
+from cfdmod.regroup import (
+    RegroupConfig,
+    RegroupIndex,
+    apply_regroup_to_timeseries,
+    build_regroup_mapping,
+    build_regrouped_mesh,
+    expand_regroup_chain,
+    run_regroup,
+)
+from cfdmod.remesh import decimate_qem, merge_coplanar, remesh_per_group
 from cfdmod.roughness import (
     BoundingBox,
     ElementParams,

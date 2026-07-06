@@ -12,7 +12,6 @@ from cfdmod.geometry import (
     dump_groupings,
     load_groupings,
 )
-
 from tests.geometry.grouping._custom_callbacks import first_n, split_by_threshold
 
 _DOTTED = "tests.geometry.grouping._custom_callbacks.split_by_threshold"

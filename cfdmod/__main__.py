@@ -5,11 +5,13 @@ import typer
 from cfdmod.altimetry.cli import app as altimetry_app
 from cfdmod.loft.cli import app as loft_app
 from cfdmod.recipes import run_yaml
+from cfdmod.regroup.cli import app as regroup_app
 from cfdmod.roughness.cli import app as roughness_app
 
 app = typer.Typer()
 app.add_typer(altimetry_app, name="altimetry")
 app.add_typer(loft_app, name="loft")
+app.add_typer(regroup_app, name="regroup")
 app.add_typer(roughness_app, name="roughness")
 
 

@@ -81,7 +81,7 @@ class ByCylindricalGrouping(BaseModel):
         Field(
             "r{idx}",
             description=(
-                "Format string. Placeholders: " "{idx} (linear), {ir}, {it}, {iz} (per-axis)."
+                "Format string. Placeholders: {idx} (linear), {ir}, {it}, {iz} (per-axis)."
             ),
         ),
     ]

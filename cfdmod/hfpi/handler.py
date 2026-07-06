@@ -113,7 +113,7 @@ def solve_hfpi_case(
         floors_heights=floors_heights,
         cm_positions=cm_positions,
     )
-    logger.info(f"Solved static in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
+    logger.info(f"Solved static in {time.time() - t0:.2f}s for: {parameters.model_dump_json()}!")
 
     logger.info(f"Solving HFPI for: {parameters.model_dump_json()}")
 
@@ -131,7 +131,7 @@ def solve_hfpi_case(
         forces=hfpi_params.forces,
         xi=hfpi_params.xi,
     )
-    logger.info(f"Solved HFPI in {time.time()-t0:.2f}s for: {parameters.model_dump_json()}!")
+    logger.info(f"Solved HFPI in {time.time() - t0:.2f}s for: {parameters.model_dump_json()}!")
 
     res = ResultType(static_res=static_results, dynamic_res=hfpi_results)
     res.save(path_save)

@@ -4,10 +4,10 @@ import sys
 from dataclasses import dataclass
 
 import pandas as pd
+from cfdmod.pressure.zoning.processing import calculate_statistics
 from lnas import LnasFormat
 
 from cfdmod.io.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
-from cfdmod.pressure.zoning.processing import calculate_statistics
 
 
 @dataclass
