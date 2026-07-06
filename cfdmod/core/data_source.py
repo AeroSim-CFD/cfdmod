@@ -84,12 +84,12 @@ class DataSource(BaseModel):
             arr = getattr(self.elements, col)
             if arr is not None and arr.shape[0] != n:
                 raise ValueError(
-                    f"elements.{col} length {arr.shape[0]} does not match " f"n_elements={n}"
+                    f"elements.{col} length {arr.shape[0]} does not match n_elements={n}"
                 )
         for gname, grouping in self.groupings.items():
             if grouping.n_elements != n:
                 raise ValueError(
-                    f"grouping {gname!r} has {grouping.n_elements} entries; " f"expected {n}"
+                    f"grouping {gname!r} has {grouping.n_elements} entries; expected {n}"
                 )
         for fname in self.fields.keys():
             shape = self.fields.shape(fname)
@@ -310,6 +310,6 @@ class ModesDataSource(DataSource):
     def _check_modes(self) -> "ModesDataSource":
         if self.topology is not None:
             raise ValueError(
-                "ModesDataSource does not carry a topology; got " f"{self.topology.cell_type!r}"
+                f"ModesDataSource does not carry a topology; got {self.topology.cell_type!r}"
             )
         return self
