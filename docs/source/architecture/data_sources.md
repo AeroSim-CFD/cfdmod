@@ -150,3 +150,77 @@ YAML schemas are not touched in phases 1-3. New schemas land under
 - Climate, altimetry, snapshot, loft, roughness as pipeline stages:
   per the odt, these stay outside the paradigm. Pedestrian comfort
   takes climate data as a non-pipeline input.
+
+## 11. Consuming cfdmod as a service (issue #147)
+
+The v3 core is usable not just as a library you call but as a contract a
+service can reflect on and drive from a UI (e.g. a node-based pipeline
+editor). Four capabilities support that:
+
+### Dependency-light import
+
+`import cfdmod` -- and importing the template schema / op catalog under
+`cfdmod.core` -- pulls none of the heavy scientific stack (h5py,
+matplotlib, pandas, pyarrow, vtk, trimesh). Those load lazily, only when
+a symbol that needs them is first accessed. A web/API layer can validate
+and build templates without the numeric stack installed. The stable,
+dependency-light surface is `cfdmod.core.pipeline_yaml`
+(`PipelineTemplate`, `validate_template`, `list_ops`, `op_info`).
+
+### Op catalog (introspection)
+
+The op registry is populated at import, so a consumer can enumerate the
+op set without first running a template:
+
+```python
+from cfdmod import list_ops, op_info
+
+for info in list_ops():
+    print(info.kind, info.family, info.arity, info.consumes, info.produces)
+    # info.params_schema is the op's parameter JSON Schema (render a form)
+
+op_info("statistics").params_schema   # single op
+```
+
+### Custom ops
+
+A consumer registers its own op with `register_op`; it becomes a
+first-class citizen -- usable in templates under its `kind`, validated,
+and listed by `list_ops`:
+
+```python
+from typing import ClassVar, Literal
+from cfdmod import DataSource, register_op
+from cfdmod.core.ops import OpParams
+
+class ClipParams(OpParams):
+    kind: Literal["clip"] = "clip"
+    field: str = "cp"
+    lo: float = 0.0
+    hi: float = 1.0
+    op_family: ClassVar[str] = "field"   # or inferred from the module path
+
+def clip(ds: DataSource, p: ClipParams) -> DataSource: ...
+
+register_op("clip", clip, ClipParams, arity="unary")
+```
+
+### Static graph validation
+
+`validate_template` runs a symbolic contract pass over the catalog:
+each op declares `consumes` / `produces` kinds and
+`requires_element_meta`, and `validate_template` checks the wiring
+without running anything -- catching e.g. a `force_contribution` before
+`mesh_attach`, or a surface-only op fed a points binding. It is strict on
+kinds and metadata (deterministic) and permissive on fields when the
+input's fields were not declared.
+
+### Typed errors and object storage
+
+`run_template` raises a typed hierarchy under `CfdmodError`
+(`TemplateError`, `TemplateReferenceError`, `OpError` with `step_id` /
+`op_kind`, `StorageKeyError`); each also subclasses the builtin it
+replaced, so existing `except (KeyError, ValueError)` handlers keep
+working. For non-filesystem output, `XdmfH5BlobStorage` runs the same
+pipeline against any `BlobStore` (an object store such as S3, a DB blob
+column) -- cfdmod stays free of a cloud SDK.
