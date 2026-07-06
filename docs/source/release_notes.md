@@ -1,5 +1,60 @@
 # Release Notes
 
+## v3.1.0
+
+Minor release. Turns the v3 core from "a library you call" into "a
+contract a service can reflect on and drive from a UI" (issue #147),
+additively -- no public symbol is removed or changed in signature, and
+every new error subclasses the builtin it replaced, so existing
+`except (KeyError, ValueError)` handlers keep working.
+
+### Op catalog and introspection
+
+- The op registry is now populated at import, so `OP_REGISTRY` is
+  non-empty without first running a template.
+- New `list_ops()` / `op_info(kind)` return each op's arity, family,
+  data-source contract, and **parameter JSON Schema** -- enough for a
+  node-based pipeline editor to render a form and validate a connection.
+- Ops declare a machine-readable contract on `OpParams`
+  (`consumes` / `produces` kinds, `requires_element_meta` /
+  `produces_element_meta`, `replaces_fields`,
+  `consumed_fields()` / `produced_fields()`).
+- Custom ops registered via `register_op` are first-class: usable in
+  templates, validated, and listed by `list_ops`.
+
+### Static template validation
+
+- `validate_template` now runs a symbolic contract pass over the op
+  catalog before any I/O -- catching graph-wiring mistakes such as a
+  `force_contribution` before `mesh_attach`, or a surface-only op fed a
+  points binding. Strict on kinds / element metadata, permissive on
+  fields when the input's fields were not declared. All shipped
+  cp/cf/cm/ce templates still validate.
+
+### Dependency-light import
+
+- `import cfdmod` -- and importing the template schema / op catalog
+  under `cfdmod.core` -- no longer pulls the heavy scientific stack
+  (h5py, matplotlib, pandas, pyarrow, vtk, trimesh). They load lazily,
+  only when a symbol that needs them is first accessed. A web / API
+  layer can build and validate templates without the numeric stack
+  installed.
+
+### Typed errors
+
+- New `CfdmodError` hierarchy: `TemplateError` (a `ValueError`),
+  `TemplateReferenceError` (a `KeyError`), `OpError` (a `RuntimeError`
+  carrying `step_id` / `op_kind`), and `StorageKeyError` (a `KeyError`).
+  `run_template` wraps op-execution failures in `OpError`.
+
+### Object-store storage
+
+- New `BlobStore` protocol and `XdmfH5BlobStorage` run the same pipeline
+  against any blob backend (an object store such as S3, a DB blob
+  column) by reusing the exact XDMF+H5 byte layout -- cfdmod stays free
+  of any cloud SDK. `MemoryBlobStore` is provided for tests and
+  in-process pipelines.
+
 ## v3.0.0
 
 Major release. Introduces the v3 data-source paradigm (issue #131) and
