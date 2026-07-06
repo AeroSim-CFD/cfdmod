@@ -18,19 +18,21 @@ the supplied :class:`Storage` -> walks ``pipeline`` -> dispatches each
 step to the registered op -> records the output under the step id ->
 walks ``outputs`` -> writes each named result via the same storage.
 
-Errors raise at load time when possible: unknown op kinds, dangling
-``source`` references, missing required fields.
+:func:`load_template` validates the whole template up front:
+unknown op kinds, dangling ``source`` / ``rhs`` references, duplicate
+step ids, ``rhs`` on a unary op, and per-step params (missing required
+fields, typo'd fields) are all rejected before any input is read.
 
 Example YAML::
 
     name: cp_default
     inputs:
       body:
-        kind: surface_h5
+        kind: surface
         path: body.h5
         field: pressure
       p_ref:
-        kind: points_h5
+        kind: points
         path: probe.h5
         field: pressure
     pipeline:
@@ -44,12 +46,12 @@ Example YAML::
         kind: scale
         source: cp_raw
         field: cp
-        factor: 0.015625
+        factor: 800.0
       - id: cp_stats
         kind: statistics
         source: cp
         field: cp
-        kinds: [mean, rms, peak_min, peak_max]
+        kinds: [mean, rms, min, max]
     outputs:
       cp_timeseries:
         source: cp
@@ -71,6 +73,7 @@ __all__ = [
     "BinaryOpSpec",
     "run_template",
     "load_template",
+    "validate_template",
 ]
 
 import pathlib
@@ -223,13 +226,19 @@ def _populate_default_registry() -> None:
 # ---------------------------------------------------------------------------
 
 
+InputKind = Literal["surface", "volume", "points", "groups", "modes"]
+
+
 class InputSpec(BaseModel):
     """One entry under ``inputs:``.
 
     Attributes:
-        kind: Tag the storage adapter uses to resolve the input. The
-            built-in adapters recognise ``surface_h5``, ``points_h5``,
-            ``volume_h5``, ``stats_h5``. Custom storages may add more.
+        kind: The :class:`~cfdmod.core.data_source.DataSource` kind this
+            input is expected to be. ``run_template`` reads the source
+            and asserts the loaded kind matches, so a mismatch (e.g. a
+            probe file not named ``points.*``, which the H5 adapter would
+            otherwise read as a surface) is caught rather than silently
+            wrong.
         path: Absolute or repo-relative path to the input. Resolved
             against the template's ``root`` (see :func:`load_template`).
         field: For inputs that bundle a single field (probe / inflow),
@@ -240,7 +249,7 @@ class InputSpec(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    kind: str
+    kind: InputKind
     path: str
     field: str | None = None
 
@@ -251,7 +260,8 @@ class OutputSpec(BaseModel):
     Attributes:
         source: id of the step (or input) whose output is written.
         path: Destination path, resolved against the template root.
-        format: Storage format tag. Defaults to ``xdmf_h5``.
+        format: Storage format tag. Only ``xdmf_h5`` is currently
+            supported (the sole built-in :class:`Storage`).
         extras: Free-form fields forwarded to the storage adapter
             (e.g. ``group`` name for the H5 timeseries layout).
     """
@@ -260,7 +270,7 @@ class OutputSpec(BaseModel):
 
     source: str
     path: str
-    format: str = "xdmf_h5"
+    format: Literal["xdmf_h5"] = "xdmf_h5"
 
 
 class OpSpec(BaseModel):
@@ -307,7 +317,66 @@ def load_template(path: pathlib.Path | str) -> PipelineTemplate:
     data = read_yaml(p)
     if "root" not in data:
         data["root"] = str(p.parent)
-    return PipelineTemplate.model_validate(data)
+    template = PipelineTemplate.model_validate(data)
+    validate_template(template)
+    return template
+
+
+def validate_template(template: PipelineTemplate) -> None:
+    """Statically validate a template before any I/O.
+
+    Walks the step DAG and raises on the errors a user is most likely to
+    hit: unknown op kinds, dangling ``source`` / ``rhs`` references,
+    duplicate step ids (or an id colliding with an input name), a ``rhs``
+    on a unary op, and per-step params errors (missing required fields,
+    typo'd fields caught by ``extra="forbid"``). Called by
+    :func:`load_template`; also usable standalone on a programmatically
+    built template.
+    """
+    _populate_default_registry()
+
+    known: set[str] = set(template.inputs)
+    for i, step in enumerate(template.pipeline):
+        step_id = step.id or f"step_{i}"
+        if step.kind not in OP_REGISTRY:
+            raise KeyError(
+                f"unknown op kind {step.kind!r} at step {step_id!r}; "
+                f"registered kinds: {sorted(OP_REGISTRY)}"
+            )
+        arity, _, params_cls = OP_REGISTRY[step.kind]
+        if step.source not in known:
+            raise KeyError(
+                f"step {step_id!r} references unknown source {step.source!r}; "
+                f"known so far: {sorted(known)}"
+            )
+        if arity == "binary":
+            if step.rhs is None:
+                raise ValueError(f"step {step_id!r} is binary ({step.kind!r}) but has no rhs")
+            if step.rhs not in known:
+                raise KeyError(f"step {step_id!r} references unknown rhs {step.rhs!r}")
+        elif step.rhs is not None:
+            raise ValueError(
+                f"step {step_id!r} is unary ({step.kind!r}) but has a rhs {step.rhs!r}; "
+                "rhs is only valid on binary ops (add/sub/mul/div)"
+            )
+        # Build the params model so missing/typo'd fields fail here, not
+        # after every input has already been read from disk.
+        _step_params(step, params_cls, template.root)
+        # Register the id last so a step cannot reference itself, and so a
+        # duplicate id (or a clash with an input name) is caught.
+        if step_id in known:
+            raise ValueError(
+                f"duplicate step id {step_id!r}; ids must be unique and must "
+                "not collide with an input name"
+            )
+        known.add(step_id)
+
+    for out_name, out in template.outputs.items():
+        if out.source not in known:
+            raise KeyError(
+                f"output {out_name!r} references unknown source {out.source!r}; "
+                f"known: {sorted(known)}"
+            )
 
 
 def _resolve_key(template_root: str | None, path: str) -> str:
@@ -378,6 +447,8 @@ def run_template(
     written through ``storage.write_data_source`` as a side effect.
     """
     _populate_default_registry()
+    # Static validation first: fail on typos/dangling refs before any I/O.
+    validate_template(template)
 
     # 1. Load inputs.
     bindings: dict[str, DataSource] = {}
@@ -386,7 +457,16 @@ def run_template(
         # the storage key so the adapter can map it to its on-disk
         # layout.
         key = _resolve_key(template.root, spec.path)
-        bindings[name] = storage.read_data_source(key)
+        ds = storage.read_data_source(key)
+        # Honor the declared kind: the H5 adapter infers surface-vs-points
+        # from the filename, so a misnamed/misdeclared input would flow in
+        # as the wrong kind silently. Assert the loaded kind matches.
+        if ds.kind != spec.kind:
+            raise ValueError(
+                f"input {name!r} declares kind {spec.kind!r} but the source at "
+                f"{spec.path!r} loaded as kind {ds.kind!r}"
+            )
+        bindings[name] = ds
 
     # 2. Walk pipeline.
     for i, step in enumerate(template.pipeline):

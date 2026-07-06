@@ -9,11 +9,14 @@ Supported statistics
 --------------------
 
 - ``mean``: arithmetic mean over time.
-- ``rms``: standard deviation (sample, ddof=1).
-- ``min``: minimum over time.
-- ``max``: maximum over time.
-- ``peak_min`` / ``peak_max``: alias of min/max for parity with the odt
-  vocabulary.
+- ``rms``: standard deviation of the fluctuation (sample, ddof=1). Named
+  ``rms`` to match the wind-engineering ``Cp_rms`` convention; note this
+  is ``std``, not ``sqrt(mean(x^2))``, and the two differ when the mean
+  is nonzero.
+- ``min`` / ``max``: raw sample minimum / maximum over time.
+- ``peak_min`` / ``peak_max``: currently identical to ``min`` / ``max``
+  (raw extremes), kept as separate names for parity with the odt
+  vocabulary; they are *not* peak-factor / extreme-value estimates.
 - ``skewness`` / ``kurtosis``: third / excess fourth moments per
   element.
 

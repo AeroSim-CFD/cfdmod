@@ -41,7 +41,10 @@ class OpParams(BaseModel):
     compatibility before running any chunked execution.
     """
 
-    model_config = ConfigDict(frozen=True)
+    # extra="forbid" so a typo'd step field in a YAML template (e.g.
+    # ``windows:`` for ``window:``) is a hard error rather than being
+    # silently dropped and the op running with its default -> wrong numbers.
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     kind: OpKind
 
