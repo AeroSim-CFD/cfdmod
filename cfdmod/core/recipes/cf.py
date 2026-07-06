@@ -1,17 +1,30 @@
-"""Cf recipe -- per-body directional aggregation of Cp components.
+"""Cf recipe -- per-body directional force coefficient (own-area basis).
 
-.. note::
+Two normalisation conventions produce a force coefficient, and they use
+different aggregations:
 
-   This small-data recipe computes the **area-weighted mean** of
-   pre-existing per-direction Cp fields (``cp_x``/``cp_y``/``cp_z``) over
-   each body -- a directional mean pressure coefficient. It is *not* the
-   summed force coefficient; the canonical Cf (``-cp*area*n`` summed per
-   body via ``force_contribution`` + ``field_series_for_groups(sum)``) is
-   the ``fixtures/tests/pressure/templates/cf.yaml`` template run through
-   ``cfdmod run``. Unlike :mod:`cfdmod.core.recipes.cm` (which sums moment
-   contributions), this recipe means the components; the two differ on
-   purpose. The caller must supply the ``cp_<dir>`` fields -- no built-in
-   op produces them.
+- **Own-area basis** (this recipe): normalise by the body's own wetted
+  area ``A_total``. Then
+
+      Cf_i = (1 / A_total) * sum_k cp_k * area_k * n_k,i
+           = area_weighted_mean_k(cp_k * n_k,i),
+
+  because the ``area_k`` weights sum to ``A_total`` and cancel. So the
+  **area-weighted mean** of the per-direction Cp component *is* the force
+  coefficient on the own-area basis. This recipe takes pre-existing
+  ``cp_<dir> = cp * n_<dir>`` fields and area-weight-means them per body.
+
+- **Reference-area basis** (the ``fixtures/tests/pressure/templates/cf.yaml``
+  template): normalise by an independent ``A_ref`` (e.g. a frontal area).
+  Then ``A_ref != A_total`` does not cancel and Cf is a **sum** of
+  ``force_contribution`` (``-cp*area*n / A_ref``) per body. Use this when
+  a fixed reference area is required so Cf converts back to force
+  unambiguously.
+
+Contrast with :mod:`cfdmod.core.recipes.cm`, which always *sums* moment
+contributions (there is no own-area cancellation for a moment). The caller
+must supply the ``cp_<dir>`` fields for this recipe -- no built-in op
+produces them; the reference-area path uses ``force_contribution`` instead.
 
 Given a Cp data source with a ``"body"`` grouping (triangle -> body id)
 and per-direction ``cp_<dir>`` fields, the recipe builds a
