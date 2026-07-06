@@ -15,6 +15,7 @@ import pathlib
 import h5py
 import numpy as np
 import pandas as pd
+from cfdmod.pressure.migrate import migrate_body_h5, migrate_probe_h5
 from lnas import LnasFormat
 
 from cfdmod.io.xdmf import (
@@ -23,7 +24,6 @@ from cfdmod.io.xdmf import (
     write_timeseries_meta,
     write_timeseries_step,
 )
-from cfdmod.pressure.migrate import migrate_body_h5, migrate_probe_h5
 
 DATA = pathlib.Path("fixtures/tests/pressure/data")
 MESH = pathlib.Path("fixtures/tests/pressure/galpao/galpao.normalized.lnas")

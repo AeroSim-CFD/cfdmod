@@ -104,9 +104,9 @@ def test_cp_template_results_are_in_plausible_range(cp_template):
     stats = bindings["cp_stats"]
     mean = stats.fields.read("mean")
     rms = stats.fields.read("rms")
-    assert np.all(
-        np.abs(mean) < 5.0
-    ), f"Cp mean out of plausible range: {mean.min()}..{mean.max()}"
+    assert np.all(np.abs(mean) < 5.0), (
+        f"Cp mean out of plausible range: {mean.min()}..{mean.max()}"
+    )
     assert np.all(rms >= 0)
     assert np.all(rms < 2.0)
 
