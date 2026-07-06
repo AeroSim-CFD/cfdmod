@@ -92,8 +92,7 @@ def moving_average(ds: DataSource, p: MovingAverageParams) -> DataSource:
     arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
     if arr.ndim != 2:
         raise ValueError(
-            f"field {p.field!r} must be 2-D (n_elements, n_timesteps); "
-            f"got shape {arr.shape}"
+            f"field {p.field!r} must be 2-D (n_elements, n_timesteps); " f"got shape {arr.shape}"
         )
     out = _convolve_rows(arr, n)
 

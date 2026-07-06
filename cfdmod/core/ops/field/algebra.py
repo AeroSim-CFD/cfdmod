@@ -31,7 +31,6 @@ from cfdmod.core import algebra
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.ops import OpParams
 
-
 # Binary ops require an explicit rhs DataSource passed at recipe-build
 # time (via partial). Hence the params model carries only the field name
 # and an optional out alias; the rhs is bound by the recipe.

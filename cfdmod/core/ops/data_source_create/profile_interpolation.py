@@ -42,9 +42,7 @@ class ProfileInterpolationParams(OpParams):
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
 
 
-def profile_interpolation(
-    ds: PointsDataSource, p: ProfileInterpolationParams
-) -> PointsDataSource:
+def profile_interpolation(ds: PointsDataSource, p: ProfileInterpolationParams) -> PointsDataSource:
     if ds.elements.position is None:
         raise ValueError("profile_interpolation requires elements.position on the source")
     z_src = ds.elements.position[:, 2]

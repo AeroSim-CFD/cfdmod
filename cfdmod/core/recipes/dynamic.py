@@ -46,7 +46,6 @@ from cfdmod.core.ops.data_source_create.modal_recomposition import (
     modal_recomposition,
 )
 
-
 ModalSolver = Callable[[ModesDataSource], ModesDataSource]
 
 
@@ -99,7 +98,8 @@ def build_dynamic_response(
     )
     solved = solver(modes)
     phi_target = (
-        phi if cfg.recomposition_mode_shapes is None
+        phi
+        if cfg.recomposition_mode_shapes is None
         else np.asarray(cfg.recomposition_mode_shapes, dtype=np.float64)
     )
     return modal_recomposition(

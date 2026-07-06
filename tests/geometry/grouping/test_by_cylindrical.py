@@ -77,9 +77,7 @@ def test_radial_split(ring_mesh):
 def test_axis_x_uses_yz_plane_for_theta():
     # Axis x: theta is measured from +y toward +z. Place a centroid at
     # (5, 1, 0) -> theta=0 in the yz plane; (5, 0, 1) -> theta=90.
-    triangles = np.concatenate(
-        [_tri_at((5.0, 1.0, 0.0)), _tri_at((5.0, 0.0, 1.0))], axis=0
-    )
+    triangles = np.concatenate([_tri_at((5.0, 1.0, 0.0)), _tri_at((5.0, 0.0, 1.0))], axis=0)
     n = triangles.shape[0]
     vertices = triangles.reshape((n * 3, 3)).astype(np.float32)
     tri_idx = np.arange(n * 3, dtype=np.uint32).reshape((n, 3))

@@ -7,7 +7,6 @@ import pytest
 
 from cfdmod.geometry.grouping import (
     BySizeRoundedPerComponent,
-    ByZoningGrouping,
     apply_groupings,
     expand_size_rounded_chain,
 )

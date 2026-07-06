@@ -17,9 +17,7 @@ from cfdmod.core.ops.data_source_create import FilterByGroupingParams, filter_by
 
 
 def _surface_with_grouping() -> SurfaceDataSource:
-    verts = np.array(
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64
-    )
+    verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64)
     tris = np.array([[0, 1, 2], [1, 3, 2], [2, 3, 4], [0, 2, 4]], dtype=np.int32)
     pressure = np.arange(4 * 3, dtype=np.float64).reshape(4, 3)
     return SurfaceDataSource(
@@ -35,9 +33,7 @@ def test_filter_keep_keeps_only_listed_groups():
     ds = _surface_with_grouping()
     out = filter_by_grouping(ds, FilterByGroupingParams(grouping="body", keep=[0]))
     assert out.n_elements == 2
-    np.testing.assert_array_equal(
-        out.fields.read("pressure"), ds.fields.read("pressure")[[0, 1]]
-    )
+    np.testing.assert_array_equal(out.fields.read("pressure"), ds.fields.read("pressure")[[0, 1]])
     np.testing.assert_array_equal(out.elements.area, [1.0, 2.0])
     # Surviving groupings are sliced consistently.
     np.testing.assert_array_equal(out.groupings["body"].indices, [0, 0])

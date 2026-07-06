@@ -85,13 +85,19 @@ class TimeAxis(BaseModel):
     @property
     def normalization_offset(self) -> float:
         """Resolved offset used for normalized time."""
-        return self.initial_time if self.time_normalized_offset is None else self.time_normalized_offset
+        return (
+            self.initial_time
+            if self.time_normalized_offset is None
+            else self.time_normalized_offset
+        )
 
     def times(self) -> np.ndarray:
         """Materialise the full time array. Avoid in hot paths."""
         if self.is_time_aggregated:
             return np.empty(0, dtype=np.float64)
-        return self.initial_time + self.timestep_size * np.arange(self.n_timesteps, dtype=np.float64)
+        return self.initial_time + self.timestep_size * np.arange(
+            self.n_timesteps, dtype=np.float64
+        )
 
     def times_normalized(self) -> np.ndarray:
         """Materialise the full normalized time array."""

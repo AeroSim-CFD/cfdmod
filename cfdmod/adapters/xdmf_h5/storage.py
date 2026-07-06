@@ -149,7 +149,9 @@ class XdmfH5Storage:
             triangles = np.asarray(f["Triangles"][:], dtype=np.int32)
             vertices = np.asarray(f["Geometry"][:], dtype=np.float64)
             has_meta = "meta" in f and "time_steps" in f["meta"]
-            time_steps = np.asarray(f["meta"]["time_steps"][:], dtype=np.float64) if has_meta else None
+            time_steps = (
+                np.asarray(f["meta"]["time_steps"][:], dtype=np.float64) if has_meta else None
+            )
             time_normalized = (
                 np.asarray(f["meta"]["time_normalized"][:], dtype=np.float64) if has_meta else None
             )
@@ -353,9 +355,7 @@ def _connectivity_for_write(topology: Topology) -> np.ndarray:
         n = topology.n_elements
         col = np.arange(n, dtype=np.int32)
         return np.stack([col, col, col], axis=1)
-    raise ValueError(
-        f"XdmfH5Storage cannot write topology with cell_type={topology.cell_type!r}"
-    )
+    raise ValueError(f"XdmfH5Storage cannot write topology with cell_type={topology.cell_type!r}")
 
 
 def _is_floatish(s: str) -> bool:

@@ -64,9 +64,7 @@ def test_moving_average_matches_hand_computed():
     kernel = np.ones(n, dtype=np.float64) / n
     pad = n // 2
     padded = np.pad(data, ((0, 0), (pad, pad)), mode="edge")
-    expected = np.stack(
-        [np.convolve(padded[i], kernel, mode="valid") for i in range(n_elements)]
-    )
+    expected = np.stack([np.convolve(padded[i], kernel, mode="valid") for i in range(n_elements)])
     np.testing.assert_allclose(out.fields.read("pressure"), expected, rtol=1e-12)
 
 

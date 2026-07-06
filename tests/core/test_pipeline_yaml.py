@@ -34,8 +34,7 @@ def _surface(values: np.ndarray, dt: float = 0.1) -> SurfaceDataSource:
 
 
 def test_pipeline_template_round_trips_minimal_yaml(tmp_path):
-    yaml_text = textwrap.dedent(
-        """
+    yaml_text = textwrap.dedent("""
         name: test
         inputs:
           body:
@@ -51,8 +50,7 @@ def test_pipeline_template_round_trips_minimal_yaml(tmp_path):
           cp:
             source: cp
             path: cp_out
-        """
-    )
+        """)
     yaml_file = tmp_path / "template.yaml"
     yaml_file.write_text(yaml_text)
     template = load_template(yaml_file)
@@ -169,16 +167,14 @@ def test_template_chain_statistics_after_scale():
 
 
 def test_resolve_key_strips_h5_suffix(tmp_path):
-    yaml_text = textwrap.dedent(
-        """
+    yaml_text = textwrap.dedent("""
         name: test
         inputs:
           body:
             kind: surface
             path: my_data.h5
         pipeline: []
-        """
-    )
+        """)
     f = tmp_path / "t.yaml"
     f.write_text(yaml_text)
     tpl = load_template(f)

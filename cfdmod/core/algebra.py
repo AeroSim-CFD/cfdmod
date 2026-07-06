@@ -99,9 +99,7 @@ def _resolve_rhs(
     if isinstance(rhs, (int, float, np.floating, np.integer)):
         return None, classify_broadcast(lhs_shape, None)
     if not isinstance(rhs, DataSource):
-        raise TypeError(
-            f"rhs must be a DataSource, int, or float; got {type(rhs).__name__}"
-        )
+        raise TypeError(f"rhs must be a DataSource, int, or float; got {type(rhs).__name__}")
     rhs_shape = rhs.fields.shape(field)
     rule = classify_broadcast(lhs_shape, rhs_shape)
     rhs_arr = rhs.fields.read(field)
@@ -139,7 +137,9 @@ def _apply(
 
     target = out_field or field
     meta = lhs.field_meta.get(target) or lhs.field_meta.get(field) or FieldMeta(name=target)
-    return lhs.with_field(target, np.asarray(result), meta=meta.model_copy(update={"name": target}))
+    return lhs.with_field(
+        target, np.asarray(result), meta=meta.model_copy(update={"name": target})
+    )
 
 
 def add(

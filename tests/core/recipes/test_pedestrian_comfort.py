@@ -19,9 +19,7 @@ def test_pedestrian_comfort_extracts_then_aggregates():
         elements=ElementMeta(position=pos),
         fields=MemoryFieldStore({"u_mag": u.astype(np.float64)}),
     )
-    out = build_pedestrian_comfort(
-        src, PedestrianComfortConfig(probes=np.array([[0, 0, 0]]))
-    )
+    out = build_pedestrian_comfort(src, PedestrianComfortConfig(probes=np.array([[0, 0, 0]])))
     assert out.kind == "points"
     assert out.time.is_time_aggregated
     assert "mean" in out.field_names

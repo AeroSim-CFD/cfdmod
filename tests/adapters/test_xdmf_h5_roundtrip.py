@@ -27,7 +27,9 @@ import pytest
 from cfdmod.adapters import XdmfH5Storage
 from cfdmod.core import PointsDataSource, SurfaceDataSource
 
-FIXTURE_ROOT = pathlib.Path(__file__).resolve().parents[2] / "fixtures" / "tests" / "pressure" / "data"
+FIXTURE_ROOT = (
+    pathlib.Path(__file__).resolve().parents[2] / "fixtures" / "tests" / "pressure" / "data"
+)
 
 # Only the v2 canonical layout (with /meta) is in scope for Phase 2.
 V2_FIXTURES = [

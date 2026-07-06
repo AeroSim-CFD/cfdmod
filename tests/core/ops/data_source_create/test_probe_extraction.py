@@ -22,9 +22,7 @@ def _column(z: np.ndarray, values: np.ndarray) -> PointsDataSource:
 
 def test_nearest_picks_closest_source_element():
     src = _column(np.array([0.0, 1.0, 2.0]), np.array([[10.0], [20.0], [30.0]]))
-    out = probe_extraction(
-        src, ProbeExtractionParams(probes=np.array([[0, 0, 0.4]]), field="u")
-    )
+    out = probe_extraction(src, ProbeExtractionParams(probes=np.array([[0, 0, 0.4]]), field="u"))
     np.testing.assert_array_equal(out.fields.read("u"), [[10.0]])
 
 
@@ -32,9 +30,7 @@ def test_linear_zaxis_interpolates_between_samples():
     src = _column(np.array([0.0, 1.0, 2.0]), np.array([[0.0], [10.0], [20.0]]))
     out = probe_extraction(
         src,
-        ProbeExtractionParams(
-            probes=np.array([[0, 0, 0.5]]), field="u", mode="linear_zaxis"
-        ),
+        ProbeExtractionParams(probes=np.array([[0, 0, 0.5]]), field="u", mode="linear_zaxis"),
     )
     np.testing.assert_allclose(out.fields.read("u"), [[5.0]])
 

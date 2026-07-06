@@ -31,15 +31,23 @@ def _two_body_lnas(tmp_path: pathlib.Path) -> tuple[pathlib.Path, LnasFormat]:
     """Two square surfaces (4 triangles), spatially disjoint along x."""
     verts = np.array(
         [
-            [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-            [2, 0, 0], [3, 0, 0], [3, 1, 0], [2, 1, 0],
+            [0, 0, 0],
+            [1, 0, 0],
+            [1, 1, 0],
+            [0, 1, 0],
+            [2, 0, 0],
+            [3, 0, 0],
+            [3, 1, 0],
+            [2, 1, 0],
         ],
         dtype=np.float32,
     )
     tris = np.array(
         [
-            [0, 1, 2], [0, 2, 3],
-            [4, 5, 6], [4, 6, 7],
+            [0, 1, 2],
+            [0, 2, 3],
+            [4, 5, 6],
+            [4, 6, 7],
         ],
         dtype=np.uint32,
     )
@@ -117,11 +125,7 @@ def test_overlapping_groups_raise(tmp_path):
             ds,
             RegroupTopologyParams(
                 mesh=str(mesh_path),
-                groupings=[
-                    BySurfaceGrouping(
-                        sets={"all1": ["A", "B"], "all2": ["A", "B"]}
-                    )
-                ],
+                groupings=[BySurfaceGrouping(sets={"all1": ["A", "B"], "all2": ["A", "B"]})],
                 aggregation="sum",
             ),
         )
@@ -139,9 +143,7 @@ def test_chain_with_size_rounded_expands_per_component(tmp_path):
             mesh=str(mesh_path),
             groupings=[
                 BySurfaceGrouping(sets={"left": ["A"], "right": ["B"]}),
-                BySizeRoundedPerComponent(
-                    target_size_x=10.0, name_template="{parent}_c{idx}"
-                ),
+                BySizeRoundedPerComponent(target_size_x=10.0, name_template="{parent}_c{idx}"),
             ],
             aggregation="area_weighted_mean",
         ),
@@ -177,6 +179,4 @@ def test_empty_groupings_raises(tmp_path):
     mesh_path, lnas = _two_body_lnas(tmp_path)
     ds = _surface_ds(lnas, np.zeros((4, 1)))
     with pytest.raises(ValueError, match="empty"):
-        regroup_topology(
-            ds, RegroupTopologyParams(mesh=str(mesh_path), groupings=[])
-        )
+        regroup_topology(ds, RegroupTopologyParams(mesh=str(mesh_path), groupings=[]))

@@ -44,9 +44,7 @@ def _square_two_triangles() -> LnasFormat:
 
     Tri 0 = {0,1,2}; Tri 1 = {0,2,3}; shared edge = (0,2).
     """
-    vertices = np.array(
-        [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], dtype=np.float32
-    )
+    vertices = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], dtype=np.float32)
     triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.uint32)
     geometry = LnasGeometry(vertices=vertices, triangles=triangles)
     return LnasFormat(
@@ -85,9 +83,7 @@ def test_min_triangles_filters_small_components():
     combined_triangles = np.concatenate(
         [sq.geometry.triangles, lone.triangles + n_sq_v], axis=0
     ).astype(np.uint32)
-    combined_geometry = LnasGeometry(
-        vertices=combined_vertices, triangles=combined_triangles
-    )
+    combined_geometry = LnasGeometry(vertices=combined_vertices, triangles=combined_triangles)
     combined = LnasFormat(
         version="v1.0",
         geometry=combined_geometry,
@@ -139,7 +135,11 @@ def test_restrict_to_ignores_outside_edges():
     assert "cc0" in res_restricted.groups
     assert sorted(res_restricted.groups["cc0"].tolist()) == [0, 1]
     # Triangle 2 is excluded entirely.
-    assert all(2 not in idxs.tolist() for name, idxs in res_restricted.groups.items() if name.startswith("cc"))
+    assert all(
+        2 not in idxs.tolist()
+        for name, idxs in res_restricted.groups.items()
+        if name.startswith("cc")
+    )
 
 
 def test_name_template_collision_raises():

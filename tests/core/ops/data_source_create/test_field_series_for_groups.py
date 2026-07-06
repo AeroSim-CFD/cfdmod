@@ -20,9 +20,7 @@ from cfdmod.core.ops.data_source_create import (
 
 
 def _surface() -> SurfaceDataSource:
-    verts = np.array(
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64
-    )
+    verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64)
     tris = np.array([[0, 1, 2], [1, 3, 2], [2, 3, 4], [0, 2, 4]], dtype=np.int32)
     pressure = np.array(
         [
@@ -43,9 +41,7 @@ def _surface() -> SurfaceDataSource:
 
 def test_mean_aggregates_per_group_per_timestep():
     ds = _surface()
-    out = field_series_for_groups(
-        ds, FieldSeriesForGroupsParams(grouping="body", agg="mean")
-    )
+    out = field_series_for_groups(ds, FieldSeriesForGroupsParams(grouping="body", agg="mean"))
     assert out.kind == "groups"
     assert out.n_elements == 2  # two groups
     np.testing.assert_allclose(out.fields.read("pressure")[0], [2.0, 3.0])  # mean of rows 0,1
@@ -54,9 +50,7 @@ def test_mean_aggregates_per_group_per_timestep():
 
 def test_sum_aggregation():
     ds = _surface()
-    out = field_series_for_groups(
-        ds, FieldSeriesForGroupsParams(grouping="body", agg="sum")
-    )
+    out = field_series_for_groups(ds, FieldSeriesForGroupsParams(grouping="body", agg="sum"))
     np.testing.assert_allclose(out.fields.read("pressure")[0], [4.0, 6.0])
     np.testing.assert_allclose(out.fields.read("pressure")[1], [40.0, 60.0])
 
@@ -83,8 +77,6 @@ def test_area_weighted_mean_without_area_raises():
 
 def test_groups_data_source_carries_parent_topology_chain():
     ds = _surface()
-    out = field_series_for_groups(
-        ds, FieldSeriesForGroupsParams(grouping="body", agg="mean")
-    )
+    out = field_series_for_groups(ds, FieldSeriesForGroupsParams(grouping="body", agg="mean"))
     assert out.parent_topology is ds.topology
     assert out.parent_grouping.name == "body"

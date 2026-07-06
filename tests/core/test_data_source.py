@@ -26,9 +26,7 @@ from cfdmod.adapters.memory import MemoryFieldStore
 
 
 def _surface(n_elements: int = 3, n_timesteps: int = 4) -> SurfaceDataSource:
-    verts = np.array(
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 0]], dtype=np.float64
-    )
+    verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 0]], dtype=np.float64)
     tris = np.array([[0, 1, 2], [1, 3, 2], [2, 3, 4]], dtype=np.int32)[:n_elements]
     pressure = np.arange(n_elements * n_timesteps, dtype=np.float64).reshape(
         n_elements, n_timesteps

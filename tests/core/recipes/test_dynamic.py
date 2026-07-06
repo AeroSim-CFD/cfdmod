@@ -26,7 +26,9 @@ def _surface_force(n_e: int = 3, n_t: int = 4) -> SurfaceDataSource:
         time=TimeAxis(initial_time=0.0, timestep_size=0.1, n_timesteps=n_t),
         topology=Topology.triangles(tris, verts),
         elements=ElementMeta(),
-        fields=MemoryFieldStore({"force": np.arange(n_e * n_t, dtype=np.float64).reshape(n_e, n_t)}),
+        fields=MemoryFieldStore(
+            {"force": np.arange(n_e * n_t, dtype=np.float64).reshape(n_e, n_t)}
+        ),
     )
 
 

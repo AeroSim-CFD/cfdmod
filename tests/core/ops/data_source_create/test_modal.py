@@ -14,7 +14,6 @@ from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core import (
     ElementMeta,
     ModesDataSource,
-    PointsDataSource,
     SurfaceDataSource,
     TimeAxis,
     Topology,
@@ -79,9 +78,7 @@ def test_modal_recomposition_requires_modes_data_source():
     with pytest.raises(TypeError):
         modal_recomposition(
             ds,  # type: ignore[arg-type]
-            ModalRecompositionParams(
-                mode_shapes=np.eye(1), target_points=pts, field="force"
-            ),
+            ModalRecompositionParams(mode_shapes=np.eye(1), target_points=pts, field="force"),
         )
 
 

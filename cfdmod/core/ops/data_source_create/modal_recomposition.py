@@ -23,7 +23,7 @@ import numpy as np
 from pydantic import ConfigDict
 
 from cfdmod.adapters.memory import MemoryFieldStore
-from cfdmod.core.data_source import DataSource, ModesDataSource, PointsDataSource
+from cfdmod.core.data_source import ModesDataSource, PointsDataSource
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.ops import OpParams
 from cfdmod.core.topology import ElementMeta, Topology
@@ -61,8 +61,7 @@ def modal_recomposition(ds: ModesDataSource, p: ModalRecompositionParams) -> Poi
     pts = np.asarray(p.target_points, dtype=np.float64)
     if phi.ndim != 2 or phi.shape[0] != pts.shape[0]:
         raise ValueError(
-            f"mode_shapes shape {phi.shape} incompatible with target_points "
-            f"({pts.shape})"
+            f"mode_shapes shape {phi.shape} incompatible with target_points " f"({pts.shape})"
         )
 
     q = np.asarray(ds.fields.read(p.field), dtype=np.float64)

@@ -48,7 +48,9 @@ class FieldSeriesForGroupsParams(OpParams):
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
 
 
-def _aggregate(arr: np.ndarray, members: np.ndarray, agg: AGG_KINDS, weights: np.ndarray | None) -> np.ndarray:
+def _aggregate(
+    arr: np.ndarray, members: np.ndarray, agg: AGG_KINDS, weights: np.ndarray | None
+) -> np.ndarray:
     """Reduce ``arr[members, :]`` along axis 0 using ``agg``."""
     sub = arr[members]
     if agg == "mean":

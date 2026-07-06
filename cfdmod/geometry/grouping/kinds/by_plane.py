@@ -60,9 +60,7 @@ class ByPlaneGrouping(BaseModel):
     ]
 
     @field_validator("normal")
-    def _normal_nonzero(
-        cls, v: tuple[float, float, float]
-    ) -> tuple[float, float, float]:
+    def _normal_nonzero(cls, v: tuple[float, float, float]) -> tuple[float, float, float]:
         if float(np.linalg.norm(v)) == 0.0:
             raise ValueError("normal must be a non-zero vector")
         return v

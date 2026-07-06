@@ -123,7 +123,6 @@ def get_stats_dct_peak_factor(
     stats_type: Literal["min", "max", "mean"],
     peak_factor: float,
 ) -> dict[str, np.ndarray] | dict[str, float]:
-
     resp = {}
     for k, v in dct.items():
         mn = v.mean(axis=0)
@@ -246,7 +245,6 @@ def reescale_event_duration_peak(
     new_time: float,
     extreme_type: Literal["min", "max"],
 ) -> tuple[float, float]:
-
     sign = 1 if extreme_type == "max" else -1
     new_scale = scale
     new_loc = loc + sign * scale * np.log(new_time / original_time)

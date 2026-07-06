@@ -65,9 +65,7 @@ def modal_projection(ds: DataSource, p: ModalProjectionParams) -> ModesDataSourc
 
     f = np.asarray(ds.fields.read(p.field), dtype=np.float64)
     if f.ndim != 2:
-        raise ValueError(
-            f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got {f.shape}"
-        )
+        raise ValueError(f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got {f.shape}")
 
     # Q[i, t] = sum_e phi[e, i] * f[e, t]   -> (n_modes, n_timesteps)
     q = phi.T @ f
@@ -75,9 +73,7 @@ def modal_projection(ds: DataSource, p: ModalProjectionParams) -> ModesDataSourc
     annotations: dict[str, Any] = {}
     if p.mode_labels is not None:
         if len(p.mode_labels) != q.shape[0]:
-            raise ValueError(
-                f"mode_labels length {len(p.mode_labels)} != n_modes {q.shape[0]}"
-            )
+            raise ValueError(f"mode_labels length {len(p.mode_labels)} != n_modes {q.shape[0]}")
         annotations["mode_labels"] = list(p.mode_labels)
 
     src_meta = ds.field_meta.get(p.field)

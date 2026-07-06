@@ -23,9 +23,7 @@ from cfdmod.core.recipes import (
 
 
 def _two_body_surface() -> SurfaceDataSource:
-    verts = np.array(
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64
-    )
+    verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0.5, 0.5, 1]], dtype=np.float64)
     tris = np.array([[0, 1, 2], [1, 3, 2], [2, 3, 4], [0, 2, 4]], dtype=np.int32)
     cp_x = np.array([[1.0], [2.0], [10.0], [20.0]])
     cp_y = np.array([[3.0], [4.0], [30.0], [40.0]])
@@ -58,9 +56,7 @@ def test_cm_pipeline_sums_within_each_group():
 
 
 def test_ce_pipeline_area_weighted_mean_per_zone():
-    verts = np.array(
-        [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=np.float64
-    )
+    verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=np.float64)
     tris = np.array([[0, 1, 2], [1, 3, 2]], dtype=np.int32)
     cp = np.array([[2.0, 4.0], [4.0, 8.0]])
     ds = SurfaceDataSource(

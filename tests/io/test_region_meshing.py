@@ -66,9 +66,7 @@ def test_create_regions_mesh():
     x_intervals = [0.0 - eps, 5.0, 10.0 + eps]
     y_intervals = [0.0 - eps, 10.0 + eps]
     z_intervals = [0.0 - eps, 10.0 + eps]
-    region_mesh = create_regions_mesh(
-        mock_mesh, (x_intervals, y_intervals, z_intervals)
-    )
+    region_mesh = create_regions_mesh(mock_mesh, (x_intervals, y_intervals, z_intervals))
 
     assert len(region_mesh.vertices) == 7
     assert len(region_mesh.triangles) == 6

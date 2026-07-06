@@ -94,9 +94,9 @@ def build_s1(
         topology=Topology.points(new_pos),
         elements=ElementMeta(position=new_pos),
         fields=MemoryFieldStore({cfg.out: s1_arr}),
-        field_meta={cfg.out: s1_full.field_meta.get(cfg.out)}
-        if cfg.out in s1_full.field_meta
-        else {},
+        field_meta=(
+            {cfg.out: s1_full.field_meta.get(cfg.out)} if cfg.out in s1_full.field_meta else {}
+        ),
     )
 
 

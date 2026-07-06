@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from cfdmod.core.container import Container
 
 if TYPE_CHECKING:
-    from cfdmod.hfpi.common import HFPICaseParameters
+    pass
 
 
 HFPIContainer = Container[Any, Any]

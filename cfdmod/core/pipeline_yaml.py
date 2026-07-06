@@ -74,14 +74,13 @@ __all__ = [
 ]
 
 import pathlib
-from typing import Any, Callable, Literal
+from typing import Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.protocols import Storage
 from cfdmod.utils import read_yaml
-
 
 # ---------------------------------------------------------------------------
 # Op registry
@@ -400,9 +399,7 @@ def run_template(
         arity, fn, params_cls = OP_REGISTRY[step.kind]
 
         if step.source not in bindings:
-            raise KeyError(
-                f"step {step_id!r} references unknown source {step.source!r}"
-            )
+            raise KeyError(f"step {step_id!r} references unknown source {step.source!r}")
         ds = bindings[step.source]
         params = _step_params(step, params_cls, template.root)
 
@@ -410,9 +407,7 @@ def run_template(
             if step.rhs is None:
                 raise ValueError(f"step {step_id!r} is binary but has no rhs")
             if step.rhs not in bindings:
-                raise KeyError(
-                    f"step {step_id!r} references unknown rhs {step.rhs!r}"
-                )
+                raise KeyError(f"step {step_id!r} references unknown rhs {step.rhs!r}")
             result = fn(ds, bindings[step.rhs], params)
         else:
             result = fn(ds, params)
@@ -422,9 +417,7 @@ def run_template(
     # 3. Write outputs.
     for _, out in template.outputs.items():
         if out.source not in bindings:
-            raise KeyError(
-                f"output references unknown source {out.source!r}"
-            )
+            raise KeyError(f"output references unknown source {out.source!r}")
         key = _resolve_key(template.root, out.path)
         storage.write_data_source(key, bindings[out.source])
 

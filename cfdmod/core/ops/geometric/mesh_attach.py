@@ -17,7 +17,6 @@ __all__ = ["MeshAttachParams", "mesh_attach"]
 import pathlib
 from typing import ClassVar, Literal
 
-import numpy as np
 from lnas import LnasFormat
 from pydantic import ConfigDict
 

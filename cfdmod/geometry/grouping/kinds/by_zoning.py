@@ -92,11 +92,19 @@ class ByZoningGrouping(BaseModel):
         return v
 
 
-def _regions(spec: ByZoningGrouping) -> list[tuple[int, int, int, int, tuple[float, float, float], tuple[float, float, float]]]:
+def _regions(
+    spec: ByZoningGrouping,
+) -> list[tuple[int, int, int, int, tuple[float, float, float], tuple[float, float, float]]]:
     """Enumerate (linear_idx, ix, iy, iz, lower, upper) for every cell."""
-    x_cells = [(spec.x_intervals[i], spec.x_intervals[i + 1]) for i in range(len(spec.x_intervals) - 1)]
-    y_cells = [(spec.y_intervals[i], spec.y_intervals[i + 1]) for i in range(len(spec.y_intervals) - 1)]
-    z_cells = [(spec.z_intervals[i], spec.z_intervals[i + 1]) for i in range(len(spec.z_intervals) - 1)]
+    x_cells = [
+        (spec.x_intervals[i], spec.x_intervals[i + 1]) for i in range(len(spec.x_intervals) - 1)
+    ]
+    y_cells = [
+        (spec.y_intervals[i], spec.y_intervals[i + 1]) for i in range(len(spec.y_intervals) - 1)
+    ]
+    z_cells = [
+        (spec.z_intervals[i], spec.z_intervals[i + 1]) for i in range(len(spec.z_intervals) - 1)
+    ]
     out = []
     linear = 0
     for (ix, (xlo, xhi)), (iy, (ylo, yhi)), (iz, (zlo, zhi)) in itertools.product(
