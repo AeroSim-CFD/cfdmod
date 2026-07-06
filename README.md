@@ -10,11 +10,14 @@ simulations: pressure (`Cp`), force (`Cf`), moment (`Cm`) and shape (`Ce`)
 coefficients; terrain loft and roughness elements; inflow analysis;
 climate / Weibull / Gumbel statistics; ParaView snapshot automation.
 
-v2.0 redesigned the pressure pipeline around external consumers: an XDMF+H5
-output contract end-to-end, no input mutation, embedded post-processing
-metadata, multi-format geometry (`.lnas` / `.stl` / `.h5` / `.xdmf`), and
-flat output by default. See `docs/source/release_notes.md` for the full
-v2.0 changeset.
+v3 reorganizes post-processing around a single data structure -- the
+`DataSource` (elements on one axis, timesteps on the other, named fields
+plus metadata) -- and composable *ops* driven by YAML **pipeline
+templates**. Every flow (Cp / Cf / Cm / Ce, S1, ...) is now a template run
+with `cfdmod run <template.yaml>`; the legacy per-coefficient functions
+(`run_cp` / `run_cf` / ...) and their `*CaseConfig` models are gone. See
+`docs/source/architecture/v3_migration.md` for the mapping and
+`docs/source/architecture/data_sources.md` for the paradigm.
 
 ## Install
 
@@ -32,7 +35,7 @@ Optional extras:
 | `[geometry]` | Altimetry section + loft helpers (trimesh) |
 | `[notebook]` | jupyter / ipykernel for the worked-example notebook |
 | `[docs]` | sphinx + shibuya theme + nbsphinx for `make html` |
-| `[legacy]` | pandas-HDFStore compat readers (inflow, HFPI static, migrate) |
+| `[legacy]` | pandas-HDFStore compat readers (inflow, HFPI static) |
 
 Install several at once with `pip install
 "aerosim-cfdmod[vtk,geometry,notebook]"`.
@@ -43,156 +46,113 @@ expect the user to install it explicitly at their own license risk.
 
 ## Quickstart
 
-Install the package and run the pipeline against an existing body + probe
-XDMF+H5 pair (the layout produced by the AeroSim CFD solver):
+A pipeline is a YAML template: `inputs` (data sources on disk), a
+`pipeline` of ops, and `outputs`. Run it with the CLI:
 
-```python
-from cfdmod import (
-    BasicStatisticModel, BodyConfig, BodyDefinition, CpCaseConfig, CpConfig,
-    CfCaseConfig, CfConfig, CmCaseConfig, CmConfig, MomentBodyConfig,
-    ZoningModel, run_cp, run_cf, run_cm,
-)
-from cfdmod.io.geometry.transformation_config import TransformationConfig
-
-cp_cfg = CpCaseConfig(
-    pressure_coefficient={
-        "default": CpConfig(
-            statistics=[BasicStatisticModel(stats="mean")],
-            timestep_range=(150.0, 260.0),
-            simul_U_H=1.0,
-            simul_characteristic_length=10.0,
-            # Optional: defaults are 'pressure' and 'probe' respectively.
-            # macroscopic_type: 'pressure' | 'rho'
-            # reference_pressure: 'probe' (point above body) | 'average'
-        )
-    }
-)
-
-# 1) Cp from body + probe; geometry is read from body_h5 by default. Pass
-#    mesh_path= to embed a single fixed-frame reference mesh into the cp_h5
-#    output (useful when running several wind directions whose body H5s are
-#    rotated copies of each other) -- run_cf / run_cm inherit it from cp_h5.
-run_cp(
-    body_h5="body.h5",
-    probe_h5="probe.h5",
-    cfg_path=cp_cfg,        # in-memory config -- YAML path also accepted
-    output="output",
-    # mesh_path optional; .lnas / .stl / .h5 / .xdmf all supported
-)
-
-# 2) Cf from the cp.time_series.h5 produced above. nominal_area is required:
-#    cfdmod will not pick a tribute area for you (so the resulting Cf can be
-#    converted back to Forces unambiguously).
-run_cf(
-    cp_h5="output/cp.default.time_series.h5",
-    cfg_path=CfCaseConfig(
-        bodies={"my_body": BodyDefinition(surfaces=[])},  # [] = whole mesh
-        force_coefficient={
-            "scan": CfConfig(
-                statistics=[BasicStatisticModel(stats="mean")],
-                bodies=[BodyConfig(name="my_body", sub_bodies=ZoningModel())],
-                directions=["x", "y", "z"],
-                nominal_area=100.0,  # m^2 -- e.g. building frontal area
-                transformation=TransformationConfig(),
-            )
-        },
-    ),
-    output="output",
-)
-
-# 3) Cm with per-region overturning moments about each container's footprint
-#    base. lever_strategy="region_bbox_corners_xy" expands every body into
-#    four independent runs (xmin_ymin, xmin_ymax, xmax_ymin, xmax_ymax).
-#    nominal_volume is required (same rationale as nominal_area for Cf).
-run_cm(
-    cp_h5="output/cp.default.time_series.h5",
-    cfg_path=CmCaseConfig(
-        bodies={"my_body": BodyDefinition(surfaces=[])},
-        moment_coefficient={
-            "scan": CmConfig(
-                statistics=[BasicStatisticModel(stats="mean")],
-                bodies=[
-                    MomentBodyConfig(
-                        name="my_body",
-                        sub_bodies=ZoningModel(),
-                        lever_strategy="region_bbox_corners_xy",
-                    )
-                ],
-                directions=["x", "y", "z"],
-                nominal_volume=1000.0,  # m^3 -- e.g. building bounding-box volume
-                transformation=TransformationConfig(),
-            )
-        },
-    ),
-    output="output",
-)
+```bash
+cfdmod run path/to/cp.yaml
 ```
 
-`output/` afterwards contains, flat:
+A minimal Cp template -- subtract a static-pressure probe, divide by the
+dynamic pressure, reduce to per-triangle statistics:
 
-| File | Contents |
-|---|---|
-| `cp.{label}.time_series.{h5,xdmf}` | Cp animation on the full mesh |
-| `Cf.{label}.{body}.time_series.{h5,xdmf}` | Cf animation per body (3 directional Attributes per timestep) |
-| `Cm.{label}.{body}[.{case}].time_series.{h5,xdmf}` | Cm animation per body / case |
-| `Ce.{label}.time_series.{h5,xdmf}` | Ce animation on the sliced regions mesh |
-| `Ce.{label}.regions.stl` | Cut regions mesh as STL |
-| `stats.{h5,xdmf}` | Combined statistics with one Grid per leaf group |
-
-Every output H5 carries the post-processing config under
-`/processing_metadata/`; read it back with
-`cfdmod.io.read_processing_metadata(path, group)`.
-
-## Filtering between coefficients
-
-Filters are an opt-in pipeline step: take any `*.time_series.h5`,
-apply a chain in order, and write a new `*.time_series.h5` with the
-applied chain recorded under `/processing_metadata`. Cf / Cm / Ce
-then consume the filtered file in place of the raw Cp.
-
-```python
-from cfdmod import MovingAverageFilter, apply_filters
-
-apply_filters(
-    input_h5="output/cp.default.time_series.h5",
-    output_h5="output/cp.default.smoothed.time_series.h5",
-    filters=[MovingAverageFilter(window=3.0)],   # in input time units
-    group="cp",
-)
-# Then point run_cf / run_cm at the smoothed file.
+```yaml
+name: cp
+inputs:
+  body:                          # surface pressure per triangle per timestep
+    kind: surface
+    path: bodies.my_case         # -> bodies.my_case.h5 (+ .xdmf)
+  p_ref:                         # static reference probe. Must be named points.*
+    kind: points
+    path: points.static_pressure
+pipeline:
+  - id: cp_unscaled              # p - p_ref  (column-wise broadcast)
+    kind: sub
+    source: body
+    rhs: p_ref
+    field: pressure
+    out: cp
+  - id: cp_t                     # / dynamic pressure q  (scale = 1/q)
+    kind: scale
+    source: cp_unscaled
+    field: cp
+    factor: 800.0
+  - id: cp_stats                 # collapse the time axis
+    kind: statistics
+    source: cp_t
+    field: cp
+    kinds: [mean, rms, min, max]
+outputs:
+  cp_timeseries: {source: cp_t, path: out/cp.time_series}
+  cp_stats:      {source: cp_stats, path: out/cp.stats}
 ```
 
-`MovingAverageFilter.window` is in the same units as the input file's
-time axis (raw solver time when `CpConfig.normalize_time=False`, the
-default; convective time when `True`) -- the filter performs no
-implicit unit conversion.
+Or drive it from Python over any storage backend -- the same recipe code
+runs against an in-memory store (great for notebooks / tests, no files
+needed) or the on-disk XDMF+H5 store:
 
-## Worked example notebook
+```python
+from cfdmod import load_template, run_template, XdmfH5Storage
 
-`notebooks/process_container_pack.ipynb` runs the full Cp/Cf/Cm pipeline on
-a multi-container body, auto-detects container partition from triangle
-centroids using a >1 m gap rule, and produces a four-corner overturning
-moment scan per container -- without authoring any surfaces or sub-bodies.
-Drop a body H5 and a probe H5 next to the repo root and execute the
-notebook top-to-bottom.
+template = load_template("cp.yaml")
+bindings = run_template(template, storage=XdmfH5Storage(root="."))
+cp_t = bindings["cp_t"]          # a SurfaceDataSource; cp_t.fields.read("cp")
+```
+
+`load_template` validates the whole template up front (unknown op kinds,
+dangling `source`/`rhs` refs, duplicate ids, typo'd fields) before any
+file is read.
+
+> **Filename convention:** the XDMF+H5 storage infers a source's kind from
+> its filename -- a probe must be named `points.*` to load as a points
+> source; everything else loads as a surface. The `kind:` you declare in
+> the template is checked against the loaded kind.
+
+Cf / Cm / Ce build on a Cp time series by attaching the mesh
+(`mesh_attach`), grouping triangles (`body_grouping` / `zoning_grouping`),
+and aggregating (`force_contribution` / `moment_contribution` +
+`field_series_for_groups`). Complete, runnable templates for all four ship
+under `fixtures/tests/pressure/templates/`.
+
+## Examples
+
+- **Tutorials** (`notebooks/tutorials/`): `01_data_sources` -> `02_recipes`
+  -> `03_pipelines` -> `04_containers`, building from the data structure to
+  full pipelines. All run on synthetic data with no fixtures.
+- **Per-coefficient walkthroughs** (`docs/source/use_cases/pressure/coefficients/`):
+  `calculate_{cp,Cf,Cm,Ce}.ipynb` run the shipped templates against the
+  bundled `galpao` wind-tunnel fixture.
+- **End-to-end** (`notebooks/process_container_pack.ipynb`): a Cp/Cf/Cm/Ce
+  pipeline over a multi-container body.
+- **Template reference**: `fixtures/tests/pressure/templates/{cp,cf,cm,ce}.yaml`.
+
+## Smoothing as a pipeline step
+
+Signal smoothing is just another op -- insert a `moving_average` step and
+downstream ops consume the smoothed field. The window is in the source's
+time units; no implicit unit conversion.
+
+```yaml
+  - id: cp_smoothed
+    kind: moving_average
+    source: cp_t
+    field: cp
+    window: 3.0
+    out: cp
+```
 
 ## CLI
 
-The same pipeline is reachable via `python -m cfdmod pressure` (or `cfdmod
-pressure` after install):
-
 ```bash
-python -m cfdmod pressure cp \
-    --body body.h5 --probe probe.h5 \
-    --config cp.yaml --output output
-
-python -m cfdmod pressure cm \
-    --cp output/cp.default.time_series.h5 \
-    --config cm.yaml --output output
+cfdmod run <template.yaml>     # run a v3 pipeline template
+cfdmod loft ...                # terrain loft surfaces
+cfdmod roughness ...           # roughness elements (linear / radial)
+cfdmod regroup ...             # split/reorder mesh triangles via a grouping chain
+cfdmod altimetry ...           # altimetry section profiles
 ```
 
-`--mesh` is optional; it accepts `.lnas` / `.stl` / `.h5` / `.xdmf` and
-defaults to the geometry embedded in `--body` / `--cp`.
+`python -m cfdmod <command>` works identically. `cfdmod run` prints a
+one-line error (not a traceback) on a bad template and exits non-zero.
 
 ## Development
 
@@ -205,7 +165,7 @@ uv run pytest                          # full default suite (excludes -m perf)
 uv run pytest -m unit                  # pure-function tests
 uv run pytest -m integration           # end-to-end pipeline tests
 uv run pytest -m perf                  # opt-in synthetic big-data benchmarks
-uv run pytest tests/io tests/pressure  # the v2 pipeline scope
+uv run pytest tests/core tests/adapters  # the v3 data-source / storage layer
 ```
 
 The perf run writes a markdown + JSON report (Python heap peak +

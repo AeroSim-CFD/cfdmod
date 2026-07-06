@@ -10,6 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core import (
     ElementMeta,
     FieldMeta,
@@ -22,7 +23,6 @@ from cfdmod.core import (
     Topology,
     VolumeDataSource,
 )
-from cfdmod.adapters.memory import MemoryFieldStore
 
 
 def _surface(n_elements: int = 3, n_timesteps: int = 4) -> SurfaceDataSource:
