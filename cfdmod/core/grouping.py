@@ -22,12 +22,16 @@ __all__ = [
     "Grouping",
     "groups_in",
     "elements_in_group",
+    "AggregationKind",
+    "aggregate_rows",
 ]
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, field_validator
+
+AggregationKind = Literal["mean", "sum", "max", "min", "area_weighted_mean"]
 
 
 class Grouping(BaseModel):
@@ -92,3 +96,38 @@ def groups_in(grouping: Grouping, *, include_ungrouped: bool = False) -> np.ndar
 def elements_in_group(grouping: Grouping, group_id: int) -> np.ndarray:
     """Indices of every element belonging to ``group_id``."""
     return np.flatnonzero(grouping.indices == int(group_id))
+
+
+def aggregate_rows(
+    arr: np.ndarray,
+    members: np.ndarray,
+    agg: AggregationKind,
+    weights: np.ndarray | None = None,
+) -> np.ndarray:
+    """Reduce ``arr[members]`` along axis 0 using ``agg``.
+
+    Shared by ``field_series_for_groups`` and ``regroup_topology``.
+    ``area_weighted_mean`` requires ``weights`` (per-element areas) and
+    raises if the selected members have non-positive total weight (e.g.
+    an empty group).
+    """
+    sub = arr[members]
+    if agg == "mean":
+        return sub.mean(axis=0)
+    if agg == "sum":
+        return sub.sum(axis=0)
+    if agg == "max":
+        return sub.max(axis=0)
+    if agg == "min":
+        return sub.min(axis=0)
+    if agg == "area_weighted_mean":
+        if weights is None:
+            raise ValueError("area_weighted_mean requires per-element weights (areas)")
+        w = weights[members]
+        total = w.sum()
+        if total <= 0:
+            raise ValueError("area_weighted_mean: total area is non-positive")
+        if sub.ndim == 1:
+            return float((sub * w).sum() / total)
+        return (sub * w[:, None]).sum(axis=0) / total
+    raise ValueError(f"unknown aggregation {agg!r}")

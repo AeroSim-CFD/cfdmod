@@ -27,6 +27,18 @@ from cfdmod.core.ops.data_source_create.field_series_for_groups import (
 
 
 class CmRecipeConfig(BaseModel):
+    """Cm recipe parameters.
+
+    Attributes:
+        grouping: Name of the grouping in ``ds.groupings`` mapping
+            elements to body ids.
+        directions: Force/moment directions to aggregate. For each entry
+            ``d`` the recipe sums the ``<prefix>_<d>`` field over each
+            body (net moment).
+        prefix: Source field prefix; ``"cm"`` for the standard
+            per-element moment-contribution convention.
+    """
+
     model_config = ConfigDict(frozen=True)
 
     grouping: str

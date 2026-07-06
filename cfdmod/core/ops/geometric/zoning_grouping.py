@@ -70,9 +70,10 @@ def zoning_grouping(ds: DataSource, p: ZoningGroupingParams) -> DataSource:
             f"{ds.n_elements} elements."
         )
 
+    # Raster region id uses (nx, ny); nz only informs name uniqueness via
+    # the per-cell "ix-iy-iz" group names produced by apply_groupings.
     nx = max(len(p.x_intervals) - 1, 1)
     ny = max(len(p.y_intervals) - 1, 1)
-    nz = max(len(p.z_intervals) - 1, 1)
 
     spec = ByZoningGrouping(
         x_intervals=_normalize_intervals(p.x_intervals),
@@ -89,5 +90,4 @@ def zoning_grouping(ds: DataSource, p: ZoningGroupingParams) -> DataSource:
         region_id = ix + nx * iy + (nx * ny) * iz
         indices[tris] = region_id
 
-    del nz  # nz informs naming uniqueness via the template; raster id uses (nx, ny)
     return ds.with_grouping(Grouping(name=p.name, indices=indices))

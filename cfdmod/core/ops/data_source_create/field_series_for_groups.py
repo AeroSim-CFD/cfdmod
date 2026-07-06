@@ -20,11 +20,12 @@ import numpy as np
 from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource, GroupsDataSource
 from cfdmod.core.field_meta import FieldMeta
-from cfdmod.core.grouping import Grouping, groups_in
+from cfdmod.core.grouping import AggregationKind, Grouping, aggregate_rows, groups_in
 from cfdmod.core.ops import OpParams
 from cfdmod.core.topology import ElementMeta
 
-AGG_KINDS = Literal["mean", "sum", "area_weighted_mean", "max", "min"]
+# Backwards-compatible alias; the canonical name lives in cfdmod.core.grouping.
+AGG_KINDS = AggregationKind
 
 
 class FieldSeriesForGroupsParams(OpParams):
@@ -48,32 +49,6 @@ class FieldSeriesForGroupsParams(OpParams):
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
 
 
-def _aggregate(
-    arr: np.ndarray, members: np.ndarray, agg: AGG_KINDS, weights: np.ndarray | None
-) -> np.ndarray:
-    """Reduce ``arr[members, :]`` along axis 0 using ``agg``."""
-    sub = arr[members]
-    if agg == "mean":
-        return sub.mean(axis=0)
-    if agg == "sum":
-        return sub.sum(axis=0)
-    if agg == "max":
-        return sub.max(axis=0)
-    if agg == "min":
-        return sub.min(axis=0)
-    if agg == "area_weighted_mean":
-        if weights is None:
-            raise ValueError("area_weighted_mean requires elements.area")
-        w = weights[members]
-        total = w.sum()
-        if total <= 0:
-            raise ValueError("area_weighted_mean: total area is non-positive")
-        if sub.ndim == 1:
-            return float((sub * w).sum() / total)
-        return (sub * w[:, None]).sum(axis=0) / total
-    raise ValueError(f"unknown aggregation {agg!r}")
-
-
 def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> GroupsDataSource:
     if p.grouping not in ds.groupings:
         raise KeyError(f"grouping {p.grouping!r} not found on data source")
@@ -93,7 +68,7 @@ def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> Gr
     out_arr = np.zeros((n_groups, n_t)) if is_time else np.zeros(n_groups)
     for row, gid in enumerate(group_ids):
         members = np.flatnonzero(grouping.indices == gid)
-        out_arr[row] = _aggregate(arr, members, p.agg, weights)
+        out_arr[row] = aggregate_rows(arr, members, p.agg, weights)
 
     target = p.out or p.field
     src_meta = ds.field_meta.get(p.field)

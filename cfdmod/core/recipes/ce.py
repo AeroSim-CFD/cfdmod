@@ -24,6 +24,16 @@ from cfdmod.core.ops.data_source_create.field_series_for_groups import (
 
 
 class CeRecipeConfig(BaseModel):
+    """Ce recipe parameters.
+
+    Attributes:
+        grouping: Name of the zoning grouping in ``ds.groupings`` (one
+            group per region), typically produced by the
+            ``zoning_grouping`` op.
+        field: Source field to aggregate (``"cp"`` by convention).
+        out: Output field name on the resulting groups source.
+    """
+
     model_config = ConfigDict(frozen=True)
 
     grouping: str

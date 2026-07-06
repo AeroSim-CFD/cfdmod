@@ -30,7 +30,7 @@ from pydantic import ConfigDict, Field
 from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource, GroupsDataSource
 from cfdmod.core.field_meta import FieldMeta
-from cfdmod.core.grouping import Grouping
+from cfdmod.core.grouping import AggregationKind, Grouping, aggregate_rows
 from cfdmod.core.ops import OpParams
 from cfdmod.core.topology import ElementMeta, Topology
 from cfdmod.geometry.grouping import (
@@ -38,8 +38,6 @@ from cfdmod.geometry.grouping import (
     apply_groupings,
     expand_size_rounded_chain,
 )
-
-AggregationKind = Literal["mean", "sum", "max", "min", "area_weighted_mean"]
 
 
 class RegroupTopologyParams(OpParams):
@@ -101,34 +99,6 @@ def _build_parent_grouping(
     )
 
 
-def _aggregate(
-    arr: np.ndarray,
-    members: np.ndarray,
-    agg: AggregationKind,
-    weights: np.ndarray | None,
-) -> np.ndarray:
-    sub = arr[members]
-    if agg == "mean":
-        return sub.mean(axis=0)
-    if agg == "sum":
-        return sub.sum(axis=0)
-    if agg == "max":
-        return sub.max(axis=0)
-    if agg == "min":
-        return sub.min(axis=0)
-    if agg == "area_weighted_mean":
-        if weights is None:
-            raise ValueError("area_weighted_mean requires triangle areas")
-        w = weights[members]
-        total = w.sum()
-        if total <= 0:
-            raise ValueError("area_weighted_mean: total area is non-positive")
-        if sub.ndim == 1:
-            return float((sub * w).sum() / total)
-        return (sub * w[:, None]).sum(axis=0) / total
-    raise ValueError(f"unknown aggregation {agg!r}")
-
-
 def regroup_topology(ds: DataSource, p: RegroupTopologyParams) -> GroupsDataSource:
     if ds.topology is None or ds.topology.cell_type != "triangle":
         raise ValueError("regroup_topology requires a triangle (surface) parent")
@@ -173,7 +143,7 @@ def regroup_topology(ds: DataSource, p: RegroupTopologyParams) -> GroupsDataSour
         n_t = arr.shape[1] if is_time else 0
         out_arr = np.zeros((n_groups, n_t)) if is_time else np.zeros(n_groups)
         for row, members in enumerate(members_per_group):
-            out_arr[row] = _aggregate(arr, members, p.aggregation, weights)
+            out_arr[row] = aggregate_rows(arr, members, p.aggregation, weights)
         new_arrays[fname] = out_arr
         src_meta = ds.field_meta.get(fname)
         new_meta[fname] = (

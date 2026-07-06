@@ -1,22 +1,22 @@
-"""Cf recipe -- aggregate Cp into per-body force coefficients.
+"""Cf recipe -- per-body directional aggregation of Cp components.
 
-Per the odt::
+.. note::
 
-    container of Cps + grouping -> grouped Cps
-    container of grouped Cps    -> aggregate series on groups
+   This small-data recipe computes the **area-weighted mean** of
+   pre-existing per-direction Cp fields (``cp_x``/``cp_y``/``cp_z``) over
+   each body -- a directional mean pressure coefficient. It is *not* the
+   summed force coefficient; the canonical Cf (``-cp*area*n`` summed per
+   body via ``force_contribution`` + ``field_series_for_groups(sum)``) is
+   the ``fixtures/tests/pressure/templates/cf.yaml`` template run through
+   ``cfdmod run``. Unlike :mod:`cfdmod.core.recipes.cm` (which sums moment
+   contributions), this recipe means the components; the two differ on
+   purpose. The caller must supply the ``cp_<dir>`` fields -- no built-in
+   op produces them.
 
-Concretely, given a Cp data source with a ``"body"`` grouping
-(triangle -> body id), the recipe builds a :class:`GroupsDataSource`
-whose fields are the area-weighted-mean Cp on each direction component.
-
-When the input has multiple direction-component fields
-(``cp_x``, ``cp_y``, ``cp_z``) the recipe produces one output field per
-direction, all on the same groups data source.
-
-For a full disk-first pipeline (mesh attachment, body grouping,
-per-direction force contribution, statistics), see the YAML template
-under ``fixtures/tests/pressure/templates/cf.yaml`` and the
-``cfdmod run`` CLI command.
+Given a Cp data source with a ``"body"`` grouping (triangle -> body id)
+and per-direction ``cp_<dir>`` fields, the recipe builds a
+:class:`GroupsDataSource` with one output field per direction, all on the
+same groups data source.
 """
 
 from __future__ import annotations
