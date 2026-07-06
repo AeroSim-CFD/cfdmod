@@ -26,6 +26,7 @@
 - Testing: pytest, fixture files under `fixtures/tests/`, tests mirror source structure under `tests/`.
 - **Plans for issues belong on the issue.** When you produce an implementation plan tied to an existing GitHub issue, post it as a comment on that issue (`gh issue comment <n>`) so the design lives next to the work item.
 - **Implement on a feature branch, not on main.** Before starting any non-trivial implementation, create a branch (`git checkout -b feat/<short-name>` or `fix/<short-name>`) off main and commit work there in logical chunks. Never accumulate uncommitted work on main.
+- **Always push commits.** After committing on a feature branch, push it to `origin` (`git push`) so the remote branch / PR stays current. Do not leave commits sitting only in the local worktree.
 
 ---
 
