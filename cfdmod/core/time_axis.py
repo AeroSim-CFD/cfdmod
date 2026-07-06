@@ -60,13 +60,13 @@ class TimeAxis(BaseModel):
     time_normalized_offset: Annotated[
         float | None,
         Field(
-            default=None,
+            None,
             description=(
                 "Offset for reporting normalized time. None -> use initial_time, so "
                 "time_normalized[0] == 0."
             ),
         ),
-    ] = None
+    ]
 
     @model_validator(mode="after")
     def _check_step(self) -> "TimeAxis":
