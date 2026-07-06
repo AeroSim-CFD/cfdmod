@@ -10,11 +10,11 @@ fan-out spec that ``run_regroup`` resolves before invoking
 from __future__ import annotations
 
 import pathlib
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
-from cfdmod.geometry.grouping.specs import GroupingSpec
+from cfdmod.geometry.grouping.regroup import BySizeRoundedPerComponent, RegroupSpec
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.utils import read_yaml
 
@@ -22,84 +22,6 @@ __all__ = [
     "BySizeRoundedPerComponent",
     "RegroupSpec",
     "RegroupConfig",
-]
-
-
-class BySizeRoundedPerComponent(BaseModel):
-    """Per-component target-size subdivision with rounded division counts.
-
-    For each group produced by the prior chain, derive per-axis
-    ``n_div = max(min_n_div, round(extent / target_size))`` from the
-    centroid bounding box restricted to that group, then append a
-    :class:`cfdmod.geometry.grouping.ByDivisionsGrouping` with
-    ``restrict_to=[group_name]``. Expansion is performed by
-    :func:`cfdmod.regroup.run.expand_regroup_chain`; this spec never
-    reaches :func:`cfdmod.geometry.grouping.apply_groupings` directly.
-
-    Args:
-        kind: Discriminator literal, always ``"by_size_rounded_per_component"``.
-        target_size_x, target_size_y, target_size_z: Desired cell size
-            along each axis. ``None`` means "do not bin along this axis".
-        name_template: Format string for output group names. Available
-            placeholders: ``{parent}`` (the source group name) and
-            ``{idx}``, ``{ix}``, ``{iy}``, ``{iz}`` (cell indices within
-            the parent). The substituted-in template forwarded to
-            ``ByDivisionsGrouping`` therefore drops ``{parent}``.
-        min_n_div: Floor for the per-axis rounded count (default 1).
-        restrict_to: Optional list of earlier group names whose triangles
-            define the parent components to fan out over. ``None`` means
-            "use the full result of the chain so far".
-    """
-
-    kind: Literal["by_size_rounded_per_component"] = "by_size_rounded_per_component"
-    target_size_x: Annotated[
-        float | None,
-        Field(None, gt=0.0, description="Target cell size along x; None = no x binning."),
-    ]
-    target_size_y: Annotated[
-        float | None,
-        Field(None, gt=0.0, description="Target cell size along y; None = no y binning."),
-    ]
-    target_size_z: Annotated[
-        float | None,
-        Field(None, gt=0.0, description="Target cell size along z; None = no z binning."),
-    ]
-    name_template: Annotated[
-        str,
-        Field(
-            "{parent}_r{idx}",
-            description=(
-                "Format string for group names. Placeholders: "
-                "{parent} (source group), {idx} (linear), {ix}, {iy}, {iz}."
-            ),
-        ),
-    ]
-    min_n_div: Annotated[
-        int,
-        Field(1, ge=1, description="Floor for the per-axis rounded division count."),
-    ]
-    restrict_to: Annotated[
-        list[str] | None,
-        Field(None, description="Optional list of earlier group names to fan out over."),
-    ]
-
-    @model_validator(mode="after")
-    def _at_least_one_target(self) -> "BySizeRoundedPerComponent":
-        if (
-            self.target_size_x is None
-            and self.target_size_y is None
-            and self.target_size_z is None
-        ):
-            raise ValueError(
-                "BySizeRoundedPerComponent requires at least one of "
-                "target_size_x / target_size_y / target_size_z to be set."
-            )
-        return self
-
-
-RegroupSpec = Annotated[
-    Union[GroupingSpec, BySizeRoundedPerComponent],
-    Field(discriminator="kind"),
 ]
 
 

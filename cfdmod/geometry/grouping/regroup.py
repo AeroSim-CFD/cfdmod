@@ -24,7 +24,7 @@ from typing import Annotated, Literal, Union
 
 import numpy as np
 from lnas import LnasFormat
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from cfdmod.geometry.grouping.base import apply_groupings
 from cfdmod.geometry.grouping.kinds.by_divisions import ByDivisionsGrouping
@@ -53,6 +53,9 @@ class BySizeRoundedPerComponent(BaseModel):
             the inner :class:`ByDivisionsGrouping`.
         min_n_div: Floor for the rounded division count per axis;
             defaults to 1.
+        restrict_to: Optional list of earlier group names whose triangles
+            define the parent components to fan out over. ``None`` (the
+            default) means "use every group produced by the prior chain".
     """
 
     kind: Literal["by_size_rounded_per_component"] = "by_size_rounded_per_component"
@@ -82,6 +85,23 @@ class BySizeRoundedPerComponent(BaseModel):
         int,
         Field(1, ge=1, description="Floor for the rounded division count."),
     ]
+    restrict_to: Annotated[
+        list[str] | None,
+        Field(None, description="Optional list of earlier group names to fan out over."),
+    ]
+
+    @model_validator(mode="after")
+    def _at_least_one_target(self) -> "BySizeRoundedPerComponent":
+        if (
+            self.target_size_x is None
+            and self.target_size_y is None
+            and self.target_size_z is None
+        ):
+            raise ValueError(
+                "BySizeRoundedPerComponent requires at least one of "
+                "target_size_x / target_size_y / target_size_z to be set."
+            )
+        return self
 
 
 RegroupSpec = Annotated[
@@ -154,10 +174,23 @@ def expand_size_rounded_chain(
         prefix_result = apply_groupings(mesh, expanded)
         parent_groups = prefix_result.groups
 
+        if spec.restrict_to is not None:
+            missing = [n for n in spec.restrict_to if n not in parent_groups]
+            if missing:
+                raise ValueError(
+                    f"expand_size_rounded_chain: BySizeRoundedPerComponent at "
+                    f"position {i} restrict_to references unknown groups {missing}. "
+                    f"Available: {sorted(parent_groups)}"
+                )
+            parent_names = list(spec.restrict_to)
+        else:
+            parent_names = list(parent_groups.keys())
+
         triangles = mesh.geometry.triangle_vertices
         centroids = np.mean(triangles, axis=1)
 
-        for parent_name, parent_idxs in parent_groups.items():
+        for parent_name in parent_names:
+            parent_idxs = parent_groups[parent_name]
             if parent_idxs.size == 0:
                 continue
             cand = centroids[parent_idxs]
