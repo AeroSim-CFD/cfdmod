@@ -17,6 +17,13 @@ public API in ``cfdmod`` remains unchanged.
 from __future__ import annotations
 
 from cfdmod.core.container import Container
+from cfdmod.core.errors import (
+    CfdmodError,
+    OpError,
+    StorageKeyError,
+    TemplateError,
+    TemplateReferenceError,
+)
 from cfdmod.core.data_source import (
     DataSource,
     GroupsDataSource,
@@ -30,12 +37,15 @@ from cfdmod.core.grouping import Grouping, elements_in_group, groups_in
 from cfdmod.core.pipeline import Pipeline, compose, identity
 from cfdmod.core.pipeline_yaml import (
     OP_REGISTRY,
+    OpInfo,
     PipelineTemplate,
+    list_ops,
     load_template,
+    op_info,
     register_op,
     run_template,
 )
-from cfdmod.core.protocols import FieldStore, Logger, Pool, Storage
+from cfdmod.core.protocols import BlobStore, FieldStore, Logger, Pool, Storage
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import CellType, ElementMeta, Topology
 
@@ -56,6 +66,7 @@ __all__ = [
     "identity",
     "FieldStore",
     "Storage",
+    "BlobStore",
     "Logger",
     "Pool",
     "TimeAxis",
@@ -67,4 +78,12 @@ __all__ = [
     "PipelineTemplate",
     "OP_REGISTRY",
     "register_op",
+    "OpInfo",
+    "list_ops",
+    "op_info",
+    "CfdmodError",
+    "TemplateError",
+    "TemplateReferenceError",
+    "OpError",
+    "StorageKeyError",
 ]

@@ -12,6 +12,7 @@ __all__ = ["MemoryStorage"]
 from typing import Iterable
 
 from cfdmod.core.data_source import DataSource
+from cfdmod.core.errors import StorageKeyError
 
 
 class MemoryStorage:
@@ -39,7 +40,7 @@ class MemoryStorage:
 
     def read_data_source(self, key: str) -> DataSource:
         if key not in self._items:
-            raise KeyError(f"MemoryStorage has no data source under key {key!r}")
+            raise StorageKeyError(f"MemoryStorage has no data source under key {key!r}")
         return self._items[key]
 
     def write_data_source(self, key: str, ds: DataSource) -> None:

@@ -23,7 +23,6 @@ __all__ = ["run_yaml"]
 
 import pathlib
 
-from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.pipeline_yaml import load_template, run_template
 
@@ -48,6 +47,10 @@ def run_yaml(
         step outputs). Outputs declared in the YAML are written through
         the storage as a side effect.
     """
+    # Imported here (not at module top) so importing cfdmod.core.recipes stays
+    # free of h5py -- the schema / catalog surface must import light (#147).
+    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
+
     template_path = pathlib.Path(template_path)
     template = load_template(template_path)
 

@@ -7,7 +7,8 @@ this is the property phase 2 round-trip tests assert on every
 fixture.
 """
 
+from cfdmod.adapters.xdmf_h5.blob_storage import XdmfH5BlobStorage
 from cfdmod.adapters.xdmf_h5.field_store import H5FieldStore
 from cfdmod.adapters.xdmf_h5.storage import XdmfH5Storage
 
-__all__ = ["H5FieldStore", "XdmfH5Storage"]
+__all__ = ["H5FieldStore", "XdmfH5Storage", "XdmfH5BlobStorage"]

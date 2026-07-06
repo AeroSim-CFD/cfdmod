@@ -51,6 +51,9 @@ class ModalRecompositionParams(OpParams):
     out: str = "u"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    consumes: ClassVar[frozenset[str] | None] = frozenset({"modes"})
+    produces: ClassVar[str] = "points"
+    replaces_fields: ClassVar[bool] = True
 
 
 def modal_recomposition(ds: ModesDataSource, p: ModalRecompositionParams) -> PointsDataSource:

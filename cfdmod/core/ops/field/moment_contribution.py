@@ -53,6 +53,13 @@ class MomentContributionParams(OpParams):
     out_prefix: str = "cm"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    requires_element_meta: ClassVar[frozenset[str]] = frozenset({"position"})
+
+    def consumed_fields(self) -> frozenset[str]:
+        return frozenset(f"{self.in_prefix}_{d}" for d in self.directions)
+
+    def produced_fields(self) -> frozenset[str]:
+        return frozenset(f"{self.out_prefix}_{d}" for d in self.directions)
 
 
 def moment_contribution(ds: DataSource, p: MomentContributionParams) -> DataSource:

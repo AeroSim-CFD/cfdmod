@@ -53,6 +53,8 @@ class ModalProjectionParams(OpParams):
     mode_labels: list[str] | None = None
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    produces: ClassVar[str] = "modes"
+    replaces_fields: ClassVar[bool] = True
 
 
 def modal_projection(ds: DataSource, p: ModalProjectionParams) -> ModesDataSource:

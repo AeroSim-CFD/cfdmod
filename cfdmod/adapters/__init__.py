@@ -17,12 +17,39 @@ CLIs) wires them in by constructing a :class:`Context`.
 
 from __future__ import annotations
 
-from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
-from cfdmod.adapters.xdmf_h5 import H5FieldStore, XdmfH5Storage
+import importlib
+from typing import Any
 
 __all__ = [
     "MemoryFieldStore",
     "MemoryStorage",
+    "MemoryBlobStore",
     "H5FieldStore",
     "XdmfH5Storage",
+    "XdmfH5BlobStorage",
 ]
+
+# Lazy so importing the light in-RAM adapter (which the ops layer does) does
+# not drag in the h5py-backed xdmf_h5 adapter and, through it, cfdmod.io
+# (pandas / pyarrow). See issue #147.
+_SYMBOL_MODULE = {
+    "MemoryFieldStore": "cfdmod.adapters.memory",
+    "MemoryStorage": "cfdmod.adapters.memory",
+    "MemoryBlobStore": "cfdmod.adapters.memory",
+    "H5FieldStore": "cfdmod.adapters.xdmf_h5",
+    "XdmfH5Storage": "cfdmod.adapters.xdmf_h5",
+    "XdmfH5BlobStorage": "cfdmod.adapters.xdmf_h5",
+}
+
+
+def __getattr__(name: str) -> Any:
+    module_path = _SYMBOL_MODULE.get(name)
+    if module_path is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(importlib.import_module(module_path), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(__all__) | set(globals()))

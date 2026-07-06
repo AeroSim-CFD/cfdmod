@@ -69,6 +69,8 @@ class RegroupTopologyParams(OpParams):
     grouping_name: str = "regroup"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    consumes: ClassVar[frozenset[str] | None] = frozenset({"surface"})
+    produces: ClassVar[str] = "groups"
 
 
 def _build_parent_grouping(

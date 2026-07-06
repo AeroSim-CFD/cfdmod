@@ -28,6 +28,7 @@ from __future__ import annotations
 __all__ = [
     "FieldStore",
     "Storage",
+    "BlobStore",
     "Logger",
     "Pool",
 ]
@@ -158,6 +159,40 @@ class Storage(Protocol):
 
     def keys(self) -> Iterable[str]:
         """Iterate the logical keys held by this storage."""
+        ...
+
+
+@runtime_checkable
+class BlobStore(Protocol):
+    """A flat key -> bytes blob backend.
+
+    The seam between cfdmod's on-disk XDMF+H5 byte layout and a
+    non-filesystem backing store (an object store such as S3, a database
+    blob column, an in-RAM dict). A consumer implements these four
+    methods over their client of choice; cfdmod stays free of any cloud
+    SDK. :class:`cfdmod.adapters.xdmf_h5.XdmfH5BlobStorage` pairs a
+    ``BlobStore`` with the existing XDMF+H5 reader/writer so a template
+    can run against object storage with no other change.
+
+    Keys are the full object names *including* extension
+    (``"out/cp.time_series.h5"``), so the ``.h5`` and its optional
+    ``.xdmf`` sidecar are distinct blobs.
+    """
+
+    def get_bytes(self, key: str) -> bytes:
+        """Return the bytes stored under ``key``; raise ``KeyError`` if absent."""
+        ...
+
+    def put_bytes(self, key: str, data: bytes) -> None:
+        """Store ``data`` under ``key``, overwriting any existing blob."""
+        ...
+
+    def list_keys(self) -> Iterable[str]:
+        """Iterate every blob key currently held."""
+        ...
+
+    def __contains__(self, key: str) -> bool:
+        """Whether a blob exists under ``key``."""
         ...
 
 
