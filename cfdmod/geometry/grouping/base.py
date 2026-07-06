@@ -8,10 +8,13 @@ and are dispatched here by spec type.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 from lnas import LnasFormat
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from cfdmod.geometry.grouping.kinds.by_connectivity import (
     ByConnectivityGrouping,
@@ -65,6 +68,8 @@ class GroupingResult:
             DataFrame with columns ``triangle_idx`` (int64) and
             ``group_name`` (str). Empty if no groups were produced.
         """
+        import pandas as pd
+
         if not self.groups:
             return pd.DataFrame(
                 {

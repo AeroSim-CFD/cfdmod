@@ -1,5 +1,7 @@
 """aerosim-cfdmod: Post-processing and geometry preparation for CFD wind tunnel simulations."""
 
+from __future__ import annotations
+
 __all__ = [
     # Loft
     "LoftParams",
@@ -119,117 +121,165 @@ __all__ = [
     "remesh_per_group",
 ]
 
-from cfdmod.inflow import InflowData, NormalizationParameters
-from cfdmod.analytical import WindProfile_EU, WindProfile_NBR
-from cfdmod.climate import (
-    WindProfile,
-    directional_gumbel_fit,
-    directional_weibull_fit,
-    fit_gumbel,
-    fit_weibull,
-)
-from cfdmod.geometry import (
-    ByConnectivityGrouping,
-    ByCylindricalGrouping,
-    ByDivisionsGrouping,
-    ByNormalGrouping,
-    ByPercentileGrouping,
-    ByPlaneGrouping,
-    BySizeGrouping,
-    BySizeRoundedPerComponent,
-    BySurfaceGrouping,
-    ByZoningGrouping,
-    CustomGrouping,
-    GroupingResult,
-    GroupingSpec,
-    RegroupSpec,
-    apply_groupings,
-    dump_groupings,
-    expand_size_rounded_chain,
-    load_groupings,
-)
-from cfdmod.io import (
-    export_stl,
-    load_mesh,
-    mesh_from_h5,
-    plot_timeseries,
-    read_processing_metadata,
-    read_stl,
-    read_timeseries_df,
-    to_csv,
-    write_processing_metadata,
-)
-from cfdmod.loft import LoftCaseConfig, LoftParams, generate_loft_surface
-from cfdmod.notebook_utils import load_lnas, mesh_summary, show_config
-from cfdmod.regroup import (
-    RegroupConfig,
-    RegroupIndex,
-    apply_regroup_to_timeseries,
-    build_regroup_mapping,
-    build_regrouped_mesh,
-    expand_regroup_chain,
-    run_regroup,
-)
-from cfdmod.remesh import decimate_qem, merge_coplanar, remesh_per_group
-from cfdmod.roughness import (
-    BoundingBox,
-    ElementParams,
-    GenerationParams,
-    PositionParams,
-    RadialParams,
-    SpacingParams,
-    build_single_element,
-    linear_pattern,
-    radial_pattern,
-)
-from cfdmod.s1 import (
-    EUCat,
-    NBRCat,
-    Profile,
-    S1Probe,
-    get_EU_cat_u_profile,
-    get_EU_u_profile,
-    get_NBR_cat_u_profile,
-    get_NBR_u_profile,
-)
+# ---------------------------------------------------------------------------
+# Lazy import surface (issue #147)
+# ---------------------------------------------------------------------------
+#
+# Public symbols are bound on first access (PEP 562 module __getattr__)
+# rather than eagerly at package import. This keeps `import cfdmod` -- and
+# therefore importing the v3 schema / op catalog under cfdmod.core -- free of
+# the heavy scientific stack (h5py, matplotlib, pandas, pyarrow, vtk,
+# trimesh). A service consumer that only needs the template schema and op
+# catalog pays for none of it; those deps load only when a symbol that needs
+# them is first touched.
 
-# v3 paradigm exports (issue #131). The legacy public symbols above are
-# unchanged; the new names live next to them and become the canonical
-# entry points for new code.
-from cfdmod.adapters.memory import MemoryFieldStore, MemoryStorage
-from cfdmod.adapters.xdmf_h5 import H5FieldStore, XdmfH5Storage
-from cfdmod.core import (
-    OP_REGISTRY,
-    Container,
-    DataSource,
-    ElementMeta,
-    FieldMeta,
-    Grouping,
-    GroupsDataSource,
-    ModesDataSource,
-    OpInfo,
-    Pipeline,
-    PipelineTemplate,
-    PointsDataSource,
-    SurfaceDataSource,
-    TimeAxis,
-    Topology,
-    VolumeDataSource,
-    compose,
-    list_ops,
-    load_template,
-    op_info,
-    register_op,
-    run_template,
-)
-from cfdmod.core import ops as core_ops
-from cfdmod.core import recipes
-from cfdmod.core.ops.geometric import RegroupTopologyParams, regroup_topology
-
-# Expose cfdmod.recipes and cfdmod.ops as importable submodule paths so
-# users can write `from cfdmod.recipes import build_cp` without reaching
-# into cfdmod.core.
+import importlib
 import sys as _sys
+from typing import Any
 
-_sys.modules.setdefault("cfdmod.recipes", recipes)
-_sys.modules.setdefault("cfdmod.ops", core_ops)
+# symbol name -> module that defines it.
+_SYMBOL_MODULE: dict[str, str] = {
+    # Loft
+    "LoftParams": "cfdmod.loft",
+    "LoftCaseConfig": "cfdmod.loft",
+    "generate_loft_surface": "cfdmod.loft",
+    # Roughness
+    "ElementParams": "cfdmod.roughness",
+    "SpacingParams": "cfdmod.roughness",
+    "BoundingBox": "cfdmod.roughness",
+    "PositionParams": "cfdmod.roughness",
+    "RadialParams": "cfdmod.roughness",
+    "GenerationParams": "cfdmod.roughness",
+    "build_single_element": "cfdmod.roughness",
+    "linear_pattern": "cfdmod.roughness",
+    "radial_pattern": "cfdmod.roughness",
+    # Geometry grouping
+    "BySurfaceGrouping": "cfdmod.geometry",
+    "ByZoningGrouping": "cfdmod.geometry",
+    "ByDivisionsGrouping": "cfdmod.geometry",
+    "BySizeGrouping": "cfdmod.geometry",
+    "ByConnectivityGrouping": "cfdmod.geometry",
+    "ByNormalGrouping": "cfdmod.geometry",
+    "ByPlaneGrouping": "cfdmod.geometry",
+    "ByPercentileGrouping": "cfdmod.geometry",
+    "ByCylindricalGrouping": "cfdmod.geometry",
+    "CustomGrouping": "cfdmod.geometry",
+    "GroupingSpec": "cfdmod.geometry",
+    "GroupingResult": "cfdmod.geometry",
+    "BySizeRoundedPerComponent": "cfdmod.geometry",
+    "RegroupSpec": "cfdmod.geometry",
+    "apply_groupings": "cfdmod.geometry",
+    "dump_groupings": "cfdmod.geometry",
+    "load_groupings": "cfdmod.geometry",
+    "expand_size_rounded_chain": "cfdmod.geometry",
+    # Topology regrouping op (v3)
+    "RegroupTopologyParams": "cfdmod.core.ops.geometric",
+    "regroup_topology": "cfdmod.core.ops.geometric",
+    # S1
+    "Profile": "cfdmod.s1",
+    "EUCat": "cfdmod.s1",
+    "NBRCat": "cfdmod.s1",
+    "get_EU_u_profile": "cfdmod.s1",
+    "get_NBR_u_profile": "cfdmod.s1",
+    "get_EU_cat_u_profile": "cfdmod.s1",
+    "get_NBR_cat_u_profile": "cfdmod.s1",
+    "S1Probe": "cfdmod.s1",
+    # Climate
+    "WindProfile": "cfdmod.climate",
+    "fit_weibull": "cfdmod.climate",
+    "directional_weibull_fit": "cfdmod.climate",
+    "fit_gumbel": "cfdmod.climate",
+    "directional_gumbel_fit": "cfdmod.climate",
+    # Analytical
+    "WindProfile_NBR": "cfdmod.analytical",
+    "WindProfile_EU": "cfdmod.analytical",
+    # Inflow
+    "NormalizationParameters": "cfdmod.inflow",
+    "InflowData": "cfdmod.inflow",
+    # IO
+    "read_stl": "cfdmod.io",
+    "export_stl": "cfdmod.io",
+    "load_mesh": "cfdmod.io",
+    "mesh_from_h5": "cfdmod.io",
+    "read_processing_metadata": "cfdmod.io",
+    "write_processing_metadata": "cfdmod.io",
+    "read_timeseries_df": "cfdmod.io",
+    "plot_timeseries": "cfdmod.io",
+    "to_csv": "cfdmod.io",
+    # Notebook utils
+    "mesh_summary": "cfdmod.notebook_utils",
+    "show_config": "cfdmod.notebook_utils",
+    "load_lnas": "cfdmod.notebook_utils",
+    # v3 value objects / composition / catalog (cfdmod.core imports light)
+    "DataSource": "cfdmod.core",
+    "SurfaceDataSource": "cfdmod.core",
+    "VolumeDataSource": "cfdmod.core",
+    "PointsDataSource": "cfdmod.core",
+    "GroupsDataSource": "cfdmod.core",
+    "ModesDataSource": "cfdmod.core",
+    "TimeAxis": "cfdmod.core",
+    "Topology": "cfdmod.core",
+    "ElementMeta": "cfdmod.core",
+    "Grouping": "cfdmod.core",
+    "FieldMeta": "cfdmod.core",
+    "Container": "cfdmod.core",
+    "Pipeline": "cfdmod.core",
+    "compose": "cfdmod.core",
+    "load_template": "cfdmod.core",
+    "run_template": "cfdmod.core",
+    "PipelineTemplate": "cfdmod.core",
+    "register_op": "cfdmod.core",
+    "OP_REGISTRY": "cfdmod.core",
+    "OpInfo": "cfdmod.core",
+    "list_ops": "cfdmod.core",
+    "op_info": "cfdmod.core",
+    # Storage adapters (pull h5py -- lazy on purpose)
+    "MemoryStorage": "cfdmod.adapters.memory",
+    "MemoryFieldStore": "cfdmod.adapters.memory",
+    "XdmfH5Storage": "cfdmod.adapters.xdmf_h5",
+    "H5FieldStore": "cfdmod.adapters.xdmf_h5",
+    # Regroup
+    "RegroupConfig": "cfdmod.regroup",
+    "RegroupIndex": "cfdmod.regroup",
+    "build_regroup_mapping": "cfdmod.regroup",
+    "build_regrouped_mesh": "cfdmod.regroup",
+    "apply_regroup_to_timeseries": "cfdmod.regroup",
+    "expand_regroup_chain": "cfdmod.regroup",
+    "run_regroup": "cfdmod.regroup",
+    # Remesh
+    "merge_coplanar": "cfdmod.remesh",
+    "decimate_qem": "cfdmod.remesh",
+    "remesh_per_group": "cfdmod.remesh",
+}
+
+# Public names that resolve to a whole submodule rather than a symbol.
+_SUBMODULE_ATTRS: dict[str, str] = {
+    "core_ops": "cfdmod.core.ops",
+    "recipes": "cfdmod.core.recipes",
+}
+
+
+def __getattr__(name: str) -> Any:
+    module_path = _SYMBOL_MODULE.get(name)
+    if module_path is not None:
+        value = getattr(importlib.import_module(module_path), name)
+        globals()[name] = value  # cache so subsequent access skips __getattr__
+        return value
+    submodule_path = _SUBMODULE_ATTRS.get(name)
+    if submodule_path is not None:
+        module = importlib.import_module(submodule_path)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(__all__) | set(globals()))
+
+
+# Expose cfdmod.recipes and cfdmod.ops as importable submodule paths so users
+# can write `from cfdmod.recipes import build_cp` without reaching into
+# cfdmod.core. These modules import light (no h5py at module top), so
+# registering the aliases here does not defeat the lazy surface above.
+_sys.modules.setdefault("cfdmod.recipes", importlib.import_module("cfdmod.core.recipes"))
+_sys.modules.setdefault("cfdmod.ops", importlib.import_module("cfdmod.core.ops"))

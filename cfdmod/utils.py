@@ -1,9 +1,16 @@
+# pandas is imported lazily inside the dataframe helpers below, not at module
+# top, so importing cfdmod.utils (and thus the v3 schema / op catalog, which
+# depend on read_yaml) does not drag pandas into a service consumer's process.
+from __future__ import annotations
+
 import pathlib
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import pandas as pd
 from ruamel.yaml import YAML
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def create_folders_for_file(filename: pathlib.Path):
@@ -87,6 +94,8 @@ def convert_dataframe_into_matrix(
     Returns:
         pd.DataFrame: Matrix form of the dataframe
     """
+    import pandas as pd
+
     expected_columns = [row_data_label, column_data_label, value_data_label]
     df_columns = source_dataframe.columns
     if not all([col in df_columns for col in expected_columns]):
@@ -128,6 +137,8 @@ def convert_matrix_into_dataframe(
     Returns:
         pd.DataFrame: Dataframe form of the matrix
     """
+    import pandas as pd
+
     default_column_order = [column_data_label, value_data_label, row_data_label]
     default_sort_order = [row_data_label, column_data_label]
     if len(column_order) != 3 and len(column_order) != 0:
