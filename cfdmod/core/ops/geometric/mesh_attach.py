@@ -39,6 +39,7 @@ class MeshAttachParams(OpParams):
     mesh: str
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    produces_element_meta: ClassVar[frozenset[str]] = frozenset({"area", "normal", "position"})
 
 
 def mesh_attach(ds: DataSource, p: MeshAttachParams) -> DataSource:

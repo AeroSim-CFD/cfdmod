@@ -48,6 +48,10 @@ class ForceContributionParams(OpParams):
     out_prefix: str = "cf"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    requires_element_meta: ClassVar[frozenset[str]] = frozenset({"area", "normal"})
+
+    def produced_fields(self) -> frozenset[str]:
+        return frozenset(f"{self.out_prefix}_{d}" for d in self.directions)
 
 
 def force_contribution(ds: DataSource, p: ForceContributionParams) -> DataSource:

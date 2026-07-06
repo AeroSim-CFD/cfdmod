@@ -40,6 +40,9 @@ class ProfileInterpolationParams(OpParams):
     field: str = "u"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    consumes: ClassVar[frozenset[str] | None] = frozenset({"points"})
+    produces: ClassVar[str] = "points"
+    replaces_fields: ClassVar[bool] = True
 
 
 def profile_interpolation(ds: PointsDataSource, p: ProfileInterpolationParams) -> PointsDataSource:

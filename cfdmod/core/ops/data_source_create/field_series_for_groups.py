@@ -47,6 +47,12 @@ class FieldSeriesForGroupsParams(OpParams):
     out: str | None = None
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    consumes: ClassVar[frozenset[str] | None] = frozenset({"surface"})
+    produces: ClassVar[str] = "groups"
+    replaces_fields: ClassVar[bool] = True
+
+    def produced_fields(self) -> frozenset[str]:
+        return frozenset({self.out or self.field})
 
 
 def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> GroupsDataSource:

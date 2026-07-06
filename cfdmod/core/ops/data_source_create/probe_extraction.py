@@ -54,6 +54,8 @@ class ProbeExtractionParams(OpParams):
     mode: Literal["nearest", "linear_zaxis"] = "nearest"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
+    produces: ClassVar[str] = "points"
+    replaces_fields: ClassVar[bool] = True
 
 
 def _nearest_indices(src_pos: np.ndarray, probes: np.ndarray) -> np.ndarray:

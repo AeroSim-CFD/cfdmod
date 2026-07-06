@@ -63,6 +63,10 @@ class StatisticsParams(OpParams):
     field: str = "pressure"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"elements"})
+    replaces_fields: ClassVar[bool] = True
+
+    def produced_fields(self) -> frozenset[str]:
+        return frozenset(self.kinds)
 
 
 def _stat(arr: np.ndarray, name: str) -> np.ndarray:
