@@ -67,58 +67,41 @@ It can be seen as the resulting effect of the wind induced force over a body.
 Artifacts
 =========
 
-The user provides:
+The Cf template reads a **Cp time series** (``kind: surface``, produced by
+the Cp template) and composes:
 
-#. **Cp timeseries XDMF+H5** produced by ``run_cp``.
-#. **Parameters** (``CfCaseConfig``): bodies, sub-body zoning and the
-   nominal-area knobs. Pass either a YAML path or an in-memory instance.
-#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``.
-   ``BodyDefinition(surfaces=[])`` selects every surface in the mesh, so
-   when the input is a single-surface H5 the same config covers the
-   whole mesh as one body. When omitted, the geometry comes from the
-   cp timeseries H5.
+#. ``mesh_attach`` -- pull per-triangle areas, normals and centroids from
+   the ``.lnas`` (or ``.h5``) mesh.
+#. ``body_grouping`` -- assign each triangle to a body. An empty surface
+   list (``building: []``) selects every surface in the mesh, so a
+   single-surface mesh becomes one body.
+#. ``force_contribution`` -- per-triangle ``cf_x`` / ``cf_y`` / ``cf_z``
+   from Cp, areas and normals, scaled by the nominal area.
+#. ``field_series_for_groups`` -- sum each direction over each body.
 
-Outputs (flat under ``output``):
-
-#. ``Cf.{cfg_lbl}.{body}.time_series.{h5,xdmf}`` -- one file per body.
-   Each file embeds the body's mesh and carries ``cf_x`` / ``cf_y`` /
-   ``cf_z`` groups; pick the direction from the ParaView Attribute
-   selector on the same animation.
-#. ``stats.h5`` / ``stats.xdmf`` -- combined statistics; Cf lands under
-   ``/cf_{x,y,z}/{cfg_lbl}/{body}/`` with the body's mesh embedded.
-#. Each output H5 carries the post-processing config under
-   ``/processing_metadata/``.
+The output is one ``GroupsDataSource`` per direction (``cf_x`` / ``cf_y`` /
+``cf_z``) with one row per body, writable to an XDMF+H5 pair.
 
 Usage
 =====
 
-Reference parameters file:
+Run the shipped template:
 
-.. literalinclude:: /_static/pressure/Cf_params.yaml
-    :language: yaml
+.. code-block:: bash
 
-From Python:
+   cfdmod run fixtures/tests/pressure/templates/cf.yaml
+
+or from Python:
 
 .. code-block:: python
 
-   from cfdmod import run_cf, CfCaseConfig
-   run_cf(
-       cp_h5="output/cp.default.time_series.h5",
-       cfg_path=CfCaseConfig.from_file("cf.yaml"),
-       output="output",
-       # mesh_path optional; omitting it reads geometry from the cp H5
-   )
+   from cfdmod import load_template, run_template, XdmfH5Storage
 
-CLI:
+   bindings = run_template(load_template("cf.yaml"), storage=XdmfH5Storage(root="."))
+   cf_x = bindings["cf_x"]          # GroupsDataSource, one row per body
 
-.. code-block:: Bash
-
-   python -m cfdmod pressure cf \
-      --cp     {CP_TIMESERIES_H5} \
-      --config {CONFIG_PATH} \
-      --output {OUTPUT_PATH}
-
-A worked example covering Cp, Cf and Cm together lives at
+The `calculate_Cf.ipynb <calculate_Cf.ipynb>`_ notebook walks through this
+template; a worked example covering Cp, Cf, Cm and Ce together lives at
 ``notebooks/process_container_pack.ipynb`` in the repository root.
 
 Data format

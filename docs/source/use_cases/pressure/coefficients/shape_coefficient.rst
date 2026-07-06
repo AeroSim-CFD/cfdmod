@@ -68,63 +68,39 @@ Or even to evaluate the resulting effect over **doors**, and calculate the stres
 Artifacts
 =========
 
-The user provides:
+The Ce template reads a **Cp time series** (``kind: surface``, produced by
+the Cp template) and composes:
 
-#. **Cp timeseries XDMF+H5** produced by ``run_cp``.
-#. **Parameters** (``CeCaseConfig``): zoning intervals, surface
-   set/exclude/exception lists and statistics. Pass either a YAML path
-   or an in-memory instance.
-#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``. Ce
-   slices triangles along the zoning planes and so produces a
-   *different* output mesh than the input -- the cut regions mesh.
+#. ``mesh_attach`` -- pull per-triangle areas, normals and centroids from
+   the ``.lnas`` (or ``.h5``) mesh.
+#. ``zoning_grouping`` -- partition the mesh into an
+   ``x_intervals`` x ``y_intervals`` x ``z_intervals`` box grid;
+   triangles are assigned to a zone by centroid.
+#. ``field_series_for_groups`` with ``agg: area_weighted_mean`` -- collapse
+   Cp to one Ce series per zone.
 
-Outputs (flat under ``output``):
-
-#. ``Ce.{cfg_lbl}.regions.stl`` -- the cut regions mesh as STL for
-   ParaView / QC use.
-#. ``Ce.{cfg_lbl}.time_series.{h5,xdmf}`` -- per-cut-triangle Ce
-   timeseries on the cut mesh (root ``/Triangles + /Geometry`` is the
-   cut mesh; per-timestep arrays under ``/ce/t{T}``).
-#. ``stats.h5`` / ``stats.xdmf`` -- Ce stats land under ``/ce/{cfg_lbl}/``
-   with the cut mesh embedded so ParaView renders on the right topology.
-#. Each output H5 carries the post-processing config under
-   ``/processing_metadata/``.
+The output is a ``GroupsDataSource`` with one row per occupied zone.
 
 Usage
 =====
 
-Reference parameters file:
+Run the shipped template:
 
-.. literalinclude:: /_static/pressure/Ce_params.yaml
-    :language: yaml
+.. code-block:: bash
 
-.. literalinclude:: /_static/pressure/zoning_params.yaml
-    :language: yaml
-    :caption: zoning_params.yaml
+   cfdmod run fixtures/tests/pressure/templates/ce.yaml
 
-From Python:
+or from Python:
 
 .. code-block:: python
 
-   from cfdmod import run_ce, CeCaseConfig
-   run_ce(
-       cp_h5="output/cp.default.time_series.h5",
-       cfg_path=CeCaseConfig.from_file("ce.yaml"),
-       output="output",
-       # mesh_path optional; omitting it reads geometry from the cp H5
-   )
+   from cfdmod import load_template, run_template, XdmfH5Storage
 
-CLI:
+   bindings = run_template(load_template("ce.yaml"), storage=XdmfH5Storage(root="."))
+   ce = bindings["ce"]              # GroupsDataSource, one row per zone
 
-.. code-block:: Bash
-
-   python -m cfdmod pressure ce \
-      --cp     {CP_TIMESERIES_H5} \
-      --config {CONFIG_PATH} \
-      --output {OUTPUT_PATH}
-
-The Sphinx-bundled `calculate_Ce.ipynb <calculate_Ce.ipynb>`_ notebook
-covers the full Ce workflow.
+The `calculate_Ce.ipynb <calculate_Ce.ipynb>`_ notebook walks through this
+template step by step.
 
 Data format
 ===========

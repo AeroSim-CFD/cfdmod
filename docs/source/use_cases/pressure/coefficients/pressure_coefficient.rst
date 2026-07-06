@@ -28,64 +28,41 @@ However, it is not the final result to be delivered to clients.
 Artifacts
 =========
 
-The user provides:
+The Cp template declares:
 
-#. **Body pressure XDMF+H5**: per-timestep pressure on every mesh triangle.
-#. **Reference probe XDMF+H5** (optional): atmospheric reference pressure
-   probe signal. If omitted, the reference pressure is taken as 0.
-#. **Parameters** (``CpCaseConfig``): adimensionalisation values, statistic
-   list, time-step range. The config can be a YAML file or built in code.
-#. **Mesh** (optional): ``.lnas`` / ``.stl`` / ``.h5`` / ``.xdmf``. When
-   omitted, the geometry is read from the body H5's embedded
-   ``/Triangles + /Geometry``.
+#. **Body pressure** (``kind: surface``): per-timestep pressure on every
+   mesh triangle.
+#. **Reference probe** (``kind: points``, optional): atmospheric reference
+   pressure signal. If omitted, the reference pressure is taken as 0.
 
-Outputs (under the ``output`` directory; layout is flat, no subfolders):
-
-#. ``cp.{label}.time_series.{h5,xdmf}`` -- per-timestep Cp on the full
-   mesh, ParaView-readable.
-#. ``stats.{h5,xdmf}`` -- combined statistics for every coefficient in
-   the run, with one ``<Grid>`` per leaf group on the matching mesh.
-   Cp lands under ``/cp/{label}/``.
-
-Each output H5 carries the post-processing config under
-``/processing_metadata/`` for downstream debugging; read it back with
-:func:`cfdmod.read_processing_metadata`.
+and a pipeline that subtracts the reference (``sub``), divides by the
+dynamic pressure (``scale`` by ``1 / q``), and reduces to per-element
+``statistics``. The outputs are a ``cp`` time series and a ``cp`` statistics
+data source, each writable to an XDMF+H5 pair (ParaView-readable).
 
 Usage
 =====
 
-A reference parameters file:
+Run the shipped template from the command line:
 
-.. literalinclude:: /_static/pressure/cp_params.yaml
-    :language: yaml
+.. code-block:: bash
 
-Driving the pipeline from Python:
+   cfdmod run fixtures/tests/pressure/templates/cp.yaml
+
+or drive it from Python over any storage backend:
 
 .. code-block:: python
 
-   from cfdmod import run_cp, CpCaseConfig
-   run_cp(
-       body_h5="body.h5",
-       probe_h5="probe.h5",                    # or None for zero reference
-       cfg_path=CpCaseConfig.from_file("cp.yaml"),
-       output="output",
-       # mesh_path optional; omitting it reads from body.h5
-   )
+   from cfdmod import load_template, run_template, XdmfH5Storage
 
-Or via the CLI:
+   template = load_template("cp.yaml")
+   bindings = run_template(template, storage=XdmfH5Storage(root="."))
+   cp_t = bindings["cp_t"]          # SurfaceDataSource, one row per triangle
 
-.. code-block:: Bash
-
-   python -m cfdmod pressure cp \
-      --body   {BODY_H5} \
-      --probe  {PROBE_H5} \
-      --config {CONFIG_PATH} \
-      --output {OUTPUT_PATH}
-
-The same flow is also exercised in the `calculate_cp.ipynb <calculate_cp.ipynb>`_
-notebook, with a fuller end-to-end version (including container
-partition, Cf, and Cm) available at ``notebooks/process_container_pack.ipynb``
-in the repository root.
+The `calculate_cp.ipynb <calculate_cp.ipynb>`_ notebook walks through this
+template step by step; a fuller end-to-end version (Cp / Cf / Cm / Ce over
+a container pack) lives at ``notebooks/process_container_pack.ipynb`` in
+the repository root.
 
 Data format
 ===========
