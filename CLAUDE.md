@@ -30,14 +30,21 @@
 
 ---
 
-## Current architecture (v2.0)
+## Architecture (v3 paradigm, issue #131)
 
-The library is API-first. All public symbols are importable from the top-level package:
+The library is a **pure functional core**: one immutable value object
+(`DataSource`) transformed by pure functions (`ops`), composed into
+`Pipeline`s either programmatically (`recipes`) or declaratively (YAML
+templates). I/O lives entirely behind `Protocol` seams in `adapters/`.
+See `docs/source/architecture/data_sources.md` and `v3_migration.md`.
+
+Public symbols import from the top-level package:
 
 ```python
-from cfdmod import LoftParams, generate_loft_surface
-from cfdmod import RadialParams, radial_pattern
-from cfdmod import mesh_summary, show_config, load_lnas
+from cfdmod import DataSource, SurfaceDataSource, Pipeline, compose, Container
+from cfdmod import MemoryStorage, XdmfH5Storage, load_template, run_template
+from cfdmod.recipes import build_cp, cf_pipeline, cm_pipeline, ce_pipeline
+from cfdmod.core.ops.field import moving_average  # ops layer
 ```
 
 ### Directory layout
@@ -45,28 +52,32 @@ from cfdmod import mesh_summary, show_config, load_lnas
 ```
 cfdmod/
     cfdmod/
-        __init__.py         Public API (~69 exported symbols)
-        __main__.py         Global typer CLI (python -m cfdmod loft|roughness)
-        notebook_utils.py   Notebook helpers: mesh_summary, show_config, load_lnas
-        io/
-            geometry/       STL I/O (export_stl, read_stl)
-            vtk/            VTK/ParaView probe and write utilities
-        inflow.py           InflowData class + analysis functions (single file)
-        loft/               Terrain loft surface generation
-        roughness/          Roughness element generation (linear + radial)
-        pressure/           Cp/Cf/Cm/Ce post-processing
-        altimetry/          Surface section analysis
-        climate/            Wind rose, Gumbel, Weibull, Lawson
-        analytical/         Analytical wind/aero models
-        s1/                 S1 profile analysis
-        snapshot/           ParaView snapshot automation
-        logger.py
-        utils.py            read_yaml, HDF5 helpers, dataframe utilities
-    tests/                  Mirror of cfdmod/ structure
-    fixtures/               YAML configs + STL/LNAS mesh files for tests
-    notebooks/              Jupyter notebooks for analysis and generation
+        __init__.py         Lazy public API (PEP-562 __getattr__)
+        __main__.py         Global typer CLI (loft|roughness|regroup|altimetry|run)
+        core/               v3 paradigm:
+            data_source.py  DataSource + 5 kinds (Surface/Volume/Points/Groups/Modes)
+            ops/            pure ops: time / field / geometric / data_source_create
+            recipes/        Cp, Cf, Cm, Ce, s1, dynamic, pedestrian_comfort (compose ops)
+            pipeline.py     compose(*ops); pipeline_yaml.py: YAML templates + OP_REGISTRY
+            container.py    Container[K,V] for multi-case fan-out
+        adapters/           storage seam: memory/ (tests) and xdmf_h5/ (production)
+        io/                 geometry (STL/lnas load), vtk (ParaView probe/write)
+        inflow.py           InflowData + inflow analysis functions (single file)
+        hfpi/               legacy HFPI dynamic pipeline (RK45 SDOF, reporting)
+        geometry/grouping/  triangle-index grouping specs (By*Grouping union)
+        regroup/            disk regroup: new lnas + reordered h5 timeseries
+        remesh/             QEM decimation per group
+        loft/ roughness/ altimetry/ climate/ analytical/ s1/ snapshot/
+        logger.py  utils.py
+    tests/                  Mirror of cfdmod/ structure (pytest markers: unit/integration/perf)
+    fixtures/tests/         YAML configs + STL/LNAS + h5 fixtures (galpao, caarc, inflow, ...)
+    notebooks/              geometry_api + tutorials/ + high_rise/ post-processing suite
     docs/                   Sphinx documentation
 ```
+
+Note: `cfdmod/api/` and `cfdmod/analysis/inflow/` hold only stale `.pyc`
+cruft (not git-tracked); ignore them. There is no `cfdmod/pressure/`
+package -- Cp/Cf/Cm/Ce are recipes under `core/recipes/`.
 
 ### Layout inside each domain module
 
@@ -130,6 +141,33 @@ There is no project-specific config base class; field declarations follow the
 - `load_lnas(path)` - load an .lnas file and return the LnasFormat object
 
 All three are also exported from the top-level `cfdmod` package.
-[
+
+---
+
+## Post-processing notebook suite (`notebooks/high_rise/`)
+
+Application-directed post-processing lives in `notebooks/`, built on the v3
+recipes/ops. The **high-rise** suite is the reference layout:
+
+- **Thin notebooks, one per stage.** Notebooks orchestrate; they hold no
+  reusable logic. Shared glue lives in `notebooks/high_rise/pp/` (a
+  notebook-side helper package, NOT promoted into the library): `HighRiseCase`
+  (case_data aggregation), `DebugWriter` (output roots), `inflow_report`,
+  `pressure` (Cp / per-floor Cf-Cm wiring). Computational logic goes in the
+  cfdmod library (recipes/ops); presentation/orchestration stays here.
+- **Output, not inline results.** Notebooks write images/tables to versioned
+  roots instead of storing results inline:
+  `<case>/debug/<version>/<stage>/...` (free-to-compare exploratory output) and
+  `<case>/deliverables/<version>/<stage>/...` (engineer-facing). Re-running the
+  same `version` overwrites in place; a new `version` coexists.
+- **High-rise sequence:** inflow validation (extract U_H at reference height)
+  -> update case dynamic pressure -> Cp -> per-floor Cf/Cm -> dynamic analysis
+  -> deliverables + verbose debug -> facade Cp snapshots.
+- Cf/Cm use **explicit reference-area** normalisation (`nominal_area` /
+  `nominal_volume`), not the legacy per-region bounding-box area.
+
+`notebooks/high_rise/_validate_pp.py` exercises the helper package end-to-end
+on the galpao / pitot_inlet fixtures (`uv run python notebooks/high_rise/_validate_pp.py`).
+
 ---
 
