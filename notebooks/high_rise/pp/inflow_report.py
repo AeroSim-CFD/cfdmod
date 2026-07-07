@@ -158,7 +158,9 @@ def plot_turbulence_intensity(profile: ProfileLine, inflow: InflowData, *, compo
     ti = calculate_turbulence_intensity(inflow, for_components=[component])
     iu = _profile_series(profile, ti, f"I_{component}")
     fig, ax = new_axes(
-        xlabel=f"I_{component} [-]", ylabel="z [m]", title=f"Turbulence intensity -- {profile.name}"
+        xlabel=f"I_{component} [-]",
+        ylabel="z [m]",
+        title=f"Turbulence intensity -- {profile.name}",
     )
     ax.plot(iu, profile.z, "-o", ms=3)
     return fig

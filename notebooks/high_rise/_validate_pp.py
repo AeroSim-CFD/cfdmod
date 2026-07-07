@@ -20,8 +20,8 @@ REPO = HERE.parents[1]
 FIX = REPO / "fixtures" / "tests"
 
 import pp  # noqa: E402
-from pp import plotting  # noqa: E402
 from pp import inflow_report as ir  # noqa: E402
+from pp import plotting  # noqa: E402
 
 plotting.apply_style()
 
@@ -50,7 +50,8 @@ def section_case() -> pp.HighRiseCase:
     case2 = case.with_reference_velocity(32.0)
     check(
         "with_reference_velocity updates q",
-        case2.u_h == 32.0 and abs(case2.dynamic_pressure - 0.5 * case.fluid_density * 32.0**2) < 1e-9,
+        case2.u_h == 32.0
+        and abs(case2.dynamic_pressure - 0.5 * case.fluid_density * 32.0**2) < 1e-9,
         f"q {q0:.1f} -> {case2.dynamic_pressure:.1f}",
     )
     return case
@@ -104,8 +105,9 @@ def section_pressure(case: pp.HighRiseCase) -> None:
     print("C. Cp -> per-floor Cf/Cm (galpao fixture)")
     import pathlib as _pl
 
-    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
     from lnas import LnasFormat
+
+    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
 
     data_dir = FIX / "pressure" / "data"
     mesh_path = str(FIX / "pressure" / "galpao" / "galpao.normalized.lnas")
@@ -129,7 +131,11 @@ def section_pressure(case: pp.HighRiseCase) -> None:
     check("cf is groups source", cf.kind == "groups")
     check("cf has <= 3 floor rows", 1 <= cf.n_elements <= 3, f"n_floors={cf.n_elements}")
     cfx = cf.fields.read("cf_x")
-    check("cf_x finite + time-resolved", np.all(np.isfinite(cfx)) and cfx.shape[1] > 1, str(cfx.shape))
+    check(
+        "cf_x finite + time-resolved",
+        np.all(np.isfinite(cfx)) and cfx.shape[1] > 1,
+        str(cfx.shape),
+    )
 
     cm = pp.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
     cmz = cm.fields.read("cm_z")

@@ -16,13 +16,14 @@ Layout:
 
 from __future__ import annotations
 
-from pp.case import HighRiseCase
+from pp.case import HighRiseCase, example_high_rise_case
 from pp.debug_io import DebugWriter
 from pp.inflow_report import ProfileLine, detect_profiles, reference_velocity
 from pp.pressure import cf_per_floor, cm_per_floor, cp_from_pressure
 
 __all__ = [
     "HighRiseCase",
+    "example_high_rise_case",
     "DebugWriter",
     "ProfileLine",
     "detect_profiles",

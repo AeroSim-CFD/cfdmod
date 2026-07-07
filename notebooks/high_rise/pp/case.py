@@ -20,6 +20,7 @@ import json
 import pathlib
 from typing import Annotated
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 from ruamel.yaml import YAML
 
@@ -57,8 +58,10 @@ class HighRiseCase(BaseModel):
     @property
     def u_h(self) -> float:
         """Reference velocity actually used: measured if set, else simulation."""
-        return self.reference_velocity if self.reference_velocity is not None else (
-            self.simul_reference_velocity
+        return (
+            self.reference_velocity
+            if self.reference_velocity is not None
+            else (self.simul_reference_velocity)
         )
 
     @property
@@ -111,7 +114,9 @@ class HighRiseCase(BaseModel):
         )
 
         return cls(
-            name=case_data_dir.parent.name if case_data_dir.name == "case_data" else case_data_dir.name,
+            name=case_data_dir.parent.name
+            if case_data_dir.name == "case_data"
+            else case_data_dir.name,
             reference_height=float(gd["H"]),
             characteristic_length=float(gd.get("L", gd.get("L1", 1.0))),
             basic_wind_speed=float(gd["V0"]),
@@ -124,6 +129,39 @@ class HighRiseCase(BaseModel):
             directions=list(directions),
             body_name=resolved_body or "building",
         )
+
+
+def example_high_rise_case(
+    mesh_path: str | pathlib.Path,
+    *,
+    u_h: float = 0.05,
+    rho: float = 1.0,
+    n_floors: int = 3,
+) -> HighRiseCase:
+    """A self-contained HighRiseCase tuned to a mesh, for notebook demos/tests.
+
+    Geometry fields are derived from the mesh bounding box (frontal area,
+    volume, floor z-edges). Defaults ``u_h``/``rho`` match the galpao fixture's
+    dynamic pressure (q = 0.00125) so Cp lands in the same range as the
+    ``cp.yaml`` template. For real work use :meth:`HighRiseCase.from_case_data`.
+    """
+    from lnas import LnasFormat
+
+    verts = LnasFormat.from_file(pathlib.Path(mesh_path)).geometry.vertices
+    lo = verts.min(axis=0)
+    hi = verts.max(axis=0)
+    lx, ly, lz = hi - lo
+    return HighRiseCase(
+        name=pathlib.Path(mesh_path).stem,
+        reference_height=float(max(hi[2], 1e-6)),
+        characteristic_length=float(max(lx, 1e-6)),
+        basic_wind_speed=float(u_h),
+        fluid_density=float(rho),
+        simul_reference_velocity=float(u_h),
+        nominal_area=float(max(lx * lz, 1e-6)),
+        nominal_volume=float(max(lx * lz * ly, 1e-6)),
+        floor_heights=[float(z) for z in np.linspace(lo[2], hi[2], n_floors + 1)],
+    )
 
 
 def _first_block(section: dict) -> dict:

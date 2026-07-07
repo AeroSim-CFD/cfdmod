@@ -53,7 +53,9 @@ class DebugWriter:
         """Path for a deliverable artifact, creating any subdirectories in ``name``."""
         return self._resolve(self.deliverables_dir, name)
 
-    def savefig(self, fig, name: str, *, deliverable: bool = False, **savefig_kwargs) -> pathlib.Path:
+    def savefig(
+        self, fig, name: str, *, deliverable: bool = False, **savefig_kwargs
+    ) -> pathlib.Path:
         """Save a matplotlib figure to debug (default) or deliverables, return the path."""
         path = self.deliverable_path(name) if deliverable else self.debug_path(name)
         savefig_kwargs.setdefault("bbox_inches", "tight")
