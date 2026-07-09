@@ -1,4 +1,4 @@
-# Migrating to the v3 paradigm (issue #131)
+# Migrating to the v3 paradigm
 
 The v3 paradigm introduces a small set of composable primitives --
 `DataSource`, `Pipeline`, `Container`, `Storage` -- and a library of

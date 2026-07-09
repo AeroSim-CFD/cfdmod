@@ -1,6 +1,6 @@
 # Data sources, ops, and pipelines (v3 paradigm)
 
-Status: design doc for the v3 paradigm introduced by issue #131.
+Status: design doc for the v3 paradigm.
 
 This document captures the locked decisions for the new abstraction layer
 shipped under `cfdmod/core/` and `cfdmod/adapters/`. It is the durable
@@ -151,7 +151,7 @@ YAML schemas are not touched in phases 1-3. New schemas land under
   per the odt, these stay outside the paradigm. Pedestrian comfort
   takes climate data as a non-pipeline input.
 
-## 11. Consuming cfdmod as a service (issue #147)
+## 11. Consuming cfdmod as a service
 
 The v3 core is usable not just as a library you call but as a contract a
 service can reflect on and drive from a UI (e.g. a node-based pipeline
