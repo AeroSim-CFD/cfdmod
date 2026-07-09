@@ -20,6 +20,14 @@
   Use plain ASCII only: `->` not arrows, `x` not multiplication sign, `u_mean` not Greek letters, `^2` not superscripts.
   For equations in legends, feel free to use Latex notation for equations and special symbols in Latex representation.
 - **No inline comments in python3 -c "..." terminal commands** (shell escaping issues).
+- **NEVER reference internal GitHub issues or PRs in public documentation.** This is a
+  HARD RULE. Anything under `docs/`, `README.md`, tutorial/notebook READMEs, docstrings,
+  or any other user-facing published text must NOT contain issue/PR numbers, `#<n>`
+  references, `gh issue`/`github.com/.../issues` links, or phrasings like
+  "(issue #131)". Issue and PR references are internal-only (commit messages, PR
+  descriptions, and issue comments). Release notes describe *what changed* for users, not
+  which issue tracked it - do not cite issue numbers there either. When documenting a
+  feature, describe the behavior, not the work item that produced it.
 - Python >= 3.10; formatting, import-sorting, and linting all via ruff (`ruff format` + `ruff check`).
 - Configuration via YAML + Pydantic v2 `BaseModel` with `from_file(path)` classmethods.
 - External mesh format: `aerosim-lnas` (`LnasFormat`, `LnasGeometry`). Prefer lnas over trimesh for loading STL/LNAS surfaces.

@@ -3,7 +3,7 @@
 ## v3.1.0
 
 Minor release. Turns the v3 core from "a library you call" into "a
-contract a service can reflect on and drive from a UI" (issue #147),
+contract a service can reflect on and drive from a UI",
 additively -- no public symbol is removed or changed in signature, and
 every new error subclasses the builtin it replaced, so existing
 `except (KeyError, ValueError)` handlers keep working.
@@ -57,7 +57,7 @@ every new error subclasses the builtin it replaced, so existing
 
 ## v3.0.0
 
-Major release. Introduces the v3 data-source paradigm (issue #131) and
+Major release. Introduces the v3 data-source paradigm and
 **hard-removes the v2 pressure module**. All Cp/Cf/Cm/Ce work now flows
 through pipeline-as-YAML templates executed via `cfdmod run
 <template.yaml>` or the Python `run_template` API. This is a breaking

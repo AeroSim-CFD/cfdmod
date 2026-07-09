@@ -1,6 +1,6 @@
 # cfdmod tutorials
 
-Four short notebooks introducing the v3 paradigm (issue #131). Run in order; each builds on concepts from the previous.
+Four short notebooks introducing the v3 paradigm. Run in order; each builds on concepts from the previous.
 
 | Notebook | What you learn |
 |---|---|
