@@ -54,7 +54,7 @@ If its center lies inside the sub-body volume, then it belongs to it.
 The result is a sectionated body in different **sub-bodies for each interval**.
 When sectioning the body, the respective nominal area should be the same as the sub-body nominal area.
 
-.. note:: Check out the `definitions <./definitions.rst>`_ section for more information about **surface, body and sub-body** definitions.
+.. note:: Check out the `concepts <../concepts.rst>`_ section for more information about **surface, body and sub-body** definitions.
 
 Like the other coefficients, we can apply statistical analysis to the net force coefficient.
 
@@ -113,7 +113,7 @@ Data format
         This also guarantee that even if different bodies lie on the same region, the interpreted region for each of them will be different
 
 .. note::
-    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+    For more information about the normalized time scale (:math:`t^*`), check the `Time Normalization section <./time_normalization.rst>`_
 
 .. list-table:: :math:`C_{fx}(t)`
    :widths: 15 15 15 15 15
