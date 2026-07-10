@@ -20,6 +20,11 @@ from __future__ import annotations
 __all__ = [
     "StatisticsParams",
     "compute_statistics",
+    "ExtremeValueParams",
+    "extreme_value",
+    "moving_filter",
+    "reescale_event_duration_peak",
+    "gumbel_extreme_value_1d",
     "FaceCutParams",
     "face_cut",
     "FieldSeriesForGroupsParams",
@@ -38,6 +43,13 @@ __all__ = [
     "profile_interpolation",
 ]
 
+from cfdmod.core.ops.data_source_create.extreme_value import (
+    ExtremeValueParams,
+    extreme_value,
+    gumbel_extreme_value_1d,
+    moving_filter,
+    reescale_event_duration_peak,
+)
 from cfdmod.core.ops.data_source_create.face_cut import FaceCutParams, face_cut
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
     FieldSeriesForGroupsParams,

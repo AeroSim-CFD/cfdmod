@@ -11,6 +11,10 @@ from __future__ import annotations
 __all__ = [
     "MovingAverageParams",
     "moving_average",
+    "DerivativeParams",
+    "derivative",
+    "FrequencyFilterParams",
+    "frequency_filter",
     "AddParams",
     "SubParams",
     "MulParams",
@@ -47,4 +51,6 @@ from cfdmod.core.ops.field.moment_contribution import (
     MomentContributionParams,
     moment_contribution,
 )
+from cfdmod.core.ops.field.derivative import DerivativeParams, derivative
+from cfdmod.core.ops.field.frequency_filter import FrequencyFilterParams, frequency_filter
 from cfdmod.core.ops.field.moving_average import MovingAverageParams, moving_average
