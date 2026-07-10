@@ -16,7 +16,7 @@ There are several different coefficients, that are commonly used in the wind ind
 * `Pressure Coefficient <./pressure_coefficient.rst>`_: It is a fundamental adimensionalization of the pressure data. It is obtained by dividing a pressure difference by the **dynamic pressure**.
 * `Shape Coefficient <./shape_coefficient.rst>`_: It is equivalent to a resulting pressure coefficient over an **area of interest**. It is used to combine the pressure effects over the area, in a way to **sum the exerted force in each triangle** inside this area. Some peaks in each triangle **may cancel each other** in when calculating the shape coefficient.
 * `Force Coefficient <./force_coefficient.rst>`_: It is a general adimensionalization of the resulting **wind induced force** over a body. It is calculated by summing the resulting force of each triangle, and dividing it by a **representative area**.
-* `Momentum Coefficient <./momentum_coefficient.rst>`_: It is a general adimensionalization of the resulting **wind induced momentum** over a body. It is calculated by summing the resulting momentum of each triangle, and dividing it by a **representative volume**. The anchor point to define the momentum lever is an **arbitrary point for the whole body**.
+* `Moment Coefficient <./moment_coefficient.rst>`_: It is a general adimensionalization of the resulting **wind induced momentum** over a body. It is calculated by summing the resulting momentum of each triangle, and dividing it by a **representative volume**. The anchor point to define the momentum lever is an **arbitrary point for the whole body**.
 
 Geometry Artifact
 =================

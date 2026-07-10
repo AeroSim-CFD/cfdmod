@@ -40,6 +40,14 @@ or in Python, over any storage backend:
    template = load_template("path/to/cp.yaml")
    bindings = run_template(template, storage=XdmfH5Storage(root="."))
 
+.. note::
+   ``cfdmod run <template>`` is the Python snippet above wrapped for
+   convenience: it loads the template and runs it over an ``XdmfH5Storage``
+   rooted at the template's directory (exposed in the library as
+   ``cfdmod.recipes.run_yaml``). Call ``load_template`` + ``run_template``
+   directly when you need a different storage backend -- for example
+   ``MemoryStorage`` in tests.
+
 Example Cp / Cf / Cm / Ce templates ship under
 ``fixtures/tests/pressure/templates/``. The full worked example lives at
 ``notebooks/process_container_pack.ipynb`` in the repository; the

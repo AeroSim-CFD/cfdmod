@@ -113,7 +113,7 @@ Data format
         This also guarantee that even if different surfaces lie on the same region, the interpreted region for each of them will be different
 
 .. note::
-    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+    For more information about the normalized time scale (:math:`t^*`), check the `Time Normalization section <./time_normalization.rst>`_
 
 .. list-table:: :math:`C_e(t)`
    :widths: 15 15 15 15

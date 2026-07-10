@@ -107,35 +107,35 @@ Recipe configs
 ==============
 
 The pressure and wind recipes ship as small-data Pydantic configs under
-:mod:`cfdmod.core.recipes`; each mirrors one legacy ``*CaseConfig`` and
+:mod:`cfdmod.recipes`; each mirrors one legacy ``*CaseConfig`` and
 builds the equivalent pipeline. Example templates live under
 ``fixtures/tests/pressure/templates/``.
 
-.. autoclass:: cfdmod.core.recipes.CpRecipeConfig
+.. autoclass:: cfdmod.recipes.CpRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.CfRecipeConfig
+.. autoclass:: cfdmod.recipes.CfRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.CmRecipeConfig
+.. autoclass:: cfdmod.recipes.CmRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.CeRecipeConfig
+.. autoclass:: cfdmod.recipes.CeRecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.S1RecipeConfig
+.. autoclass:: cfdmod.recipes.S1RecipeConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.DynamicAnalysisConfig
+.. autoclass:: cfdmod.recipes.DynamicAnalysisConfig
    :members:
    :show-inheritance:
 
-.. autoclass:: cfdmod.core.recipes.PedestrianComfortConfig
+.. autoclass:: cfdmod.recipes.PedestrianComfortConfig
    :members:
    :show-inheritance:
 

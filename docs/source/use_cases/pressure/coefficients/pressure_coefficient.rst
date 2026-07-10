@@ -68,7 +68,7 @@ Data format
 ===========
 
 .. note::
-    For more information about the normalized time scale (:math:`t^*`), check the `Normalization section <./normalization.rst>`_ 
+    For more information about the normalized time scale (:math:`t^*`), check the `Time Normalization section <./time_normalization.rst>`_
 
 .. list-table:: :math:`c_p(t)`
    :widths: 20 20 20 20 20
