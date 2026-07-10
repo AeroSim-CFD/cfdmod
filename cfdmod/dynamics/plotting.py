@@ -475,6 +475,11 @@ def effective_peak_loads_per_direction(
     building-response data sources carrying the static-equivalent floor
     load fields. For each direction the dominant (larger-magnitude) peak is
     selected per axis; ``get_primary_load=False`` picks the opposite peak.
+
+    Exactly one case per direction is required: pre-filter the container
+    (e.g. ``container.filter_by(lambda c: c.xi == xi)``) so each direction
+    maps to a single case. A direction with more than one case raises
+    ``ValueError`` rather than silently picking an arbitrary one.
     """
     if isinstance(get_primary_load, bool):
         get_primary_load = (get_primary_load, get_primary_load, get_primary_load)
@@ -482,6 +487,11 @@ def effective_peak_loads_per_direction(
 
     tables: dict[str, dict[str, np.ndarray]] = {"Fx": {}, "Fy": {}, "Mz": {}}
     for direction, sub in container.join_by(lambda c: c.direction).items():
+        if len(sub) != 1:
+            raise ValueError(
+                f"direction {direction} maps to {len(sub)} cases; pre-filter the container "
+                "to a single case per direction (e.g. one xi / recurrence period)"
+            )
         resp = next(iter(sub.values()))
         for axis, field, load_name in zip(("x", "y", "z"), feq_fields, ("Fx", "Fy", "Mz")):
             arr = np.asarray(resp.fields.read(field), dtype=np.float64)  # (n_floors, n_t)

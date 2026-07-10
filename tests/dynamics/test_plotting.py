@@ -164,3 +164,17 @@ def test_effective_loads_and_eberick_export(tmp_path):
     assert out.exists()
     back = pd.read_excel(out, sheet_name="Fx")
     assert "Pavimento" in back.columns
+
+
+def test_effective_loads_rejects_multiple_cases_per_direction():
+    import pytest
+
+    resp = _response(_load_source())
+    # Two cases at the SAME direction (different xi) -> ambiguous.
+    cases = [
+        BuildingCaseParameters(direction=0.0, xi=0.01, recurrence_period=50.0),
+        BuildingCaseParameters(direction=0.0, xi=0.02, recurrence_period=50.0),
+    ]
+    container = Container(items={c: resp for c in cases})
+    with pytest.raises(ValueError, match="maps to 2 cases"):
+        plotting.effective_peak_loads_per_direction(container)

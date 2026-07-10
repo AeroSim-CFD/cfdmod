@@ -107,28 +107,57 @@ def test_recipe_produces_finite_response_of_expected_shape():
 
 
 def test_stiff_mode_approaches_quasi_static_recomposition():
-    """A very stiff single mode: modal displacement -> Q / wp^2 (quasi-static)."""
+    """A very stiff single mode -> quasi-static static-equivalent force.
+
+    For a mode much stiffer than the forcing, ``q -> Q / wp^2`` (quasi-static),
+    so ``feq_x = M * wp^2 * DX * q -> M * DX * Q`` with the ``wp^2`` cancelling.
+    We assert that limit directly, independent of ``wp``.
+    """
+    from cfdmod.core.ops.data_source_create.generalized_building_load import (
+        GeneralizedBuildingLoadParams,
+        generalized_building_load,
+    )
+
     cf_x, cf_y, cm_z, df_floors, _, modal_shapes = _synthetic_inputs()
     phi = np.stack(
         [np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in modal_shapes[:1]], axis=1
     )  # single mode
-    wp = np.array([2 * np.pi * 50.0])  # very stiff
+    # 20 Hz vs the ~0.3-0.7 Hz forcing: (w/wp)^2 ~ 1e-3 so the response is
+    # quasi-static, while still well below the output Nyquist (10 Hz at dt=0.05).
+    wp = np.array([2 * np.pi * 20.0])
+    cm_positions = df_floors[["XR", "YR"]].to_numpy()
+    mass = df_floors["M"].to_numpy()
+    load = _floor_source(cf_x, cf_y, cm_z)
 
     cfg = BuildingDynamicConfig(
         mode_shapes=phi,
         floor_points=np.zeros((N_FLOORS, 3)),
-        cm_positions=df_floors[["XR", "YR"]].to_numpy(),
-        floors_mass=df_floors["M"].to_numpy(),
+        cm_positions=cm_positions,
+        floors_mass=mass,
         floors_radius=df_floors["R"].to_numpy(),
         natural_frequencies=wp,
         damping_ratio=0.02,
     )
-    out = build_building_dynamic_response(_floor_source(cf_x, cf_y, cm_z), cfg)
+    out = build_building_dynamic_response(load, cfg)
 
-    # feq = M * wp^2 * DX * q ; quasi-static q ~ Q/wp^2 so feq ~ M * DX * Q.
-    # Just assert the static-equivalent force is bounded and finite for a stiff mode.
+    # Generalized load Q(t) for the single mode.
+    modes = generalized_building_load(
+        load, GeneralizedBuildingLoadParams(mode_shapes=phi, cm_positions=cm_positions, out="q")
+    )
+    q_load = np.asarray(modes.fields.read("q"))[0]  # (n_t,)
+
+    # Quasi-static limit: feq_x[floor, t] -> M[floor] * DX[floor] * Q(t) (the wp^2
+    # cancels). Compare a tail window (after the startup transient) via a
+    # normalized RMS error, which is robust to Q's zero crossings.
+    expected = mass[:, None] * phi[:, 0, 0][:, None] * q_load[None, :]
     feq = np.asarray(out.fields.read("feq_x"))
     assert np.isfinite(feq).all()
+
+    tail = slice(60, None)
+    nrms = np.sqrt(np.mean((feq[:, tail] - expected[:, tail]) ** 2)) / np.sqrt(
+        np.mean(expected[:, tail] ** 2)
+    )
+    assert nrms < 1e-2, f"quasi-static normalized RMS error too large: {nrms:.2e}"
 
 
 def test_legacy_parity_displacement_and_static_equivalent_forces():
