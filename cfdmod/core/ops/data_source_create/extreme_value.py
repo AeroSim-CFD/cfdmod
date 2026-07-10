@@ -20,10 +20,13 @@ The pure-numpy helpers (:func:`moving_filter`,
 :func:`reescale_event_duration_peak`, :func:`gumbel_extreme_value_1d`)
 are ported from the legacy ``cfdmod.hfpi.common`` (still live: it is
 consumed by ``cfdmod.hfpi.dynamic`` until the HFPI-to-v3 port switches
-that pipeline to these ops and removes it). Until then the two copies
-are kept in sync deliberately. They are importable directly by recipes
-and tests. ``scipy.stats`` is imported lazily inside the Gumbel fit,
-keeping the module's import cost scipy-free.
+that pipeline to these ops and removes it). The port is faithful except
+for one deliberate correction: the Gumbel sub-window duration is derived
+from the smoothed series length rather than the raw one (see
+:func:`gumbel_extreme_value_1d`), so results differ from the legacy by
+~window/record. They are importable directly by recipes and tests.
+``scipy.stats`` is imported lazily inside the Gumbel fit, keeping the
+module's import cost scipy-free.
 """
 
 from __future__ import annotations
@@ -111,12 +114,13 @@ def gumbel_extreme_value_1d(
             "peak_duration, or fewer subdivisions"
         )
     sub_arrays = np.array_split(smoothed_parent, n_subdivisions)
-    # Legacy behaviour: the sub-window duration is derived from the raw
-    # series length, not the (shorter) smoothed length. This slightly
-    # overstates the reference duration and biases the event-duration
-    # rescale by ~window/record; kept as-is for byte-for-byte parity with
-    # cfdmod.hfpi.common until the HFPI port revisits it.
-    orig_time_duration = len(hist_series) * dt / n_subdivisions
+    # The block-maxima come from the smoothed series (valid-mode
+    # convolution drops the w-1 partial-window edge samples), so the
+    # sub-window duration is derived from its length, not the raw series.
+    # This differs from cfdmod.hfpi.common, which used the raw length and
+    # thereby overstated the reference duration -- biasing the
+    # event-duration rescale by ~window/record.
+    orig_time_duration = smoothed_parent.size * dt / n_subdivisions
 
     if extreme_type == "max":
         from scipy.stats import gumbel_r
