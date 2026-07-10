@@ -44,11 +44,10 @@ from typing import ClassVar, Literal
 import numpy as np
 from pydantic import model_validator
 
-from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.ops import OpParams
-from cfdmod.core.time_axis import TimeAxis
+from cfdmod.core.ops.data_source_create._time_collapse import collapse_time_axis
 
 
 def moving_filter(hist_series: np.ndarray, dt: float, peak_duration: float) -> np.ndarray:
@@ -199,6 +198,11 @@ class ExtremeValueParams(OpParams):
         if self.method == "gumbel":
             if self.peak_duration is None or self.event_duration is None:
                 raise ValueError("method='gumbel' requires peak_duration and event_duration")
+            if self.peak_duration <= 0 or self.event_duration <= 0:
+                raise ValueError(
+                    f"peak_duration and event_duration must be > 0, got "
+                    f"peak_duration={self.peak_duration}, event_duration={self.event_duration}"
+                )
             if self.peak_factor is not None:
                 raise ValueError("peak_factor is not valid for method='gumbel'")
             if self.n_subdivisions is not None and self.n_subdivisions <= 0:
@@ -240,10 +244,10 @@ def extreme_value(ds: DataSource, p: ExtremeValueParams) -> DataSource:
         )
 
     if p.method == "peak_factor":
-        mean = arr.mean(axis=1)
-        rms = (arr - mean[:, None]).std(axis=1)
+        # np.std centres the data itself, so std of the fluctuation is
+        # just std of the raw series; matches statistics.py rms (ddof=0).
         sign = 1.0 if p.extreme_type == "max" else -1.0
-        result = mean + sign * p.peak_factor * rms
+        result = arr.mean(axis=1) + sign * p.peak_factor * arr.std(axis=1)
     else:  # gumbel
         dt = float(ds.time.timestep_size)
         n_subdivisions = p.n_subdivisions if p.n_subdivisions is not None else 10
@@ -272,15 +276,4 @@ def extreme_value(ds: DataSource, p: ExtremeValueParams) -> DataSource:
         if src_meta is not None
         else FieldMeta(name=out_name)
     )
-    new_time = TimeAxis(
-        initial_time=ds.time.initial_time,
-        timestep_size=0.0,
-        n_timesteps=0,
-    )
-    return ds.model_copy(
-        update={
-            "time": new_time,
-            "fields": MemoryFieldStore({out_name: result}),
-            "field_meta": {out_name: out_meta},
-        }
-    )
+    return collapse_time_axis(ds, {out_name: result}, {out_name: out_meta})

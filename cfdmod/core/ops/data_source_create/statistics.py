@@ -34,11 +34,10 @@ from typing import ClassVar, Literal
 
 import numpy as np
 
-from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.ops import OpParams
-from cfdmod.core.time_axis import TimeAxis
+from cfdmod.core.ops.data_source_create._time_collapse import collapse_time_axis
 
 STAT_KINDS = Literal[
     "mean",
@@ -117,15 +116,4 @@ def compute_statistics(ds: DataSource, p: StatisticsParams) -> DataSource:
             else FieldMeta(name=kind)
         )
 
-    new_time = TimeAxis(
-        initial_time=ds.time.initial_time,
-        timestep_size=0.0,
-        n_timesteps=0,
-    )
-    return ds.model_copy(
-        update={
-            "time": new_time,
-            "fields": MemoryFieldStore(out_arrays),
-            "field_meta": out_meta,
-        }
-    )
+    return collapse_time_axis(ds, out_arrays, out_meta)

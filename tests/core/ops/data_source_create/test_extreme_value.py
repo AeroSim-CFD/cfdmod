@@ -112,6 +112,46 @@ def test_gumbel_known_answer_on_synthetic_draw():
     assert est == pytest.approx(expected, rel=0.05)
 
 
+def test_gumbel_min_known_answer_on_synthetic_draw():
+    # Mirror of the max known-answer test for the gumbel_l branch.
+    # Block-min of N gumbel_l samples is gumbel_l(loc - scale*ln N, scale).
+    dt = 1.0
+    loc_true, scale_true = -5.0, 1.5
+    rng = np.random.default_rng(43)
+    from scipy.stats import gumbel_l
+
+    series = gumbel_l.rvs(loc=loc_true, scale=scale_true, size=200000, random_state=rng)
+    est = gumbel_extreme_value_1d(
+        series,
+        dt=dt,
+        peak_duration=dt / 2,  # 1-sample window -> smoothing is identity
+        event_duration=dt * len(series) / 10,  # == sub-window duration -> no rescale
+        extreme_type="min",
+        n_subdivisions=10,
+        non_exceedance_probability=0.78,
+    )
+    n_block = len(series) / 10
+    exp_loc = loc_true - scale_true * np.log(n_block)
+    expected = gumbel_l.ppf(1 - 0.78, loc=exp_loc, scale=scale_true)
+    assert est == pytest.approx(expected, rel=0.05)
+
+
+def test_gumbel_min_op_below_mean():
+    rng = np.random.default_rng(8)
+    data = rng.normal(size=(3, 5000))
+    ds = _surface(data, dt=0.01)
+    p = ExtremeValueParams(
+        method="gumbel",
+        extreme_type="min",
+        peak_duration=0.03,
+        event_duration=600.0,
+    )
+    out = extreme_value(ds, p)
+    gmin = out.fields.read("gumbel_min")
+    assert gmin.shape == (3,)
+    assert np.all(gmin < data.mean(axis=1))
+
+
 def test_gumbel_op_shape_and_ordering():
     rng = np.random.default_rng(7)
     data = rng.normal(size=(3, 5000))
@@ -159,6 +199,20 @@ def test_gumbel_requires_durations():
 def test_peak_factor_requires_factor():
     with pytest.raises(ValueError):
         ExtremeValueParams(method="peak_factor", extreme_type="max")
+
+
+def test_gumbel_rejects_non_positive_event_duration():
+    with pytest.raises(ValueError, match="must be > 0"):
+        ExtremeValueParams(
+            method="gumbel", extreme_type="max", peak_duration=1.0, event_duration=0.0
+        )
+
+
+def test_gumbel_rejects_non_positive_peak_duration():
+    with pytest.raises(ValueError, match="must be > 0"):
+        ExtremeValueParams(
+            method="gumbel", extreme_type="max", peak_duration=-1.0, event_duration=600.0
+        )
 
 
 def test_peak_factor_rejects_gumbel_params():

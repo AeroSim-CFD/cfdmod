@@ -114,20 +114,21 @@ def frequency_filter(ds: DataSource, p: FrequencyFilterParams) -> DataSource:
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"
         )
 
-    try:
-        if p.zero_phase:
+    if p.zero_phase:
+        try:
             out = sosfiltfilt(sos, arr, axis=1)
-        else:
-            out = sosfilt(sos, arr, axis=1)
-    except ValueError as e:
-        # sosfiltfilt requires the series to be longer than its edge-padding
-        # length (~3x the filter order), which the n_timesteps>=2 guard does
-        # not ensure. Re-raise with an actionable message.
-        raise ValueError(
-            f"frequency_filter could not filter a series of length {ds.time.n_timesteps} "
-            f"with order={p.order}, zero_phase={p.zero_phase}: {e}. Use a longer record, "
-            "a lower order, or set zero_phase=False."
-        ) from e
+        except ValueError as e:
+            # sosfiltfilt requires the series to be longer than its
+            # edge-padding length (~3x the filter order), which the
+            # n_timesteps>=2 guard does not ensure. Re-raise with an
+            # actionable message (padlen only applies to this path).
+            raise ValueError(
+                f"frequency_filter could not zero-phase filter a series of length "
+                f"{ds.time.n_timesteps} with order={p.order}: {e}. Use a longer record, "
+                "a lower order, or set zero_phase=False."
+            ) from e
+    else:
+        out = sosfilt(sos, arr, axis=1)
     out = np.ascontiguousarray(out, dtype=np.float64)
 
     target = p.out or p.field
