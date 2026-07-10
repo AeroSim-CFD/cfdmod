@@ -129,3 +129,14 @@ def test_cutoff_above_nyquist_rejected():
     ds = _surface(data, dt)
     with pytest.raises(ValueError):
         frequency_filter(ds, FrequencyFilterParams(btype="lowpass", cutoff=60.0))
+
+
+def test_zero_phase_short_series_raises_actionable_error():
+    # 10 samples passes the n_timesteps>=2 guard but is below the
+    # order-4 sosfiltfilt padlen; expect a clear cfdmod error, not a
+    # cryptic scipy one.
+    dt = 1e-3
+    data = np.random.default_rng(0).normal(size=(1, 10))
+    ds = _surface(data, dt)
+    with pytest.raises(ValueError, match="longer record|lower order|zero_phase"):
+        frequency_filter(ds, FrequencyFilterParams(btype="lowpass", cutoff=50.0))

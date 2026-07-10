@@ -168,6 +168,67 @@ def test_peak_factor_rejects_gumbel_params():
         )
 
 
+def test_peak_factor_rejects_n_subdivisions():
+    with pytest.raises(ValueError, match="peak_factor"):
+        ExtremeValueParams(
+            method="peak_factor", extreme_type="max", peak_factor=3.0, n_subdivisions=5
+        )
+
+
+def test_peak_factor_rejects_non_exceedance_probability():
+    with pytest.raises(ValueError, match="peak_factor"):
+        ExtremeValueParams(
+            method="peak_factor",
+            extreme_type="max",
+            peak_factor=3.0,
+            non_exceedance_probability=0.9,
+        )
+
+
+def test_gumbel_peak_duration_too_long_raises():
+    # peak_duration larger than the record shrinks the smoothed series
+    # below n_subdivisions; expect a clear error, not np.max on empty.
+    dt = 0.1
+    data = np.random.default_rng(0).normal(size=(1, 20))
+    ds = _surface(data, dt=dt)
+    p = ExtremeValueParams(
+        method="gumbel",
+        extreme_type="max",
+        peak_duration=5.0,  # 50 samples > 20 -> empty valid-mode convolution
+        event_duration=600.0,
+    )
+    with pytest.raises(ValueError, match="exceeds|n_subdivisions|shorter"):
+        extreme_value(ds, p)
+
+
+def test_gumbel_smoothed_shorter_than_subdivisions_raises():
+    # window <= N but the smoothed series is still shorter than
+    # n_subdivisions -> caught before np.max hits an empty block.
+    dt = 0.1
+    data = np.random.default_rng(1).normal(size=(1, 20))
+    ds = _surface(data, dt=dt)
+    p = ExtremeValueParams(
+        method="gumbel",
+        extreme_type="max",
+        peak_duration=1.6,  # 16 samples -> smoothed size 5 < 10 subdivisions
+        event_duration=600.0,
+    )
+    with pytest.raises(ValueError, match="shorter than n_subdivisions"):
+        extreme_value(ds, p)
+
+
+def test_gumbel_defaults_applied_when_none():
+    rng = np.random.default_rng(11)
+    data = rng.normal(size=(1, 5000))
+    ds = _surface(data, dt=0.01)
+    # n_subdivisions / non_exceedance_probability left unset (None).
+    p = ExtremeValueParams(
+        method="gumbel", extreme_type="max", peak_duration=0.03, event_duration=600.0
+    )
+    out = extreme_value(ds, p)
+    assert out.fields.read("gumbel_max").shape == (1,)
+
+
 def test_gumbel_rejects_peak_factor():
     with pytest.raises(ValueError):
         ExtremeValueParams(

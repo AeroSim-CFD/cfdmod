@@ -18,9 +18,12 @@ estimators that ``compute_statistics`` deliberately does not:
 
 The pure-numpy helpers (:func:`moving_filter`,
 :func:`reescale_event_duration_peak`, :func:`gumbel_extreme_value_1d`)
-are ported from the orphaned ``cfdmod.hfpi.common`` and are importable
-directly by recipes and tests. ``scipy.stats`` is imported lazily inside
-the Gumbel fit, keeping the module's import cost scipy-free.
+are ported from the legacy ``cfdmod.hfpi.common`` (still live: it is
+consumed by ``cfdmod.hfpi.dynamic`` until the HFPI-to-v3 port switches
+that pipeline to these ops and removes it). Until then the two copies
+are kept in sync deliberately. They are importable directly by recipes
+and tests. ``scipy.stats`` is imported lazily inside the Gumbel fit,
+keeping the module's import cost scipy-free.
 """
 
 from __future__ import annotations
@@ -33,10 +36,10 @@ __all__ = [
     "gumbel_extreme_value_1d",
 ]
 
-from typing import Annotated, ClassVar, Literal
+from typing import ClassVar, Literal
 
 import numpy as np
-from pydantic import Field, model_validator
+from pydantic import model_validator
 
 from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource
@@ -57,6 +60,12 @@ def moving_filter(hist_series: np.ndarray, dt: float, peak_duration: float) -> n
     from scipy.signal import convolve
 
     window_size = max(int(peak_duration / dt), 1)
+    if window_size > hist_series.size:
+        raise ValueError(
+            f"peak-window size {window_size} (peak_duration={peak_duration}, dt={dt}) "
+            f"exceeds the series length {hist_series.size}; use a shorter peak_duration "
+            "or a longer record"
+        )
     kernel = np.ones(window_size) / window_size
     return convolve(hist_series, kernel, mode="valid")
 
@@ -94,7 +103,19 @@ def gumbel_extreme_value_1d(
         raise ValueError("gumbel_extreme_value_1d works only on 1-D arrays")
 
     smoothed_parent = moving_filter(hist_series, dt, peak_duration)
+    if smoothed_parent.size < n_subdivisions:
+        raise ValueError(
+            f"smoothed series length {smoothed_parent.size} is shorter than "
+            f"n_subdivisions={n_subdivisions} (series length {hist_series.size}, "
+            f"peak_duration={peak_duration}, dt={dt}); use a longer record, a smaller "
+            "peak_duration, or fewer subdivisions"
+        )
     sub_arrays = np.array_split(smoothed_parent, n_subdivisions)
+    # Legacy behaviour: the sub-window duration is derived from the raw
+    # series length, not the (shorter) smoothed length. This slightly
+    # overstates the reference duration and biases the event-duration
+    # rescale by ~window/record; kept as-is for byte-for-byte parity with
+    # cfdmod.hfpi.common until the HFPI port revisits it.
     orig_time_duration = len(hist_series) * dt / n_subdivisions
 
     if extreme_type == "max":
@@ -132,11 +153,16 @@ class ExtremeValueParams(OpParams):
         event_duration: (gumbel) Target event duration to rescale the fit
             to, in input time units.
         n_subdivisions: (gumbel) Number of blocks the smoothed series is
-            split into for the block-maxima fit.
+            split into for the block-maxima fit. Defaults to 10.
         non_exceedance_probability: (gumbel) Quantile of the fitted
-            distribution to return.
+            distribution to return. Defaults to 0.78.
         peak_factor: (peak_factor) Multiplier ``k`` on the fluctuation
             rms.
+
+    The method-specific parameters default to ``None`` so that setting one
+    under the wrong ``method`` is a validation error rather than a silently
+    ignored value. The gumbel defaults (10 subdivisions, 0.78 quantile) are
+    applied in :func:`extreme_value`, not here.
     """
 
     kind: Literal["extreme_value"] = "extreme_value"
@@ -148,14 +174,21 @@ class ExtremeValueParams(OpParams):
     # gumbel-only
     peak_duration: float | None = None
     event_duration: float | None = None
-    n_subdivisions: Annotated[int, Field(gt=0)] = 10
-    non_exceedance_probability: Annotated[float, Field(gt=0, lt=1)] = 0.78
+    n_subdivisions: int | None = None
+    non_exceedance_probability: float | None = None
 
     # peak_factor-only
     peak_factor: float | None = None
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"elements"})
     replaces_fields: ClassVar[bool] = True
+
+    _GUMBEL_ONLY: ClassVar[tuple[str, ...]] = (
+        "peak_duration",
+        "event_duration",
+        "n_subdivisions",
+        "non_exceedance_probability",
+    )
 
     @model_validator(mode="after")
     def _check_method_params(self) -> "ExtremeValueParams":
@@ -164,14 +197,19 @@ class ExtremeValueParams(OpParams):
                 raise ValueError("method='gumbel' requires peak_duration and event_duration")
             if self.peak_factor is not None:
                 raise ValueError("peak_factor is not valid for method='gumbel'")
+            if self.n_subdivisions is not None and self.n_subdivisions <= 0:
+                raise ValueError(f"n_subdivisions must be > 0, got {self.n_subdivisions}")
+            if self.non_exceedance_probability is not None and not (
+                0 < self.non_exceedance_probability < 1
+            ):
+                raise ValueError(
+                    f"non_exceedance_probability must be in (0, 1), "
+                    f"got {self.non_exceedance_probability}"
+                )
         else:  # peak_factor
             if self.peak_factor is None:
                 raise ValueError("method='peak_factor' requires peak_factor")
-            extras = [
-                name
-                for name in ("peak_duration", "event_duration")
-                if getattr(self, name) is not None
-            ]
+            extras = [name for name in self._GUMBEL_ONLY if getattr(self, name) is not None]
             if extras:
                 raise ValueError(f"{extras} are not valid for method='peak_factor'")
         return self
@@ -204,6 +242,10 @@ def extreme_value(ds: DataSource, p: ExtremeValueParams) -> DataSource:
         result = mean + sign * p.peak_factor * rms
     else:  # gumbel
         dt = float(ds.time.timestep_size)
+        n_subdivisions = p.n_subdivisions if p.n_subdivisions is not None else 10
+        non_exceedance = (
+            p.non_exceedance_probability if p.non_exceedance_probability is not None else 0.78
+        )
         result = np.array(
             [
                 gumbel_extreme_value_1d(
@@ -212,8 +254,8 @@ def extreme_value(ds: DataSource, p: ExtremeValueParams) -> DataSource:
                     peak_duration=p.peak_duration,
                     event_duration=p.event_duration,
                     extreme_type=p.extreme_type,
-                    n_subdivisions=p.n_subdivisions,
-                    non_exceedance_probability=p.non_exceedance_probability,
+                    n_subdivisions=n_subdivisions,
+                    non_exceedance_probability=non_exceedance,
                 )
                 for row in arr
             ]
