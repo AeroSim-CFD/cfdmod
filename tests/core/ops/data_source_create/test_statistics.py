@@ -31,7 +31,7 @@ def test_statistics_collapses_time_axis():
     out = compute_statistics(ds, StatisticsParams(kinds=["mean", "rms", "min", "max"]))
     assert out.time.is_time_aggregated
     np.testing.assert_allclose(out.fields.read("mean"), data.mean(axis=1))
-    np.testing.assert_allclose(out.fields.read("rms"), data.std(axis=1, ddof=1))
+    np.testing.assert_allclose(out.fields.read("rms"), data.std(axis=1))
     np.testing.assert_array_equal(out.fields.read("min"), data.min(axis=1))
     np.testing.assert_array_equal(out.fields.read("max"), data.max(axis=1))
 

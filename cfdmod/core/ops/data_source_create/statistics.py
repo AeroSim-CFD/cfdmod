@@ -9,10 +9,13 @@ Supported statistics
 --------------------
 
 - ``mean``: arithmetic mean over time.
-- ``rms``: standard deviation of the fluctuation (sample, ddof=1). Named
-  ``rms`` to match the wind-engineering ``Cp_rms`` convention; note this
-  is ``std``, not ``sqrt(mean(x^2))``, and the two differ when the mean
-  is nonzero.
+- ``rms``: standard deviation of the fluctuation (numpy default,
+  ``ddof=0``). Named ``rms`` to match the wind-engineering ``Cp_rms``
+  convention; note this is ``std``, not ``sqrt(mean(x^2))``, and the two
+  differ when the mean is nonzero. The population/sample distinction
+  (``ddof=0`` vs ``1``) is numerically irrelevant at our sample sizes
+  (a ``sqrt(N/(N-1))`` factor, well below 0.01% for a real time series),
+  so we keep the default; ``extreme_value``'s peak-factor rms matches.
 - ``min`` / ``max``: raw sample minimum / maximum over time.
 - ``peak_min`` / ``peak_max``: currently identical to ``min`` / ``max``
   (raw extremes), kept as separate names for parity with the odt
@@ -73,7 +76,7 @@ def _stat(arr: np.ndarray, name: str) -> np.ndarray:
     if name == "mean":
         return arr.mean(axis=1)
     if name == "rms":
-        return arr.std(axis=1, ddof=1) if arr.shape[1] > 1 else np.zeros(arr.shape[0])
+        return arr.std(axis=1)
     if name in ("min", "peak_min"):
         return arr.min(axis=1)
     if name in ("max", "peak_max"):
