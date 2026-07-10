@@ -243,6 +243,76 @@ def _slice_one_triangle(
     return slice_triangle(tri_verts, axis, axis_value).astype(np.float64)
 
 
+def _apply_axis_cut(
+    cur_verts: np.ndarray,
+    cur_normals: np.ndarray,
+    cur_parents: np.ndarray,
+    axis: int,
+    v: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Slice all current fragments along a single ``(axis, v)`` plane.
+
+    Vectorises the pass-through decision so only the fragments that actually
+    straddle the plane run the per-triangle slicing arithmetic. Output
+    ordering matches the naive per-fragment loop (fragments emitted in the
+    original row order ``i``, and in ``slice_triangle`` order within a row),
+    so the result is identical to slicing each triangle one at a time.
+
+    A fragment is passed through unchanged when its normal is dominantly
+    along ``axis`` (parallel to the cut plane) or it lies entirely on one
+    side of ``v`` -- mirroring :func:`_slice_one_triangle`.
+    """
+    n = cur_verts.shape[0]
+    if n == 0:
+        return cur_verts, cur_normals, cur_parents
+
+    abs_normals = np.abs(cur_normals)
+    normal_parallel = abs_normals.max(axis=1) == abs_normals[:, axis]
+    axis_coord = cur_verts[:, :, axis]
+    entirely_below = axis_coord.max(axis=1) < v
+    entirely_above = axis_coord.min(axis=1) > v
+    keep = normal_parallel | entirely_below | entirely_above
+
+    straddle_idx = np.flatnonzero(~keep)
+    if straddle_idx.size == 0:
+        # No fragment crosses this plane; nothing to do (identity).
+        return cur_verts, cur_normals, cur_parents
+
+    # Only the straddling fragments run the (Python) per-triangle cut.
+    counts = np.ones(n, dtype=np.int64)
+    straddle_fragments: dict[int, np.ndarray] = {}
+    for i in straddle_idx.tolist():
+        fragments = slice_triangle(cur_verts[i], axis, v).astype(np.float64)
+        straddle_fragments[i] = fragments
+        counts[i] = fragments.shape[0]
+
+    total = int(counts.sum())
+    offsets = np.empty(n + 1, dtype=np.int64)
+    offsets[0] = 0
+    np.cumsum(counts, out=offsets[1:])
+
+    out_verts = np.empty((total, 3, 3), dtype=np.float64)
+    out_normals = np.empty((total, 3), dtype=np.float64)
+    out_parents = np.empty(total, dtype=np.int64)
+
+    # Kept fragments (exactly one output each) filled in bulk by index.
+    keep_pos = offsets[:-1][keep]
+    out_verts[keep_pos] = cur_verts[keep]
+    out_normals[keep_pos] = cur_normals[keep]
+    out_parents[keep_pos] = cur_parents[keep]
+
+    # Straddling fragments expand into their contiguous slice, inheriting
+    # the parent's normal and parent index.
+    for i, fragments in straddle_fragments.items():
+        start = int(offsets[i])
+        end = int(offsets[i + 1])
+        out_verts[start:end] = fragments
+        out_normals[start:end] = cur_normals[i]
+        out_parents[start:end] = cur_parents[i]
+
+    return out_verts, out_normals, out_parents
+
+
 def slice_triangles_with_parents(
     tri_verts: np.ndarray,
     tri_normals: np.ndarray,
@@ -275,17 +345,9 @@ def slice_triangles_with_parents(
         for v in intervals[axis]:
             if not np.isfinite(v):
                 continue
-            new_verts = []
-            new_normals = []
-            new_parents = []
-            for i in range(cur_verts.shape[0]):
-                fragments = _slice_one_triangle(cur_verts[i], cur_normals[i], axis, float(v))
-                new_verts.append(fragments)
-                new_normals.append(np.tile(cur_normals[i], (fragments.shape[0], 1)))
-                new_parents.append(np.full(fragments.shape[0], cur_parents[i], dtype=np.int64))
-            cur_verts = np.concatenate(new_verts, axis=0)
-            cur_normals = np.concatenate(new_normals, axis=0)
-            cur_parents = np.concatenate(new_parents, axis=0)
+            cur_verts, cur_normals, cur_parents = _apply_axis_cut(
+                cur_verts, cur_normals, cur_parents, axis, float(v)
+            )
 
     return cur_verts, cur_normals, cur_parents
 
