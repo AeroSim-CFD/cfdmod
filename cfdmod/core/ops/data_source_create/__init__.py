@@ -26,6 +26,8 @@ __all__ = [
     "field_series_for_groups",
     "FilterByGroupingParams",
     "filter_by_grouping",
+    "GeneralizedBuildingLoadParams",
+    "generalized_building_load",
     "ModalProjectionParams",
     "modal_projection",
     "ModalRecompositionParams",
@@ -44,6 +46,10 @@ from cfdmod.core.ops.data_source_create.field_series_for_groups import (
 from cfdmod.core.ops.data_source_create.filter_by_grouping import (
     FilterByGroupingParams,
     filter_by_grouping,
+)
+from cfdmod.core.ops.data_source_create.generalized_building_load import (
+    GeneralizedBuildingLoadParams,
+    generalized_building_load,
 )
 from cfdmod.core.ops.data_source_create.modal_projection import (
     ModalProjectionParams,

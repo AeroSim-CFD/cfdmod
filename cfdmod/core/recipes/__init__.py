@@ -41,6 +41,9 @@ __all__ = [
     "DynamicAnalysisConfig",
     "build_dynamic_response",
     "identity_solver",
+    "sdof_rk45_solver",
+    "BuildingDynamicConfig",
+    "build_building_dynamic_response",
     "run_yaml",
 ]
 
@@ -53,9 +56,12 @@ from cfdmod.core.recipes.pedestrian_comfort import (
     build_pedestrian_comfort,
 )
 from cfdmod.core.recipes.dynamic import (
+    BuildingDynamicConfig,
     DynamicAnalysisConfig,
+    build_building_dynamic_response,
     build_dynamic_response,
     identity_solver,
+    sdof_rk45_solver,
 )
 from cfdmod.core.recipes.run_yaml import run_yaml
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline
