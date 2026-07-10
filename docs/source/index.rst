@@ -53,6 +53,18 @@ Example Cp / Cf / Cm / Ce templates ship under
 ``notebooks/process_container_pack.ipynb`` in the repository; the
 :doc:`architecture/data_sources` page explains the paradigm end-to-end.
 
+New here? Start with :doc:`getting_started/index` -- install, the files
+you need on disk, a first Cp run, and how to read the outputs back into
+ParaView or pandas.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Getting Started
+   :hidden:
+
+   Getting started <getting_started/index.rst>
+   Reading outputs <getting_started/reading_outputs.rst>
+
 .. toctree::
    :maxdepth: 1
    :caption: Architecture
