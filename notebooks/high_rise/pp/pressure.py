@@ -4,19 +4,31 @@ Thin composition of library ops -- no new maths lives here. The high-rise
 choices baked in:
 
     Cp  = (p - p_ref) / q,  q = 0.5 * rho * U_H^2   (from HighRiseCase)
-    Cf  per floor: force_contribution (explicit reference area) summed over the
-        triangles whose centroid falls in each floor's z-slice.
+    Cf  per floor: force_contribution (explicit reference area) summed per floor.
     Cm  per floor: moment_contribution about the case lever origin, summed per
         floor (normalised by the reference volume).
 
-Per-floor slicing uses ``zoning_grouping`` with the floor z-edges as z_intervals
-and open x/y bins, so each floor is one group. The reference-area normalisation
-(vs the legacy per-region bounding-box area) is the convention chosen for 3.2.
+Per-floor partitioning has two methods, chosen by ``method``:
+
+- ``"face_cut"`` (default) -- geometrically slice each triangle at the floor
+    z-edges so a triangle straddling a boundary contributes its *real partial
+    area* to each floor. Exact force/moment by floor.
+- ``"centroid"`` -- the fast/approximate ``zoning_grouping``: assign each whole
+    triangle to one floor by its centroid. Cheaper, but a triangle spanning a
+    boundary lands entirely on one side.
+
+Both attach a ``"floor"`` grouping (raster region id == floor index, since x/y
+are open) and sum the per-triangle contributions with
+``field_series_for_groups(agg="sum")``. The reference-area normalisation (vs the
+legacy per-region bounding-box area) is the convention chosen for 3.2.
 """
 
 from __future__ import annotations
 
+from typing import Literal
+
 from cfdmod.core.data_source import DataSource, GroupsDataSource
+from cfdmod.core.ops.data_source_create.face_cut import FaceCutParams, face_cut
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
     FieldSeriesForGroupsParams,
     field_series_for_groups,
@@ -32,6 +44,8 @@ from cfdmod.core.recipes import CpRecipeConfig, build_cp
 from pp.case import HighRiseCase
 
 _FLOOR = "floor"
+
+FloorMethod = Literal["face_cut", "centroid"]
 
 
 def cp_from_pressure(
@@ -56,11 +70,25 @@ def cp_from_pressure(
     return build_cp(body, p_ref=p_ref, cfg=cfg)
 
 
-def _floor_grouping(ds: DataSource, mesh_path: str, case: HighRiseCase) -> DataSource:
-    return zoning_grouping(
-        ds,
-        ZoningGroupingParams(mesh=mesh_path, z_intervals=list(case.floor_heights), name=_FLOOR),
-    )
+def _partition_floors(
+    ds: DataSource, mesh_path: str, case: HighRiseCase, method: FloorMethod
+) -> DataSource:
+    """Attach a per-floor partition; ``face_cut`` slices, ``centroid`` groups whole triangles.
+
+    ``face_cut`` returns a new (fragmented) surface whose fields are inherited
+    from the parent, so force/moment must be computed *after* it to pick up the
+    partial fragment areas. ``centroid`` attaches a grouping to the same surface.
+    """
+    if method == "face_cut":
+        return face_cut(ds, FaceCutParams(z_intervals=list(case.floor_heights), name=_FLOOR))
+    if method == "centroid":
+        return zoning_grouping(
+            ds,
+            ZoningGroupingParams(
+                mesh=mesh_path, z_intervals=list(case.floor_heights), name=_FLOOR
+            ),
+        )
+    raise ValueError(f"unknown floor method {method!r}; expected 'face_cut' or 'centroid'")
 
 
 def _sum_per_floor(ds: DataSource, fields: list[str]) -> GroupsDataSource:
@@ -87,13 +115,19 @@ def cf_per_floor(
     case: HighRiseCase,
     *,
     directions: tuple[str, ...] = ("x", "y"),
+    method: FloorMethod = "face_cut",
 ) -> GroupsDataSource:
-    """Per-floor force coefficients cf_<dir>, one row per floor slice."""
+    """Per-floor force coefficients cf_<dir>, one row per floor slice.
+
+    With ``method="face_cut"`` (default) a triangle straddling a floor boundary
+    contributes its exact partial area to each floor; ``method="centroid"`` uses
+    the faster whole-triangle centroid assignment.
+    """
     ds = mesh_attach(cp_ds, MeshAttachParams(mesh=mesh_path))
+    ds = _partition_floors(ds, mesh_path, case, method)
     ds = force_contribution(
         ds, ForceContributionParams(nominal_area=case.nominal_area, directions=list(directions))
     )
-    ds = _floor_grouping(ds, mesh_path, case)
     return _sum_per_floor(ds, [f"cf_{d}" for d in directions])
 
 
@@ -103,9 +137,14 @@ def cm_per_floor(
     case: HighRiseCase,
     *,
     directions: tuple[str, ...] = ("z",),
+    method: FloorMethod = "face_cut",
 ) -> GroupsDataSource:
-    """Per-floor moment coefficients cm_<dir> about the case lever origin."""
+    """Per-floor moment coefficients cm_<dir> about the case lever origin.
+
+    See :func:`cf_per_floor` for the ``method`` trade-off.
+    """
     ds = mesh_attach(cp_ds, MeshAttachParams(mesh=mesh_path))
+    ds = _partition_floors(ds, mesh_path, case, method)
     # moment_contribution reads all three force components, so produce them all.
     ds = force_contribution(
         ds, ForceContributionParams(nominal_area=case.nominal_area, directions=["x", "y", "z"])
@@ -119,5 +158,4 @@ def cm_per_floor(
             directions=list(directions),
         ),
     )
-    ds = _floor_grouping(ds, mesh_path, case)
     return _sum_per_floor(ds, [f"cm_{d}" for d in directions])
