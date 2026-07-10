@@ -89,26 +89,23 @@ def test_active_modes_selection(csv_dir):
 
 
 def test_mass_normalization_matches_legacy():
-    """mass_normalize_mode_shapes reproduces legacy hfpi normalize_mode_shapes."""
-    from cfdmod.hfpi.dynamic import normalize_mode_shapes
+    """mass_normalize_mode_shapes reproduces the frozen legacy normalize_mode_shapes."""
+    from tests.dynamics._goldens import golden
 
+    n = 4  # matches the golden generator's fixture
     rng = np.random.default_rng(0)
-    mass = np.linspace(100, 130, N_FLOORS)
-    radius = (np.linspace(800, 1100, N_FLOORS) / mass) ** 0.5
+    mass = np.linspace(100, 130, n)
+    radius = (np.linspace(800, 1100, n) / mass) ** 0.5
 
-    df_floors = pd.DataFrame({"M": mass, "R": radius})
     df_phi = pd.DataFrame(
         {
-            "DX": rng.normal(size=N_FLOORS),
-            "DY": rng.normal(size=N_FLOORS),
-            "RZ": rng.normal(size=N_FLOORS) * 0.01,
+            "DX": rng.normal(size=n),
+            "DY": rng.normal(size=n),
+            "RZ": rng.normal(size=n) * 0.01,
         }
     )
     phi = np.column_stack([df_phi["DX"], df_phi["DY"], df_phi["RZ"]])[:, None, :]
 
     got = mass_normalize_mode_shapes(phi, mass, radius)[:, 0, :]
 
-    normalize_mode_shapes(df_floors, df_phi)  # mutates df_phi in place
-    expected = np.column_stack([df_phi["DX"], df_phi["DY"], df_phi["RZ"]])
-
-    np.testing.assert_allclose(got, expected, rtol=1e-12)
+    np.testing.assert_allclose(got, golden("mn_norm"), rtol=1e-12)

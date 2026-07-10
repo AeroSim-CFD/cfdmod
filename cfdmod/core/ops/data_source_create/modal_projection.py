@@ -10,9 +10,11 @@ mode ``i`` at time ``t`` is::
 Returns a :class:`ModesDataSource` whose element axis is the mode
 index and whose field is the generalized load timeseries.
 
-This is the small-data analogue of the modal-projection step in the
-legacy ``hfpi.dynamic`` pipeline. The lever-arm logic that turns a Cf
-field into a per-element load lives upstream (Phase 8 recipe).
+This is the generic single-field modal projection. The building
+dynamic-response pipeline uses the richer
+:func:`~cfdmod.core.ops.data_source_create.generalized_building_load.generalized_building_load`
+op, which projects the per-floor Cf / Cm channels with a CM lever-arm
+correction instead of a plain ``phi.T @ f``.
 """
 
 from __future__ import annotations

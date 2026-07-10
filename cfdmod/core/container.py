@@ -1,21 +1,20 @@
 """Generic container of :class:`DataSource` (or any pickleable value).
 
-Lifts the ``HFPIAnalysisResults`` pattern from
-``cfdmod.hfpi.handler`` into the core layer:
+A directional / parametric multi-case map, keyed by a frozen Pydantic
+case-parameters object:
 
-- a ``dict[K, V]`` keyed by a frozen Pydantic case-parameters object
-  (``HFPICaseParameters`` is one example, but the container does not
-  care);
+- a ``dict[K, V]`` keyed by a frozen case-parameters object
+  (``cfdmod.dynamics.BuildingCaseParameters`` is one example, but the
+  container does not care);
 - ``join_by(callback)`` partitions the container by a derived key
   (e.g. "by direction", "by recurrence period");
 - ``filter_by(callback)`` returns a sub-container;
 - ``map_values(pipeline, *, pool=None)`` runs a pipeline over every
   value, optionally in parallel via an injected :class:`Pool`.
 
-Phase 6 of the v3 plan aliases ``HFPIAnalysisResults`` to
-``Container[HFPICaseParameters, ResultType]`` and rewrites the
-existing ``join_by_*`` helpers as one-line wrappers over
-:meth:`join_by`.
+The building dynamic-response cases (``cfdmod.dynamics.cases``) group and
+filter directional results through :meth:`join_by` / :meth:`filter_by`
+with no bespoke machinery.
 """
 
 from __future__ import annotations

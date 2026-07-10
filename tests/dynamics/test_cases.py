@@ -105,45 +105,14 @@ def _floor_source(cf_x, cf_y, cm_z):
 
 
 def test_multiplier_parity_with_legacy_case_build():
-    """with_multipliers(mm, fm) reproduces the legacy case knobs via solve_hfpi."""
-    from cfdmod.hfpi import dynamic as legacy_dynamic
-    from cfdmod.hfpi import static as legacy_static
+    """with_multipliers(mm, fm) reproduces the frozen legacy case-knob outputs."""
+    from tests.dynamics._goldens import golden
 
     cf_x, cf_y, cm_z, df_floors, df_modes, shapes = _raw_inputs()
     mm, fm = 1.4, 1.2
     xi = 0.015
 
-    # --- legacy: apply the case knobs the way handler.py does, then solve ---
-    df_floors_mod = df_floors.copy()
-    df_floors_mod["M"] = df_floors_mod["M"] * mm  # R column intentionally unchanged
-    df_modes_mod = df_modes.copy()
-    df_modes_mod["frequency"] = df_modes_mod["frequency"] / (mm**0.5) * fm
-    df_modes_mod["wp"] = df_modes_mod["frequency"] * 2 * np.pi
-    df_modes_mod["period"] = 1 / df_modes_mod["frequency"]
-
-    def force_df(arr):
-        df = pd.DataFrame({str(f): arr[f] for f in range(N_FLOORS)})
-        df["time_normalized"] = np.arange(N_T) * DT
-        return df
-
-    forces = legacy_static.StaticForcesData(
-        cf_x=force_df(cf_x), cf_y=force_df(cf_y), cm_z=force_df(cm_z)
-    )
-    u_h = (1.0 / 0.613) ** 0.5
-    dim_data = legacy_static.DimensionalData(
-        U_H=u_h, height=1.0, base=1.0, integral_scale_multiplier=u_h
-    )
-    struct = legacy_dynamic.HFPIStructuralData(
-        df_modes=df_modes_mod,
-        df_floors=df_floors_mod,
-        df_modal_shapes=[s.copy() for s in shapes],
-        active_modes=[0, 1],
-    )
-    legacy_result = legacy_dynamic.solve_hfpi(
-        structural_data=struct, dim_data=dim_data, forces=forces, xi=xi
-    )
-
-    # --- v3: base structural data (mm=1, fm=1), then with_multipliers ---
+    # base structural data (mm=1, fm=1), then with_multipliers
     phi_raw = np.stack([np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in shapes], axis=1)
     base_mass = df_floors["M"].to_numpy()
     base_radius = df_floors["R"].to_numpy()
@@ -160,11 +129,7 @@ def test_multiplier_parity_with_legacy_case_build():
     out = build_building_dynamic_response(_floor_source(cf_x, cf_y, cm_z), case.to_config(xi))
 
     np.testing.assert_allclose(
-        out.fields.read("disp_x"), legacy_result.displacement["x"].T, rtol=1e-6, atol=1e-9
+        out.fields.read("disp_x"), golden("mul_disp_x"), rtol=1e-6, atol=1e-9
     )
-    np.testing.assert_allclose(
-        out.fields.read("feq_x"), legacy_result.forces_static_eq["x"].T, rtol=1e-6, atol=1e-9
-    )
-    np.testing.assert_allclose(
-        out.fields.read("meq_z"), legacy_result.forces_static_eq["z"].T, rtol=1e-6, atol=1e-9
-    )
+    np.testing.assert_allclose(out.fields.read("feq_x"), golden("mul_feq_x"), rtol=1e-6, atol=1e-9)
+    np.testing.assert_allclose(out.fields.read("meq_z"), golden("mul_meq_z"), rtol=1e-6, atol=1e-9)

@@ -18,13 +18,11 @@ estimators that ``compute_statistics`` deliberately does not:
 
 The pure-numpy helpers (:func:`moving_filter`,
 :func:`reescale_event_duration_peak`, :func:`gumbel_extreme_value_1d`)
-are ported from the legacy ``cfdmod.hfpi.common`` (still live: it is
-consumed by ``cfdmod.hfpi.dynamic`` until the HFPI-to-v3 port switches
-that pipeline to these ops and removes it). The port is faithful except
-for one deliberate correction: the Gumbel sub-window duration is derived
-from the smoothed series length rather than the raw one (see
-:func:`gumbel_extreme_value_1d`), so results differ from the legacy by
-~window/record. They are importable directly by recipes and tests.
+were ported from the former legacy HFPI ``common`` module. The port is
+faithful except for one deliberate correction: the Gumbel sub-window
+duration is derived from the smoothed series length rather than the raw
+one (see :func:`gumbel_extreme_value_1d`), so results differ from the
+legacy by ~window/record. They are importable directly by recipes and tests.
 ``scipy.stats`` is imported lazily inside the Gumbel fit, keeping the
 module's import cost scipy-free.
 """

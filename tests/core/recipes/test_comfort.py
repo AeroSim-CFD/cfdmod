@@ -79,38 +79,13 @@ def _floor_source(cf_x, cf_y, cm_z):
 
 
 def test_acceleration_parity_with_legacy_point_acceleration():
-    from cfdmod.hfpi import dynamic as legacy_dynamic
-    from cfdmod.hfpi import static as legacy_static
+    from cfdmod.dynamics.structural import mass_normalize_mode_shapes
+    from tests.dynamics._goldens import golden
 
     cf_x, cf_y, cm_z, df_floors, df_modes, shapes = _synthetic()
 
-    def force_df(arr):
-        df = pd.DataFrame({str(f): arr[f] for f in range(N_FLOORS)})
-        df["time_normalized"] = np.arange(N_T) * DT
-        return df
-
-    forces = legacy_static.StaticForcesData(
-        cf_x=force_df(cf_x), cf_y=force_df(cf_y), cm_z=force_df(cm_z)
-    )
-    u_h = (1.0 / 0.613) ** 0.5
-    dim_data = legacy_static.DimensionalData(
-        U_H=u_h, height=1.0, base=1.0, integral_scale_multiplier=u_h
-    )
-    struct = legacy_dynamic.HFPIStructuralData(
-        df_modes=df_modes,
-        df_floors=df_floors,
-        df_modal_shapes=[s.copy() for s in shapes],
-        active_modes=[0, 1],
-    )
-    legacy = legacy_dynamic.solve_hfpi(
-        structural_data=struct, dim_data=dim_data, forces=forces, xi=0.015
-    )
-    legacy_acc = legacy.get_point_acceleration(df_floors[["XR", "YR"]], POINT)
-
-    # v3 path (feed the mass-normalized shapes the legacy solve produced).
-    phi = np.stack(
-        [np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in struct.df_modal_shapes], axis=1
-    )
+    phi_raw = np.stack([np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in shapes], axis=1)
+    phi = mass_normalize_mode_shapes(phi_raw, df_floors["M"].to_numpy(), df_floors["R"].to_numpy())
     cfg = BuildingDynamicConfig(
         mode_shapes=phi,
         floor_points=np.column_stack([np.zeros(N_FLOORS), np.zeros(N_FLOORS), df_floors["Z"]]),
@@ -126,8 +101,8 @@ def test_acceleration_parity_with_legacy_point_acceleration():
     )
 
     # Legacy second_derivative uses float32 internally -> compare at float32 tolerance.
-    np.testing.assert_allclose(acc.fields.read("acc_x"), legacy_acc["x"].T, rtol=1e-4, atol=1e-6)
-    np.testing.assert_allclose(acc.fields.read("acc_y"), legacy_acc["y"].T, rtol=1e-4, atol=1e-6)
+    np.testing.assert_allclose(acc.fields.read("acc_x"), golden("cf_acc_x"), rtol=1e-4, atol=1e-6)
+    np.testing.assert_allclose(acc.fields.read("acc_y"), golden("cf_acc_y"), rtol=1e-4, atol=1e-6)
 
 
 def test_acceleration_magnitude_and_peak_reduction():

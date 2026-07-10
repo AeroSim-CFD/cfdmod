@@ -89,8 +89,8 @@ def test_missing_floor_filled_with_zeros(tmp_path):
 
 
 def test_parity_with_legacy_scaling(tmp_path):
-    """Scaled floor matrices match the legacy StaticForcesData path."""
-    from cfdmod.hfpi import static as legacy_static
+    """Scaled floor matrices match the frozen legacy StaticForcesData path."""
+    from tests.dynamics._goldens import golden
 
     paths, _ = _write_forces(tmp_path)
     dim = DimensionalData(U_H=22.0, height=90.0, base=35.0, integral_scale_multiplier=1.3)
@@ -99,19 +99,9 @@ def test_parity_with_legacy_scaling(tmp_path):
         paths["cf_x"], paths["cf_y"], paths["cm_z"], dim, n_floors=N_FLOORS
     )
 
-    legacy_forces = legacy_static.StaticForcesData.build(
-        paths["cf_x"], paths["cf_y"], paths["cm_z"]
-    )
-    legacy_dim = legacy_static.DimensionalData(
-        U_H=22.0, height=90.0, base=35.0, integral_scale_multiplier=1.3
-    )
-    legacy_scaled = legacy_forces.get_scaled_forces(legacy_dim)
-    legacy_scaled.fill_missing_floors(N_FLOORS)
-    legacy_dct = legacy_scaled.get_as_dct()  # (n_samples, n_floors) per axis
-
-    np.testing.assert_allclose(src.fields.read("cf_x"), legacy_dct["x"].T, rtol=1e-10)
-    np.testing.assert_allclose(src.fields.read("cf_y"), legacy_dct["y"].T, rtol=1e-10)
-    np.testing.assert_allclose(src.fields.read("cm_z"), legacy_dct["z"].T, rtol=1e-10)
+    np.testing.assert_allclose(src.fields.read("cf_x"), golden("fs_x"), rtol=1e-10)
+    np.testing.assert_allclose(src.fields.read("cf_y"), golden("fs_y"), rtol=1e-10)
+    np.testing.assert_allclose(src.fields.read("cm_z"), golden("fs_z"), rtol=1e-10)
 
 
 def test_end_to_end_disk_to_recipe(tmp_path):

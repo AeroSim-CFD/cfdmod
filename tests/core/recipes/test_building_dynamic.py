@@ -1,8 +1,9 @@
 """Building dynamic-response recipe: full-recipe + legacy-parity tests.
 
 The parity test pins the v3 ``build_building_dynamic_response`` against
-the legacy ``cfdmod.hfpi.solve_hfpi`` on a tiny synthetic fixture, so the
-one-shot cutover is guarded before ``cfdmod/hfpi/`` is deleted.
+frozen legacy ``solve_hfpi`` outputs (``fixtures/tests/dynamics/legacy_goldens.npz``,
+generated while ``cfdmod.hfpi`` still existed), so it keeps guarding the v3
+code after the legacy module was removed.
 """
 
 from __future__ import annotations
@@ -131,48 +132,19 @@ def test_stiff_mode_approaches_quasi_static_recomposition():
 
 
 def test_legacy_parity_displacement_and_static_equivalent_forces():
-    """v3 recipe matches legacy solve_hfpi on identical numbers."""
-    from cfdmod.hfpi import dynamic as legacy_dynamic
-    from cfdmod.hfpi import static as legacy_static
+    """v3 recipe matches frozen legacy solve_hfpi outputs (characterization)."""
+    from cfdmod.dynamics.structural import mass_normalize_mode_shapes
+    from tests.dynamics._goldens import golden
 
     cf_x, cf_y, cm_z, df_floors, df_modes, modal_shapes = _synthetic_inputs()
 
-    # Build legacy force data with string floor columns + time_normalized.
-    def force_df(arr):
-        df = pd.DataFrame({str(f): arr[f] for f in range(N_FLOORS)})
-        df["time_normalized"] = np.arange(N_T) * DT
-        return df
-
-    forces = legacy_static.StaticForcesData(
-        cf_x=force_df(cf_x), cf_y=force_df(cf_y), cm_z=force_df(cm_z)
+    # Mass-normalize the raw shapes the way solve_hfpi does internally
+    # (mass_normalize_mode_shapes is itself pinned against the legacy
+    # normalize_mode_shapes in test_structural).
+    phi_raw = np.stack(
+        [np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in modal_shapes], axis=1
     )
-
-    # Dimensional data chosen so force/moment/time scaling factors are all 1.
-    u_h = (1.0 / 0.613) ** 0.5
-    dim_data = legacy_static.DimensionalData(
-        U_H=u_h, height=1.0, base=1.0, integral_scale_multiplier=u_h
-    )
-    assert abs(dim_data.force_normalization_factor - 1.0) < 1e-9
-    assert abs(dim_data.moments_normalization_factor - 1.0) < 1e-9
-    assert abs(dim_data.time_normalization_factor - 1.0) < 1e-9
-
-    struct = legacy_dynamic.HFPIStructuralData(
-        df_modes=df_modes,
-        df_floors=df_floors,
-        df_modal_shapes=modal_shapes,
-        active_modes=[0, 1],
-    )
-
-    xi = 0.015
-    legacy_result = legacy_dynamic.solve_hfpi(
-        structural_data=struct, dim_data=dim_data, forces=forces, xi=xi
-    )
-
-    # After solve_hfpi, mode shapes are mass-normalized in place -> feed same to v3.
-    phi = np.stack(
-        [np.column_stack([s["DX"], s["DY"], s["RZ"]]) for s in struct.df_modal_shapes],
-        axis=1,
-    )  # (n_floors, n_modes, 3)
+    phi = mass_normalize_mode_shapes(phi_raw, df_floors["M"].to_numpy(), df_floors["R"].to_numpy())
 
     cfg = BuildingDynamicConfig(
         mode_shapes=phi,
@@ -181,26 +153,17 @@ def test_legacy_parity_displacement_and_static_equivalent_forces():
         floors_mass=df_floors["M"].to_numpy(),
         floors_radius=df_floors["R"].to_numpy(),
         natural_frequencies=df_modes["wp"].to_numpy(),
-        damping_ratio=xi,
+        damping_ratio=0.015,
     )
     out = build_building_dynamic_response(_floor_source(cf_x, cf_y, cm_z), cfg)
 
-    # Legacy dicts are (n_samples, n_floors); v3 fields are (n_floors, n_samples).
     np.testing.assert_allclose(
-        out.fields.read("disp_x"), legacy_result.displacement["x"].T, rtol=1e-6, atol=1e-9
+        out.fields.read("disp_x"), golden("bd_disp_x"), rtol=1e-6, atol=1e-9
     )
     np.testing.assert_allclose(
-        out.fields.read("disp_y"), legacy_result.displacement["y"].T, rtol=1e-6, atol=1e-9
+        out.fields.read("disp_y"), golden("bd_disp_y"), rtol=1e-6, atol=1e-9
     )
-    np.testing.assert_allclose(
-        out.fields.read("rot_z"), legacy_result.displacement["z"].T, rtol=1e-6, atol=1e-9
-    )
-    np.testing.assert_allclose(
-        out.fields.read("feq_x"), legacy_result.forces_static_eq["x"].T, rtol=1e-6, atol=1e-9
-    )
-    np.testing.assert_allclose(
-        out.fields.read("feq_y"), legacy_result.forces_static_eq["y"].T, rtol=1e-6, atol=1e-9
-    )
-    np.testing.assert_allclose(
-        out.fields.read("meq_z"), legacy_result.forces_static_eq["z"].T, rtol=1e-6, atol=1e-9
-    )
+    np.testing.assert_allclose(out.fields.read("rot_z"), golden("bd_rot_z"), rtol=1e-6, atol=1e-9)
+    np.testing.assert_allclose(out.fields.read("feq_x"), golden("bd_feq_x"), rtol=1e-6, atol=1e-9)
+    np.testing.assert_allclose(out.fields.read("feq_y"), golden("bd_feq_y"), rtol=1e-6, atol=1e-9)
+    np.testing.assert_allclose(out.fields.read("meq_z"), golden("bd_meq_z"), rtol=1e-6, atol=1e-9)
