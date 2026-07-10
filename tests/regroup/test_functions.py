@@ -217,10 +217,10 @@ def _slice_triangles_naive(
 ):
     """Reference per-fragment slicer (the pre-vectorisation implementation).
 
-    Built directly on ``_slice_one_triangle`` so the vectorised
+    Built directly on ``slice_one_triangle`` so the vectorised
     ``slice_triangles_with_parents`` can be checked for exact parity.
     """
-    from cfdmod.regroup.functions import _slice_one_triangle
+    from cfdmod.geometry.triangle_slicing import slice_one_triangle as _slice_one_triangle
 
     cur_verts = tri_verts.astype(np.float64).copy()
     cur_normals = tri_normals.astype(np.float64).copy()

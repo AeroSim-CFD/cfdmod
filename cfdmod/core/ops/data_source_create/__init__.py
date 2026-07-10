@@ -20,6 +20,8 @@ from __future__ import annotations
 __all__ = [
     "StatisticsParams",
     "compute_statistics",
+    "FaceCutParams",
+    "face_cut",
     "FieldSeriesForGroupsParams",
     "field_series_for_groups",
     "FilterByGroupingParams",
@@ -34,6 +36,7 @@ __all__ = [
     "profile_interpolation",
 ]
 
+from cfdmod.core.ops.data_source_create.face_cut import FaceCutParams, face_cut
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
     FieldSeriesForGroupsParams,
     field_series_for_groups,
