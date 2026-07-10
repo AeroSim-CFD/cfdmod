@@ -17,7 +17,10 @@ library of pure transformations on it.
 
 Phases 0-2 of the plan land the abstractions and prove on-disk parity
 with every existing fixture. Phases 3-8 rewrite recipe internals on top
-of the new core. Existing public APIs are not removed before v4.
+of the new core. The v2 pressure entry points have been removed in v3;
+post-processing runs through the v3 recipes and the
+`cfdmod run <template.yaml>` CLI. Geometry, S1, inflow, climate,
+analytical, and IO helpers remain exported unchanged.
 
 ## 2. Data source
 
@@ -131,14 +134,16 @@ Outside (stay standalone): `loft/`, `roughness/`, `snapshot/`,
 `io/geometry/`, `io/vtk/`. They produce inputs to or consume outputs
 from data sources but never participate as filters in a pipeline.
 
-## 9. Migration plan
+## 9. Migration outcome
 
-Parallel API, not a hard cut. v2.x keeps every existing public function
-intact. v3.x rewrites internals on the new core with the old top-level
-functions as thin wrappers. v4.x drops the wrappers.
-
-YAML schemas are not touched in phases 1-3. New schemas land under
-`version: "3"`. `pressure/migrate.py` is the bridge.
+The pressure post-processing surface was cut over to the new core rather
+than kept as parallel wrappers. The `cfdmod.pressure` package and its
+disk-first entry points (`run_cp` / `run_cf` / `run_cm` / `run_ce` /
+`apply_filters` / `MovingAverageFilter`) were removed. The supported
+access paths are the v3 recipes (`cfdmod.recipes`), the op catalog
+(`cfdmod.core_ops`), and version-3 YAML templates executed with
+`cfdmod run <template.yaml>`. Non-pressure public helpers (geometry, S1,
+inflow, climate, analytical, IO) remain exported from `cfdmod`.
 
 ## 10. What is NOT in scope
 

@@ -2,9 +2,9 @@
 
 The v3 paradigm introduces a small set of composable primitives --
 `DataSource`, `Pipeline`, `Container`, `Storage` -- and a library of
-pure ops. This guide shows how to adopt them. **No legacy public symbol
-has been removed.** Every function exported by `cfdmod` in v2 is still
-exported in v3.
+pure ops. This guide shows how to adopt them. The disk-first v2 pressure
+entry points have been removed: post-processing now runs through the v3
+recipes and the `cfdmod run <template.yaml>` CLI.
 
 ## What changed at the import surface
 
@@ -26,28 +26,21 @@ from cfdmod import (
 )
 ```
 
-### Untouched legacy symbols
+### Removed and relocated symbols
 
-`run_cp`, `run_cf`, `run_cm`, `run_ce`, `apply_filters`,
-`MovingAverageFilter`, `InflowData`, `Profile`, every `*Config` model,
-every `LoftParams` / `RadialParams` /  `WindProfile_*` -- all unchanged.
+The `cfdmod.pressure` package has been removed. `run_cp`, `run_cf`,
+`run_cm`, `run_ce`, `apply_filters`, and `MovingAverageFilter` no longer
+exist; use the v3 recipes (`build_cp`, `cf_pipeline`, `cm_pipeline`,
+`ce_pipeline`) or a YAML template run with `cfdmod run <template.yaml>`.
+The functional filtering that `apply_filters` / `MovingAverageFilter`
+provided is now the `moving_average` field op, composable into any
+pipeline.
 
-## Side-by-side: a Cp pipeline
+Everything else is unchanged: `InflowData`, `Profile`, every `*Config`
+model, and every `LoftParams` / `RadialParams` / `WindProfile_*` are
+still exported from `cfdmod`.
 
-### Legacy (still works)
-
-```python
-from cfdmod import run_cp
-
-run_cp(
-    body_h5="body/cp.h5",
-    probe_h5="probe/cp.h5",
-    cfg_path="cp_config.yaml",
-    output="out/",
-)
-```
-
-### v3 (small-data, no I/O)
+## A Cp pipeline (small-data, no I/O)
 
 ```python
 import numpy as np
@@ -77,14 +70,14 @@ without changing the pipeline -- only the `Storage` adapter swaps.
 
 ## When to reach for v3
 
-- New consulting notebooks: prefer v3. The data flow is explicit and
-  small-data is fast.
-- Existing batch scripts that hit `run_cp` / `run_cf` / etc.: keep using
-  the legacy entry points. They produce the same XDMF + H5 output and
-  will until v4.
+- New consulting notebooks: prefer the recipes. The data flow is
+  explicit and small-data is fast.
+- Batch post-processing: author a YAML template and run it with
+  `cfdmod run <template.yaml>`. The template declares its own inputs,
+  pipeline steps, and outputs, and produces the XDMF + H5 outputs via
+  `XdmfH5Storage`.
 - Any code that wants a custom pipeline (e.g. extra filtering step,
-  alternative aggregation): build a `Pipeline` from `core_ops` rather
-  than fork the legacy.
+  alternative aggregation): build a `Pipeline` from `core_ops`.
 
 ## Recipe reference
 
@@ -111,8 +104,11 @@ Every recipe is `compose(...)` of these ops; you can build your own.
 
 All ops are pure functions: `op(ds, params) -> DataSource`.
 
-## When v4 lands
+## Where the old entry points went
 
-v4 will drop the v2 wrappers. Anything still calling `run_cp` /
-`apply_filters` / `Profile.__truediv__` will need to migrate to the
-recipes above. Until then, both APIs are first-class.
+The v2 pressure entry points (`run_cp`, `apply_filters`, and the
+`cfdmod.pressure` package internals) have been removed. Migrate to the
+recipes above, or express the workflow as a YAML template and run it
+with `cfdmod run <template.yaml>`. The filtering step that
+`apply_filters` / `MovingAverageFilter` provided is now the
+`moving_average` field op.
