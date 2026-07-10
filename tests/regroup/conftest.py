@@ -89,6 +89,52 @@ def two_container_mesh() -> LnasFormat:
     )
 
 
+def _bumpy_grid(
+    nx: int,
+    ny: int,
+    *,
+    cell_size: float = 1.0,
+    amplitude: float = 0.6,
+) -> LnasGeometry:
+    """A grid whose height varies as a product of sines.
+
+    Unlike the planar grids, every triangle has a normal with non-trivial
+    x/y/z components and spans a finite range on all three axes, so cuts
+    along x, y and z all exercise the straddling (slicing) path.
+    """
+    n_verts_x = nx + 1
+    n_verts_y = ny + 1
+    xs = np.arange(n_verts_x, dtype=np.float64) * cell_size
+    ys = np.arange(n_verts_y, dtype=np.float64) * cell_size
+    xv, yv = np.meshgrid(xs, ys, indexing="xy")
+    kx = 2.0 * np.pi / (nx * cell_size)
+    ky = 2.0 * np.pi / (ny * cell_size)
+    zv = amplitude * np.sin(kx * xv) * np.sin(ky * yv)
+    verts = np.stack([xv.flatten(), yv.flatten(), zv.flatten()], axis=1).astype(np.float32)
+    tris = []
+    for j in range(ny):
+        for i in range(nx):
+            v0 = j * n_verts_x + i
+            v1 = j * n_verts_x + (i + 1)
+            v2 = (j + 1) * n_verts_x + i
+            v3 = (j + 1) * n_verts_x + (i + 1)
+            tris.append([v0, v1, v2])
+            tris.append([v1, v3, v2])
+    triangles = np.array(tris, dtype=np.uint32)
+    return LnasGeometry(vertices=verts, triangles=triangles)
+
+
+@pytest.fixture
+def curved_mesh() -> LnasFormat:
+    """A non-planar bumpy grid whose triangles straddle x, y and z planes."""
+    geom = _bumpy_grid(12, 12, cell_size=1.0, amplitude=0.6)
+    return LnasFormat(
+        version=_lnas_fmt._CURRENT_VERSION,
+        geometry=geom,
+        surfaces={"all": np.arange(geom.triangles.shape[0], dtype=np.uint32)},
+    )
+
+
 def make_synthetic_cp_h5(
     h5_path: pathlib.Path,
     n_triangles: int,
