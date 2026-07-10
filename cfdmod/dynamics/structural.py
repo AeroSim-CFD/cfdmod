@@ -138,6 +138,53 @@ class BuildingStructuralData(BaseModel):
     def n_floors(self) -> int:
         return int(np.asarray(self.mode_shapes).shape[0])
 
+    def with_multipliers(
+        self, *, mass_multiplier: float = 1.0, frequency_multiplier: float = 1.0
+    ) -> "BuildingStructuralData":
+        """Apply per-case mass / frequency multipliers.
+
+        Mirrors the legacy HFPI case knobs: scaling every floor mass by
+        ``mass_multiplier`` (``mm``) scales the generalized mass uniformly,
+        so mass-normalized shapes divide by ``sqrt(mm)``; natural
+        frequencies shift by ``frequency_multiplier / sqrt(mm)`` (the
+        ``1/sqrt(mm)`` from the softer/heavier structure, the explicit
+        ``frequency_multiplier`` applied on top). Radius of gyration is
+        left unchanged (matches the legacy path).
+
+        Returns a new :class:`BuildingStructuralData`.
+        """
+        mm = float(mass_multiplier)
+        fm = float(frequency_multiplier)
+        return BuildingStructuralData(
+            mode_shapes=np.asarray(self.mode_shapes, dtype=np.float64) / np.sqrt(mm),
+            natural_frequencies=np.asarray(self.natural_frequencies, dtype=np.float64)
+            * fm
+            / np.sqrt(mm),
+            floor_points=self.floor_points,
+            cm_positions=self.cm_positions,
+            floors_mass=np.asarray(self.floors_mass, dtype=np.float64) * mm,
+            floors_radius=self.floors_radius,
+        )
+
+    def to_config(self, damping_ratio: float, **field_names: str):
+        """Build a :class:`BuildingDynamicConfig` from these structural arrays.
+
+        ``field_names`` overrides the load-coefficient field names
+        (``field_x`` / ``field_y`` / ``field_mz``).
+        """
+        from cfdmod.core.recipes.dynamic import BuildingDynamicConfig
+
+        return BuildingDynamicConfig(
+            mode_shapes=self.mode_shapes,
+            floor_points=self.floor_points,
+            cm_positions=self.cm_positions,
+            floors_mass=self.floors_mass,
+            floors_radius=self.floors_radius,
+            natural_frequencies=self.natural_frequencies,
+            damping_ratio=damping_ratio,
+            **field_names,
+        )
+
     @classmethod
     def from_csvs(
         cls,

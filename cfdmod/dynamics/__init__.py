@@ -18,8 +18,16 @@ __all__ = [
     "read_force_h5",
     "write_force_h5",
     "build_floor_load_source",
+    "BuildingCaseParameters",
+    "build_cases",
+    "solve_building_cases",
 ]
 
+from cfdmod.dynamics.cases import (
+    BuildingCaseParameters,
+    build_cases,
+    solve_building_cases,
+)
 from cfdmod.dynamics.forces import (
     DimensionalData,
     build_floor_load_source,
