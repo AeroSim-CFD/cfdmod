@@ -11,9 +11,9 @@ this doc is for the contract.
 ## 1. Goal
 
 Replace the ad-hoc per-recipe orchestration in `cfdmod/pressure/`,
-`cfdmod/inflow.py`, `cfdmod/s1/`, and `cfdmod/hfpi/` with a single
-composable paradigm: a small frozen value object (`DataSource`) plus a
-library of pure transformations on it.
+`cfdmod/inflow.py`, `cfdmod/s1/`, and the former HFPI dynamic pipeline
+with a single composable paradigm: a small frozen value object
+(`DataSource`) plus a library of pure transformations on it.
 
 Phases 0-2 of the plan land the abstractions and prove on-disk parity
 with every existing fixture. Phases 3-8 rewrite recipe internals on top
@@ -112,10 +112,11 @@ exclusively under `adapters/xdmf_h5/`.
 
 ## 7. Containers
 
-`Container[K, V]` lifts the `HFPIAnalysisResults` pattern (hashable
-Pydantic key, `join_by(callback)`, `filter_by`, `map_values`). Phase 6
-aliases `HFPIAnalysisResults = Container[HFPICaseParameters, ResultType]`
-so existing hfpi callers keep working.
+`Container[K, V]` is a directional / parametric multi-case map (hashable
+Pydantic key, `join_by(callback)`, `filter_by`, `map_values`). The
+building dynamic-response cases (`cfdmod.dynamics.cases`, keyed by
+`BuildingCaseParameters`) group and filter directional results through it
+with no bespoke machinery.
 
 Parallelism is *injected*, not built in: `Container.map_values(p,
 pool=ctx.pool)` runs the pipeline over the container in parallel only
@@ -124,10 +125,11 @@ if a pool is supplied. Sequential is the default.
 ## 8. Inside vs outside the paradigm
 
 Inside (becomes data sources + ops): `pressure/` (Cp, Cf, Cm, Ce),
-`pressure/filters.py`, `inflow.py`, `s1/profile.py`, `hfpi/`, the
-existing `analysis/inflow/`, `io/xdmf.py`, `io/timeseries.py`. Pedestrian
-comfort joins later (it composes existing primitives + a climate-data
-input).
+`pressure/filters.py`, `inflow.py`, `s1/profile.py`, the former HFPI
+dynamic pipeline (now `core/recipes/dynamic.py` + `cfdmod/dynamics/`),
+the existing `analysis/inflow/`, `io/xdmf.py`, `io/timeseries.py`.
+Pedestrian comfort joins later (it composes existing primitives + a
+climate-data input).
 
 Outside (stay standalone): `loft/`, `roughness/`, `snapshot/`,
 `altimetry/`, `analytical/`, `climate/`, plotting helpers,
