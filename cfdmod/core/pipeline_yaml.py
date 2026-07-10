@@ -150,12 +150,14 @@ def _populate_default_registry() -> None:
         return
 
     from cfdmod.core.ops.data_source_create import (
+        FaceCutParams,
         FieldSeriesForGroupsParams,
         FilterByGroupingParams,
         ProbeExtractionParams,
         ProfileInterpolationParams,
         StatisticsParams,
         compute_statistics,
+        face_cut,
         field_series_for_groups,
         filter_by_grouping,
         probe_extraction,
@@ -223,6 +225,7 @@ def _populate_default_registry() -> None:
         ("force_contribution", force_contribution, ForceContributionParams),
         ("moment_contribution", moment_contribution, MomentContributionParams),
         ("filter_by_grouping", filter_by_grouping, FilterByGroupingParams),
+        ("face_cut", face_cut, FaceCutParams),
         ("field_series_for_groups", field_series_for_groups, FieldSeriesForGroupsParams),
         ("statistics", compute_statistics, StatisticsParams),
         ("modal_projection", modal_projection, ModalProjectionParams),

@@ -209,6 +209,93 @@ def test_slice_triangles_with_parents_actually_cuts():
     assert np.all(parents_out == 42)
 
 
+def _slice_triangles_naive(
+    tri_verts: np.ndarray,
+    tri_normals: np.ndarray,
+    parent_idxs: np.ndarray,
+    intervals,
+):
+    """Reference per-fragment slicer (the pre-vectorisation implementation).
+
+    Built directly on ``slice_one_triangle`` so the vectorised
+    ``slice_triangles_with_parents`` can be checked for exact parity.
+    """
+    from cfdmod.geometry.triangle_slicing import slice_one_triangle as _slice_one_triangle
+
+    cur_verts = tri_verts.astype(np.float64).copy()
+    cur_normals = tri_normals.astype(np.float64).copy()
+    cur_parents = np.asarray(parent_idxs, dtype=np.int64).copy()
+    for axis in range(3):
+        for v in intervals[axis]:
+            if not np.isfinite(v):
+                continue
+            new_verts, new_normals, new_parents = [], [], []
+            for i in range(cur_verts.shape[0]):
+                fragments = _slice_one_triangle(cur_verts[i], cur_normals[i], axis, float(v))
+                new_verts.append(fragments)
+                new_normals.append(np.tile(cur_normals[i], (fragments.shape[0], 1)))
+                new_parents.append(np.full(fragments.shape[0], cur_parents[i], dtype=np.int64))
+            cur_verts = np.concatenate(new_verts, axis=0)
+            cur_normals = np.concatenate(new_normals, axis=0)
+            cur_parents = np.concatenate(new_parents, axis=0)
+    return cur_verts, cur_normals, cur_parents
+
+
+def test_slice_vectorised_matches_naive_on_curved_mesh(curved_mesh):
+    """Vectorised slicer is bit-identical to the naive per-fragment loop.
+
+    The curved fixture straddles all three axes, so this exercises the
+    slicing path the planar fixtures mostly skip.
+    """
+    from cfdmod.regroup.functions import slice_triangles_with_parents
+
+    n = curved_mesh.geometry.triangles.shape[0]
+    parent_idxs = np.arange(n, dtype=np.int64)
+    verts = curved_mesh.geometry.triangle_vertices
+    normals = curved_mesh.geometry.normals
+    intervals = (
+        [float("-inf"), 3.5, 6.5, 9.5, float("inf")],
+        [float("-inf"), 4.5, 8.5, float("inf")],
+        [float("-inf"), -0.2, 0.2, float("inf")],
+    )
+
+    v_new, n_new, p_new = slice_triangles_with_parents(verts, normals, parent_idxs, intervals)
+    v_ref, n_ref, p_ref = _slice_triangles_naive(verts, normals, parent_idxs, intervals)
+
+    assert v_new.shape[0] > n  # slicing actually happened
+    np.testing.assert_array_equal(v_new, v_ref)
+    np.testing.assert_array_equal(n_new, n_ref)
+    np.testing.assert_array_equal(p_new, p_ref)
+
+
+def test_slice_partial_areas_sum_to_parent(curved_mesh):
+    """Fragments of a cut triangle partition its area (exact partial areas)."""
+    from cfdmod.regroup.functions import slice_triangles_with_parents
+
+    n = curved_mesh.geometry.triangles.shape[0]
+    parent_idxs = np.arange(n, dtype=np.int64)
+    verts = curved_mesh.geometry.triangle_vertices
+    normals = curved_mesh.geometry.normals
+    intervals = (
+        [float("-inf"), 3.5, 7.5, float("inf")],
+        [float("-inf"), 5.5, float("inf")],
+        [float("-inf"), float("inf")],
+    )
+
+    frag_verts, _frag_normals, frag_parents = slice_triangles_with_parents(
+        verts, normals, parent_idxs, intervals
+    )
+
+    def _tri_area(t):
+        return 0.5 * np.linalg.norm(np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]), axis=-1)
+
+    parent_area = _tri_area(verts.astype(np.float64))
+    frag_area = _tri_area(frag_verts)
+    summed = np.zeros(n, dtype=np.float64)
+    np.add.at(summed, frag_parents, frag_area)
+    np.testing.assert_allclose(summed, parent_area, rtol=1e-5, atol=1e-6)
+
+
 def test_two_container_connectivity_split(two_container_mesh):
     """Connectivity isolates the two containers as separate groups."""
     chain = [ByConnectivityGrouping(name_template="container_{idx}", min_triangles=4)]

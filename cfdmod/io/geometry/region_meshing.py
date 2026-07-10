@@ -3,76 +3,20 @@ import warnings
 import numpy as np
 from lnas import LnasGeometry
 
+# The pure-numpy slicing primitives live in the dependency-light
+# ``cfdmod.geometry.triangle_slicing`` so the v3 op layer can import them
+# without dragging in ``cfdmod.io`` (h5py / pandas / ...). Re-exported here
+# for backwards compatibility with existing callers and tests.
+from cfdmod.geometry.triangle_slicing import slice_triangle, triangulate_tri
 
-def triangulate_tri(sorted_vertices: np.ndarray, insertion_indices: list[int]) -> np.ndarray:
-    """Triangulates a point cloud of a triangle
-    Vertices are ordered according to the original triangle normal.
-    If there are only one vertice inserted, then the original triangle will be split into two.
-    If there are two vertices inserted, then the original triangle will be split into three.
-
-    Args:
-        sorted_vertices (np.ndarray): Triangle vertices ordered
-        insertion_indices (list[int]): Indices of the vertices inserted in the slice
-
-    Returns:
-        np.ndarray: Array of triangles
-    """
-    tri_indexes = []
-    if len(insertion_indices) == 1:
-        i = insertion_indices[0]
-        tri_indexes.append([i - 1, i, (i + 2) % 4])
-        tri_indexes.append([i, (i + 1) % 4, (i + 2) % 4])
-    elif len(insertion_indices) == 2:
-        i, j = insertion_indices[0], insertion_indices[1]
-        tri_indexes.append([4, 0, 1])
-        if j == 3:
-            tri_indexes.append([1, 2, 3])
-            tri_indexes.append([3, 4, 1])
-        else:
-            tri_indexes.append([1, 2, 4])
-            tri_indexes.append([2, 3, 4])
-    else:
-        tri_indexes.append([0, 1, 2])
-
-    return sorted_vertices[np.array(tri_indexes, dtype=np.uint32)].astype(np.float32)
-
-
-def slice_triangle(tri_verts: np.ndarray, axis: int, axis_value: float) -> np.ndarray:
-    """Slice a triangle from a given plane
-    If the plane intersects any edge of the triangle, then new vertices are generated.
-    If there are new vertices in the triangle vertices, then it has to be triangulated
-    into smaller triangles
-
-    Args:
-        tri_verts (np.ndarray): Vertices of the triangle to slice
-        axis (int): Axis index (x=0, y=1, z=2)
-        axis_value (float): Value of the interval
-
-    Returns:
-        np.ndarray: Array of triangle vertices resulted from slicing
-    """
-    intersected_pts = tri_verts.copy()
-    insertion_indices = []
-
-    for i in range(3):
-        if len(intersected_pts) > 4:
-            # Sliced all possible lines
-            continue
-        else:
-            p1, p2 = tri_verts[i], tri_verts[(i + 1) % 3]
-
-            if (p1[axis] < axis_value and p2[axis] > axis_value) or (
-                p1[axis] > axis_value and p2[axis] < axis_value
-            ):
-                t = (axis_value - p1[axis]) / (p2[axis] - p1[axis])
-                intersect_pt = p1 + t * (p2 - p1)
-
-                insert_idx = i + 1 + intersected_pts.shape[0] // 4
-                insertion_indices.append(insert_idx)
-
-                intersected_pts = np.insert(intersected_pts, insert_idx, intersect_pt, axis=0)
-
-    return triangulate_tri(intersected_pts, sorted(insertion_indices))
+__all__ = [
+    "triangulate_tri",
+    "slice_triangle",
+    "clean_triangles",
+    "slice_surface",
+    "get_mesh_bounds",
+    "create_regions_mesh",
+]
 
 
 def clean_triangles(geom: LnasGeometry, minimal_area: float = 1e-5) -> LnasGeometry:
