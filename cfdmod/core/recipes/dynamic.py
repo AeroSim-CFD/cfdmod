@@ -32,6 +32,8 @@ __all__ = [
     "sdof_rk45_solver",
     "BuildingDynamicConfig",
     "build_building_dynamic_response",
+    "ComfortConfig",
+    "build_point_accelerations",
 ]
 
 from typing import Any, Callable
@@ -56,6 +58,7 @@ from cfdmod.core.ops.data_source_create.modal_recomposition import (
     ModalRecompositionParams,
     modal_recomposition,
 )
+from cfdmod.core.ops.field.derivative import DerivativeParams, derivative
 from cfdmod.core.topology import ElementMeta, Topology
 
 ModalSolver = Callable[[ModesDataSource], ModesDataSource]
@@ -318,4 +321,72 @@ def build_building_dynamic_response(
         elements=ElementMeta(position=pts),
         fields=MemoryFieldStore(fields),
         field_meta={k: FieldMeta(name=k) for k in fields},
+    )
+
+
+class ComfortConfig(BaseModel):
+    """Point-acceleration (comfort) recipe parameters.
+
+    Evaluates the horizontal acceleration a building occupant feels at an
+    off-center point ``point`` on each floor. The point translates with the
+    floor and swings with its torsion, so the perceived displacement adds a
+    rotational lever-arm term before differentiation:
+
+        displ_angle = atan2(point - CM) + rot_z
+        px = disp_x + cos(displ_angle) * r
+        py = disp_y + sin(displ_angle) * r
+
+    with ``r = |point - CM|``; accelerations are the second time-derivative
+    of ``px`` / ``py``.
+
+    Attributes:
+        cm_positions: ``(n_floors, 2)`` CM offsets ``[XR, YR]`` per floor.
+        point: ``(x, y)`` query point (same frame as ``cm_positions``).
+        disp_x_field / disp_y_field / rot_z_field: Input field names.
+    """
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    cm_positions: Any
+    point: Any = (0.0, 0.0)
+    disp_x_field: str = "disp_x"
+    disp_y_field: str = "disp_y"
+    rot_z_field: str = "rot_z"
+
+
+def build_point_accelerations(response: PointsDataSource, cfg: ComfortConfig) -> PointsDataSource:
+    """Per-floor horizontal accelerations at an off-center point.
+
+    Consumes a building-response :class:`PointsDataSource` (floor
+    displacements ``disp_x`` / ``disp_y`` / ``rot_z``) and returns it
+    augmented with time-resolved ``acc_x`` / ``acc_y`` / ``acc_mag``. Peak /
+    comfort reduction is a separate step: apply
+    :func:`cfdmod.core.ops.data_source_create.extreme_value.extreme_value`
+    to ``acc_mag`` (or per axis).
+    """
+    dx = np.asarray(response.fields.read(cfg.disp_x_field), dtype=np.float64)
+    dy = np.asarray(response.fields.read(cfg.disp_y_field), dtype=np.float64)
+    rz = np.asarray(response.fields.read(cfg.rot_z_field), dtype=np.float64)
+
+    cm = np.asarray(cfg.cm_positions, dtype=np.float64)  # (n_floors, 2)
+    point = np.asarray(cfg.point, dtype=np.float64)  # (2,)
+    rel = point[None, :] - cm  # (n_floors, 2)
+    point_angle = np.arctan2(rel[:, 1], rel[:, 0])[:, None]  # (n_floors, 1)
+    r = np.hypot(rel[:, 0], rel[:, 1])[:, None]  # (n_floors, 1)
+    displ_angle = point_angle + rz  # (n_floors, n_t)
+
+    px = dx + np.cos(displ_angle) * r
+    py = dy + np.sin(displ_angle) * r
+
+    work = response.with_field("_px", px).with_field("_py", py)
+    work = derivative(work, DerivativeParams(order=2, field="_px", out="acc_x"))
+    work = derivative(work, DerivativeParams(order=2, field="_py", out="acc_y"))
+    acc_x = np.asarray(work.fields.read("acc_x"), dtype=np.float64)
+    acc_y = np.asarray(work.fields.read("acc_y"), dtype=np.float64)
+    acc_mag = np.hypot(acc_x, acc_y)
+
+    return (
+        response.with_field("acc_x", acc_x)
+        .with_field("acc_y", acc_y)
+        .with_field("acc_mag", acc_mag)
     )
