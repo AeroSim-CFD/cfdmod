@@ -150,6 +150,7 @@ def _populate_default_registry() -> None:
         return
 
     from cfdmod.core.ops.data_source_create import (
+        ExtremeValueParams,
         FaceCutParams,
         FieldSeriesForGroupsParams,
         FilterByGroupingParams,
@@ -157,6 +158,7 @@ def _populate_default_registry() -> None:
         ProfileInterpolationParams,
         StatisticsParams,
         compute_statistics,
+        extreme_value,
         face_cut,
         field_series_for_groups,
         filter_by_grouping,
@@ -173,16 +175,20 @@ def _populate_default_registry() -> None:
     )
     from cfdmod.core.ops.field import (
         AddParams,
+        DerivativeParams,
         DivParams,
         ForceContributionParams,
+        FrequencyFilterParams,
         MomentContributionParams,
         MovingAverageParams,
         MulParams,
         ScaleParams,
         SubParams,
         add,
+        derivative,
         div,
         force_contribution,
+        frequency_filter,
         moment_contribution,
         moving_average,
         mul,
@@ -216,6 +222,8 @@ def _populate_default_registry() -> None:
         ("time_translate", translate, TranslateParams),
         ("time_rescale", rescale, RescaleTimeParams),
         ("moving_average", moving_average, MovingAverageParams),
+        ("derivative", derivative, DerivativeParams),
+        ("frequency_filter", frequency_filter, FrequencyFilterParams),
         ("scale", scale, ScaleParams),
         ("attach_grouping", attach_grouping, AttachGroupingParams),
         ("mesh_attach", mesh_attach, MeshAttachParams),
@@ -228,6 +236,7 @@ def _populate_default_registry() -> None:
         ("face_cut", face_cut, FaceCutParams),
         ("field_series_for_groups", field_series_for_groups, FieldSeriesForGroupsParams),
         ("statistics", compute_statistics, StatisticsParams),
+        ("extreme_value", extreme_value, ExtremeValueParams),
         ("modal_projection", modal_projection, ModalProjectionParams),
         ("modal_recomposition", modal_recomposition, ModalRecompositionParams),
         ("probe_extraction", probe_extraction, ProbeExtractionParams),

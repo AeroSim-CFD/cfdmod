@@ -181,3 +181,51 @@ def test_resolve_key_strips_h5_suffix(tmp_path):
     # Just assert the loader accepts the .h5 suffix; the runner will
     # strip it when handing to storage.
     assert tpl.inputs["body"].path == "my_data.h5"
+
+
+def test_run_template_new_time_series_ops_roundtrip():
+    """derivative + frequency_filter + extreme_value run through the YAML path."""
+    dt = 1e-3
+    t = np.arange(4000) * dt
+    sig = (np.sin(2 * np.pi * 3.0 * t) + np.sin(2 * np.pi * 90.0 * t)).reshape(1, -1)
+    body = _surface(np.repeat(sig, 2, axis=0), dt=dt)
+    storage = MemoryStorage()
+    storage.write_data_source("body", body)
+
+    tpl = PipelineTemplate(
+        inputs={"body": {"kind": "surface", "path": "body"}},
+        pipeline=[
+            {
+                "id": "lp",
+                "kind": "frequency_filter",
+                "source": "body",
+                "field": "pressure",
+                "btype": "lowpass",
+                "cutoff": 10.0,
+                "out": "p_lp",
+            },
+            {
+                "id": "vel",
+                "kind": "derivative",
+                "source": "lp",
+                "field": "p_lp",
+                "order": 1,
+                "out": "vel",
+            },
+            {
+                "id": "pk",
+                "kind": "extreme_value",
+                "source": "body",
+                "field": "pressure",
+                "method": "peak_factor",
+                "extreme_type": "max",
+                "peak_factor": 3.0,
+                "out": "p_peak",
+            },
+        ],
+    )
+    bindings = run_template(tpl, storage=storage)
+    assert bindings["lp"].fields.read("p_lp").shape == (2, 4000)
+    assert bindings["vel"].fields.read("vel").shape == (2, 4000)
+    assert bindings["pk"].time.is_time_aggregated
+    assert bindings["pk"].fields.read("p_peak").shape == (2,)

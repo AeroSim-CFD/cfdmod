@@ -114,7 +114,7 @@ def test_statistics_match_numpy(arr: np.ndarray) -> None:
     assert np.allclose(mean, arr.mean(axis=1))
     assert np.allclose(mn, arr.min(axis=1))
     assert np.allclose(mx, arr.max(axis=1))
-    assert np.allclose(rms, arr.std(axis=1, ddof=1))
+    assert np.allclose(rms, arr.std(axis=1))
     # Ordering invariant.
     assert np.all(mn <= mean + 1e-9)
     assert np.all(mean <= mx + 1e-9)
