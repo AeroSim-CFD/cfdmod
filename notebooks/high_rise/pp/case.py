@@ -102,7 +102,12 @@ class HighRiseCase(BaseModel):
         force = _first_block(params.get("force_coefficient", {}))
         moment = _first_block(params.get("moment_coefficient", {}))
 
-        heights = _floor_heights(force)
+        # Floor heights: the per-floor table in alturas.csv is the source of
+        # truth (one row per storey with z_min/z_max). The yaml z_intervals
+        # anchor is only a coarse fallback for configs without the CSV.
+        heights = _floor_heights_from_csv(case_data_dir / "alturas.csv")
+        if len(heights) < 2:
+            heights = _floor_heights(force)
         lever = _lever_origin(moment)
         analysis = gd.get("analysis", {})
         resolved_body = (
@@ -175,6 +180,32 @@ def _floor_heights(force_block: dict) -> list[float]:
     bodies = force_block.get("bodies") or [{}]
     sub = bodies[0].get("sub_bodies", {}) if bodies else {}
     return list(sub.get("z_intervals", []))
+
+
+def _floor_heights_from_csv(path: pathlib.Path) -> list[float]:
+    """Ascending floor z-edges from an ``alturas.csv`` (``Pavimento,z_min,z_max,dz``).
+
+    The edges are the sorted union of every storey's ``z_min`` / ``z_max`` so
+    ``n`` contiguous floors yield ``n + 1`` edges. Returns ``[]`` when the file
+    is absent or has no data rows (a header-only stub), so the caller can fall
+    back to the yaml ``z_intervals`` anchor.
+    """
+    if not path.exists():
+        return []
+    import csv
+
+    edges: set[float] = set()
+    reader = csv.DictReader(path.read_text().splitlines())
+    for row in reader:
+        for key in ("z_min", "z_max"):
+            value = (row.get(key) or "").strip()
+            if not value:
+                continue
+            try:
+                edges.add(float(value))
+            except ValueError:
+                continue
+    return sorted(edges)
 
 
 def _lever_origin(moment_block: dict) -> list[float]:

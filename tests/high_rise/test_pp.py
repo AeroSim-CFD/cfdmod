@@ -93,6 +93,62 @@ def test_face_cut_conserves_total_force(cp_ds, galpao_case):
     np.testing.assert_allclose(total_per_floor, total_single, rtol=1e-6, atol=1e-9)
 
 
+_MINIMAL_PARAMS = """
+pressure_coefficient:
+  base:
+    fluid_density: 1.225
+    simul_U_H: 30.0
+force_coefficient:
+  fc:
+    nominal_area: 100.0
+    bodies:
+      - name: building
+        sub_bodies:
+          z_intervals: [0.0, 50.0]
+moment_coefficient:
+  mc:
+    nominal_volume: 1000.0
+    bodies:
+      - lever_origin: [0.0, 0.0, 0.0]
+"""
+
+_GLOBAL = '{"H": 70, "L": 6.95, "V0": 38, "analysis": {"body_name": "building"}}'
+
+
+def _write_case_data(dir_path: pathlib.Path, alturas: str | None) -> pathlib.Path:
+    cd = dir_path / "case_data"
+    cd.mkdir(parents=True, exist_ok=True)
+    (cd / "global_data.json").write_text(_GLOBAL)
+    (cd / "params.yaml").write_text(_MINIMAL_PARAMS)
+    if alturas is not None:
+        (cd / "alturas.csv").write_text(alturas)
+    return cd
+
+
+def test_from_case_data_reads_floors_from_alturas(tmp_path):
+    """alturas.csv is the floor source of truth: N storeys -> N floors."""
+    rows = ["Pavimento,z_min,z_max,dz"]
+    for i in range(5):
+        rows.append(f"{i + 1},{i * 10.0},{(i + 1) * 10.0},10.0")
+    cd = _write_case_data(tmp_path, "\n".join(rows) + "\n")
+    case = pp.HighRiseCase.from_case_data(cd, "params.yaml")
+    assert case.n_floors == 5
+    assert case.floor_heights[0] == 0.0
+    assert case.floor_heights[-1] == 50.0
+
+
+def test_from_case_data_falls_back_to_yaml_when_alturas_empty(tmp_path):
+    """A header-only (or missing) alturas.csv falls back to the yaml z_intervals."""
+    header_only = _write_case_data(tmp_path, "Pavimento,z_min,z_max,dz\n")
+    case = pp.HighRiseCase.from_case_data(header_only, "params.yaml")
+    assert case.floor_heights == [0.0, 50.0]  # from the yaml anchor -> 1 floor
+    assert case.n_floors == 1
+
+    missing = _write_case_data(tmp_path / "nocsv", None)
+    case2 = pp.HighRiseCase.from_case_data(missing, "params.yaml")
+    assert case2.floor_heights == [0.0, 50.0]
+
+
 def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
     """Both methods integrate the same whole body, so the total over floors matches.
 
