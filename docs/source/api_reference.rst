@@ -149,12 +149,15 @@ models in a discriminated union, composed left-to-right with
 one, or many** groups.
 
 The force / moment / shape recipes (Cf, Cm, Ce) are built on top of this
-abstraction: the ``body_grouping`` and ``zoning_grouping`` ops attach a
-grouping to a :class:`cfdmod.SurfaceDataSource`, and per-group field
-series are then aggregated onto a :class:`cfdmod.GroupsDataSource`. An
-explicit chain (for instance, splitting a body by shared-edge
-connectivity) is expressed by composing the built-in grouping kinds
-below.
+abstraction: the ``body_grouping``, ``zoning_grouping`` and
+``connectivity_grouping`` ops attach a grouping to a
+:class:`cfdmod.SurfaceDataSource`, and per-group field series are then
+aggregated onto a :class:`cfdmod.GroupsDataSource`. ``body_grouping``
+splits by surface name, ``zoning_grouping`` by a rectangular
+centroid-binned grid, and ``connectivity_grouping`` by shared-edge
+connected component (one physical body per component, no axis
+projection). More elaborate partitions are expressed by composing the
+built-in grouping kinds below.
 
 Driver
 ------
