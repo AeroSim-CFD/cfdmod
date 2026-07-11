@@ -25,12 +25,18 @@ __all__ = [
     "body_grouping",
     "ZoningGroupingParams",
     "zoning_grouping",
+    "ConnectivityGroupingParams",
+    "connectivity_grouping",
     "RegroupTopologyParams",
     "regroup_topology",
 ]
 
 from cfdmod.core.ops.geometric.attach_grouping import AttachGroupingParams, attach_grouping
 from cfdmod.core.ops.geometric.body_grouping import BodyGroupingParams, body_grouping
+from cfdmod.core.ops.geometric.connectivity_grouping import (
+    ConnectivityGroupingParams,
+    connectivity_grouping,
+)
 from cfdmod.core.ops.geometric.mesh_attach import MeshAttachParams, mesh_attach
 from cfdmod.core.ops.geometric.regroup_topology import (
     RegroupTopologyParams,
