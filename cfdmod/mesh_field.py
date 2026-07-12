@@ -149,6 +149,79 @@ def facade_index_per_triangle(groups: dict[str, np.ndarray], n_tri: int) -> np.n
     return out
 
 
+# -- field sampling along a line + time-window stats -----------------------
+
+
+def triangle_centroids(geometry) -> np.ndarray:
+    """Per-triangle centroids ``(n_tri, 3)`` from an ``LnasGeometry``."""
+    tris = np.asarray(geometry.triangle_vertices, dtype=np.float64)  # (n_tri, 3, 3)
+    return tris.mean(axis=1)
+
+
+def sample_field_along_line(
+    geometry,
+    field: np.ndarray,
+    p1,
+    p2,
+    *,
+    n: int = 100,
+):
+    """Sample a per-triangle ``field`` along the segment ``p1 -> p2``.
+
+    Each of ``n`` evenly spaced points takes the value of the nearest triangle
+    (by centroid, via a KD-tree). Returns a DataFrame with the arc length ``s``,
+    the sample coordinates ``x/y/z`` and ``value`` -- e.g. facade pressure vs
+    height by sampling a vertical line down a facade.
+    """
+    import pandas as pd
+    from scipy.spatial import cKDTree
+
+    field = np.asarray(field, dtype=np.float64)
+    p1 = np.asarray(p1, dtype=np.float64)
+    p2 = np.asarray(p2, dtype=np.float64)
+    t = np.linspace(0.0, 1.0, n)
+    pts = p1[None, :] + t[:, None] * (p2 - p1)[None, :]  # (n, 3)
+
+    tree = cKDTree(triangle_centroids(geometry))
+    _, idx = tree.query(pts)
+    s = t * float(np.linalg.norm(p2 - p1))
+    return pd.DataFrame(
+        {"s": s, "x": pts[:, 0], "y": pts[:, 1], "z": pts[:, 2], "value": field[idx]}
+    )
+
+
+def moving_average_stats(series: np.ndarray, dt: float, window_s: float) -> dict:
+    """Rolling-window mean of a signal plus its peak stats.
+
+    ``window_s`` is the averaging window in the series' time units; the window
+    width in samples is ``round(window_s / dt)``. Returns ``mean`` (of the raw
+    series), the smoothed series ``ma``, and ``ma_max`` / ``ma_min`` (the peak
+    and trough of the moving average) -- the "peak of the N-second moving
+    average" used for facade design pressures.
+    """
+    series = np.asarray(series, dtype=np.float64)
+    if series.size == 0:
+        return {
+            "mean": float("nan"),
+            "window": 0,
+            "ma": series,
+            "ma_max": float("nan"),
+            "ma_min": float("nan"),
+        }
+    w = max(1, int(round(window_s / dt)))
+    if series.size < w:
+        ma = np.array([series.mean()])
+    else:
+        ma = np.convolve(series, np.ones(w) / w, mode="valid")
+    return {
+        "mean": float(series.mean()),
+        "window": w,
+        "ma": ma,
+        "ma_max": float(ma.max()),
+        "ma_min": float(ma.min()),
+    }
+
+
 def has_pyvista() -> bool:
     """True when the optional ``[vtk]`` extra (pyvista + vtk) is importable."""
     try:
