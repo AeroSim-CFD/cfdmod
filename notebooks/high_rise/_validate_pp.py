@@ -2,8 +2,9 @@
 
 Run: uv run python notebooks/high_rise/_validate_pp.py
 Exercises HighRiseCase (against the real 067 case_data), inflow profile
-detection + figures (pitot_inlet fixture), and the Cp -> per-floor Cf/Cm
-pressure wiring (galpao fixture + its lnas mesh).
+detection + figures (pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure
+wiring, the dynamic-response recipe wiring, and the facade / structure mesh-field
+snapshots (galpao fixture + its lnas mesh).
 """
 
 from __future__ import annotations
@@ -142,12 +143,109 @@ def section_pressure(case: pp.HighRiseCase) -> None:
     check("cm_z finite", np.all(np.isfinite(cmz)), str(cmz.shape))
 
 
+def _galpao_cp(case: pp.HighRiseCase):
+    """Compute a Cp time series + a 3-floor case on the galpao fixture."""
+    import pathlib as _pl
+
+    from lnas import LnasFormat
+
+    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
+
+    data_dir = FIX / "pressure" / "data"
+    mesh_path = str(FIX / "pressure" / "galpao" / "galpao.normalized.lnas")
+    storage = XdmfH5Storage(data_dir)
+    body = storage.read_data_source(_pl.Path("bodies.galpao"))
+    p_ref = storage.read_data_source(_pl.Path("points.static_pressure"))
+    verts = LnasFormat.from_file(_pl.Path(mesh_path)).geometry.vertices
+    edges = list(np.linspace(float(verts[:, 2].min()), float(verts[:, 2].max()), 4))
+    floor_case = case.model_copy(update={"floor_heights": edges})
+    cp = pp.cp_from_pressure(body, p_ref, floor_case)
+    return cp, floor_case, mesh_path
+
+
+def section_dynamic(case: pp.HighRiseCase) -> None:
+    print("D. Dynamic response (galpao fixture)")
+    cp, floor_case, mesh_path = _galpao_cp(case)
+
+    cf = pp.cf_per_floor(cp, mesh_path, floor_case, directions=("x", "y"))
+    cm = pp.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
+    load = pp.floor_load_source(cf, cm, floor_case)
+    check("load source is points", load.kind == "points", f"n_floors={load.n_elements}")
+    check(
+        "load fields present",
+        all(f in load.field_names for f in ("cf_x", "cf_y", "cm_z")),
+    )
+
+    structure = pp.example_building_structure(floor_case, load.n_elements)
+    check(
+        "structure shapes mass-normalized",
+        structure.n_floors == load.n_elements and structure.n_modes >= 1,
+        f"floors={structure.n_floors} modes={structure.n_modes}",
+    )
+
+    response = pp.solve_building_response(load, structure, damping_ratio=0.02)
+    for name in ("disp_x", "disp_y", "rot_z", "feq_x", "feq_y", "meq_z"):
+        arr = np.asarray(response.fields.read(name))
+        check(
+            f"{name} finite + time-resolved",
+            np.all(np.isfinite(arr)) and arr.shape == (load.n_elements, cp.time.n_timesteps),
+            str(arr.shape),
+        )
+
+    acc = pp.floor_accelerations(response, structure, point=(1.0, 0.0))
+    acc_mag = np.asarray(acc.fields.read("acc_mag"))
+    check("acc_mag finite", np.all(np.isfinite(acc_mag)), str(acc_mag.shape))
+
+    table = pp.peak_response_table(response, acc, floor_case)
+    check(
+        "peak table one row per floor",
+        len(table) == load.n_elements and "acc_mag_peak" in table.columns,
+        f"rows={len(table)}",
+    )
+
+
+def section_snapshots(case: pp.HighRiseCase, base: pathlib.Path) -> None:
+    print("E. Facade / structure snapshots (galpao fixture)")
+    cp, floor_case, mesh_path = _galpao_cp(case)
+
+    geom = pp.snapshots.load_geometry(mesh_path)
+    n_tri = int(np.asarray(geom.triangle_vertices).shape[0])
+    groups = pp.snapshots.facade_groups(mesh_path)
+    check("facade groups found", len(groups) >= 1, str({k: len(v) for k, v in groups.items()}))
+
+    cp_mean = np.nanmean(np.asarray(cp.fields.read("cp")), axis=1)
+    check("cp_mean per triangle", cp_mean.shape == (n_tri,), str(cp_mean.shape))
+
+    dbg = pp.DebugWriter(base, stage="facade", version="validate")
+    fig, _ = pp.snapshots.triangle_field_figure(
+        geom,
+        cp_mean,
+        view=pp.snapshots.STANDARD_VIEWS["iso"],
+        title="mean Cp",
+        cbar_label="Cp [-]",
+    )
+    path = dbg.savefig(fig, "cp_mean_iso.png", deliverable=True)
+    plotting.close(fig)
+    check("facade figure written", path.exists() and path.stat().st_size > 0, str(path))
+
+    fac_idx = pp.snapshots.facade_index_per_triangle(groups, n_tri)
+    check("facade index per triangle", fac_idx.shape == (n_tri,) and np.isfinite(fac_idx).any())
+
+    first = sorted(groups)[0]
+    fig, _ = pp.snapshots.triangle_field_figure(geom, None, subset=groups[first], title=first)
+    p2 = dbg.savefig(fig, "one_facade_geometry.png")
+    plotting.close(fig)
+    check("single-facade geometry render", p2.exists() and p2.stat().st_size > 0, str(p2))
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
         case = section_case()
         section_inflow(base)
         section_pressure(case)
+        section_dynamic(case)
+        section_snapshots(case, base)
     print("\nAll pp/ validations passed.")
 
 

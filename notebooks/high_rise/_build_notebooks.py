@@ -1,7 +1,8 @@
 """Generate the high-rise stage notebooks (clean, no stored outputs).
 
 Run: uv run python notebooks/high_rise/_build_notebooks.py
-Writes 01_inflow.ipynb, 02_cp.ipynb, 03_cf.ipynb next to this script.
+Writes 01_inflow, 02_cp, 03_cf, 04_dynamic, 05_facade, 06_structure next to
+this script.
 
 The notebooks are thin drivers: config is read from environment variables with
 in-repo fixture defaults, so they run headless (nbconvert / _validate_notebooks)
@@ -308,11 +309,260 @@ CF_CELLS = [
 ]
 
 
+# --------------------------------------------------------------------------
+# 04 -- dynamic response (HFPI / SDOF)
+# --------------------------------------------------------------------------
+
+DYNAMIC_CELLS = [
+    new_markdown_cell(
+        "# High-rise 04 - Dynamic response (HFPI / SDOF)\n"
+        "\n"
+        "Read the Cp time series from notebook 02, build the per-floor Cf/Cm load\n"
+        "history, and run the building dynamic-response recipe: generalized modal\n"
+        "loads -> per-mode SDOF (RK45) integration -> per-floor displacements and\n"
+        "static-equivalent loads, then off-centre accelerations for comfort. Writes\n"
+        "response figures to `debug/` and a per-floor peak table to `deliverables/`.\n"
+        "\n"
+        "The structural model (mode shapes, floor masses, natural frequencies) comes\n"
+        "from the case modes/floors/mode-shape CSVs when the `CFDMOD_HR_MODES_CSV` /\n"
+        "`_FLOORS_CSV` / `_MODE_SHAPE_CSVS` variables are set; otherwise a synthetic\n"
+        "cantilever sway + torsion model tuned to the case geometry is used so the\n"
+        "chain runs on the fixtures."
+    ),
+    new_code_cell(SETUP),
+    new_code_cell(
+        "from cfdmod.adapters.xdmf_h5 import XdmfH5Storage\n"
+        "\n"
+        "# --- config -------------------------------------------------------------\n"
+        "MESH = pathlib.Path(\n"
+        '    os.environ.get("CFDMOD_HR_MESH", FIX / "pressure" / "galpao" / "galpao.normalized.lnas")\n'
+        ")\n"
+        'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
+        'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
+        "if CASE_DATA:\n"
+        "    case = pp.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "else:\n"
+        "    case = pp.example_high_rise_case(MESH)\n"
+        "\n"
+        'DAMPING = float(os.environ.get("CFDMOD_HR_DAMPING", "0.02"))\n'
+        "\n"
+        'ARTIFACTS = OUTPUT_BASE / "artifacts" / VERSION\n'
+        'cp = XdmfH5Storage(ARTIFACTS).read_data_source(pathlib.Path("cp.time_series"))\n'
+        'print(f"cp: {cp.n_elements} elements, {cp.time.n_timesteps} steps | {case.n_floors} floors")'
+    ),
+    new_code_cell(
+        "# --- per-floor load history + structural model --------------------------\n"
+        'cf = pp.cf_per_floor(cp, str(MESH), case, directions=("x", "y"))\n'
+        'cm = pp.cm_per_floor(cp, str(MESH), case, directions=("z",))\n'
+        "load = pp.floor_load_source(cf, cm, case)\n"
+        "\n"
+        "# Real structural data from CSVs, or a synthetic model for the fixtures.\n"
+        'MODES_CSV = os.environ.get("CFDMOD_HR_MODES_CSV")\n'
+        'FLOORS_CSV = os.environ.get("CFDMOD_HR_FLOORS_CSV")\n'
+        'SHAPE_CSVS = os.environ.get("CFDMOD_HR_MODE_SHAPE_CSVS")  # comma-separated, one per mode\n'
+        "if MODES_CSV and FLOORS_CSV and SHAPE_CSVS:\n"
+        '    structure = pp.structure_from_csvs(MODES_CSV, FLOORS_CSV, SHAPE_CSVS.split(","))\n'
+        "else:\n"
+        "    structure = pp.example_building_structure(case, load.n_elements)\n"
+        "\n"
+        "response = pp.solve_building_response(load, structure, damping_ratio=DAMPING)\n"
+        "acc = pp.floor_accelerations(response, structure, point=(1.0, 0.0))\n"
+        "freqs_hz = np.asarray(structure.natural_frequencies) / (2 * np.pi)\n"
+        'print(f"{structure.n_modes} modes at {np.round(freqs_hz, 3)} Hz | damping {DAMPING}")'
+    ),
+    new_code_cell(
+        "from cfdmod.dynamics import plotting as dyn\n"
+        "\n"
+        "# --- response figures + per-floor peak table ----------------------------\n"
+        'dbg = pp.DebugWriter(OUTPUT_BASE, stage="dynamic", version=VERSION)\n'
+        "\n"
+        "fig, _ = dyn.plot_force_spectrum(load, freqs_hz)\n"
+        'dbg.savefig(fig, "force_spectrum.png")\n'
+        "plotting.close(fig)\n"
+        "\n"
+        "top = load.n_elements - 1\n"
+        'disp_top = np.asarray(response.fields.read("disp_x"))[top]\n'
+        "plim = float(1.5 * max(np.abs(disp_top).max(), 1e-9))\n"
+        "fig, _ = dyn.plot_displacement(response, floor=top, plot_limit=plim)\n"
+        'dbg.savefig(fig, "top_floor_hodograph.png")\n'
+        "plotting.close(fig)\n"
+        "\n"
+        "table = pp.peak_response_table(response, acc, case)\n"
+        'fig, ax = plotting.new_axes(xlabel="peak displacement [m]", ylabel="z [m]", title="Per-floor peak displacement")\n'
+        'ax.plot(table["disp_x_peak"], table["z_mid"], "-o", ms=3, label="disp_x")\n'
+        'ax.plot(table["disp_y_peak"], table["z_mid"], "-o", ms=3, label="disp_y")\n'
+        "ax.legend()\n"
+        'dbg.savefig(fig, "peak_displacement.png")\n'
+        "plotting.close(fig)\n"
+        "\n"
+        "fig, _ = dyn.plot_acceleration_floor_by_floor(\n"
+        '    table["acc_mag_peak"].to_numpy(), float(freqs_hz[0]), rec_period=10\n'
+        ")\n"
+        'dbg.savefig(fig, "peak_acceleration.png")\n'
+        "plotting.close(fig)\n"
+        "\n"
+        'table.to_csv(dbg.deliverable_path("dynamic_response.csv"), index=False)\n'
+        "table"
+    ),
+]
+
+
+# --------------------------------------------------------------------------
+# 05 -- facade Cp snapshots
+# --------------------------------------------------------------------------
+
+FACADE_CELLS = [
+    new_markdown_cell(
+        "# High-rise 05 - Facade Cp snapshots\n"
+        "\n"
+        "Colour the body mesh by its per-triangle Cp statistics (mean / min / max\n"
+        "over the record) and render one image per facade. Facades are split by the\n"
+        "outward-normal direction of each triangle (`+x` / `-x` / `+y` / `-y` sides,\n"
+        "`+z` roof). Overview iso renders go to `deliverables/`; per-facade views go\n"
+        "to `debug/`.\n"
+        "\n"
+        "Rendering uses a pure-matplotlib 3-D renderer so it runs headless. If the\n"
+        "optional `[vtk]` extra (PyVista) is installed, a contoured, colour-barred\n"
+        "snapshot is also written."
+    ),
+    new_code_cell(SETUP),
+    new_code_cell(
+        "from cfdmod.adapters.xdmf_h5 import XdmfH5Storage\n"
+        "\n"
+        "# --- config -------------------------------------------------------------\n"
+        "MESH = pathlib.Path(\n"
+        '    os.environ.get("CFDMOD_HR_MESH", FIX / "pressure" / "galpao" / "galpao.normalized.lnas")\n'
+        ")\n"
+        'ARTIFACTS = OUTPUT_BASE / "artifacts" / VERSION\n'
+        'cp = XdmfH5Storage(ARTIFACTS).read_data_source(pathlib.Path("cp.time_series"))\n'
+        "\n"
+        "geom = pp.snapshots.load_geometry(MESH)\n"
+        "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
+        'cp_series = np.asarray(cp.fields.read("cp"))\n'
+        "cp_stats = {\n"
+        '    "mean": np.nanmean(cp_series, axis=1),\n'
+        '    "min": np.nanmin(cp_series, axis=1),\n'
+        '    "max": np.nanmax(cp_series, axis=1),\n'
+        "}\n"
+        "groups = pp.snapshots.facade_groups(MESH)\n"
+        'print("facades:", {k: len(v) for k, v in groups.items()})'
+    ),
+    new_code_cell(
+        "# --- render -------------------------------------------------------------\n"
+        'dbg = pp.DebugWriter(OUTPUT_BASE, stage="facade", version=VERSION)\n'
+        'clim = (float(np.nanmin(cp_stats["min"])), float(np.nanmax(cp_stats["max"])))\n'
+        "\n"
+        "# Overview iso renders for each Cp statistic (engineer-facing).\n"
+        "for stat, vals in cp_stats.items():\n"
+        "    fig, _ = pp.snapshots.triangle_field_figure(\n"
+        '        geom, vals, view=pp.snapshots.STANDARD_VIEWS["iso"], clim=clim,\n'
+        '        title=f"{stat} Cp", cbar_label="Cp [-]",\n'
+        "    )\n"
+        '    dbg.savefig(fig, f"cp_{stat}_iso.png", deliverable=True)\n'
+        "    plotting.close(fig)\n"
+        "\n"
+        "# Per-facade mean-Cp views (exploratory).\n"
+        'view_for = {"n_+x": "right", "n_-x": "left", "n_+y": "front", "n_-y": "back", "n_+z": "top"}\n'
+        "for name, idx in groups.items():\n"
+        "    fig, _ = pp.snapshots.triangle_field_figure(\n"
+        '        geom, cp_stats["mean"], subset=idx,\n'
+        '        view=pp.snapshots.STANDARD_VIEWS[view_for.get(name, "iso")], clim=clim,\n'
+        '        title=f"mean Cp - {pp.snapshots.FACADE_LABELS.get(name, name)}", cbar_label="Cp [-]",\n'
+        "    )\n"
+        '    dbg.savefig(fig, f"facade_{name}.png")\n'
+        "    plotting.close(fig)\n"
+        "\n"
+        "# Optional high-quality PyVista render (only if the [vtk] extra is installed).\n"
+        'vtp = dbg.debug_path("cp_facades.vtp")\n'
+        'if pp.snapshots.write_field_vtp(geom, {"Cp_mean": cp_stats["mean"]}, vtp):\n'
+        "    ok = pp.snapshots.render_vtp_snapshot(\n"
+        '        vtp, dbg.deliverable_path("cp_mean_pyvista.png"),\n'
+        '        scalar="Cp_mean", label="mean Cp", clim=clim,\n'
+        "    )\n"
+        '    print("pyvista snapshot:", ok)\n'
+        "else:\n"
+        '    print("pyvista/[vtk] not installed - matplotlib facade images only")\n'
+        'print("facade images under", dbg.debug_dir)'
+    ),
+]
+
+
+# --------------------------------------------------------------------------
+# 06 -- structure prints
+# --------------------------------------------------------------------------
+
+STRUCTURE_CELLS = [
+    new_markdown_cell(
+        "# High-rise 06 - Structure prints\n"
+        "\n"
+        "Report-ready renders of the building model itself: plain geometry from the\n"
+        "standard views, the facade partition (by outward normal), and the floor\n"
+        "partition (by centroid height against the case floor edges). These document\n"
+        "the model that produced the coefficients and are written to `deliverables/`\n"
+        "(geometry) and `debug/` (partitions)."
+    ),
+    new_code_cell(SETUP),
+    new_code_cell(
+        "# --- config -------------------------------------------------------------\n"
+        "MESH = pathlib.Path(\n"
+        '    os.environ.get("CFDMOD_HR_MESH", FIX / "pressure" / "galpao" / "galpao.normalized.lnas")\n'
+        ")\n"
+        'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
+        'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
+        "if CASE_DATA:\n"
+        "    case = pp.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "else:\n"
+        "    case = pp.example_high_rise_case(MESH)\n"
+        "\n"
+        "geom = pp.snapshots.load_geometry(MESH)\n"
+        "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
+        "\n"
+        "# Per-triangle floor index from centroid height vs the case z-edges.\n"
+        "tri = np.asarray(geom.triangle_vertices)\n"
+        "cz = tri[:, :, 2].mean(axis=1)\n"
+        "edges = np.asarray(case.floor_heights)\n"
+        "floor_id = np.clip(np.digitize(cz, edges[1:-1]), 0, len(edges) - 2).astype(float)\n"
+        "groups = pp.snapshots.facade_groups(MESH)\n"
+        "fac_idx = pp.snapshots.facade_index_per_triangle(groups, n_tri)\n"
+        'print(f"{n_tri} triangles | {case.n_floors} floors | {len(groups)} facade groups")'
+    ),
+    new_code_cell(
+        "# --- render -------------------------------------------------------------\n"
+        'dbg = pp.DebugWriter(OUTPUT_BASE, stage="structure", version=VERSION)\n'
+        "\n"
+        'for v in ("iso", "front", "right", "top"):\n'
+        "    fig, _ = pp.snapshots.triangle_field_figure(\n"
+        '        geom, None, view=pp.snapshots.STANDARD_VIEWS[v], title=f"geometry - {v}"\n'
+        "    )\n"
+        '    dbg.savefig(fig, f"geometry_{v}.png", deliverable=True)\n'
+        "    plotting.close(fig)\n"
+        "\n"
+        "fig, _ = pp.snapshots.triangle_field_figure(\n"
+        '    geom, fac_idx, cmap="tab10", view=pp.snapshots.STANDARD_VIEWS["iso"],\n'
+        '    title="facade partition", cbar_label="facade id",\n'
+        ")\n"
+        'dbg.savefig(fig, "facade_partition.png")\n'
+        "plotting.close(fig)\n"
+        "\n"
+        "fig, _ = pp.snapshots.triangle_field_figure(\n"
+        '    geom, floor_id, cmap="viridis", view=pp.snapshots.STANDARD_VIEWS["iso"],\n'
+        '    title="floor partition", cbar_label="floor",\n'
+        ")\n"
+        'dbg.savefig(fig, "floor_partition.png")\n'
+        "plotting.close(fig)\n"
+        'print("structure prints under", dbg.deliverables_dir)'
+    ),
+]
+
+
 def build() -> None:
     for fname, cells in [
         ("01_inflow.ipynb", INFLOW_CELLS),
         ("02_cp.ipynb", CP_CELLS),
         ("03_cf.ipynb", CF_CELLS),
+        ("04_dynamic.ipynb", DYNAMIC_CELLS),
+        ("05_facade.ipynb", FACADE_CELLS),
+        ("06_structure.ipynb", STRUCTURE_CELLS),
     ]:
         nb = new_notebook(cells=cells)
         nb.metadata["kernelspec"] = {

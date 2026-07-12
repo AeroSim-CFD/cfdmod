@@ -12,12 +12,23 @@ Layout:
     plotting     -- shared matplotlib style + savefig helper.
     inflow_report-- vertical-profile detection + inflow validation figures.
     pressure     -- v3 recipe/op wiring for Cp and per-floor Cf/Cm.
+    dynamic      -- floor-load assembly + building dynamic-response recipe wiring.
+    snapshots    -- facade / structure mesh-field renders (matplotlib + optional PyVista).
 """
 
 from __future__ import annotations
 
+from pp import snapshots
 from pp.case import HighRiseCase, example_high_rise_case
 from pp.debug_io import DebugWriter
+from pp.dynamic import (
+    example_building_structure,
+    floor_accelerations,
+    floor_load_source,
+    peak_response_table,
+    solve_building_response,
+    structure_from_csvs,
+)
 from pp.inflow_report import ProfileLine, detect_profiles, reference_velocity
 from pp.pressure import cf_per_floor, cm_per_floor, cp_from_pressure
 
@@ -31,4 +42,11 @@ __all__ = [
     "cp_from_pressure",
     "cf_per_floor",
     "cm_per_floor",
+    "floor_load_source",
+    "example_building_structure",
+    "structure_from_csvs",
+    "solve_building_response",
+    "floor_accelerations",
+    "peak_response_table",
+    "snapshots",
 ]
