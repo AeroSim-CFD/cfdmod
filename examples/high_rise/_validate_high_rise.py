@@ -1,7 +1,7 @@
-"""Validate the cfdmod.high_rise helpers end-to-end on real in-repo fixtures.
+"""Validate the building post-processing helpers end-to-end on in-repo fixtures.
 
 Run: uv run python examples/high_rise/_validate_high_rise.py
-Exercises HighRiseCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
+Exercises BuildingCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
 points at one, else a synthetic case), inflow profile detection + figures
 (pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, the
 dynamic-response recipe wiring, and the facade / structure mesh-field snapshots
@@ -13,17 +13,20 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
-import numpy as np
+import matplotlib
 
-from cfdmod import high_rise as hr
-from cfdmod.high_rise import inflow_report as ir
-from cfdmod.high_rise import plotting
+matplotlib.use("Agg")  # headless: this script writes figures, it does not display
+
+import numpy as np  # noqa: E402
+
+from cfdmod import building, mesh_field, plot_config, report  # noqa: E402
+from cfdmod import inflow_report as ir  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 FIX = REPO / "fixtures" / "tests"
 
-plotting.apply_style()
+plot_config.apply_style()
 
 
 def check(label: str, cond: bool, detail: str = "") -> None:
@@ -33,8 +36,8 @@ def check(label: str, cond: bool, detail: str = "") -> None:
         raise SystemExit(f"validation failed: {label}")
 
 
-def section_case() -> hr.HighRiseCase:
-    print("A. HighRiseCase")
+def section_case() -> building.BuildingCase:
+    print("A. BuildingCase")
     # Point CFDMOD_HR_VALIDATE_CASE_DATA at a real case_data dir to parse it;
     # otherwise fall back to a synthetic case (no client data is committed).
     import os
@@ -45,7 +48,7 @@ def section_case() -> hr.HighRiseCase:
         print("  (no CFDMOD_HR_VALIDATE_CASE_DATA case_data; using synthetic case)")
         return _synthetic_case()
     params = os.environ.get("CFDMOD_HR_VALIDATE_PARAMS", "params_cat3.yaml")
-    case = hr.HighRiseCase.from_case_data(case_data, params)
+    case = building.BuildingCase.from_case_data(case_data, params)
     check("reference_height positive", case.reference_height > 0, f"H={case.reference_height}")
     check("nominal_area positive", case.nominal_area > 0)
     check("n_floors > 1", case.n_floors > 1, f"n_floors={case.n_floors}")
@@ -61,8 +64,8 @@ def section_case() -> hr.HighRiseCase:
     return case
 
 
-def _synthetic_case() -> hr.HighRiseCase:
-    return hr.HighRiseCase(
+def _synthetic_case() -> building.BuildingCase:
+    return building.BuildingCase(
         name="synthetic",
         reference_height=100.0,
         characteristic_length=20.0,
@@ -92,7 +95,7 @@ def section_inflow(base: pathlib.Path) -> None:
     L = ir.integral_length_scale(inflow, int(prof.nearest_index(ref_h)), u_ref)
     check("integral length scale computed", np.isfinite(L) or np.isnan(L), f"L={L}")
 
-    dbg = hr.DebugWriter(base, stage="inflow", version="validate")
+    dbg = report.DebugWriter(base, stage="inflow", version="validate")
     norm = NormalizationParameters(reference_velocity=max(u_ref, 1e-6), characteristic_length=1.0)
     figs = {
         "mean_velocity.png": ir.plot_mean_velocity(prof, inflow),
@@ -101,11 +104,11 @@ def section_inflow(base: pathlib.Path) -> None:
     }
     for name, fig in figs.items():
         path = dbg.savefig(fig, name)
-        plotting.close(fig)
+        plot_config.close(fig)
         check(f"wrote {name}", path.exists() and path.stat().st_size > 0, str(path))
 
 
-def section_pressure(case: hr.HighRiseCase) -> None:
+def section_pressure(case: building.BuildingCase) -> None:
     print("C. Cp -> per-floor Cf/Cm (galpao fixture)")
     import pathlib as _pl
 
@@ -126,12 +129,12 @@ def section_pressure(case: hr.HighRiseCase) -> None:
     edges = list(np.linspace(zmin, zmax, 4))
     floor_case = case.model_copy(update={"floor_heights": edges})
 
-    cp = hr.cp_from_pressure(body, p_ref, floor_case)
+    cp = building.cp_from_pressure(body, p_ref, floor_case)
     check("cp field present", "cp" in cp.field_names)
     cp_mean = np.nanmean(cp.fields.read("cp"))
     check("cp mean in plausible range", abs(cp_mean) < 5.0, f"mean cp={cp_mean:.3f}")
 
-    cf = hr.cf_per_floor(cp, mesh_path, floor_case, directions=("x", "y"))
+    cf = building.cf_per_floor(cp, mesh_path, floor_case, directions=("x", "y"))
     check("cf is groups source", cf.kind == "groups")
     check("cf has <= 3 floor rows", 1 <= cf.n_elements <= 3, f"n_floors={cf.n_elements}")
     cfx = cf.fields.read("cf_x")
@@ -141,12 +144,12 @@ def section_pressure(case: hr.HighRiseCase) -> None:
         str(cfx.shape),
     )
 
-    cm = hr.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
+    cm = building.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
     cmz = cm.fields.read("cm_z")
     check("cm_z finite", np.all(np.isfinite(cmz)), str(cmz.shape))
 
 
-def _galpao_cp(case: hr.HighRiseCase):
+def _galpao_cp(case: building.BuildingCase):
     """Compute a Cp time series + a 3-floor case on the galpao fixture."""
     import pathlib as _pl
 
@@ -162,31 +165,31 @@ def _galpao_cp(case: hr.HighRiseCase):
     verts = LnasFormat.from_file(_pl.Path(mesh_path)).geometry.vertices
     edges = list(np.linspace(float(verts[:, 2].min()), float(verts[:, 2].max()), 4))
     floor_case = case.model_copy(update={"floor_heights": edges})
-    cp = hr.cp_from_pressure(body, p_ref, floor_case)
+    cp = building.cp_from_pressure(body, p_ref, floor_case)
     return cp, floor_case, mesh_path
 
 
-def section_dynamic(case: hr.HighRiseCase) -> None:
+def section_dynamic(case: building.BuildingCase) -> None:
     print("D. Dynamic response (galpao fixture)")
     cp, floor_case, mesh_path = _galpao_cp(case)
 
-    cf = hr.cf_per_floor(cp, mesh_path, floor_case, directions=("x", "y"))
-    cm = hr.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
-    load = hr.floor_load_source(cf, cm, floor_case)
+    cf = building.cf_per_floor(cp, mesh_path, floor_case, directions=("x", "y"))
+    cm = building.cm_per_floor(cp, mesh_path, floor_case, directions=("z",))
+    load = building.floor_load_source(cf, cm, floor_case)
     check("load source is points", load.kind == "points", f"n_floors={load.n_elements}")
     check(
         "load fields present",
         all(f in load.field_names for f in ("cf_x", "cf_y", "cm_z")),
     )
 
-    structure = hr.example_building_structure(floor_case, load.n_elements)
+    structure = building.example_building_structure(floor_case, load.n_elements)
     check(
         "structure shapes mass-normalized",
         structure.n_floors == load.n_elements and structure.n_modes >= 1,
         f"floors={structure.n_floors} modes={structure.n_modes}",
     )
 
-    response = hr.solve_building_response(load, structure, damping_ratio=0.02)
+    response = building.solve_building_response(load, structure, damping_ratio=0.02)
     for name in ("disp_x", "disp_y", "rot_z", "feq_x", "feq_y", "meq_z"):
         arr = np.asarray(response.fields.read(name))
         check(
@@ -195,11 +198,11 @@ def section_dynamic(case: hr.HighRiseCase) -> None:
             str(arr.shape),
         )
 
-    acc = hr.floor_accelerations(response, structure, point=(1.0, 0.0))
+    acc = building.floor_accelerations(response, structure, point=(1.0, 0.0))
     acc_mag = np.asarray(acc.fields.read("acc_mag"))
     check("acc_mag finite", np.all(np.isfinite(acc_mag)), str(acc_mag.shape))
 
-    table = hr.peak_response_table(response, acc, floor_case)
+    table = building.peak_response_table(response, acc, floor_case)
     check(
         "peak table one row per floor",
         len(table) == load.n_elements and "acc_mag_peak" in table.columns,
@@ -207,37 +210,37 @@ def section_dynamic(case: hr.HighRiseCase) -> None:
     )
 
 
-def section_snapshots(case: hr.HighRiseCase, base: pathlib.Path) -> None:
+def section_snapshots(case: building.BuildingCase, base: pathlib.Path) -> None:
     print("E. Facade / structure snapshots (galpao fixture)")
     cp, floor_case, mesh_path = _galpao_cp(case)
 
-    geom = hr.snapshots.load_geometry(mesh_path)
+    geom = mesh_field.load_geometry(mesh_path)
     n_tri = int(np.asarray(geom.triangle_vertices).shape[0])
-    groups = hr.snapshots.facade_groups(mesh_path)
+    groups = mesh_field.facade_groups(mesh_path)
     check("facade groups found", len(groups) >= 1, str({k: len(v) for k, v in groups.items()}))
 
     cp_mean = np.nanmean(np.asarray(cp.fields.read("cp")), axis=1)
     check("cp_mean per triangle", cp_mean.shape == (n_tri,), str(cp_mean.shape))
 
-    dbg = hr.DebugWriter(base, stage="facade", version="validate")
-    fig, _ = hr.snapshots.triangle_field_figure(
+    dbg = report.DebugWriter(base, stage="facade", version="validate")
+    fig, _ = mesh_field.triangle_field_figure(
         geom,
         cp_mean,
-        view=hr.snapshots.STANDARD_VIEWS["iso"],
+        view=mesh_field.STANDARD_VIEWS["iso"],
         title="mean Cp",
         cbar_label="Cp [-]",
     )
     path = dbg.savefig(fig, "cp_mean_iso.png", deliverable=True)
-    plotting.close(fig)
+    plot_config.close(fig)
     check("facade figure written", path.exists() and path.stat().st_size > 0, str(path))
 
-    fac_idx = hr.snapshots.facade_index_per_triangle(groups, n_tri)
+    fac_idx = mesh_field.facade_index_per_triangle(groups, n_tri)
     check("facade index per triangle", fac_idx.shape == (n_tri,) and np.isfinite(fac_idx).any())
 
     first = sorted(groups)[0]
-    fig, _ = hr.snapshots.triangle_field_figure(geom, None, subset=groups[first], title=first)
+    fig, _ = mesh_field.triangle_field_figure(geom, None, subset=groups[first], title=first)
     p2 = dbg.savefig(fig, "one_facade_geometry.png")
-    plotting.close(fig)
+    plot_config.close(fig)
     check("single-facade geometry render", p2.exists() and p2.stat().st_size > 0, str(p2))
 
 
@@ -249,7 +252,7 @@ def main() -> None:
         section_pressure(case)
         section_dynamic(case)
         section_snapshots(case, base)
-    print("\nAll cfdmod.high_rise validations passed.")
+    print("\nAll building post-processing validations passed.")
 
 
 if __name__ == "__main__":

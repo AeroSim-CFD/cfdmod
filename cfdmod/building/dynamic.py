@@ -2,13 +2,13 @@
 
 Thin composition of the library dynamic recipe -- no new structural maths
 lives here. It bridges the per-floor Cf/Cm produced by the pressure stage
-(:mod:`cfdmod.high_rise.pressure`) into the building dynamic-response recipe
+(:mod:`cfdmod.building.pressure`) into the building dynamic-response recipe
 (:func:`cfdmod.core.recipes.dynamic.build_building_dynamic_response`) and the
 comfort acceleration recipe (:func:`build_point_accelerations`).
 
 The pipeline the stage assembles:
 
-    per-floor Cf/Cm timeseries (GroupsDataSource, from cfdmod.high_rise.pressure)
+    per-floor Cf/Cm timeseries (GroupsDataSource, from cfdmod.building.pressure)
         -> floor-load PointsDataSource (cf_x / cf_y / cm_z, dimensionalised)
         -> generalized modal loads -> SDOF RK45 -> floor response
            (disp_x / disp_y / rot_z + static-equivalent feq_x / feq_y / meq_z)
@@ -39,7 +39,7 @@ from cfdmod.core.recipes import (
 )
 from cfdmod.dynamics import BuildingStructuralData, mass_normalize_mode_shapes
 
-from .case import HighRiseCase
+from .case import BuildingCase
 
 # Ellis (1980) empirical fundamental frequency: f1 ~ 46 / H [Hz], H in metres.
 _ELLIS_COEFF = 46.0
@@ -48,15 +48,15 @@ _ELLIS_COEFF = 46.0
 def floor_load_source(
     cf: DataSource,
     cm: DataSource,
-    case: HighRiseCase,
+    case: BuildingCase,
     *,
     dimensionalize: bool = True,
 ) -> PointsDataSource:
     """Merge per-floor Cf/Cm groups into one floor-load ``PointsDataSource``.
 
     ``cf`` carries ``cf_x`` / ``cf_y`` and ``cm`` carries ``cm_z``, each a
-    ``(n_floors, n_t)`` groups source from :func:`cfdmod.high_rise.pressure.cf_per_floor` /
-    :func:`cfdmod.high_rise.pressure.cm_per_floor`. The result has the three fields the
+    ``(n_floors, n_t)`` groups source from :func:`cfdmod.building.pressure.cf_per_floor` /
+    :func:`cfdmod.building.pressure.cm_per_floor`. The result has the three fields the
     building recipe expects (``cf_x`` / ``cf_y`` / ``cm_z``) on floor points
     stacked along Z.
 
@@ -95,7 +95,7 @@ def floor_load_source(
 
 
 def example_building_structure(
-    case: HighRiseCase,
+    case: BuildingCase,
     n_floors: int,
     *,
     n_modes: int = 3,
@@ -217,7 +217,7 @@ def floor_accelerations(
 def peak_response_table(
     response: PointsDataSource,
     accelerations: PointsDataSource,
-    case: HighRiseCase,
+    case: BuildingCase,
 ) -> pd.DataFrame:
     """Per-floor peak magnitudes for the engineer-facing deliverable table.
 
@@ -245,7 +245,7 @@ def peak_response_table(
     )
 
 
-def _floor_mid_heights(case: HighRiseCase, n_floors: int) -> np.ndarray:
+def _floor_mid_heights(case: BuildingCase, n_floors: int) -> np.ndarray:
     """Floor mid-heights from the case z-edges, or a unit ladder if they disagree.
 
     The pressure stage may return fewer floor rows than the case has z-edges

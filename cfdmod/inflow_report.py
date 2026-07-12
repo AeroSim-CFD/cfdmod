@@ -29,8 +29,7 @@ from cfdmod.inflow import (
     calculate_spectral_density,
     calculate_turbulence_intensity,
 )
-
-from .plotting import new_axes
+from cfdmod.plot_config import new_axes
 
 
 @dataclasses.dataclass(frozen=True)

@@ -7,7 +7,7 @@ this script.
 The notebooks are thin drivers: config is read from environment variables with
 in-repo fixture defaults, so they run headless (nbconvert / _validate_notebooks)
 without any external data, and point at a real case by setting the CFDMOD_HR_*
-variables. All reusable logic lives in the cfdmod.high_rise package.
+variables. All reusable logic lives in the cfdmod library (cfdmod.building + cfdmod.inflow_report / mesh_field / report / plot_config helpers).
 """
 
 from __future__ import annotations
@@ -25,8 +25,25 @@ import pathlib
 
 import numpy as np  # noqa: F401  (used across later cells)
 
-from cfdmod import high_rise as hr
-from cfdmod.high_rise import plotting
+import matplotlib
+
+matplotlib.use("Agg")  # headless: notebooks write files, they do not display
+
+from cfdmod import inflow_report, mesh_field, plot_config  # noqa: E402
+from cfdmod.building import (  # noqa: E402
+    BuildingCase,
+    cf_per_floor,
+    cm_per_floor,
+    cp_from_pressure,
+    example_building_case,
+    example_building_structure,
+    floor_accelerations,
+    floor_load_source,
+    peak_response_table,
+    solve_building_response,
+    structure_from_csvs,
+)
+from cfdmod.report import DebugWriter  # noqa: E402
 
 
 def _find_repo(start: pathlib.Path) -> pathlib.Path:
@@ -40,7 +57,7 @@ def _find_repo(start: pathlib.Path) -> pathlib.Path:
 
 REPO = _find_repo(pathlib.Path.cwd())
 
-plotting.apply_style()
+plot_config.apply_style()
 
 FIX = REPO / "fixtures" / "tests"
 OUTPUT_BASE = pathlib.Path(
@@ -84,9 +101,9 @@ INFLOW_CELLS = [
         'REFERENCE_HEIGHT = float(os.environ.get("CFDMOD_HR_REF_HEIGHT", "2.0"))\n'
         'COMPONENT = os.environ.get("CFDMOD_HR_COMPONENT", "ux")\n'
         "\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="inflow", version=VERSION)\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="inflow", version=VERSION)\n'
         "inflow = InflowData.from_files(HIST, POINTS)\n"
-        "profiles = hr.detect_profiles(inflow, min_points=3)\n"
+        "profiles = inflow_report.detect_profiles(inflow, min_points=3)\n"
         'print(f"detected {len(profiles)} vertical profile(s)")\n'
         "for p in profiles:\n"
         '    print(f"  {p.name}: {len(p.point_idx)} points, z in [{p.z.min():.2f}, {p.z.max():.2f}]")'
@@ -95,9 +112,9 @@ INFLOW_CELLS = [
         "# --- per-profile figures + reference velocity ---------------------------\n"
         "u_ref_by_profile = {}\n"
         "for prof in profiles:\n"
-        "    u_ref = hr.reference_velocity(prof, inflow, REFERENCE_HEIGHT, component=COMPONENT)\n"
+        "    u_ref = inflow_report.reference_velocity(prof, inflow, REFERENCE_HEIGHT, component=COMPONENT)\n"
         "    u_ref_by_profile[prof.name] = u_ref\n"
-        "    L = hr.inflow_report.integral_length_scale(\n"
+        "    L = inflow_report.integral_length_scale(\n"
         "        inflow, prof.nearest_index(REFERENCE_HEIGHT), u_ref, component=COMPONENT\n"
         "    )\n"
         '    print(f"{prof.name}: u_ref(z={REFERENCE_HEIGHT:g}) = {u_ref:.4f} m/s | L = {L:.4g} m")\n'
@@ -106,16 +123,16 @@ INFLOW_CELLS = [
         "        reference_velocity=max(u_ref, 1e-9), characteristic_length=1.0\n"
         "    )\n"
         "    for name, fig in {\n"
-        '        "mean_velocity": hr.inflow_report.plot_mean_velocity(prof, inflow, component=COMPONENT),\n'
-        '        "turbulence_intensity": hr.inflow_report.plot_turbulence_intensity(\n'
+        '        "mean_velocity": inflow_report.plot_mean_velocity(prof, inflow, component=COMPONENT),\n'
+        '        "turbulence_intensity": inflow_report.plot_turbulence_intensity(\n'
         "            prof, inflow, component=COMPONENT\n"
         "        ),\n"
-        '        "spectrum": hr.inflow_report.plot_spectrum(\n'
+        '        "spectrum": inflow_report.plot_spectrum(\n'
         "            prof, inflow, REFERENCE_HEIGHT, norm, component=COMPONENT\n"
         "        ),\n"
         "    }.items():\n"
         '        dbg.savefig(fig, f"{prof.name}/{name}.png")\n'
-        "        plotting.close(fig)\n"
+        "        plot_config.close(fig)\n"
         'print("figures written under", dbg.debug_dir)'
     ),
     new_code_cell(
@@ -172,9 +189,9 @@ CP_CELLS = [
         'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
         'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
         "if CASE_DATA:\n"
-        "    case = hr.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "    case = BuildingCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
         "else:\n"
-        "    case = hr.example_high_rise_case(MESH)\n"
+        "    case = example_building_case(MESH)\n"
         "\n"
         "# Apply the reference velocity measured in notebook 01, if available.\n"
         'ref_json = OUTPUT_BASE / "deliverables" / VERSION / "inflow" / "reference_velocity.json"\n'
@@ -194,8 +211,8 @@ CP_CELLS = [
         "p_ref = storage.read_data_source(pathlib.Path(REF_KEY))\n"
         'print(f"body: {body.kind}, {body.n_elements} elements, {body.time.n_timesteps} steps")\n'
         "\n"
-        "cp = hr.cp_from_pressure(body, p_ref, case)\n"
-        'cp_stats = hr.cp_from_pressure(body, p_ref, case, statistics=["mean", "rms", "min", "max"])\n'
+        "cp = cp_from_pressure(body, p_ref, case)\n"
+        'cp_stats = cp_from_pressure(body, p_ref, case, statistics=["mean", "rms", "min", "max"])\n'
         'mean_cp = cp_stats.fields.read("mean")\n'
         'print(f"Cp mean range: [{np.nanmin(mean_cp):.3f}, {np.nanmax(mean_cp):.3f}]")'
     ),
@@ -211,11 +228,11 @@ CP_CELLS = [
         "import pandas as pd\n"
         "\n"
         "# --- Cp stats summary -> deliverables -----------------------------------\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="cp", version=VERSION)\n'
-        'fig, ax = plotting.new_axes(xlabel="mean Cp [-]", ylabel="count", title="Cp mean distribution")\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="cp", version=VERSION)\n'
+        'fig, ax = plot_config.new_axes(xlabel="mean Cp [-]", ylabel="count", title="Cp mean distribution")\n'
         "ax.hist(mean_cp[np.isfinite(mean_cp)], bins=40)\n"
         'dbg.savefig(fig, "cp_mean_hist.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
         'stat_names = ["mean", "rms", "min", "max"]\n'
         "summary = pd.DataFrame(\n"
@@ -257,9 +274,9 @@ CF_CELLS = [
         'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
         'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
         "if CASE_DATA:\n"
-        "    case = hr.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "    case = BuildingCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
         "else:\n"
-        "    case = hr.example_high_rise_case(MESH)\n"
+        "    case = example_building_case(MESH)\n"
         "\n"
         'ARTIFACTS = OUTPUT_BASE / "artifacts" / VERSION\n'
         'cp = XdmfH5Storage(ARTIFACTS).read_data_source(pathlib.Path("cp.time_series"))\n'
@@ -267,8 +284,8 @@ CF_CELLS = [
     ),
     new_code_cell(
         "# --- per-floor Cf / Cm --------------------------------------------------\n"
-        'cf = hr.cf_per_floor(cp, str(MESH), case, directions=("x", "y"))\n'
-        'cm = hr.cm_per_floor(cp, str(MESH), case, directions=("z",))\n'
+        'cf = cf_per_floor(cp, str(MESH), case, directions=("x", "y"))\n'
+        'cm = cm_per_floor(cp, str(MESH), case, directions=("z",))\n'
         "\n"
         "# Floor mid-heights for plotting.\n"
         "edges = np.asarray(case.floor_heights)\n"
@@ -282,14 +299,14 @@ CF_CELLS = [
         "import pandas as pd\n"
         "\n"
         "# --- figures + load table ----------------------------------------------\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="cf", version=VERSION)\n'
-        'fig, ax = plotting.new_axes(xlabel="mean coefficient [-]", ylabel="z [m]", title="Per-floor Cf / Cm")\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="cf", version=VERSION)\n'
+        'fig, ax = plot_config.new_axes(xlabel="mean coefficient [-]", ylabel="z [m]", title="Per-floor Cf / Cm")\n'
         'ax.plot(cfx_mean, z_mid, "-o", ms=3, label="Cf_x")\n'
         'ax.plot(cfy_mean, z_mid, "-o", ms=3, label="Cf_y")\n'
         'ax.plot(cmz_mean, z_mid, "-s", ms=3, label="Cm_z")\n'
         "ax.legend()\n"
         'dbg.savefig(fig, "per_floor_coefficients.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
         "table = pd.DataFrame(\n"
         "    {\n"
@@ -337,9 +354,9 @@ DYNAMIC_CELLS = [
         'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
         'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
         "if CASE_DATA:\n"
-        "    case = hr.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "    case = BuildingCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
         "else:\n"
-        "    case = hr.example_high_rise_case(MESH)\n"
+        "    case = example_building_case(MESH)\n"
         "\n"
         'DAMPING = float(os.environ.get("CFDMOD_HR_DAMPING", "0.02"))\n'
         "\n"
@@ -349,21 +366,21 @@ DYNAMIC_CELLS = [
     ),
     new_code_cell(
         "# --- per-floor load history + structural model --------------------------\n"
-        'cf = hr.cf_per_floor(cp, str(MESH), case, directions=("x", "y"))\n'
-        'cm = hr.cm_per_floor(cp, str(MESH), case, directions=("z",))\n'
-        "load = hr.floor_load_source(cf, cm, case)\n"
+        'cf = cf_per_floor(cp, str(MESH), case, directions=("x", "y"))\n'
+        'cm = cm_per_floor(cp, str(MESH), case, directions=("z",))\n'
+        "load = floor_load_source(cf, cm, case)\n"
         "\n"
         "# Real structural data from CSVs, or a synthetic model for the fixtures.\n"
         'MODES_CSV = os.environ.get("CFDMOD_HR_MODES_CSV")\n'
         'FLOORS_CSV = os.environ.get("CFDMOD_HR_FLOORS_CSV")\n'
         'SHAPE_CSVS = os.environ.get("CFDMOD_HR_MODE_SHAPE_CSVS")  # comma-separated, one per mode\n'
         "if MODES_CSV and FLOORS_CSV and SHAPE_CSVS:\n"
-        '    structure = hr.structure_from_csvs(MODES_CSV, FLOORS_CSV, SHAPE_CSVS.split(","))\n'
+        '    structure = structure_from_csvs(MODES_CSV, FLOORS_CSV, SHAPE_CSVS.split(","))\n'
         "else:\n"
-        "    structure = hr.example_building_structure(case, load.n_elements)\n"
+        "    structure = example_building_structure(case, load.n_elements)\n"
         "\n"
-        "response = hr.solve_building_response(load, structure, damping_ratio=DAMPING)\n"
-        "acc = hr.floor_accelerations(response, structure, point=(1.0, 0.0))\n"
+        "response = solve_building_response(load, structure, damping_ratio=DAMPING)\n"
+        "acc = floor_accelerations(response, structure, point=(1.0, 0.0))\n"
         "freqs_hz = np.asarray(structure.natural_frequencies) / (2 * np.pi)\n"
         'print(f"{structure.n_modes} modes at {np.round(freqs_hz, 3)} Hz | damping {DAMPING}")'
     ),
@@ -371,32 +388,32 @@ DYNAMIC_CELLS = [
         "from cfdmod.dynamics import plotting as dyn\n"
         "\n"
         "# --- response figures + per-floor peak table ----------------------------\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="dynamic", version=VERSION)\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="dynamic", version=VERSION)\n'
         "\n"
         "fig, _ = dyn.plot_force_spectrum(load, freqs_hz)\n"
         'dbg.savefig(fig, "force_spectrum.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
         "top = load.n_elements - 1\n"
         'disp_top = np.asarray(response.fields.read("disp_x"))[top]\n'
         "plim = float(1.5 * max(np.abs(disp_top).max(), 1e-9))\n"
         "fig, _ = dyn.plot_displacement(response, floor=top, plot_limit=plim)\n"
         'dbg.savefig(fig, "top_floor_hodograph.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
-        "table = hr.peak_response_table(response, acc, case)\n"
-        'fig, ax = plotting.new_axes(xlabel="peak displacement [m]", ylabel="z [m]", title="Per-floor peak displacement")\n'
+        "table = peak_response_table(response, acc, case)\n"
+        'fig, ax = plot_config.new_axes(xlabel="peak displacement [m]", ylabel="z [m]", title="Per-floor peak displacement")\n'
         'ax.plot(table["disp_x_peak"], table["z_mid"], "-o", ms=3, label="disp_x")\n'
         'ax.plot(table["disp_y_peak"], table["z_mid"], "-o", ms=3, label="disp_y")\n'
         "ax.legend()\n"
         'dbg.savefig(fig, "peak_displacement.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
         "fig, _ = dyn.plot_acceleration_floor_by_floor(\n"
         '    table["acc_mag_peak"].to_numpy(), float(freqs_hz[0]), rec_period=10\n'
         ")\n"
         'dbg.savefig(fig, "peak_acceleration.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
         'table.to_csv(dbg.deliverable_path("dynamic_response.csv"), index=False)\n'
         "table"
@@ -433,7 +450,7 @@ FACADE_CELLS = [
         'ARTIFACTS = OUTPUT_BASE / "artifacts" / VERSION\n'
         'cp = XdmfH5Storage(ARTIFACTS).read_data_source(pathlib.Path("cp.time_series"))\n'
         "\n"
-        "geom = hr.snapshots.load_geometry(MESH)\n"
+        "geom = mesh_field.load_geometry(MESH)\n"
         "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
         'cp_series = np.asarray(cp.fields.read("cp"))\n'
         "cp_stats = {\n"
@@ -441,38 +458,38 @@ FACADE_CELLS = [
         '    "min": np.nanmin(cp_series, axis=1),\n'
         '    "max": np.nanmax(cp_series, axis=1),\n'
         "}\n"
-        "groups = hr.snapshots.facade_groups(MESH)\n"
+        "groups = mesh_field.facade_groups(MESH)\n"
         'print("facades:", {k: len(v) for k, v in groups.items()})'
     ),
     new_code_cell(
         "# --- render -------------------------------------------------------------\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="facade", version=VERSION)\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="facade", version=VERSION)\n'
         'clim = (float(np.nanmin(cp_stats["min"])), float(np.nanmax(cp_stats["max"])))\n'
         "\n"
         "# Overview iso renders for each Cp statistic (engineer-facing).\n"
         "for stat, vals in cp_stats.items():\n"
-        "    fig, _ = hr.snapshots.triangle_field_figure(\n"
-        '        geom, vals, view=hr.snapshots.STANDARD_VIEWS["iso"], clim=clim,\n'
+        "    fig, _ = mesh_field.triangle_field_figure(\n"
+        '        geom, vals, view=mesh_field.STANDARD_VIEWS["iso"], clim=clim,\n'
         '        title=f"{stat} Cp", cbar_label="Cp [-]",\n'
         "    )\n"
         '    dbg.savefig(fig, f"cp_{stat}_iso.png", deliverable=True)\n'
-        "    plotting.close(fig)\n"
+        "    plot_config.close(fig)\n"
         "\n"
         "# Per-facade mean-Cp views (exploratory).\n"
         'view_for = {"n_+x": "right", "n_-x": "left", "n_+y": "front", "n_-y": "back", "n_+z": "top"}\n'
         "for name, idx in groups.items():\n"
-        "    fig, _ = hr.snapshots.triangle_field_figure(\n"
+        "    fig, _ = mesh_field.triangle_field_figure(\n"
         '        geom, cp_stats["mean"], subset=idx,\n'
-        '        view=hr.snapshots.STANDARD_VIEWS[view_for.get(name, "iso")], clim=clim,\n'
-        '        title=f"mean Cp - {hr.snapshots.FACADE_LABELS.get(name, name)}", cbar_label="Cp [-]",\n'
+        '        view=mesh_field.STANDARD_VIEWS[view_for.get(name, "iso")], clim=clim,\n'
+        '        title=f"mean Cp - {mesh_field.FACADE_LABELS.get(name, name)}", cbar_label="Cp [-]",\n'
         "    )\n"
         '    dbg.savefig(fig, f"facade_{name}.png")\n'
-        "    plotting.close(fig)\n"
+        "    plot_config.close(fig)\n"
         "\n"
         "# Optional high-quality PyVista render (only if the [vtk] extra is installed).\n"
         'vtp = dbg.debug_path("cp_facades.vtp")\n'
-        'if hr.snapshots.write_field_vtp(geom, {"Cp_mean": cp_stats["mean"]}, vtp):\n'
-        "    ok = hr.snapshots.render_vtp_snapshot(\n"
+        'if mesh_field.write_field_vtp(geom, {"Cp_mean": cp_stats["mean"]}, vtp):\n'
+        "    ok = mesh_field.render_vtp_snapshot(\n"
         '        vtp, dbg.deliverable_path("cp_mean_pyvista.png"),\n'
         '        scalar="Cp_mean", label="mean Cp", clim=clim,\n'
         "    )\n"
@@ -507,11 +524,11 @@ STRUCTURE_CELLS = [
         'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
         'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
         "if CASE_DATA:\n"
-        "    case = hr.HighRiseCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
+        "    case = BuildingCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
         "else:\n"
-        "    case = hr.example_high_rise_case(MESH)\n"
+        "    case = example_building_case(MESH)\n"
         "\n"
-        "geom = hr.snapshots.load_geometry(MESH)\n"
+        "geom = mesh_field.load_geometry(MESH)\n"
         "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
         "\n"
         "# Per-triangle floor index from centroid height vs the case z-edges.\n"
@@ -519,34 +536,34 @@ STRUCTURE_CELLS = [
         "cz = tri[:, :, 2].mean(axis=1)\n"
         "edges = np.asarray(case.floor_heights)\n"
         "floor_id = np.clip(np.digitize(cz, edges[1:-1]), 0, len(edges) - 2).astype(float)\n"
-        "groups = hr.snapshots.facade_groups(MESH)\n"
-        "fac_idx = hr.snapshots.facade_index_per_triangle(groups, n_tri)\n"
+        "groups = mesh_field.facade_groups(MESH)\n"
+        "fac_idx = mesh_field.facade_index_per_triangle(groups, n_tri)\n"
         'print(f"{n_tri} triangles | {case.n_floors} floors | {len(groups)} facade groups")'
     ),
     new_code_cell(
         "# --- render -------------------------------------------------------------\n"
-        'dbg = hr.DebugWriter(OUTPUT_BASE, stage="structure", version=VERSION)\n'
+        'dbg = DebugWriter(OUTPUT_BASE, stage="structure", version=VERSION)\n'
         "\n"
         'for v in ("iso", "front", "right", "top"):\n'
-        "    fig, _ = hr.snapshots.triangle_field_figure(\n"
-        '        geom, None, view=hr.snapshots.STANDARD_VIEWS[v], title=f"geometry - {v}"\n'
+        "    fig, _ = mesh_field.triangle_field_figure(\n"
+        '        geom, None, view=mesh_field.STANDARD_VIEWS[v], title=f"geometry - {v}"\n'
         "    )\n"
         '    dbg.savefig(fig, f"geometry_{v}.png", deliverable=True)\n'
-        "    plotting.close(fig)\n"
+        "    plot_config.close(fig)\n"
         "\n"
-        "fig, _ = hr.snapshots.triangle_field_figure(\n"
-        '    geom, fac_idx, cmap="tab10", view=hr.snapshots.STANDARD_VIEWS["iso"],\n'
+        "fig, _ = mesh_field.triangle_field_figure(\n"
+        '    geom, fac_idx, cmap="tab10", view=mesh_field.STANDARD_VIEWS["iso"],\n'
         '    title="facade partition", cbar_label="facade id",\n'
         ")\n"
         'dbg.savefig(fig, "facade_partition.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         "\n"
-        "fig, _ = hr.snapshots.triangle_field_figure(\n"
-        '    geom, floor_id, cmap="viridis", view=hr.snapshots.STANDARD_VIEWS["iso"],\n'
+        "fig, _ = mesh_field.triangle_field_figure(\n"
+        '    geom, floor_id, cmap="viridis", view=mesh_field.STANDARD_VIEWS["iso"],\n'
         '    title="floor partition", cbar_label="floor",\n'
         ")\n"
         'dbg.savefig(fig, "floor_partition.png")\n'
-        "plotting.close(fig)\n"
+        "plot_config.close(fig)\n"
         'print("structure prints under", dbg.deliverables_dir)'
     ),
 ]

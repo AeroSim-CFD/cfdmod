@@ -30,3 +30,35 @@ plot_style = {
     "EU": {"line": {"label": "EN 1991-1-4", "color": "black", "linestyle": "--"}},
     "ABNT": {"line": {"label": "NBR 6123", "color": "black", "linestyle": ":"}},
 }
+
+
+def apply_style() -> None:
+    """Apply a consistent, readable figure style for post-processing reports."""
+    plt.rcParams.update(
+        {
+            "figure.figsize": (7.0, 5.0),
+            "figure.dpi": 110,
+            "axes.grid": True,
+            "grid.alpha": 0.3,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "font.size": 11,
+            "legend.frameon": False,
+        }
+    )
+
+
+def new_axes(xlabel: str = "", ylabel: str = "", title: str = ""):
+    """Return a fresh (fig, ax) with the given labels applied."""
+    fig, ax = plt.subplots()
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
+    return fig, ax
+
+
+def close(fig) -> None:
+    plt.close(fig)

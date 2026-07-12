@@ -2,8 +2,9 @@
 
 Thin, application-directed notebooks for high-rise wind-load post-processing,
 built on the cfdmod v3 recipes/ops. Each notebook is one stage of the sequence
-and holds no reusable logic -- the shared glue lives in the `cfdmod.high_rise`
-library package (imported as `from cfdmod import high_rise as hr`).
+and holds no reusable logic -- the shared glue lives in the cfdmod library:
+`cfdmod.building` (case + per-floor Cf/Cm + dynamic response), plus
+`cfdmod.inflow_report`, `cfdmod.mesh_field`, `cfdmod.report`, `cfdmod.plot_config`.
 
 ## Sequence
 
@@ -35,7 +36,7 @@ Every notebook reads its config from environment variables with in-repo fixture
 defaults, so the whole chain runs headless with no external data:
 
 ```bash
-uv run python examples/high_rise/_validate_high_rise.py  # unit-level checks on the cfdmod.high_rise helpers
+uv run python examples/high_rise/_validate_high_rise.py  # unit-level checks on the cfdmod.building helpers
 uv run python examples/high_rise/_validate_notebooks.py  # execute 01->06 on fixtures
 ```
 
@@ -53,21 +54,22 @@ Point at a real case with environment variables (or by editing the config cell):
 | `CFDMOD_HR_DAMPING` | modal damping ratio (stage 04) | `0.02` |
 | `CFDMOD_HR_MODES_CSV` / `_FLOORS_CSV` / `_MODE_SHAPE_CSVS` | structural model CSVs (stage 04) | synthetic model |
 
-## Helper package (`cfdmod.high_rise`)
+## Library helpers used by the notebooks
 
-- `HighRiseCase` -- aggregate `case_data` (global_data.json + params yaml);
-  derive dynamic pressure; `with_reference_velocity(u_ref)`.
-- `example_high_rise_case(mesh)` -- self-contained case for demos/tests.
-- `DebugWriter` -- versioned `debug/` + `deliverables/` paths.
-- `inflow_report` -- vertical-profile detection + validation figures.
-- `pressure` -- `cp_from_pressure`, `cf_per_floor`, `cm_per_floor` (explicit
-  reference-area normalisation).
-- `dynamic` -- `floor_load_source`, `example_building_structure` /
-  `structure_from_csvs`, `solve_building_response`, `floor_accelerations`,
-  `peak_response_table` (wires per-floor Cf/Cm into the building dynamic recipe).
-- `snapshots` -- `facade_groups`, `triangle_field_figure`,
-  `facade_index_per_triangle`, and the optional PyVista `write_field_vtp` /
+All reusable logic lives in the cfdmod library (nothing is high-rise-specific):
+
+- `cfdmod.building` -- `BuildingCase` (aggregate `case_data`; derive dynamic
+  pressure; `with_reference_velocity(u_ref)`), `example_building_case(mesh)`,
+  `cp_from_pressure`, `cf_per_floor` / `cm_per_floor` (explicit reference-area
+  normalisation), and the dynamic-response wiring (`floor_load_source`,
+  `example_building_structure` / `structure_from_csvs`, `solve_building_response`,
+  `floor_accelerations`, `peak_response_table`).
+- `cfdmod.report.DebugWriter` -- versioned `debug/` + `deliverables/` paths.
+- `cfdmod.inflow_report` -- vertical-profile detection + validation figures.
+- `cfdmod.mesh_field` -- `facade_groups`, `triangle_field_figure`,
+  `facade_index_per_triangle`, optional PyVista `write_field_vtp` /
   `render_vtp_snapshot`.
+- `cfdmod.plot_config` -- shared figure style (`apply_style`, `new_axes`, `close`).
 
 The `_*.py` files are dev tooling (generate / validate the notebooks), not part
 of the suite itself. Regenerate the notebooks after editing them with

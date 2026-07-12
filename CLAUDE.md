@@ -71,11 +71,15 @@ cfdmod/
         adapters/           storage seam: memory/ (tests) and xdmf_h5/ (production)
         io/                 geometry (STL/lnas load), vtk (ParaView probe/write)
         inflow.py           InflowData + inflow analysis functions (single file)
+        inflow_report.py    ABL profile detection + inflow-validation figures
         hfpi/               legacy HFPI dynamic pipeline (RK45 SDOF, reporting)
         geometry/grouping/  triangle-index grouping specs (By*Grouping union)
         regroup/            disk regroup: new lnas + reordered h5 timeseries
         remesh/             QEM decimation per group
-        high_rise/          high-rise post-processing helpers (case, pressure, dynamic, snapshots)
+        building/           building wind-load post-pro (BuildingCase, per-floor Cf/Cm, dynamic response)
+        report.py           DebugWriter: versioned debug/ + deliverables/ output roots
+        mesh_field.py       per-triangle mesh-field renders (matplotlib; optional PyVista .vtp)
+        plot_config.py      shared matplotlib style helpers (apply_style/new_axes/close)
         loft/ roughness/ altimetry/ climate/ analytical/ s1/ snapshot/
         logger.py  utils.py
     tests/                  Mirror of cfdmod/ structure (pytest markers: unit/integration/perf)
@@ -160,12 +164,12 @@ Application-directed post-processing lives in `examples/`, built on the v3
 recipes/ops. The **high-rise** suite is the reference layout:
 
 - **Thin notebooks, one per stage.** Notebooks orchestrate; they hold no
-  reusable logic. Shared glue lives in the `cfdmod.high_rise` library package
-  (imported as `from cfdmod import high_rise as hr`): `HighRiseCase`
-  (case_data aggregation), `DebugWriter` (output roots), `inflow_report`,
-  `pressure` (Cp / per-floor Cf-Cm wiring). Lower-level computational logic
-  goes in the core library (recipes/ops); high-rise-specific glue lives in
-  `cfdmod/high_rise/`.
+  reusable logic. All reusable logic lives in the cfdmod library: `cfdmod.building`
+  (`BuildingCase` case_data aggregation, `cp_from_pressure`, per-floor Cf/Cm,
+  dynamic response), `cfdmod.report.DebugWriter` (output roots),
+  `cfdmod.inflow_report` (ABL validation), `cfdmod.mesh_field` (mesh renders),
+  `cfdmod.plot_config` (figure style). Nothing high-rise-specific is siloed --
+  the same helpers serve low-rise and other building studies.
 - **Output, not inline results.** Notebooks write images/tables to versioned
   roots instead of storing results inline:
   `<case>/debug/<version>/<stage>/...` (free-to-compare exploratory output) and
@@ -177,7 +181,7 @@ recipes/ops. The **high-rise** suite is the reference layout:
 - Cf/Cm use **explicit reference-area** normalisation (`nominal_area` /
   `nominal_volume`), not the legacy per-region bounding-box area.
 
-`examples/high_rise/_validate_high_rise.py` exercises the `cfdmod.high_rise`
+`examples/high_rise/_validate_high_rise.py` exercises the `cfdmod.building`
 helpers end-to-end on the galpao / pitot_inlet fixtures
 (`uv run python examples/high_rise/_validate_high_rise.py`).
 

@@ -1,4 +1,4 @@
-"""HighRiseCase -- aggregate the per-case configuration.
+"""BuildingCase -- aggregate the per-case configuration.
 
 A consulting case keeps its metadata in a ``case_data/`` directory:
 
@@ -7,7 +7,7 @@ A consulting case keeps its metadata in a ``case_data/`` directory:
                             floor heights (HEIGHTS), lever origin, coefficient blocks
     wind_analysis_*.csv  -- per-direction z0 / Kd / category (optional here)
 
-``HighRiseCase`` reads those into one immutable object the notebooks share.
+``BuildingCase`` reads those into one immutable object the notebooks share.
 The high-rise sequence extracts the *simulation* mean velocity at the reference
 height from the inflow profile and then updates the case with it
 (:meth:`with_reference_velocity`) so the Cp step non-dimensionalises with the
@@ -27,7 +27,7 @@ from ruamel.yaml import YAML
 _yaml = YAML(typ="safe")
 
 
-class HighRiseCase(BaseModel):
+class BuildingCase(BaseModel):
     """Immutable aggregate of a high-rise case's post-processing inputs."""
 
     model_config = ConfigDict(frozen=True)
@@ -73,7 +73,7 @@ class HighRiseCase(BaseModel):
     def n_floors(self) -> int:
         return len(self.floor_heights) - 1
 
-    def with_reference_velocity(self, u_ref: float) -> "HighRiseCase":
+    def with_reference_velocity(self, u_ref: float) -> "BuildingCase":
         """Return a copy whose Cp normalisation uses the measured ``u_ref``."""
         return self.model_copy(update={"reference_velocity": float(u_ref)})
 
@@ -86,7 +86,7 @@ class HighRiseCase(BaseModel):
         params_name: str,
         *,
         body_name: str | None = None,
-    ) -> "HighRiseCase":
+    ) -> "BuildingCase":
         """Build from a ``case_data/`` dir containing global_data.json + a params yaml.
 
         Parses the consulting params layout (top-level ``anchors`` plus
@@ -136,19 +136,19 @@ class HighRiseCase(BaseModel):
         )
 
 
-def example_high_rise_case(
+def example_building_case(
     mesh_path: str | pathlib.Path,
     *,
     u_h: float = 0.05,
     rho: float = 1.0,
     n_floors: int = 3,
-) -> HighRiseCase:
-    """A self-contained HighRiseCase tuned to a mesh, for notebook demos/tests.
+) -> BuildingCase:
+    """A self-contained BuildingCase tuned to a mesh, for notebook demos/tests.
 
     Geometry fields are derived from the mesh bounding box (frontal area,
     volume, floor z-edges). Defaults ``u_h``/``rho`` match the galpao fixture's
     dynamic pressure (q = 0.00125) so Cp lands in the same range as the
-    ``cp.yaml`` template. For real work use :meth:`HighRiseCase.from_case_data`.
+    ``cp.yaml`` template. For real work use :meth:`BuildingCase.from_case_data`.
     """
     from lnas import LnasFormat
 
@@ -156,7 +156,7 @@ def example_high_rise_case(
     lo = verts.min(axis=0)
     hi = verts.max(axis=0)
     lx, ly, lz = hi - lo
-    return HighRiseCase(
+    return BuildingCase(
         name=pathlib.Path(mesh_path).stem,
         reference_height=float(max(hi[2], 1e-6)),
         characteristic_length=float(max(lx, 1e-6)),

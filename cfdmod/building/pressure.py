@@ -3,7 +3,7 @@
 Thin composition of library ops -- no new maths lives here. The high-rise
 choices baked in:
 
-    Cp  = (p - p_ref) / q,  q = 0.5 * rho * U_H^2   (from HighRiseCase)
+    Cp  = (p - p_ref) / q,  q = 0.5 * rho * U_H^2   (from BuildingCase)
     Cf  per floor: force_contribution (explicit reference area) summed per floor.
     Cm  per floor: moment_contribution about the case lever origin, summed per
         floor (normalised by the reference volume).
@@ -42,7 +42,7 @@ from cfdmod.core.ops.geometric.mesh_attach import MeshAttachParams, mesh_attach
 from cfdmod.core.ops.geometric.zoning_grouping import ZoningGroupingParams, zoning_grouping
 from cfdmod.core.recipes import CpRecipeConfig, build_cp
 
-from .case import HighRiseCase
+from .case import BuildingCase
 
 _FLOOR = "floor"
 
@@ -52,7 +52,7 @@ FloorMethod = Literal["face_cut", "centroid"]
 def cp_from_pressure(
     body: DataSource,
     p_ref,
-    case: HighRiseCase,
+    case: BuildingCase,
     *,
     statistics: list[str] | None = None,
     time_rescale_factor: float | None = None,
@@ -72,7 +72,7 @@ def cp_from_pressure(
 
 
 def _partition_floors(
-    ds: DataSource, mesh_path: str, case: HighRiseCase, method: FloorMethod
+    ds: DataSource, mesh_path: str, case: BuildingCase, method: FloorMethod
 ) -> DataSource:
     """Attach a per-floor partition; ``face_cut`` slices, ``centroid`` groups whole triangles.
 
@@ -113,7 +113,7 @@ def _sum_per_floor(ds: DataSource, fields: list[str]) -> GroupsDataSource:
 def cf_per_floor(
     cp_ds: DataSource,
     mesh_path: str,
-    case: HighRiseCase,
+    case: BuildingCase,
     *,
     directions: tuple[str, ...] = ("x", "y"),
     method: FloorMethod = "face_cut",
@@ -135,7 +135,7 @@ def cf_per_floor(
 def cm_per_floor(
     cp_ds: DataSource,
     mesh_path: str,
-    case: HighRiseCase,
+    case: BuildingCase,
     *,
     directions: tuple[str, ...] = ("z",),
     method: FloorMethod = "face_cut",
