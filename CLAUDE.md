@@ -79,7 +79,8 @@ cfdmod/
         logger.py  utils.py
     tests/                  Mirror of cfdmod/ structure (pytest markers: unit/integration/perf)
     fixtures/tests/         YAML configs + STL/LNAS + h5 fixtures (galpao, caarc, inflow, ...)
-    notebooks/              tutorials/ (v3 API) + examples/ (high_rise, container_pack, roughness, s1_topographic)
+    notebooks/              tutorials/ (v3 API teaching notebooks)
+    examples/               use-case suites (high_rise, container_pack, roughness, s1_topographic)
     docs/                   Sphinx documentation
 ```
 
@@ -152,13 +153,13 @@ All three are also exported from the top-level `cfdmod` package.
 
 ---
 
-## Post-processing notebook suite (`notebooks/examples/high_rise/`)
+## Post-processing notebook suite (`examples/high_rise/`)
 
-Application-directed post-processing lives in `notebooks/`, built on the v3
+Application-directed post-processing lives in `examples/`, built on the v3
 recipes/ops. The **high-rise** suite is the reference layout:
 
 - **Thin notebooks, one per stage.** Notebooks orchestrate; they hold no
-  reusable logic. Shared glue lives in `notebooks/examples/high_rise/pp/` (a
+  reusable logic. Shared glue lives in `examples/high_rise/pp/` (a
   notebook-side helper package, NOT promoted into the library): `HighRiseCase`
   (case_data aggregation), `DebugWriter` (output roots), `inflow_report`,
   `pressure` (Cp / per-floor Cf-Cm wiring). Computational logic goes in the
@@ -174,8 +175,8 @@ recipes/ops. The **high-rise** suite is the reference layout:
 - Cf/Cm use **explicit reference-area** normalisation (`nominal_area` /
   `nominal_volume`), not the legacy per-region bounding-box area.
 
-`notebooks/examples/high_rise/_validate_pp.py` exercises the helper package end-to-end
-on the galpao / pitot_inlet fixtures (`uv run python notebooks/examples/high_rise/_validate_pp.py`).
+`examples/high_rise/_validate_pp.py` exercises the helper package end-to-end
+on the galpao / pitot_inlet fixtures (`uv run python examples/high_rise/_validate_pp.py`).
 
 ---
 

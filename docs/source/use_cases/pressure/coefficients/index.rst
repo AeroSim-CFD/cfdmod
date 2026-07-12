@@ -63,7 +63,7 @@ produced the output.
 Worked example
 ==============
 
-An end-to-end example lives at ``notebooks/examples/container_pack/process_container_pack.ipynb``
+An end-to-end example lives at ``examples/container_pack/process_container_pack.ipynb``
 in the repo. It builds a Cp / Cf / Cm / Ce pipeline as YAML templates,
 runs them with ``run_template`` over the on-disk XDMF+H5 storage, and
 streams the results back onto a coarse mesh. The per-coefficient

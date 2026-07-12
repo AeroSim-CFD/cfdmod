@@ -562,7 +562,7 @@ being smuggled into the statistics block:
 
 ### Documentation / tooling
 
-- `notebooks/examples/container_pack/process_container_pack.ipynb` is the worked
+- `examples/container_pack/process_container_pack.ipynb` is the worked
   example: reads `bodies.body_cp body.h5` + `points.point_cp ref.h5`
   from the repo root, auto-detects container partition via a >1 m gap
   rule, runs Cp/Cf/Cm end-to-end with `lever_strategy="region_base"`

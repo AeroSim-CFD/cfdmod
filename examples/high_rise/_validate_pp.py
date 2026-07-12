@@ -1,6 +1,6 @@
 """Validate the pp/ helper package end-to-end on real in-repo fixtures.
 
-Run: uv run python notebooks/examples/high_rise/_validate_pp.py
+Run: uv run python examples/high_rise/_validate_pp.py
 Exercises HighRiseCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
 points at one, else a synthetic case), inflow profile detection + figures
 (pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, the

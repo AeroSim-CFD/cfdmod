@@ -122,9 +122,9 @@ under `fixtures/tests/pressure/templates/`.
 - **Per-coefficient walkthroughs** (`docs/source/use_cases/pressure/coefficients/`):
   `calculate_{cp,Cf,Cm,Ce}.ipynb` run the shipped templates against the
   bundled `galpao` wind-tunnel fixture.
-- **End-to-end** (`notebooks/examples/container_pack/process_container_pack.ipynb`): a Cp/Cf/Cm/Ce
+- **End-to-end** (`examples/container_pack/process_container_pack.ipynb`): a Cp/Cf/Cm/Ce
   pipeline over a multi-container body.
-- **High-rise suite** (`notebooks/examples/high_rise/`): staged wind-load
+- **High-rise suite** (`examples/high_rise/`): staged wind-load
   post-processing (inflow -> Cp -> per-floor Cf/Cm -> dynamic -> facade -> structure).
 - **Template reference**: `fixtures/tests/pressure/templates/{cp,cf,cm,ce}.yaml`.
 

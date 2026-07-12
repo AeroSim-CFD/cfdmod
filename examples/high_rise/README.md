@@ -35,15 +35,15 @@ Every notebook reads its config from environment variables with in-repo fixture
 defaults, so the whole chain runs headless with no external data:
 
 ```bash
-uv run python notebooks/examples/high_rise/_validate_pp.py         # unit-level checks on the pp/ helpers
-uv run python notebooks/examples/high_rise/_validate_notebooks.py  # execute 01->06 on fixtures
+uv run python examples/high_rise/_validate_pp.py         # unit-level checks on the pp/ helpers
+uv run python examples/high_rise/_validate_notebooks.py  # execute 01->06 on fixtures
 ```
 
 Point at a real case with environment variables (or by editing the config cell):
 
 | Variable | Meaning | Default |
 |---|---|---|
-| `CFDMOD_HR_OUTPUT_BASE` | output root | `notebooks/examples/high_rise/_run` |
+| `CFDMOD_HR_OUTPUT_BASE` | output root | `examples/high_rise/_run` |
 | `CFDMOD_HR_VERSION` | output version tag | `example` |
 | `CFDMOD_HR_INFLOW_HIST` / `_POINTS` | inflow data | pitot_inlet fixture |
 | `CFDMOD_HR_REF_HEIGHT` | reference height H | `2.0` |
@@ -71,7 +71,7 @@ Point at a real case with environment variables (or by editing the config cell):
 
 The `_*.py` files are dev tooling (generate / validate the notebooks), not part
 of the suite itself. Regenerate the notebooks after editing them with
-`uv run python notebooks/examples/high_rise/_build_notebooks.py`.
+`uv run python examples/high_rise/_build_notebooks.py`.
 
 ## Notes / open items
 
