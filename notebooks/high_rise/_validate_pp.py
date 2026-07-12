@@ -1,10 +1,11 @@
 """Validate the pp/ helper package end-to-end on real in-repo fixtures.
 
 Run: uv run python notebooks/high_rise/_validate_pp.py
-Exercises HighRiseCase (against the real 067 case_data), inflow profile
-detection + figures (pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure
-wiring, the dynamic-response recipe wiring, and the facade / structure mesh-field
-snapshots (galpao fixture + its lnas mesh).
+Exercises HighRiseCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
+points at one, else a synthetic case), inflow profile detection + figures
+(pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, the
+dynamic-response recipe wiring, and the facade / structure mesh-field snapshots
+(galpao fixture + its lnas mesh).
 """
 
 from __future__ import annotations
@@ -35,18 +36,22 @@ def check(label: str, cond: bool, detail: str = "") -> None:
 
 
 def section_case() -> pp.HighRiseCase:
-    print("A. HighRiseCase (real 067 case_data)")
-    case_data = pathlib.Path(
-        "/data/eng/consulting/067_CampoGrande_ClementePereira/post_processing/pp_config/case_data"
-    )
-    if not case_data.exists():
-        print("  (067 case_data not mounted; skipping real-config parse)")
+    print("A. HighRiseCase")
+    # Point CFDMOD_HR_VALIDATE_CASE_DATA at a real case_data dir to parse it;
+    # otherwise fall back to a synthetic case (no client data is committed).
+    import os
+
+    env = os.environ.get("CFDMOD_HR_VALIDATE_CASE_DATA")
+    case_data = pathlib.Path(env) if env else None
+    if case_data is None or not case_data.exists():
+        print("  (no CFDMOD_HR_VALIDATE_CASE_DATA case_data; using synthetic case)")
         return _synthetic_case()
-    case = pp.HighRiseCase.from_case_data(case_data, "params_cat3.yaml")
-    check("reference_height == 70", case.reference_height == 70.0, f"H={case.reference_height}")
-    check("nominal_area == 486.5", case.nominal_area == 486.5)
-    check("n_floors == 26", case.n_floors == 26, f"n_floors={case.n_floors}")
-    check("simul U_H ~ 29.91", abs(case.simul_reference_velocity - 29.914) < 1e-2)
+    params = os.environ.get("CFDMOD_HR_VALIDATE_PARAMS", "params_cat3.yaml")
+    case = pp.HighRiseCase.from_case_data(case_data, params)
+    check("reference_height positive", case.reference_height > 0, f"H={case.reference_height}")
+    check("nominal_area positive", case.nominal_area > 0)
+    check("n_floors > 1", case.n_floors > 1, f"n_floors={case.n_floors}")
+    check("simul U_H finite", np.isfinite(case.simul_reference_velocity))
     q0 = case.dynamic_pressure
     case2 = case.with_reference_velocity(32.0)
     check(
@@ -61,13 +66,13 @@ def section_case() -> pp.HighRiseCase:
 def _synthetic_case() -> pp.HighRiseCase:
     return pp.HighRiseCase(
         name="synthetic",
-        reference_height=70.0,
-        characteristic_length=6.95,
-        basic_wind_speed=38.0,
-        simul_reference_velocity=29.914,
-        nominal_area=486.5,
-        nominal_volume=3381.175,
-        floor_heights=[0.0, 10.0, 20.0, 30.0],
+        reference_height=100.0,
+        characteristic_length=20.0,
+        basic_wind_speed=40.0,
+        simul_reference_velocity=30.0,
+        nominal_area=500.0,
+        nominal_volume=10000.0,
+        floor_heights=[0.0, 25.0, 50.0, 75.0, 100.0],
     )
 
 

@@ -89,7 +89,7 @@ class HighRiseCase(BaseModel):
     ) -> "HighRiseCase":
         """Build from a ``case_data/`` dir containing global_data.json + a params yaml.
 
-        Parses the 067-style params layout (top-level ``anchors`` plus
+        Parses the consulting params layout (top-level ``anchors`` plus
         ``pressure_coefficient`` / ``force_coefficient`` / ``moment_coefficient``
         blocks). Missing optional fields fall back to sensible defaults.
         """
