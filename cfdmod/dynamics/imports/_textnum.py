@@ -41,8 +41,8 @@ def iter_data_rows(
     Comment lines (``//`` by default) and blank lines are skipped. With
     ``sep=None`` tokens split on any run of whitespace (TQS PORTELS, where
     fields are single tokens); pass ``sep="\\t"`` for tables whose fields may
-    contain spaces (e.g. PORTICO floor names like ``"T. CAIXA D'AGUA"``), so
-    only tabs delimit.
+    contain spaces (e.g. PORTICO floor names like ``"PAV TIPO 3"``), so only
+    tabs delimit.
     """
     with pathlib.Path(path).open("r", encoding=encoding) as fh:
         for raw in fh:
