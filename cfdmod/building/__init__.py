@@ -18,6 +18,11 @@ from cfdmod.building.dynamic import (
     solve_building_response,
     structure_from_csvs,
 )
+from cfdmod.building.modes_report import (
+    plot_floor_mass,
+    plot_mode_shape,
+    plot_natural_frequencies,
+)
 from cfdmod.building.peaks import PeakMethod, gust_peak_factor, peak_value
 from cfdmod.building.pressure import cf_per_floor, cm_per_floor, cp_from_pressure
 
@@ -36,4 +41,7 @@ __all__ = [
     "PeakMethod",
     "gust_peak_factor",
     "peak_value",
+    "plot_mode_shape",
+    "plot_floor_mass",
+    "plot_natural_frequencies",
 ]
