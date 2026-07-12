@@ -1,0 +1,5 @@
+// Numero total de modos
+2
+// Modo; Periodo (s); Frequencia angular (rad/s); Frequencia (Hz)
+001	1,000E+00	6,283E+00	1,000E+00
+002	4,000E-01	1,571E+01	2,500E+00
