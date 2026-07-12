@@ -1,4 +1,4 @@
-"""Tests for the Eberick per-floor reader (real 2-file layout)."""
+"""Tests for the TQS Portico per-floor reader (PAVIMENTO variant)."""
 
 from __future__ import annotations
 
@@ -9,32 +9,26 @@ import numpy as np
 from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core import ElementMeta, PointsDataSource, TimeAxis, Topology
 from cfdmod.core.recipes import build_building_dynamic_response
-from cfdmod.dynamics import EberickUnits, read_eberick
+from cfdmod.dynamics import read_eberick, read_tqs_portico
 
 FIX = pathlib.Path(__file__).resolve().parents[2] / "fixtures" / "tests" / "dynamics" / "imports"
-EB = FIX / "eberick"
+PORTICO = FIX / "portico"
 
 
-def test_reads_floors_modes_and_frequencies():
-    sd = read_eberick(EB)
+def test_reads_floors_modes_frequencies_and_labels():
+    sd = read_tqs_portico(PORTICO)
     assert sd.n_floors == 3
     assert sd.n_modes == 2
-    # Elevations converted cm -> m; frequencies taken straight from the FORMAS blocks.
     np.testing.assert_allclose(np.asarray(sd.floor_points)[:, 2], [3.0, 6.0, 9.0])
     np.testing.assert_allclose(np.asarray(sd.natural_frequencies) / (2 * np.pi), [0.25, 0.60])
+    # Floor names (tab-separated, may contain spaces) survive as metadata labels.
+    assert sd.floor_labels == ["PAV 1", "PAV 2", "PAV 3"]
 
 
-def test_unit_conversions():
-    sd = read_eberick(EB)
-    # radius = sqrt(I/M) = sqrt(75000/0.30) = 500 cm -> 5 m; CoM (50, 30) cm -> (0.5, 0.3) m.
+def test_unit_conversions_and_mass_normalization():
+    sd = read_tqs_portico(PORTICO)
     np.testing.assert_allclose(sd.floors_radius, [5.0, 5.0, 5.0])
-    np.testing.assert_allclose(np.asarray(sd.cm_positions)[0], [0.5, 0.3])
-    # mass 0.30 tf.s^2/cm -> 0.30 * 980665 kg.
     np.testing.assert_allclose(sd.floors_mass[0], 0.30 * (9806.65 / 0.01))
-
-
-def test_mode_shapes_are_mass_normalized():
-    sd = read_eberick(EB)
     phi = np.asarray(sd.mode_shapes)
     m = np.asarray(sd.floors_mass)[:, None]
     r = np.asarray(sd.floors_radius)[:, None]
@@ -42,38 +36,35 @@ def test_mode_shapes_are_mass_normalized():
     np.testing.assert_allclose(m_gen, np.ones(2), rtol=1e-9)
 
 
-def test_active_modes_selection():
-    sd = read_eberick(EB, active_modes=[2])
-    assert sd.n_modes == 1
-    np.testing.assert_allclose(np.asarray(sd.natural_frequencies) / (2 * np.pi), [0.60])
-
-
-def test_floor_labels_and_metadata():
-    sd = read_eberick(EB)
-    assert sd.floor_labels == ["PAV 1", "PAV 2", "PAV 3"]
-    # Storey height (Altura, cm) is kept as per-floor metadata, not used by the recipe.
-    assert sd.floor_metadata is not None and "altura_cm" in sd.floor_metadata
-    assert len(sd.floor_metadata["altura_cm"]) == sd.n_floors
+def test_matches_eberick_on_the_same_building():
+    # The portico and eberick fixtures describe the same synthetic building.
+    p = read_tqs_portico(PORTICO)
+    e = read_eberick(FIX / "eberick")
+    np.testing.assert_allclose(p.floors_mass, e.floors_mass, rtol=1e-9)
+    np.testing.assert_allclose(p.floors_radius, e.floors_radius, rtol=1e-9)
+    np.testing.assert_allclose(p.natural_frequencies, e.natural_frequencies, rtol=1e-9)
+    np.testing.assert_allclose(p.mode_shapes, e.mode_shapes, rtol=1e-9, atol=1e-12)
+    assert p.floor_labels == e.floor_labels
 
 
 def test_explicit_file_paths():
-    sd = read_eberick(
-        EB,
-        masses_file=EB / "DISTRIBUICAO_DAS_MASSAS_DOS_PAVIMENTOS.xlsx",
-        formas_file=EB / "FORMAS_MODAIS_DOS_PAVIMENTOS.xlsx",
+    sd = read_tqs_portico(
+        PORTICO,
+        masses_file=PORTICO / "PORTICO_MASSAS_PAVIMENTO.TXT",
+        modos_file=PORTICO / "PORTICO_MODOS_PAVIMENTO.TXT",
+        modes_file=PORTICO / "modes.csv",
     )
     assert sd.n_floors == 3 and sd.n_modes == 2
 
 
-def test_custom_units_are_honoured():
-    # With identity units the elevations stay in the raw (cm) magnitude.
-    sd = read_eberick(EB, units=EberickUnits(length_to_m=1.0, mass_to_kg=1.0))
-    np.testing.assert_allclose(np.asarray(sd.floor_points)[:, 2], [300.0, 600.0, 900.0])
-    np.testing.assert_allclose(sd.floors_mass[0], 0.30)
+def test_active_modes_selection():
+    sd = read_tqs_portico(PORTICO, active_modes=[2])
+    assert sd.n_modes == 1
+    np.testing.assert_allclose(np.asarray(sd.natural_frequencies) / (2 * np.pi), [0.60])
 
 
 def test_feeds_building_dynamic_recipe():
-    sd = read_eberick(EB)
+    sd = read_tqs_portico(PORTICO)
     cfg = sd.to_config(damping_ratio=0.02)
     n_floors, n_t, dt = sd.n_floors, 128, 0.05
     t = np.arange(n_t) * dt

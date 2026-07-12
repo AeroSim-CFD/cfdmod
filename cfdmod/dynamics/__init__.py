@@ -22,6 +22,7 @@ __all__ = [
     "build_cases",
     "solve_building_cases",
     "read_tqs_portels",
+    "read_tqs_portico",
     "read_eberick",
     "EberickUnits",
     "aggregate_to_building",
@@ -45,6 +46,7 @@ from cfdmod.dynamics.imports import (
     aggregate_to_building,
     read_eberick,
     read_tqs_portels,
+    read_tqs_portico,
 )
 from cfdmod.dynamics.structural import (
     BuildingStructuralData,

@@ -174,6 +174,62 @@ def write_eberick() -> None:
     print("wrote", out / "(Eberick 2-file set)")
 
 
+def write_portico() -> None:
+    """TQS 'Portico' per-floor variant: TAB-separated, decimal POINT, modes.csv.
+
+    Describes the same building as the Eberick fixture (same names, elevations,
+    masses, shapes) so tests can cross-check the two per-floor readers.
+    """
+    out = HERE / "portico"
+    out.mkdir(parents=True, exist_ok=True)
+
+    massas = [
+        "\t".join(
+            [
+                "Pavimento",
+                "Elevacao em relacao ao nivel do solo (cm)",
+                "Massa em X (tf.s2/cm)",
+                "Massa em Y (tf.s2/cm)",
+                "Massa em Z (tf.s2/cm)",
+                "Momento de inercia da massa (tf.s2.cm)",
+                "Centro de massa Xcg (cm)",
+                "Centro de massa Ycg (cm)",
+            ]
+        )
+    ]
+    for i, name in enumerate(EB_NAMES):
+        massas.append(
+            "\t".join(
+                [
+                    name,
+                    f"{EB_ELEV_CM[i]:.2f}",
+                    f"{EB_MASS[i]:.2f}",
+                    f"{EB_MASS[i]:.2f}",
+                    f"{EB_MASS[i]:.2f}",
+                    f"{EB_INERTIA[i]:.2f}",
+                    f"{EB_XCG_CM[i]:.2f}",
+                    f"{EB_YCG_CM[i]:.2f}",
+                ]
+            )
+        )
+    (out / "PORTICO_MASSAS_PAVIMENTO.TXT").write_text("\n".join(massas) + "\n", encoding="latin-1")
+
+    modos = ["//Modo\tDX (cm)\tDY (cm)\tRZ (rad)"]
+    for mode in range(len(EB_FREQ_HZ)):
+        modos.append(str(mode + 1))
+        for i, name in enumerate(EB_NAMES):
+            dx, dy, rz = EB_SHAPES[mode][i]
+            modos.append("\t".join([name, f"{dx:.4e}", f"{dy:.4e}", f"{rz:.4e}"]))
+    (out / "PORTICO_MODOS_PAVIMENTO.TXT").write_text("\n".join(modos) + "\n", encoding="latin-1")
+
+    modes = ["mode,period,wp,freq"]
+    for i, f in enumerate(EB_FREQ_HZ, start=1):
+        modes.append(f"{i},{1.0 / f:.12g},{2 * np.pi * f:.12g},{f:.12g}")
+    (out / "modes.csv").write_text("\n".join(modes) + "\n", encoding="latin-1")
+    print("wrote", out)
+
+
 if __name__ == "__main__":
     write_tqs()
     write_eberick()
+    write_portico()

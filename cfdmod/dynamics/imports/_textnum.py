@@ -8,9 +8,10 @@ parsers stay readable.
 
 from __future__ import annotations
 
-__all__ = ["to_float", "iter_data_rows"]
+__all__ = ["to_float", "iter_data_rows", "norm_text"]
 
 import pathlib
+import unicodedata
 from typing import Iterator
 
 
@@ -19,18 +20,36 @@ def to_float(token: str) -> float:
     return float(token.strip().replace(",", "."))
 
 
-def iter_data_rows(
-    path: str | pathlib.Path, *, encoding: str = "latin-1", comment: str = "//"
-) -> Iterator[list[str]]:
-    """Yield whitespace/TAB-split token lists for each non-comment, non-empty line.
+def norm_text(text) -> str:
+    """Accent- and case-insensitive normalized text, for header matching."""
+    if text is None:
+        return ""
+    s = unicodedata.normalize("NFKD", str(text))
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    return s.strip().lower()
 
-    Comment lines (``//`` by default) and blank lines are skipped. Tokens
-    are split on any run of whitespace, so both TAB- and space-separated
-    tables parse.
+
+def iter_data_rows(
+    path: str | pathlib.Path,
+    *,
+    encoding: str = "latin-1",
+    comment: str = "//",
+    sep: str | None = None,
+) -> Iterator[list[str]]:
+    """Yield split token lists for each non-comment, non-empty line.
+
+    Comment lines (``//`` by default) and blank lines are skipped. With
+    ``sep=None`` tokens split on any run of whitespace (TQS PORTELS, where
+    fields are single tokens); pass ``sep="\\t"`` for tables whose fields may
+    contain spaces (e.g. PORTICO floor names like ``"T. CAIXA D'AGUA"``), so
+    only tabs delimit.
     """
     with pathlib.Path(path).open("r", encoding=encoding) as fh:
         for raw in fh:
             line = raw.strip()
             if not line or line.startswith(comment):
                 continue
-            yield line.split()
+            if sep is None:
+                yield line.split()
+            else:
+                yield [tok.strip() for tok in line.split(sep)]

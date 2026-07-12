@@ -46,9 +46,16 @@ def write_structural_csvs(
     written.append(modes_path)
 
     floors_path = out_dir / "floors.csv"
-    pd.DataFrame(
-        {"Z": z, "M": mass, "I": mass * radius**2, "XR": cm[:, 0], "YR": cm[:, 1]}
-    ).to_csv(floors_path, index=False)
+    floors_cols: dict[str, object] = {}
+    if sd.floor_labels is not None:
+        floors_cols["name"] = list(sd.floor_labels)
+    floors_cols.update({"Z": z, "M": mass, "I": mass * radius**2, "XR": cm[:, 0], "YR": cm[:, 1]})
+    # Extra per-floor metadata (e.g. storey height) is appended as-is; the
+    # recipe ignores it, but it keeps the source's per-floor context.
+    if sd.floor_metadata:
+        for col, values in sd.floor_metadata.items():
+            floors_cols[col] = list(values)
+    pd.DataFrame(floors_cols).to_csv(floors_path, index=False)
     written.append(floors_path)
 
     for m in range(phi.shape[1]):

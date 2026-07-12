@@ -7,7 +7,7 @@ import pathlib
 import numpy as np
 import typer
 
-from cfdmod.dynamics.imports import read_eberick, read_tqs_portels
+from cfdmod.dynamics.imports import read_eberick, read_tqs_portels, read_tqs_portico
 from cfdmod.dynamics.imports._csv_out import write_structural_csvs
 
 app = typer.Typer(help="Building-dynamics utilities (structural-export conversion).")
@@ -23,7 +23,9 @@ def convert(
     out: pathlib.Path = typer.Option(
         ..., "--out", "-o", help="Output directory for the internal modal CSVs."
     ),
-    fmt: str = typer.Option("tqs", "--format", "-f", help="Source format: 'tqs' or 'eberick'."),
+    fmt: str = typer.Option(
+        "tqs", "--format", "-f", help="Source format: 'tqs', 'portico', or 'eberick'."
+    ),
     active_modes: str | None = typer.Option(
         None,
         "--active-modes",
@@ -41,10 +43,12 @@ def convert(
     try:
         if fmt == "tqs":
             sd = read_tqs_portels(source, active_modes=modes)
+        elif fmt == "portico":
+            sd = read_tqs_portico(source, active_modes=modes)
         elif fmt == "eberick":
             sd = read_eberick(source, active_modes=modes)
         else:
-            raise ValueError(f"unknown --format {fmt!r}; expected 'tqs' or 'eberick'")
+            raise ValueError(f"unknown --format {fmt!r}; expected 'tqs', 'portico', or 'eberick'")
     except (FileNotFoundError, KeyError, ValueError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(code=1) from exc

@@ -68,6 +68,7 @@ def aggregate_to_building(
     *,
     tol_z: float = 0.05,
     floor_levels: list[float] | None = None,
+    floor_labels: list[str] | None = None,
     active_modes: list[int] | None = None,
     drop_massless: bool = True,
 ) -> BuildingStructuralData:
@@ -106,11 +107,16 @@ def aggregate_to_building(
     keep = list(range(n_modes)) if active_modes is None else [m - 1 for m in active_modes]
 
     # Assign each node to a floor: nearest authoritative level, or Z-cluster.
+    label_of: dict[int, str] | None = None
     if floor_levels is not None:
-        levels = np.sort(np.asarray(floor_levels, dtype=np.float64))
+        order = np.argsort(np.asarray(floor_levels, dtype=np.float64))
+        levels = np.asarray(floor_levels, dtype=np.float64)[order]
         z_key = np.argmin(np.abs(coords[:, 2][:, None] - levels[None, :]), axis=1)
         group_keys = list(range(len(levels)))
         level_of = {k: float(levels[k]) for k in group_keys}
+        if floor_labels is not None:
+            sorted_labels = [floor_labels[i] for i in order]
+            label_of = {k: sorted_labels[k] for k in group_keys}
     else:
         z_key = np.round(coords[:, 2] / tol_z).astype(np.int64)
         group_keys = sorted(np.unique(z_key))
@@ -118,6 +124,7 @@ def aggregate_to_building(
 
     floor_props: list[tuple[float, float, float, float, float, float]] = []
     floor_shapes: list[np.ndarray] = []  # each (n_kept_modes, 3)
+    kept_labels: list[str] = []
 
     for key in group_keys:
         sel = z_key == key
@@ -132,6 +139,8 @@ def aggregate_to_building(
             if drop_massless:
                 continue
             raise ValueError(f"slab at z={elev:.3f} has zero total mass")
+        if label_of is not None:
+            kept_labels.append(label_of[key])
 
         x, y = coords[sel, 0], coords[sel, 1]
         xg = float((m * x).sum() / total)
@@ -166,4 +175,5 @@ def aggregate_to_building(
         cm_positions=np.column_stack([xg, yg]),
         floors_mass=floors_mass,
         floors_radius=floors_radius,
+        floor_labels=kept_labels or None,
     )

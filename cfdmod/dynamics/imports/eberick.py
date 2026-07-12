@@ -24,12 +24,12 @@ from __future__ import annotations
 __all__ = ["EberickUnits", "read_eberick"]
 
 import pathlib
-import unicodedata
 
 import numpy as np
 import openpyxl
 from pydantic import BaseModel
 
+from cfdmod.dynamics.imports._textnum import norm_text as _norm
 from cfdmod.dynamics.imports._textnum import to_float
 from cfdmod.dynamics.structural import BuildingStructuralData, mass_normalize_mode_shapes
 
@@ -42,15 +42,6 @@ class EberickUnits(BaseModel):
 
     length_to_m: float = 0.01
     mass_to_kg: float = _TF_S2_PER_CM_TO_KG
-
-
-def _norm(text) -> str:
-    """Accent- and case-insensitive normalized text for header matching."""
-    if text is None:
-        return ""
-    s = unicodedata.normalize("NFKD", str(text))
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    return s.strip().lower()
 
 
 def _cell_float(c) -> float:
@@ -104,7 +95,7 @@ def _read_masses(rows: list[tuple]) -> dict[str, tuple[float, float, float, floa
     if header_i is None:
         raise ValueError("masses sheet: could not find the 'Pavimento ... Massa' header row")
 
-    out: dict[str, tuple[float, float, float, float, float]] = {}
+    out: dict[str, tuple[float, float, float, float, float, float]] = {}
     for row in rows[header_i + 2 :]:
         name = row[0]
         if _is_footer(_norm(name)):
@@ -113,11 +104,12 @@ def _read_masses(rows: list[tuple]) -> dict[str, tuple[float, float, float, floa
             continue
         # cols: 0 Pavimento, 1 Altura, 2 Elevacao, 3 Massa, 4 Inercia, 5 Xcg, 6 Ycg
         out[str(name).strip()] = (
-            _cell_float(row[2]),
-            _cell_float(row[3]),
-            _cell_float(row[4]),
-            _cell_float(row[5]),
-            _cell_float(row[6]),
+            _cell_float(row[2]),  # elevation
+            _cell_float(row[3]),  # mass
+            _cell_float(row[4]),  # inertia
+            _cell_float(row[5]),  # xcg
+            _cell_float(row[6]),  # ycg
+            _cell_float(row[1]),  # altura (storey height) -> metadata
         )
     return out
 
@@ -173,6 +165,8 @@ def _read_formas(rows: list[tuple]) -> list[tuple[float, dict[str, tuple[float, 
 def read_eberick(
     source: str | pathlib.Path,
     *,
+    masses_file: str | pathlib.Path | None = None,
+    formas_file: str | pathlib.Path | None = None,
     units: EberickUnits | None = None,
     active_modes: list[int] | None = None,
 ) -> BuildingStructuralData:
@@ -181,17 +175,24 @@ def read_eberick(
     Args:
         source: Directory holding the ``DISTRIBUICAO_DAS_MASSAS...`` and
             ``FORMAS_MODAIS...`` workbooks (matched case/accent-insensitively).
+        masses_file / formas_file: Explicit workbook paths overriding the
+            in-directory lookup (for renamed files).
         units: Unit conversions (default cm -> m, tf.s^2/cm -> kg).
         active_modes: 1-based mode numbers to keep (``None`` keeps all).
 
     Returns:
         Per-floor structural data (floors ascending by elevation, mass-
-        normalized mode shapes).
+        normalized mode shapes; storey names in ``floor_labels`` and the
+        storey heights in ``floor_metadata['altura_cm']``).
     """
     u = units or EberickUnits()
     source = pathlib.Path(source)
-    mass_rows = _rows(_resolve(source, "distribui", "massa"))
-    formas_rows = _rows(_resolve(source, "formas", "pavimentos"))
+    mass_p = pathlib.Path(masses_file) if masses_file else _resolve(source, "distribui", "massa")
+    formas_p = (
+        pathlib.Path(formas_file) if formas_file else _resolve(source, "formas", "pavimentos")
+    )
+    mass_rows = _rows(mass_p)
+    formas_rows = _rows(formas_p)
 
     masses = _read_masses(mass_rows)
     modes = _read_formas(formas_rows)
@@ -227,4 +228,6 @@ def read_eberick(
         cm_positions=np.column_stack([xcg, ycg]),
         floors_mass=mass,
         floors_radius=radius,
+        floor_labels=list(names),
+        floor_metadata={"altura_cm": [float(masses[n][5]) for n in names]},
     )

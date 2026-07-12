@@ -52,11 +52,13 @@ def test_csv_round_trip_is_idempotent(tmp_path):
     np.testing.assert_allclose(rt.floors_radius, sd.floors_radius, rtol=1e-9)
 
 
-def test_uses_pisos_floor_levels():
+def test_uses_pisos_floor_levels_and_names():
     # The fixture ships a PORTELSSE_PISOS.TXT with 3 floors at 3/6/9 m; the
-    # recovered elevations must match it (not the raw node Z clustering).
+    # recovered elevations must match it (not the raw node Z clustering), and
+    # the storey names are kept as metadata labels.
     sd = read_tqs_portels(TQS)
     np.testing.assert_allclose(np.asarray(sd.floor_points)[:, 2], [3.0, 6.0, 9.0])
+    assert sd.floor_labels == ["Pav 1", "Pav 2", "Pav 3"]
 
 
 def test_old_prefix_without_pisos(tmp_path):

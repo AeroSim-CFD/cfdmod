@@ -120,18 +120,19 @@ def _read_shapes(path: pathlib.Path) -> dict[int, dict[int, tuple[float, float, 
     return blocks
 
 
-def _read_piso_levels(path: pathlib.Path) -> list[float]:
-    """Floor elevations from a PISOS table (``Piso; Nome; Nivel(m)``).
+def _read_pisos(path: pathlib.Path) -> tuple[list[float], list[str]]:
+    """(levels, names) from a PISOS table (``Piso; Nome; Nivel(m)``).
 
-    The floor name may contain spaces, so the level is the *last* token and
-    the piso index the first; the (variable-width) name in between is
-    ignored.
+    The level is the *last* token and the piso index the first; the name is
+    everything in between (it may contain spaces), rejoined with a space.
     """
     levels: list[float] = []
+    names: list[str] = []
     for r in iter_data_rows(path):
         if len(r) >= 3 and r[0].isdigit():
             levels.append(to_float(r[-1]))
-    return levels
+            names.append(" ".join(r[1:-1]))
+    return levels, names
 
 
 def read_tqs_portels(
@@ -184,11 +185,15 @@ def read_tqs_portels(
     # levels -- the FE model otherwise has many intermediate node elevations
     # (beams, landings) that naive Z-clustering would mistake for floors.
     pisos_p = _resolve(source, PISOS_SUFFIX, required=False)
-    floor_levels = _read_piso_levels(pisos_p) if pisos_p is not None else None
+    floor_levels, floor_labels = _read_pisos(pisos_p) if pisos_p is not None else (None, None)
 
     model = NodalModel(coords=coords, mass=mass, periods=periods, shapes=shapes, node_ids=node_ids)
     sd = aggregate_to_building(
-        model, tol_z=tol_z, floor_levels=floor_levels, active_modes=active_modes
+        model,
+        tol_z=tol_z,
+        floor_levels=floor_levels,
+        floor_labels=floor_labels,
+        active_modes=active_modes,
     )
 
     if floor_levels is not None and sd.n_floors != len(floor_levels):
