@@ -40,6 +40,10 @@ from cfdmod.building import (  # noqa: E402
     floor_accelerations,
     floor_load_source,
     peak_response_table,
+    peak_value,
+    plot_floor_mass,
+    plot_mode_shape,
+    plot_natural_frequencies,
     solve_building_response,
     structure_from_csvs,
 )
@@ -134,6 +138,26 @@ INFLOW_CELLS = [
         '        dbg.savefig(fig, f"{prof.name}/{name}.png")\n'
         "        plot_config.close(fig)\n"
         'print("figures written under", dbg.debug_dir)'
+    ),
+    new_code_cell(
+        "# --- code-standard comparison (NBR 6123 / EN 1991-1-4) ------------------\n"
+        "# Overlay the simulated mean velocity / turbulence intensity on the code\n"
+        "# curves, and compare the integral length scale to the EN 1991-1-4 theory.\n"
+        'CAT_EU = os.environ.get("CFDMOD_HR_CAT_EU", "III")\n'
+        'Z0 = float(os.environ.get("CFDMOD_HR_Z0", "0.3"))\n'
+        "prof = profiles[0]\n"
+        "fig, _ = inflow_report.plot_profile_vs_code(\n"
+        "    prof, inflow, REFERENCE_HEIGHT, cat_eu=CAT_EU, component=COMPONENT\n"
+        ")\n"
+        'dbg.savefig(fig, f"{prof.name}/profile_vs_code.png", deliverable=True)\n'
+        "plot_config.close(fig)\n"
+        "\n"
+        "L_num = inflow_report.integral_length_scale_profile(inflow, prof, component=COMPONENT)\n"
+        "L_eu = inflow_report.eu_integral_length_scale(prof.z, Z0)\n"
+        "fig, _ = inflow_report.plot_integral_length_scale(prof.z, L_num, REFERENCE_HEIGHT, L_theory=L_eu)\n"
+        'dbg.savefig(fig, f"{prof.name}/integral_length_scale.png")\n'
+        "plot_config.close(fig)\n"
+        'print(f"code-comparison figures written (cat_eu={CAT_EU}, z0={Z0})")'
     ),
     new_code_cell(
         "import json\n"
@@ -415,8 +439,29 @@ DYNAMIC_CELLS = [
         'dbg.savefig(fig, "peak_acceleration.png")\n'
         "plot_config.close(fig)\n"
         "\n"
-        'table.to_csv(dbg.deliverable_path("dynamic_response.csv"), index=False)\n'
+        'dbg.save_csv(table, "dynamic_response.csv", deliverable=True)\n'
         "table"
+    ),
+    new_code_cell(
+        "# --- structural model figures + peak-acceleration methods ---------------\n"
+        "# Visualise the structural model that drove the response ...\n"
+        "fig, _ = plot_mode_shape(structure, 0, rotation_scale=structure.floors_radius)\n"
+        'dbg.savefig(fig, "mode_0.png")\n'
+        "plot_config.close(fig)\n"
+        "fig, _ = plot_floor_mass(structure)\n"
+        'dbg.savefig(fig, "floor_mass.png")\n'
+        "plot_config.close(fig)\n"
+        "fig, _ = plot_natural_frequencies(structure)\n"
+        'dbg.savefig(fig, "natural_frequencies.png")\n'
+        "plot_config.close(fig)\n"
+        "\n"
+        "# ... and compare peak-estimation methods on the top-floor acceleration.\n"
+        'acc_top = np.asarray(acc.fields.read("acc_mag"))[top]\n'
+        "peak_methods = {\n"
+        "    m: peak_value(acc_top, m, f0=float(freqs_hz[0]))\n"
+        '    for m in ("max", "peak-factor", "gumbel")\n'
+        "}\n"
+        'print("top-floor peak acc [m/s^2]:", {k: round(v, 4) for k, v in peak_methods.items()})'
     ),
 ]
 
@@ -497,6 +542,25 @@ FACADE_CELLS = [
         "else:\n"
         '    print("pyvista/[vtk] not installed - matplotlib facade images only")\n'
         'print("facade images under", dbg.debug_dir)'
+    ),
+    new_code_cell(
+        "# --- facade pressure profile along a vertical line ----------------------\n"
+        "# Sample the mean-Cp field down a vertical line on the front (-y) facade.\n"
+        "verts = np.asarray(geom.vertices)\n"
+        "vmin = verts.min(axis=0)\n"
+        "vmax = verts.max(axis=0)\n"
+        "xc = float((vmin[0] + vmax[0]) / 2)\n"
+        "p1 = (xc, float(vmin[1]), float(vmin[2]))\n"
+        "p2 = (xc, float(vmin[1]), float(vmax[2]))\n"
+        'prof_df = mesh_field.sample_field_along_line(geom, cp_stats["mean"], p1, p2, n=40)\n'
+        "fig, ax = plot_config.new_axes(\n"
+        '    xlabel="mean Cp [-]", ylabel="z [m]", title="Front-facade mean Cp profile"\n'
+        ")\n"
+        'ax.plot(prof_df["value"], prof_df["z"], "-o", ms=3)\n'
+        'dbg.savefig(fig, "front_facade_cp_profile.png")\n'
+        "plot_config.close(fig)\n"
+        'dbg.save_csv(prof_df, "front_facade_cp_profile.csv")\n'
+        'print("facade profile sampled:", prof_df.shape)'
     ),
 ]
 
