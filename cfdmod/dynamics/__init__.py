@@ -23,7 +23,7 @@ __all__ = [
     "solve_building_cases",
     "read_tqs_portels",
     "read_eberick",
-    "EberickColumns",
+    "EberickUnits",
     "aggregate_to_building",
     "NodalModel",
 ]
@@ -40,7 +40,7 @@ from cfdmod.dynamics.forces import (
     write_force_h5,
 )
 from cfdmod.dynamics.imports import (
-    EberickColumns,
+    EberickUnits,
     NodalModel,
     aggregate_to_building,
     read_eberick,

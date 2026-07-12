@@ -3,10 +3,11 @@
 Run: uv run python fixtures/tests/dynamics/imports/_generate_fixtures.py
 
 Writes a small TQS "PORTELSSE" export (tqs/PORTELSSE_*.TXT, the modern
-prefix, including a PISOS floor table) and an Eberick per-floor workbook
-(eberick/modal.xlsx). Both describe the same tiny 3-floor building so
-tests can cross-check the two readers. Nothing here comes from a real
-project: coordinates, masses and shapes are synthetic.
+prefix, including a PISOS floor table) and a real-layout Eberick per-floor
+export (eberick/DISTRIBUICAO_DAS_MASSAS_DOS_PAVIMENTOS.xlsx +
+FORMAS_MODAIS_DOS_PAVIMENTOS.xlsx). Both describe a tiny 3-floor building.
+Nothing here comes from a real project: coordinates, masses and shapes are
+synthetic and the identifying header block is blank.
 
 The TQS files are byte-format-faithful to a real export (Latin-1,
 ``//`` comments, comma decimals, TAB-separated), except comment text is
@@ -18,7 +19,6 @@ from __future__ import annotations
 import pathlib
 
 import numpy as np
-import pandas as pd
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -88,39 +88,90 @@ def write_tqs() -> None:
     print("wrote", out)
 
 
+# Eberick per-floor values (its native cm / tf.s^2/cm units), same 3 floors.
+EB_NAMES = ["PAV 1", "PAV 2", "PAV 3"]
+EB_ELEV_CM = [300.0, 600.0, 900.0]
+EB_MASS = [0.30, 0.25, 0.20]  # tf.s^2/cm
+EB_INERTIA = [75000.0, 62500.0, 50000.0]  # tf.s^2.cm -> radius sqrt(I/M)=500 cm = 5 m
+EB_XCG_CM = [50.0, 50.0, 50.0]
+EB_YCG_CM = [30.0, 30.0, 30.0]
+EB_FREQ_HZ = [0.25, 0.60]
+# Per-floor [Dx(cm), Dy(cm), Rz(rad)] per mode.
+EB_SHAPES = {
+    0: [(1.0, 0.0, 1.0e-5), (2.0, 0.0, 2.0e-5), (3.0, 0.0, 3.0e-5)],  # sway X
+    1: [(0.0, 1.0, -1.0e-5), (0.0, 2.0, -2.0e-5), (0.0, 3.0, -3.0e-5)],  # sway Y
+}
+
+
+def _eb_num(v: float) -> str:
+    """Eberick writes shape values as comma-decimal scientific strings."""
+    return f"{v:.4E}".replace(".", ",")
+
+
 def write_eberick() -> None:
+    import openpyxl
+
     out = HERE / "eberick"
     out.mkdir(parents=True, exist_ok=True)
-    total_mass = float(sum(NODE_MASS))
-    xg = float(np.average(CORNERS[:, 0], weights=NODE_MASS))
-    yg = float(np.average(CORNERS[:, 1], weights=NODE_MASS))
-    inertia = float(
-        sum(m * ((x - xg) ** 2 + (y - yg) ** 2) for (x, y), m in zip(CORNERS, NODE_MASS))
-    )
 
-    floors = pd.DataFrame(
-        {
-            "Pavimento": [f"Pav{f + 1}" for f in range(len(FLOOR_Z))],
-            "Cota": FLOOR_Z,
-            "Massa": [total_mass] * len(FLOOR_Z),
-            "Inercia": [inertia] * len(FLOOR_Z),
-            "Xcg": [xg] * len(FLOOR_Z),
-            "Ycg": [yg] * len(FLOOR_Z),
-        }
-    )
-    modes = pd.DataFrame({"Modo": [1, 2], "Periodo": PERIODS})
-    rows = []
-    for mode in (1, 2):
-        for f in range(len(FLOOR_Z)):
-            dx, dy, rz = FLOOR_SHAPES[mode][f]
-            rows.append({"Pavimento": f"Pav{f + 1}", "Modo": mode, "DX": dx, "DY": dy, "RZ": rz})
-    shapes = pd.DataFrame(rows)
+    # Identifying header block is blanked (anonymized); the reader skips it.
+    head = [["OBRA", ""], ["Tipo", ""], ["Titulo", ""], ["Endereco", ""], ["Cliente", ""], []]
 
-    with pd.ExcelWriter(out / "modal.xlsx", engine="openpyxl") as w:
-        floors.to_excel(w, sheet_name="Pavimentos", index=False)
-        modes.to_excel(w, sheet_name="Modos", index=False)
-        shapes.to_excel(w, sheet_name="Formas", index=False)
-    print("wrote", out / "modal.xlsx")
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DISTRIBUICAO_DAS_MASSAS_DOS_PAV"
+    for r in head:
+        ws.append(r)
+    ws.append(["Dados da analise dinamica"])
+    ws.append([])
+    ws.append(["Distribuicao das massas dos pavimentos"])
+    ws.append(["O momento de inercia e dado em relacao ao centro de massa"])
+    ws.append([])
+    ws.append(
+        [
+            "Pavimento",
+            "Altura (cm)",
+            "Elevacao em relacao ao nivel do solo (cm)",
+            "Massa (tf.s2/cm)",
+            "Momento de inercia da massa (tf.s2.cm)",
+            "Centro de massa",
+            "",
+        ]
+    )
+    ws.append(["", "", "", "", "", "Xcg (cm)", "Ycg (cm)"])
+    for i in range(len(EB_NAMES)):
+        ws.append(
+            [
+                EB_NAMES[i],
+                300.0,
+                EB_ELEV_CM[i],
+                EB_MASS[i],
+                EB_INERTIA[i],
+                EB_XCG_CM[i],
+                EB_YCG_CM[i],
+            ]
+        )
+    ws.append(["AltoQi | Tecnologia aplicada a engenharia"])
+    wb.save(out / "DISTRIBUICAO_DAS_MASSAS_DOS_PAVIMENTOS.xlsx")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "FORMAS_MODAIS_DOS_PAVIMENTOS"
+    for r in head:
+        ws.append(r)
+    ws.append(["Dados da analise dinamica"])
+    ws.append(["Formas modais dos pavimentos"])
+    ws.append(["As formas modais sao dadas no centro de massa"])
+    for mode in range(len(EB_FREQ_HZ)):
+        ws.append(["", f"Modo {mode + 1}"])
+        ws.append(["", f"Frequencia (Hz): {EB_FREQ_HZ[mode]}"])
+        ws.append(["", "Pavimento", "Dx (cm)", "Dy (cm)", "Rz (rad)"])
+        for i in range(len(EB_NAMES)):
+            dx, dy, rz = EB_SHAPES[mode][i]
+            ws.append(["", EB_NAMES[i], _eb_num(dx), _eb_num(dy), _eb_num(rz)])
+    ws.append(["AltoQi | Tecnologia aplicada a engenharia"])
+    wb.save(out / "FORMAS_MODAIS_DOS_PAVIMENTOS.xlsx")
+    print("wrote", out / "(Eberick 2-file set)")
 
 
 if __name__ == "__main__":

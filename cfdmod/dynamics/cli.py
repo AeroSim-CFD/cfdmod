@@ -16,7 +16,9 @@ app = typer.Typer(help="Building-dynamics utilities (structural-export conversio
 @app.command("convert")
 def convert(
     source: pathlib.Path = typer.Argument(
-        ..., help="TQS PORTELS export directory, or Eberick .xlsx workbook."
+        ...,
+        help="Export directory: TQS PORTELS(SE) .TXT files, or the Eberick "
+        "DISTRIBUICAO + FORMAS_MODAIS .xlsx pair.",
     ),
     out: pathlib.Path = typer.Option(
         ..., "--out", "-o", help="Output directory for the internal modal CSVs."

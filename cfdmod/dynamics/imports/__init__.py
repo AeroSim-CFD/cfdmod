@@ -18,9 +18,9 @@ __all__ = [
     "aggregate_to_building",
     "read_tqs_portels",
     "read_eberick",
-    "EberickColumns",
+    "EberickUnits",
 ]
 
-from cfdmod.dynamics.imports.eberick import EberickColumns, read_eberick
+from cfdmod.dynamics.imports.eberick import EberickUnits, read_eberick
 from cfdmod.dynamics.imports.nodal import NodalModel, aggregate_to_building
 from cfdmod.dynamics.imports.tqs import read_tqs_portels

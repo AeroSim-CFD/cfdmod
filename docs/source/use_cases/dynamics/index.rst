@@ -31,10 +31,20 @@ radius of gyration) and a mass-weighted rigid-diaphragm mode shape. When a
 many intermediate FE node levels (beams, landings) collapse onto actual floors;
 otherwise elevations are discovered by clustering the node ``Z`` values.
 
-**Eberick.** Eberick models each storey as a rigid diaphragm, so its results
-are already **per-floor**. The reader consumes a workbook with a floors table,
-a modes table and a long-form shapes table. Column and sheet names default to a
-documented Portuguese convention and are fully overridable.
+**Eberick (AltoQi).** Eberick models each storey as a rigid diaphragm, so its
+results are already **per-floor** (no nodal aggregation). It delivers a pair of
+spreadsheets in an export directory:
+
+- ``DISTRIBUICAO_DAS_MASSAS_DOS_PAVIMENTOS.xlsx`` -- per-floor ``Pavimento;
+  Altura; Elevacao (cm); Massa; Momento de inercia; Xcg (cm); Ycg (cm)``.
+- ``FORMAS_MODAIS_DOS_PAVIMENTOS.xlsx`` -- one block per mode with its frequency
+  (Hz) and a per-floor ``Pavimento; Dx (cm); Dy (cm); Rz (rad)`` table.
+
+The reader skips the project-identifying header block, matches the files
+case/accent-insensitively, and converts Eberick's centimetre / technical-mass
+units to metres and kilograms (overridable via :class:`EberickUnits`). The
+structural damping ratio lives in the companion "sistema de referencia" sheet;
+pass it explicitly to ``to_config(damping_ratio=...)``.
 
 Usage
 ^^^^^
@@ -44,7 +54,7 @@ From Python::
     from cfdmod.dynamics import read_tqs_portels, read_eberick
 
     structure = read_tqs_portels("path/to/portels_export/")
-    # or: structure = read_eberick("path/to/modal.xlsx")
+    # or: structure = read_eberick("path/to/eberick_export/")
 
     cfg = structure.to_config(damping_ratio=0.015)
     # -> build_building_dynamic_response(load_source, cfg)
@@ -54,7 +64,7 @@ From the command line, writing the internal ``modes.csv`` / ``floors.csv`` /
 :meth:`~cfdmod.dynamics.structural.BuildingStructuralData.from_csvs`)::
 
     cfdmod dynamics <portels_export_dir> --out out_dir --format tqs
-    cfdmod dynamics modal.xlsx --out out_dir --format eberick
+    cfdmod dynamics <eberick_export_dir> --out out_dir --format eberick
 
 Both readers return mass-normalized mode shapes (unit generalized mass), the
 precondition the single-degree-of-freedom modal solver assumes.
