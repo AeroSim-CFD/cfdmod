@@ -191,14 +191,19 @@ def sample_field_along_line(
 
 
 def moving_average_stats(series: np.ndarray, dt: float, window_s: float) -> dict:
-    """Rolling-window mean of a signal plus its peak stats.
+    """Rolling-window mean of a 1-D signal plus its peak stats.
 
-    ``window_s`` is the averaging window in the series' time units; the window
-    width in samples is ``round(window_s / dt)``. Returns ``mean`` (of the raw
-    series), the smoothed series ``ma``, and ``ma_max`` / ``ma_min`` (the peak
-    and trough of the moving average) -- the "peak of the N-second moving
-    average" used for facade design pressures.
+    Reuses the library's canonical moving average
+    (:func:`cfdmod.core.ops.field.moving_average`): ``window_s`` (in the
+    series' time units) is rounded to the nearest odd sample count via
+    :func:`~cfdmod.core.ops.field.moving_average.window_in_samples`, and the
+    signal is edge-padded so the smoothed series ``ma`` stays the same length
+    and aligned with the input. Returns ``mean`` (of the raw series), ``ma``,
+    and ``ma_max`` / ``ma_min`` -- the "peak of the N-second moving average"
+    used for facade design pressures.
     """
+    from cfdmod.core.ops.field.moving_average import window_in_samples
+
     series = np.asarray(series, dtype=np.float64)
     if series.size == 0:
         return {
@@ -208,14 +213,16 @@ def moving_average_stats(series: np.ndarray, dt: float, window_s: float) -> dict
             "ma_max": float("nan"),
             "ma_min": float("nan"),
         }
-    w = max(1, int(round(window_s / dt)))
-    if series.size < w:
-        ma = np.array([series.mean()])
+    n = window_in_samples(window_s, dt)
+    if n <= 1:
+        ma = series
     else:
-        ma = np.convolve(series, np.ones(w) / w, mode="valid")
+        pad = n // 2
+        padded = np.pad(series, (pad, pad), mode="edge")
+        ma = np.convolve(padded, np.ones(n) / n, mode="valid")
     return {
         "mean": float(series.mean()),
-        "window": w,
+        "window": n,
         "ma": ma,
         "ma_max": float(ma.max()),
         "ma_min": float(ma.min()),
