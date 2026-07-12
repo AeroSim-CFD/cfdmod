@@ -62,3 +62,30 @@ def new_axes(xlabel: str = "", ylabel: str = "", title: str = ""):
 
 def close(fig) -> None:
     plt.close(fig)
+
+
+def set_style_tech() -> None:
+    """Tech-report figure style: whitegrid, markers-only lines, thin spines.
+
+    Meant for the code-comparison / deliverable figures (numerical points over
+    analytical code curves), where a marker-only numerical series reads better
+    than a connected line. Robust to matplotlib's seaborn-style rename.
+    """
+    for style in ("seaborn-v0_8-whitegrid", "seaborn-whitegrid"):
+        if style in plt.style.available:
+            plt.style.use(style)
+            break
+    plt.rcParams.update(
+        {
+            "font.family": "sans-serif",
+            "font.size": 10,
+            "mathtext.fontset": "custom",
+            "legend.facecolor": "white",
+            "legend.edgecolor": "none",
+            "lines.linestyle": "",
+            "lines.linewidth": 2,
+            "lines.markersize": 6,
+            "lines.markeredgecolor": "none",
+            "axes.edgecolor": "black",
+        }
+    )
