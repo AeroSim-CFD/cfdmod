@@ -19,6 +19,7 @@ pytestmark = pytest.mark.unit
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 INFLOW_FIX = REPO / "fixtures" / "tests" / "inflow" / "pitot_inlet"
+WIND_FIX = REPO / "fixtures" / "tests" / "inflow" / "wind_analysis"
 
 
 def _nbr_profile() -> WindProfile_NBR:
@@ -49,6 +50,17 @@ def test_directional_reference_speed_subset_and_kd():
     with_kd = ir.directional_reference_speed(wp, height=50.0, directions=[90.0], use_kd=True)
     # direction 90 has Kd=1.2, so enabling Kd scales U_H up by 1.2
     assert with_kd.loc[90.0] == pytest.approx(1.2 * base.loc[90.0], rel=1e-6)
+
+
+def test_directional_reference_speed_from_fixture_csvs():
+    from cfdmod.analytical import WindProfile_EU, WindProfile_NBR
+
+    nbr = WindProfile_NBR.build(WIND_FIX / "wind_analysis_NBR.csv", V0=35.0)
+    eu = WindProfile_EU.build(WIND_FIX / "wind_analysis_EU.csv", Vb=35.0)
+    s_nbr = ir.directional_reference_speed(nbr, height=100.0, recurrence_period=50, use_kd=True)
+    s_eu = ir.directional_reference_speed(eu, height=100.0, recurrence_period=50, use_kd=True)
+    assert len(s_nbr) == 16 and len(s_eu) == 16
+    assert (s_nbr.to_numpy() > 0).all() and (s_eu.to_numpy() > 0).all()
 
 
 def test_eu_integral_length_scale_monotone_and_positive():

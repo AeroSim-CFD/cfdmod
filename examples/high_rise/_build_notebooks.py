@@ -160,6 +160,39 @@ INFLOW_CELLS = [
         'print(f"code-comparison figures written (cat_eu={CAT_EU}, z0={Z0})")'
     ),
     new_code_cell(
+        "# --- directional design speed (NBR 6123 / EN 1991-1-4) ------------------\n"
+        "# Design reference speed U_H per wind direction from the wind-analysis CSVs\n"
+        "# (real projects ship these under case_data; here an in-repo generic fixture).\n"
+        "from cfdmod.analytical import WindProfile_EU, WindProfile_NBR\n"
+        "\n"
+        'V0 = float(os.environ.get("CFDMOD_HR_V0", "35.0"))\n'
+        'DESIGN_HEIGHT = float(os.environ.get("CFDMOD_HR_DESIGN_HEIGHT", "100.0"))\n'
+        'WIND_DIR = FIX / "inflow" / "wind_analysis"\n'
+        'WIND_NBR = pathlib.Path(os.environ.get("CFDMOD_HR_WIND_NBR", WIND_DIR / "wind_analysis_NBR.csv"))\n'
+        'WIND_EU = pathlib.Path(os.environ.get("CFDMOD_HR_WIND_EU", WIND_DIR / "wind_analysis_EU.csv"))\n'
+        "\n"
+        "u_h_nbr = inflow_report.directional_reference_speed(\n"
+        "    WindProfile_NBR.build(WIND_NBR, V0=V0), height=DESIGN_HEIGHT, recurrence_period=50, use_kd=True\n"
+        ")\n"
+        "u_h_eu = inflow_report.directional_reference_speed(\n"
+        "    WindProfile_EU.build(WIND_EU, Vb=V0), height=DESIGN_HEIGHT, recurrence_period=50, use_kd=True\n"
+        ")\n"
+        'print(f"governing U_H @ {DESIGN_HEIGHT:g} m: '
+        'NBR {u_h_nbr.max():.2f} @ {u_h_nbr.idxmax():g} deg | EU {u_h_eu.max():.2f} @ {u_h_eu.idxmax():g} deg")\n'
+        "\n"
+        "fig, ax = plot_config.new_axes(\n"
+        '    xlabel="wind direction [deg]", ylabel="U_H [m/s]", title="Directional design speed"\n'
+        ")\n"
+        'ax.plot(u_h_nbr.index, u_h_nbr.to_numpy(), "-o", ms=3, label="NBR 6123")\n'
+        'ax.plot(u_h_eu.index, u_h_eu.to_numpy(), "-s", ms=3, label="EN 1991-1-4")\n'
+        "ax.legend()\n"
+        'dbg.savefig(fig, "directional_U_H.png", deliverable=True)\n'
+        "plot_config.close(fig)\n"
+        "\n"
+        'table = u_h_nbr.rename("U_H_NBR").to_frame().join(u_h_eu.rename("U_H_EU"))\n'
+        'dbg.save_csv(table.rename_axis("wind_direction").reset_index(), "directional_U_H.csv", deliverable=True)'
+    ),
+    new_code_cell(
         "import json\n"
         "\n"
         "# --- persist u_ref for the Cp step (the 'update config' step) -----------\n"

@@ -48,6 +48,9 @@ Point at a real case with environment variables (or by editing the config cell):
 | `CFDMOD_HR_VERSION` | output version tag | `example` |
 | `CFDMOD_HR_INFLOW_HIST` / `_POINTS` | inflow data | pitot_inlet fixture |
 | `CFDMOD_HR_REF_HEIGHT` | reference height H | `2.0` |
+| `CFDMOD_HR_CAT_EU` / `CFDMOD_HR_Z0` | terrain category + roughness for the code comparison (stage 01) | `III` / `0.3` |
+| `CFDMOD_HR_WIND_NBR` / `_WIND_EU` | directional wind-analysis CSVs (stage 01) | `inflow/wind_analysis/` fixture |
+| `CFDMOD_HR_V0` / `CFDMOD_HR_DESIGN_HEIGHT` | basic wind speed + design height for the directional U_H (stage 01) | `35.0` / `100.0` |
 | `CFDMOD_HR_CASE_DATA` / `CFDMOD_HR_PARAMS` | case_data dir + params yaml | example case from mesh |
 | `CFDMOD_HR_DATA_DIR` / `_BODY_KEY` / `_REF_KEY` | pressure data | galpao fixture |
 | `CFDMOD_HR_MESH` | body `.lnas` | galpao normalized |
