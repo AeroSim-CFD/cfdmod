@@ -1,15 +1,13 @@
-"""Tests for the high-rise ``pp/`` helper package.
+"""Tests for the ``cfdmod.high_rise`` post-processing helpers.
 
-Promotes the checks in ``examples/high_rise/_validate_pp.py`` into the pytest
-suite so the notebook-side glue (HighRiseCase + the Cp / per-floor Cf/Cm
-wiring) is covered by CI. The ``pp`` package lives under ``notebooks/`` and is
-not installed, so it is put on the path here.
+Promotes the checks in ``examples/high_rise/_validate_high_rise.py`` into the
+pytest suite so the high-rise glue (HighRiseCase + the Cp / per-floor Cf/Cm
+wiring) is covered by CI.
 """
 
 from __future__ import annotations
 
 import pathlib
-import sys
 
 import numpy as np
 import pytest
@@ -17,20 +15,17 @@ import pytest
 pytestmark = pytest.mark.integration
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
-NB = REPO / "examples" / "high_rise"
-if str(NB) not in sys.path:
-    sys.path.insert(0, str(NB))
 
 FIX = REPO / "fixtures" / "tests" / "pressure"
 DATA = FIX / "data"
 MESH = str(FIX / "galpao" / "galpao.normalized.lnas")
 
-pp = pytest.importorskip("pp")
+hr = pytest.importorskip("cfdmod.high_rise")
 
 
 @pytest.fixture(scope="module")
 def galpao_case():
-    return pp.example_high_rise_case(MESH, n_floors=3)
+    return hr.example_high_rise_case(MESH, n_floors=3)
 
 
 @pytest.fixture(scope="module")
@@ -40,7 +35,7 @@ def cp_ds(galpao_case):
     storage = XdmfH5Storage(DATA)
     body = storage.read_data_source(pathlib.Path("bodies.galpao"))
     p_ref = storage.read_data_source(pathlib.Path("points.static_pressure"))
-    return pp.cp_from_pressure(body, p_ref, galpao_case)
+    return hr.cp_from_pressure(body, p_ref, galpao_case)
 
 
 def test_example_case_geometry(galpao_case):
@@ -58,7 +53,7 @@ def test_cp_from_pressure(cp_ds):
 
 @pytest.mark.parametrize("method", ["face_cut", "centroid"])
 def test_cf_per_floor_shapes(cp_ds, galpao_case, method):
-    cf = pp.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x", "y"), method=method)
+    cf = hr.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x", "y"), method=method)
     assert cf.kind == "groups"
     assert 1 <= cf.n_elements <= galpao_case.n_floors
     cfx = cf.fields.read("cf_x")
@@ -68,7 +63,7 @@ def test_cf_per_floor_shapes(cp_ds, galpao_case, method):
 
 @pytest.mark.parametrize("method", ["face_cut", "centroid"])
 def test_cm_per_floor_finite(cp_ds, galpao_case, method):
-    cm = pp.cm_per_floor(cp_ds, MESH, galpao_case, directions=("z",), method=method)
+    cm = hr.cm_per_floor(cp_ds, MESH, galpao_case, directions=("z",), method=method)
     cmz = cm.fields.read("cm_z")
     assert np.isfinite(cmz).all()
 
@@ -85,8 +80,8 @@ def test_face_cut_conserves_total_force(cp_ds, galpao_case):
     zmax = max(galpao_case.floor_heights)
     whole = galpao_case.model_copy(update={"floor_heights": [zmin, zmax + 1e-6]})
 
-    per_floor = pp.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
-    single = pp.cf_per_floor(cp_ds, MESH, whole, directions=("x",), method="face_cut")
+    per_floor = hr.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
+    single = hr.cf_per_floor(cp_ds, MESH, whole, directions=("x",), method="face_cut")
 
     total_per_floor = per_floor.fields.read("cf_x").sum(axis=0)
     total_single = single.fields.read("cf_x").sum(axis=0)
@@ -131,7 +126,7 @@ def test_from_case_data_reads_floors_from_alturas(tmp_path):
     for i in range(5):
         rows.append(f"{i + 1},{i * 10.0},{(i + 1) * 10.0},10.0")
     cd = _write_case_data(tmp_path, "\n".join(rows) + "\n")
-    case = pp.HighRiseCase.from_case_data(cd, "params.yaml")
+    case = hr.HighRiseCase.from_case_data(cd, "params.yaml")
     assert case.n_floors == 5
     assert case.floor_heights[0] == 0.0
     assert case.floor_heights[-1] == 50.0
@@ -140,12 +135,12 @@ def test_from_case_data_reads_floors_from_alturas(tmp_path):
 def test_from_case_data_falls_back_to_yaml_when_alturas_empty(tmp_path):
     """A header-only (or missing) alturas.csv falls back to the yaml z_intervals."""
     header_only = _write_case_data(tmp_path, "Pavimento,z_min,z_max,dz\n")
-    case = pp.HighRiseCase.from_case_data(header_only, "params.yaml")
+    case = hr.HighRiseCase.from_case_data(header_only, "params.yaml")
     assert case.floor_heights == [0.0, 50.0]  # from the yaml anchor -> 1 floor
     assert case.n_floors == 1
 
     missing = _write_case_data(tmp_path / "nocsv", None)
-    case2 = pp.HighRiseCase.from_case_data(missing, "params.yaml")
+    case2 = hr.HighRiseCase.from_case_data(missing, "params.yaml")
     assert case2.floor_heights == [0.0, 50.0]
 
 
@@ -155,8 +150,8 @@ def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
     Per-floor distributions differ (that is the point of face_cut), but the sum
     across all floors is the same whole-body force for either partition.
     """
-    fc = pp.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
-    ct = pp.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="centroid")
+    fc = hr.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
+    ct = hr.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="centroid")
     np.testing.assert_allclose(
         fc.fields.read("cf_x").sum(axis=0),
         ct.fields.read("cf_x").sum(axis=0),

@@ -1,9 +1,9 @@
-"""High-rise post-processing helpers (notebook-side, not part of the cfdmod library).
+"""High-rise post-processing helpers.
 
 These modules keep the presentation / orchestration / debug-IO logic out of the
-notebooks themselves, so each stage notebook stays a thin driver. Computational
-logic lives in the cfdmod library (recipes / ops); everything here is glue,
-plotting, and file layout.
+example notebooks, so each stage notebook stays a thin driver. Lower-level
+computational logic lives in the core library (recipes / ops); everything here
+is high-rise-specific glue, plotting, and file layout.
 
 Layout:
     case         -- HighRiseCase: aggregate the case_data config (global_data.json,
@@ -18,10 +18,10 @@ Layout:
 
 from __future__ import annotations
 
-from pp import snapshots
-from pp.case import HighRiseCase, example_high_rise_case
-from pp.debug_io import DebugWriter
-from pp.dynamic import (
+from . import snapshots
+from .case import HighRiseCase, example_high_rise_case
+from .debug_io import DebugWriter
+from .dynamic import (
     example_building_structure,
     floor_accelerations,
     floor_load_source,
@@ -29,8 +29,8 @@ from pp.dynamic import (
     solve_building_response,
     structure_from_csvs,
 )
-from pp.inflow_report import ProfileLine, detect_profiles, reference_velocity
-from pp.pressure import cf_per_floor, cm_per_floor, cp_from_pressure
+from .inflow_report import ProfileLine, detect_profiles, reference_velocity
+from .pressure import cf_per_floor, cm_per_floor, cp_from_pressure
 
 __all__ = [
     "HighRiseCase",

@@ -41,7 +41,8 @@ from cfdmod.core.ops.field.moment_contribution import (
 from cfdmod.core.ops.geometric.mesh_attach import MeshAttachParams, mesh_attach
 from cfdmod.core.ops.geometric.zoning_grouping import ZoningGroupingParams, zoning_grouping
 from cfdmod.core.recipes import CpRecipeConfig, build_cp
-from pp.case import HighRiseCase
+
+from .case import HighRiseCase
 
 _FLOOR = "floor"
 
