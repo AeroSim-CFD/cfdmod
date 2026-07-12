@@ -1,0 +1,4 @@
+Pavimento	Elevacao em relacao ao nivel do solo (cm)	Massa em X (tf.s2/cm)	Massa em Y (tf.s2/cm)	Massa em Z (tf.s2/cm)	Momento de inercia da massa (tf.s2.cm)	Centro de massa Xcg (cm)	Centro de massa Ycg (cm)
+PAV 1	300.00	0.30	0.30	0.30	75000.00	50.00	30.00
+PAV 2	600.00	0.25	0.25	0.25	62500.00	50.00	30.00
+PAV 3	900.00	0.20	0.20	0.20	50000.00	50.00	30.00

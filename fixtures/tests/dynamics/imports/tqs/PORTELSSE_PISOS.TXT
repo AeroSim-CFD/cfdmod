@@ -1,0 +1,4 @@
+// Piso; Nome; Nivel (m)
+000	Pav 1	3,000E+00
+001	Pav 2	6,000E+00
+002	Pav 3	9,000E+00
