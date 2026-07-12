@@ -99,7 +99,8 @@ def example_building_structure(
     *,
     n_modes: int = 3,
     frequencies_hz: list[float] | None = None,
-    floor_mass: float = 1.0,
+    floor_mass: float | None = None,
+    mass_density: float = 250.0,
 ) -> BuildingStructuralData:
     """A self-contained :class:`BuildingStructuralData` tuned to the case.
 
@@ -108,6 +109,13 @@ def example_building_structure(
     building of ``n_floors`` uniform floors. Natural frequencies default to
     the Ellis ``46/H`` fundamental with higher modes at 1.1x / 1.25x. For real
     work use :func:`structure_from_csvs`.
+
+    The per-floor mass defaults to a physically-scaled value derived from the
+    building volume (``mass_density`` kg/m^3 of enclosed volume, split evenly
+    across floors -- ``250`` is a typical reinforced-concrete tower average),
+    so displacements/accelerations under real physical loads land in a
+    believable range rather than blowing up against a unit mass. Pass an
+    explicit ``floor_mass`` to override.
 
     ``n_modes`` is clamped to ``[1, 3]`` (only three canonical shapes are
     defined).
@@ -126,6 +134,8 @@ def example_building_structure(
         [np.column_stack(shape_defs[m]) for m in range(n_modes)], axis=1
     )  # (n_floors, n_modes, 3)
 
+    if floor_mass is None:
+        floor_mass = mass_density * case.nominal_volume / max(n_floors, 1)
     floors_mass = np.full(n_floors, float(floor_mass), dtype=np.float64)
     # Radius of gyration ~ 0.4 * plan dimension (rectangular-plan rule of thumb).
     floors_radius = np.full(n_floors, 0.4 * max(case.characteristic_length, 1e-6))
