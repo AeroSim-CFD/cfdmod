@@ -52,6 +52,25 @@ def test_csv_round_trip_is_idempotent(tmp_path):
     np.testing.assert_allclose(rt.floors_radius, sd.floors_radius, rtol=1e-9)
 
 
+def test_uses_pisos_floor_levels():
+    # The fixture ships a PORTELSSE_PISOS.TXT with 3 floors at 3/6/9 m; the
+    # recovered elevations must match it (not the raw node Z clustering).
+    sd = read_tqs_portels(TQS)
+    np.testing.assert_allclose(np.asarray(sd.floor_points)[:, 2], [3.0, 6.0, 9.0])
+
+
+def test_old_prefix_without_pisos(tmp_path):
+    # Older exports use the PORTELS_ prefix and ship no PISOS table; the reader
+    # must still find the files (suffix match) and recover floors by clustering.
+    for p in TQS.glob("PORTELSSE_*.TXT"):
+        if p.name.endswith("_PISOS.TXT"):
+            continue
+        (tmp_path / p.name.replace("PORTELSSE_", "PORTELS_")).write_bytes(p.read_bytes())
+    sd = read_tqs_portels(tmp_path)
+    assert sd.n_floors == 3
+    np.testing.assert_allclose(np.asarray(sd.natural_frequencies) / (2 * np.pi), [1.0, 2.5])
+
+
 def test_feeds_building_dynamic_recipe():
     sd = read_tqs_portels(TQS)
     cfg = sd.to_config(damping_ratio=0.02)

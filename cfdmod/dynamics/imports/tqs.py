@@ -1,15 +1,20 @@
-"""Read a TQS "Portico Espacial" (PORTELS) modal export.
+"""Read a TQS "Portico Espacial" modal export.
 
 TQS exports the spatial-frame modal analysis as a set of Latin-1,
-TAB-separated, comma-decimal text files with ``//`` comment lines:
+TAB-separated, comma-decimal text files with ``//`` comment lines. The
+file-name prefix is ``PORTELS_`` (older) or ``PORTELSSE_`` (newer); the
+reader matches by the ``_<SUFFIX>.TXT`` tail so either works:
 
-- ``PORTELS_MODOS.TXT``  -- ``Modo; Periodo(s); Freq angular(rad/s); Freq(Hz)``,
+- ``*_MODOS.TXT``  -- ``Modo; Periodo(s); Freq angular(rad/s); Freq(Hz)``,
   preceded by a single line with the mode count.
-- ``PORTELS_NOS.TXT``    -- ``No; X; Y; Z`` (m), preceded by the node count.
-- ``PORTELS_MASSAS.TXT`` -- ``No; Massa X; Massa Y; Massa Z`` (lumped nodal mass).
-- ``PORTELS_FORMAS2.TXT``-- per-mode blocks ``// Modo / <n> / No; DX; DY; RZ``
-  (nodal mode shape carrying the ``RZ`` rotation). ``PORTELS_FORMAS.TXT``
-  is the same but with ``DZ`` instead of ``RZ`` -- we use ``FORMAS2``.
+- ``*_NOS.TXT``    -- ``No; X; Y; Z`` (m), preceded by the node count.
+- ``*_MASSAS.TXT`` -- ``No; Massa X; Massa Y; Massa Z`` (lumped nodal mass).
+- ``*_FORMAS2.TXT``-- per-mode blocks ``// Modo / <n> / No; DX; DY; RZ``
+  (nodal mode shape carrying the ``RZ`` rotation). ``*_FORMAS.TXT`` is the
+  same but with ``DZ`` instead of ``RZ`` -- we use ``FORMAS2``.
+- ``*_PISOS.TXT``  -- optional ``Piso; Nome; Nivel(m)`` floor table (newer
+  exports). When present it defines the real slab elevations, so the many
+  intermediate FE node levels (beams, landings) collapse onto actual floors.
 
 :func:`read_tqs_portels` parses these into a :class:`NodalModel` and
 aggregates it per floor via :func:`aggregate_to_building`.
@@ -27,26 +32,45 @@ from cfdmod.dynamics.imports._textnum import iter_data_rows, to_float
 from cfdmod.dynamics.imports.nodal import NodalModel, aggregate_to_building
 from cfdmod.dynamics.structural import BuildingStructuralData
 
-# Default file names inside a PORTELS export directory (case-insensitive match).
+# Role -> file-name suffix. TQS names these ``PORTELS_<SUFFIX>.TXT`` (older) or
+# ``PORTELSSE_<SUFFIX>.TXT`` (newer), so we match by the ``_<SUFFIX>.TXT`` tail
+# rather than a fixed prefix.
 PORTELS_FILES = {
-    "modes": "PORTELS_MODOS.TXT",
-    "nodes": "PORTELS_NOS.TXT",
-    "masses": "PORTELS_MASSAS.TXT",
-    "shapes": "PORTELS_FORMAS2.TXT",
+    "modes": "MODOS",
+    "nodes": "NOS",
+    "masses": "MASSAS",
+    "shapes": "FORMAS2",
 }
+# Newer exports carry a floor table too; read for validation when present.
+PISOS_SUFFIX = "PISOS"
 
 
-def _resolve(source: str | pathlib.Path, name: str) -> pathlib.Path:
-    """Find ``name`` inside ``source`` (a directory), case-insensitively."""
+def _resolve(source: str | pathlib.Path, suffix: str, *, required: bool = True):
+    """Find the ``*_<suffix>.TXT`` file in ``source`` (case-insensitive).
+
+    Matches both the ``PORTELS_`` and ``PORTELSSE_`` prefixes (preferring the
+    newer ``PORTELSSE_`` when both exist). Returns ``None`` when ``required``
+    is false and no file matches.
+    """
     source = pathlib.Path(source)
-    direct = source / name
-    if direct.exists():
-        return direct
-    lowered = name.lower()
-    for p in source.iterdir():
-        if p.name.lower() == lowered:
-            return p
-    raise FileNotFoundError(f"{name} not found in PORTELS export dir {source}")
+    tail = f"_{suffix.lower()}.txt"
+    matches = [p for p in source.iterdir() if p.is_file() and p.name.lower().endswith(tail)]
+    if not matches:
+        if required:
+            raise FileNotFoundError(f"no *{tail.upper()} file in PORTELS export dir {source}")
+        return None
+    # Prefer PORTELSSE_ (newer), then PORTELS_, then anything, then shortest name.
+    matches.sort(
+        key=lambda p: (
+            0
+            if p.name.upper().startswith("PORTELSSE_")
+            else 1
+            if p.name.upper().startswith("PORTELS_")
+            else 2,
+            len(p.name),
+        )
+    )
+    return matches[0]
 
 
 def _read_modes(path: pathlib.Path) -> np.ndarray:
@@ -96,6 +120,20 @@ def _read_shapes(path: pathlib.Path) -> dict[int, dict[int, tuple[float, float, 
     return blocks
 
 
+def _read_piso_levels(path: pathlib.Path) -> list[float]:
+    """Floor elevations from a PISOS table (``Piso; Nome; Nivel(m)``).
+
+    The floor name may contain spaces, so the level is the *last* token and
+    the piso index the first; the (variable-width) name in between is
+    ignored.
+    """
+    levels: list[float] = []
+    for r in iter_data_rows(path):
+        if len(r) >= 3 and r[0].isdigit():
+            levels.append(to_float(r[-1]))
+    return levels
+
+
 def read_tqs_portels(
     source: str | pathlib.Path,
     *,
@@ -104,8 +142,12 @@ def read_tqs_portels(
 ) -> BuildingStructuralData:
     """Read a TQS PORTELS export directory into a :class:`BuildingStructuralData`.
 
+    Handles both the older ``PORTELS_*.TXT`` and newer ``PORTELSSE_*.TXT``
+    file names (matched by suffix). When a ``*_PISOS.TXT`` floor table is
+    present it is used to sanity-check the recovered floor count.
+
     Args:
-        source: Directory containing the ``PORTELS_*.TXT`` files.
+        source: Directory containing the ``PORTELS(SE)_*.TXT`` files.
         active_modes: 1-based mode numbers to keep (``None`` keeps all).
         tol_z: Slab elevation clustering tolerance (m).
 
@@ -138,5 +180,23 @@ def read_tqs_portels(
             dx, dy, rz = block.get(int(nid), (0.0, 0.0, 0.0))
             shapes[ni, mi] = (dx, dy, rz)
 
+    # A PISOS floor table (newer exports), when present, defines the real slab
+    # levels -- the FE model otherwise has many intermediate node elevations
+    # (beams, landings) that naive Z-clustering would mistake for floors.
+    pisos_p = _resolve(source, PISOS_SUFFIX, required=False)
+    floor_levels = _read_piso_levels(pisos_p) if pisos_p is not None else None
+
     model = NodalModel(coords=coords, mass=mass, periods=periods, shapes=shapes, node_ids=node_ids)
-    return aggregate_to_building(model, tol_z=tol_z, active_modes=active_modes)
+    sd = aggregate_to_building(
+        model, tol_z=tol_z, floor_levels=floor_levels, active_modes=active_modes
+    )
+
+    if floor_levels is not None and sd.n_floors != len(floor_levels):
+        import warnings
+
+        warnings.warn(
+            f"{pisos_p.name} lists {len(floor_levels)} floors but {sd.n_floors} carry mass "
+            f"(zero-mass levels such as foundation/roof are dropped).",
+            stacklevel=2,
+        )
+    return sd

@@ -67,17 +67,24 @@ def aggregate_to_building(
     model: NodalModel,
     *,
     tol_z: float = 0.05,
+    floor_levels: list[float] | None = None,
     active_modes: list[int] | None = None,
     drop_massless: bool = True,
 ) -> BuildingStructuralData:
     """Aggregate a :class:`NodalModel` into a per-floor :class:`BuildingStructuralData`.
 
     Args:
-        tol_z: Elevation clustering tolerance (m); nodes whose Z rounds to
-            the same multiple of ``tol_z`` belong to one slab.
+        tol_z: Elevation clustering tolerance (m) for the fallback grouping;
+            nodes whose Z rounds to the same multiple of ``tol_z`` belong to
+            one slab. Ignored when ``floor_levels`` is given.
+        floor_levels: Authoritative slab elevations (e.g. from a TQS PISOS
+            table). When given, every node is assigned to its nearest level,
+            which collapses the many intermediate FE node elevations (beams,
+            landings) onto the real floors. When ``None``, elevations are
+            discovered by clustering node Z with ``tol_z``.
         active_modes: 1-based mode numbers to keep (``None`` keeps all).
-        drop_massless: Drop clustered elevations with zero total mass
-            (non-slab levels). When ``False`` they raise instead.
+        drop_massless: Drop levels with zero total mass (non-slab levels:
+            foundation, roof). When ``False`` they raise instead.
 
     Returns:
         A :class:`BuildingStructuralData` with floors ordered by ascending
@@ -98,16 +105,29 @@ def aggregate_to_building(
 
     keep = list(range(n_modes)) if active_modes is None else [m - 1 for m in active_modes]
 
-    # Cluster nodes by elevation (round to tol_z), ascending.
-    z_key = np.round(coords[:, 2] / tol_z).astype(np.int64)
+    # Assign each node to a floor: nearest authoritative level, or Z-cluster.
+    if floor_levels is not None:
+        levels = np.sort(np.asarray(floor_levels, dtype=np.float64))
+        z_key = np.argmin(np.abs(coords[:, 2][:, None] - levels[None, :]), axis=1)
+        group_keys = list(range(len(levels)))
+        level_of = {k: float(levels[k]) for k in group_keys}
+    else:
+        z_key = np.round(coords[:, 2] / tol_z).astype(np.int64)
+        group_keys = sorted(np.unique(z_key))
+        level_of = None
+
     floor_props: list[tuple[float, float, float, float, float, float]] = []
     floor_shapes: list[np.ndarray] = []  # each (n_kept_modes, 3)
 
-    for key in sorted(np.unique(z_key)):
+    for key in group_keys:
         sel = z_key == key
         m = mass[sel]
         total = float(m.sum())
-        elev = float(coords[sel, 2].mean())
+        elev = (
+            level_of[key]
+            if level_of is not None
+            else (float(coords[sel, 2].mean()) if sel.any() else float("nan"))
+        )
         if total <= 0.0:
             if drop_massless:
                 continue

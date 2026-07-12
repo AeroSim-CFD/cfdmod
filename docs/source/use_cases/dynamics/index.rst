@@ -13,18 +13,23 @@ consumes, removing a manual, error-prone transcription step.
 Supported sources
 ^^^^^^^^^^^^^^^^^
 
-**TQS (Portico Espacial / PORTELS).** TQS exports the spatial-frame modal
-analysis as a set of text files (Latin-1 encoded, ``//`` comment lines, comma
-decimal separators, TAB-separated):
+**TQS (Portico Espacial).** TQS exports the spatial-frame modal analysis as a
+set of text files (Latin-1 encoded, ``//`` comment lines, comma decimal
+separators, TAB-separated). The file-name prefix is ``PORTELS_`` (older) or
+``PORTELSSE_`` (newer); both are accepted:
 
-- ``PORTELS_MODOS.TXT`` -- one row per mode: number, period, angular frequency, frequency.
-- ``PORTELS_NOS.TXT`` -- nodal coordinates (``No; X; Y; Z``).
-- ``PORTELS_MASSAS.TXT`` -- lumped nodal masses.
-- ``PORTELS_FORMAS2.TXT`` -- per-mode nodal mode shapes carrying the rotation (``No; DX; DY; RZ``).
+- ``*_MODOS.TXT`` -- one row per mode: number, period, angular frequency, frequency.
+- ``*_NOS.TXT`` -- nodal coordinates (``No; X; Y; Z``).
+- ``*_MASSAS.TXT`` -- lumped nodal masses.
+- ``*_FORMAS2.TXT`` -- per-mode nodal mode shapes carrying the rotation (``No; DX; DY; RZ``).
+- ``*_PISOS.TXT`` -- optional floor table (``Piso; Nome; Nivel``), in newer exports.
 
 This is **nodal** data. The reader groups nodes by slab elevation and reduces
 each slab to its lumped floor properties (mass, centre of mass, polar inertia,
-radius of gyration) and a mass-weighted rigid-diaphragm mode shape.
+radius of gyration) and a mass-weighted rigid-diaphragm mode shape. When a
+``PISOS`` floor table is present it defines the real slab elevations, so the
+many intermediate FE node levels (beams, landings) collapse onto actual floors;
+otherwise elevations are discovered by clustering the node ``Z`` values.
 
 **Eberick.** Eberick models each storey as a rigid diaphragm, so its results
 are already **per-floor**. The reader consumes a workbook with a floors table,

@@ -2,10 +2,11 @@
 
 Run: uv run python fixtures/tests/dynamics/imports/_generate_fixtures.py
 
-Writes a small TQS "PORTELS" export (tqs/PORTELS_*.TXT) and an Eberick
-per-floor workbook (eberick/modal.xlsx). Both describe the same tiny
-3-floor building so tests can cross-check the two readers. Nothing here
-comes from a real project: coordinates, masses and shapes are synthetic.
+Writes a small TQS "PORTELSSE" export (tqs/PORTELSSE_*.TXT, the modern
+prefix, including a PISOS floor table) and an Eberick per-floor workbook
+(eberick/modal.xlsx). Both describe the same tiny 3-floor building so
+tests can cross-check the two readers. Nothing here comes from a real
+project: coordinates, masses and shapes are synthetic.
 
 The TQS files are byte-format-faithful to a real export (Latin-1,
 ``//`` comments, comma decimals, TAB-separated), except comment text is
@@ -55,7 +56,7 @@ def write_tqs() -> None:
     for i, T in enumerate(PERIODS, start=1):
         f = 1.0 / T
         modos.append("\t".join([f"{i:03d}", _num(T), _num(2 * np.pi * f), _num(f)]))
-    (out / "PORTELS_MODOS.TXT").write_text("\n".join(modos) + "\n", encoding="latin-1")
+    (out / "PORTELSSE_MODOS.TXT").write_text("\n".join(modos) + "\n", encoding="latin-1")
 
     nos = ["// Numero total de nos", str(len(node_ids)), "// No; X (m); Y (m); Z (m)"]
     massas = ["// No; Massa em X (ton/g); Massa em Y (ton/g); Massa em Z (ton/g)"]
@@ -66,8 +67,8 @@ def write_tqs() -> None:
             nos.append("\t".join([f"{nid:06d}", _num(x), _num(y), _num(FLOOR_Z[f])]))
             m = NODE_MASS[k]
             massas.append("\t".join([f"{nid:06d}", _num(m), _num(m), _num(0.0)]))
-    (out / "PORTELS_NOS.TXT").write_text("\n".join(nos) + "\n", encoding="latin-1")
-    (out / "PORTELS_MASSAS.TXT").write_text("\n".join(massas) + "\n", encoding="latin-1")
+    (out / "PORTELSSE_NOS.TXT").write_text("\n".join(nos) + "\n", encoding="latin-1")
+    (out / "PORTELSSE_MASSAS.TXT").write_text("\n".join(massas) + "\n", encoding="latin-1")
 
     formas = []
     for mode in (1, 2):
@@ -76,7 +77,14 @@ def write_tqs() -> None:
             dx, dy, rz = FLOOR_SHAPES[mode][f]
             for k in range(4):
                 formas.append("\t".join([f"{_node_id(f, k):06d}", _num(dx), _num(dy), _num(rz)]))
-    (out / "PORTELS_FORMAS2.TXT").write_text("\n".join(formas) + "\n", encoding="latin-1")
+    (out / "PORTELSSE_FORMAS2.TXT").write_text("\n".join(formas) + "\n", encoding="latin-1")
+
+    # PISOS floor table (name column deliberately contains spaces).
+    pisos = ["// Piso; Nome; Nivel (m)"]
+    names = ["Pav 1", "Pav 2", "Pav 3"]
+    for f, z in enumerate(FLOOR_Z):
+        pisos.append("\t".join([f"{f:03d}", names[f], _num(z)]))
+    (out / "PORTELSSE_PISOS.TXT").write_text("\n".join(pisos) + "\n", encoding="latin-1")
     print("wrote", out)
 
 

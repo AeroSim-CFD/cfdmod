@@ -64,3 +64,23 @@ def test_massless_floor_is_dropped():
 def test_massless_floor_raises_when_not_dropped():
     with pytest.raises(ValueError, match="zero total mass"):
         aggregate_to_building(_model(with_massless=True), drop_massless=False)
+
+
+def test_floor_levels_collapse_intermediate_nodes():
+    # Two real slabs at z=0 and z=3, plus an intermediate beam node at z=1.4
+    # (nearer the z=0 slab). Given the authoritative levels, the beam node is
+    # absorbed into the lower floor -> exactly two floors, not three.
+    coords = np.array(
+        [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 0.0, 1.4], [0.0, 0.0, 3.0], [2.0, 0.0, 3.0]]
+    )
+    model = NodalModel(
+        coords=coords,
+        mass=np.array([1.0, 1.0, 0.5, 1.0, 1.0]),
+        periods=np.array([1.0]),
+        shapes=np.zeros((5, 1, 3)),
+    )
+    sd = aggregate_to_building(model, floor_levels=[0.0, 3.0])
+    assert sd.n_floors == 2
+    np.testing.assert_allclose(np.asarray(sd.floor_points)[:, 2], [0.0, 3.0])
+    # Lower floor carries its two slab nodes plus the beam node: 1 + 1 + 0.5.
+    np.testing.assert_allclose(sorted(sd.floors_mass), [2.0, 2.5])
