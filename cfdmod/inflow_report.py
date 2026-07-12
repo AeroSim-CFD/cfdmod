@@ -12,11 +12,18 @@ Figures produced per profile:
 and a scalar integral length scale estimate. The high-rise sequence also uses
 :func:`reference_velocity` to read U_H off the mean profile at the interest
 height.
+
+For code validation, :func:`plot_profile_vs_code` overlays the simulated mean
+velocity / turbulence intensity on the NBR 6123 and EN 1991-1-4 analytical
+profiles, :func:`directional_reference_speed` returns the design U_H per wind
+direction from an analytical wind profile, and :func:`eu_integral_length_scale`
+gives the EN 1991-1-4 length-scale theory to compare against.
 """
 
 from __future__ import annotations
 
 import dataclasses
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -30,6 +37,11 @@ from cfdmod.inflow import (
     calculate_turbulence_intensity,
 )
 from cfdmod.plot_config import new_axes
+
+if TYPE_CHECKING:
+    from cfdmod.analytical.wind_profile import WindProfile_EU, WindProfile_NBR
+    from cfdmod.s1.plotting import Languages
+    from cfdmod.s1.profile import EUCat, NBRCat
 
 
 @dataclasses.dataclass(frozen=True)
@@ -185,3 +197,126 @@ def plot_spectrum(
     )
     ax.loglog(spec[f"f ({component})"], spec[f"S ({component})"], lw=1.2)
     return fig
+
+
+# -- code-standard comparison (NBR 6123 / EN 1991-1-4) ---------------------
+
+
+def directional_reference_speed(
+    wind_profile: "WindProfile_NBR | WindProfile_EU",
+    *,
+    height: float,
+    recurrence_period: float = 50,
+    directions: list[float] | None = None,
+    use_kd: bool = False,
+) -> pd.Series:
+    """Design reference speed U_H per wind direction from an analytical profile.
+
+    Thin loop over :meth:`WindProfile_NBR.get_U_H` / :meth:`WindProfile_EU.get_U_H`
+    (built from a ``wind_analysis_{NBR,EU}.csv`` via their ``build`` classmethods).
+    Returns a Series indexed by direction (degrees), sorted ascending; take
+    ``.max()`` for the governing speed.
+    """
+    if directions is None:
+        directions = wind_profile.directional_data["wind_direction"].tolist()
+    speeds = {
+        float(d): float(
+            wind_profile.get_U_H(
+                height=height,
+                direction=float(d),
+                recurrence_period=recurrence_period,
+                use_kd=use_kd,
+            )
+        )
+        for d in directions
+    }
+    return pd.Series(speeds, name="U_H").sort_index()
+
+
+def plot_profile_vs_code(
+    profile: ProfileLine,
+    inflow: InflowData,
+    reference_height: float,
+    *,
+    cat_eu: "EUCat | None" = None,
+    cat_nbr: "NBRCat | None" = None,
+    component: str = "ux",
+    Fr: float = 0.65,
+    language: "Languages" = "pt-br",
+):
+    """Mean velocity + turbulence intensity vs the NBR 6123 / EN 1991-1-4 curves.
+
+    Delegates to :func:`cfdmod.s1.plotting.plot_numerical_and_analytical_vel_profile`,
+    feeding it the simulated profile (mean ``u(z)``, ``Iu(z)`` and ``u_ref`` at
+    ``reference_height``). Returns ``(fig, ax)`` where ``ax`` is the 2-panel array.
+    """
+    from cfdmod.s1.plotting import plot_numerical_and_analytical_vel_profile
+
+    means = calculate_mean_velocity(inflow, for_components=[component])
+    ti = calculate_turbulence_intensity(inflow, for_components=[component])
+    u_num = _profile_series(profile, means, f"{component}_mean")
+    iu_num = _profile_series(profile, ti, f"I_{component}")
+    u_ref = float(np.interp(reference_height, profile.z, u_num))
+    return plot_numerical_and_analytical_vel_profile(
+        z=profile.z,
+        H=reference_height,
+        u_num=u_num,
+        Iu_num=iu_num,
+        u_num_ref=u_ref,
+        cat_eu=cat_eu,
+        cat_nbr=cat_nbr,
+        Fr=Fr,
+        language=language,
+    )
+
+
+def integral_length_scale_profile(
+    inflow: InflowData,
+    profile: ProfileLine,
+    *,
+    component: str = "ux",
+) -> np.ndarray:
+    """Integral length scale at each height of ``profile`` (NaN where unresolved)."""
+    means = calculate_mean_velocity(inflow, for_components=[component])
+    u = _profile_series(profile, means, f"{component}_mean")
+    return np.array(
+        [
+            integral_length_scale(inflow, int(pi), float(um), component=component)
+            for pi, um in zip(profile.point_idx, u)
+        ]
+    )
+
+
+def eu_integral_length_scale(
+    z: np.ndarray,
+    z0: float,
+    *,
+    z_min: float = 1.0,
+) -> np.ndarray:
+    """EN 1991-1-4 (B.1) turbulence length scale L(z) = L_t (z/z_t)^alpha.
+
+    L_t = 300 m, z_t = 200 m, alpha = 0.67 + 0.05 ln(z0); z is floored at
+    ``z_min`` (below which L is held constant, per the code).
+    """
+    z_arr = np.asarray(z, dtype=float)
+    alpha = 0.67 + 0.05 * np.log(z0)
+    return 300.0 * (np.maximum(z_arr, z_min) / 200.0) ** alpha
+
+
+def plot_integral_length_scale(
+    z: np.ndarray,
+    L_num: np.ndarray,
+    H: float,
+    *,
+    L_theory: np.ndarray | None = None,
+    language: "Languages" = "pt-br",
+):
+    """Numerical integral length scale (and optional theory) as L/H vs z/H."""
+    title = {"pt-br": "Escala integral de comprimento", "en": "Integral length scale"}[language]
+    fig, ax = new_axes(xlabel=r"$l_{int} / H$", ylabel="$z / H$", title=title)
+    z_arr = np.asarray(z, dtype=float)
+    ax.plot(np.asarray(L_num, dtype=float) / H, z_arr / H, "-o", ms=3, label="AeroSim")
+    if L_theory is not None:
+        ax.plot(np.asarray(L_theory, dtype=float) / H, z_arr / H, "--k", label="EN 1991-1-4")
+    ax.legend(loc="best", frameon=False)
+    return fig, ax
