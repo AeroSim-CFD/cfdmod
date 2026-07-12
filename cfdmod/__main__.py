@@ -4,6 +4,7 @@ import typer
 from pydantic import ValidationError
 
 from cfdmod.altimetry.cli import app as altimetry_app
+from cfdmod.dynamics.cli import app as dynamics_app
 from cfdmod.loft.cli import app as loft_app
 from cfdmod.recipes import run_yaml
 from cfdmod.regroup.cli import app as regroup_app
@@ -11,6 +12,7 @@ from cfdmod.roughness.cli import app as roughness_app
 
 app = typer.Typer()
 app.add_typer(altimetry_app, name="altimetry")
+app.add_typer(dynamics_app, name="dynamics", help="Convert TQS/Eberick structural exports.")
 app.add_typer(loft_app, name="loft", help="Generate terrain loft surfaces.")
 app.add_typer(
     regroup_app, name="regroup", help="Split/reorder mesh triangles via a grouping chain."

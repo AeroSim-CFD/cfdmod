@@ -77,10 +77,11 @@ of the suite itself. Regenerate the notebooks after editing them with
 
 - Cf/Cm use **explicit reference-area** normalisation (`nominal_area` /
   `nominal_volume`), per the 3.2 decision -- not the legacy per-region
-  bounding-box area, so values differ from the 067 deliverables.
+  bounding-box area, so values differ from the earlier per-region deliverables.
 - Numerical validation currently runs on the in-repo `galpao` / `caarc` /
-  `pitot_inlet` fixtures. Case 067 has config but no raw pressure data on disk;
-  case 063 (Codeme) has real high-rise raw data for a real-case run.
+  `pitot_inlet` fixtures. One real consulting case has config but no raw
+  pressure data on disk; another has real high-rise raw data for an
+  end-to-end run.
 - A YAML-template batch path (`cfdmod run`) exists for Cp/Cf/Cm/Ce, but the
   per-floor Cf template with dynamic dynamic-pressure is a follow-up (templates
   currently bake a fixed scale factor).

@@ -91,6 +91,7 @@ ParaView or pandas.
    Roughness Elements <use_cases/roughness_gen/index.rst>
    Pressure <use_cases/pressure/index.rst>
    Snapshot <use_cases/snapshot/index.rst>
+   Structural Import <use_cases/dynamics/index.rst>
 
 .. toctree::
    :maxdepth: 1

@@ -129,6 +129,10 @@ class BuildingStructuralData(BaseModel):
     cm_positions: Any  # (n_floors, 2) [XR, YR]
     floors_mass: Any  # (n_floors,)
     floors_radius: Any  # (n_floors,)
+    # Non-numeric per-floor metadata carried through for reporting (not used by
+    # the recipe): storey names, plus any extra source columns keyed by name.
+    floor_labels: list[str] | None = None  # (n_floors,) storey names
+    floor_metadata: dict[str, list] | None = None  # column name -> (n_floors,) values
 
     @property
     def n_modes(self) -> int:
@@ -164,6 +168,8 @@ class BuildingStructuralData(BaseModel):
             cm_positions=self.cm_positions,
             floors_mass=np.asarray(self.floors_mass, dtype=np.float64) * mm,
             floors_radius=self.floors_radius,
+            floor_labels=self.floor_labels,
+            floor_metadata=self.floor_metadata,
         )
 
     def to_config(self, damping_ratio: float, **field_names: str):
