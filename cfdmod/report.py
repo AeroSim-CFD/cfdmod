@@ -54,13 +54,45 @@ class DebugWriter:
         return self._resolve(self.deliverables_dir, name)
 
     def savefig(
-        self, fig, name: str, *, deliverable: bool = False, **savefig_kwargs
+        self,
+        fig,
+        name: str,
+        *,
+        deliverable: bool = False,
+        skip_if_exists: bool = False,
+        **savefig_kwargs,
     ) -> pathlib.Path:
-        """Save a matplotlib figure to debug (default) or deliverables, return the path."""
+        """Save a matplotlib figure to debug (default) or deliverables, return the path.
+
+        With ``skip_if_exists`` the write is skipped when the target already
+        exists (idempotent re-runs over an expensive fan-out).
+        """
         path = self.deliverable_path(name) if deliverable else self.debug_path(name)
+        if skip_if_exists and path.exists():
+            return path
         savefig_kwargs.setdefault("bbox_inches", "tight")
         savefig_kwargs.setdefault("dpi", 150)
         fig.savefig(path, **savefig_kwargs)
+        return path
+
+    def save_csv(
+        self,
+        df,
+        name: str,
+        *,
+        deliverable: bool = False,
+        skip_if_exists: bool = False,
+        index: bool = False,
+        **to_csv_kwargs,
+    ) -> pathlib.Path:
+        """Save a DataFrame to debug (default) or deliverables as CSV, return the path.
+
+        ``skip_if_exists`` mirrors :meth:`savefig` for idempotent re-runs.
+        """
+        path = self.deliverable_path(name) if deliverable else self.debug_path(name)
+        if skip_if_exists and path.exists():
+            return path
+        df.to_csv(path, index=index, **to_csv_kwargs)
         return path
 
     @staticmethod
