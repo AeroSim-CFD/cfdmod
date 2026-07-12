@@ -123,7 +123,7 @@ template step by step.
 The Sphinx-bundled `calculate_Cm.ipynb <calculate_Cm.ipynb>`_ notebook
 covers a single body with a fixed lever origin; for the multi-region
 ``region_bbox_corners_xy`` scan and per-container overturning moments,
-see ``notebooks/process_container_pack.ipynb`` in the repository root.
+see ``notebooks/examples/container_pack/process_container_pack.ipynb`` in the repository.
 
 Data format
 ===========

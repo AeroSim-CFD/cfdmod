@@ -102,7 +102,7 @@ or from Python:
 
 The `calculate_Cf.ipynb <calculate_Cf.ipynb>`_ notebook walks through this
 template; a worked example covering Cp, Cf, Cm and Ce together lives at
-``notebooks/process_container_pack.ipynb`` in the repository root.
+``notebooks/examples/container_pack/process_container_pack.ipynb`` in the repository.
 
 Data format
 ===========

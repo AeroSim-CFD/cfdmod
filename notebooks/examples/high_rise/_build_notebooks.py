@@ -1,6 +1,6 @@
 """Generate the high-rise stage notebooks (clean, no stored outputs).
 
-Run: uv run python notebooks/high_rise/_build_notebooks.py
+Run: uv run python notebooks/examples/high_rise/_build_notebooks.py
 Writes 01_inflow, 02_cp, 03_cf, 04_dynamic, 05_facade, 06_structure next to
 this script.
 
@@ -38,7 +38,7 @@ def _find_repo(start: pathlib.Path) -> pathlib.Path:
 
 # pp is a notebook-side package, imported after inserting its dir on sys.path.
 REPO = _find_repo(pathlib.Path.cwd())
-sys.path.insert(0, str(REPO / "notebooks" / "high_rise"))
+sys.path.insert(0, str(REPO / "notebooks" / "examples" / "high_rise"))
 
 import pp  # noqa: E402
 from pp import plotting  # noqa: E402
@@ -47,7 +47,7 @@ plotting.apply_style()
 
 FIX = REPO / "fixtures" / "tests"
 OUTPUT_BASE = pathlib.Path(
-    os.environ.get("CFDMOD_HR_OUTPUT_BASE", REPO / "notebooks" / "high_rise" / "_run")
+    os.environ.get("CFDMOD_HR_OUTPUT_BASE", REPO / "notebooks" / "examples" / "high_rise" / "_run")
 )
 VERSION = os.environ.get("CFDMOD_HR_VERSION", "example")
 print("REPO:", REPO)

@@ -1,6 +1,6 @@
 """Execute the high-rise stage notebooks headless, in order, on fixtures.
 
-Run: uv run python notebooks/high_rise/_validate_notebooks.py
+Run: uv run python notebooks/examples/high_rise/_validate_notebooks.py
 Runs 01 -> ... -> 06 sharing one temp OUTPUT_BASE, asserts each executes without
 error and that the expected debug/deliverable/artifact files are produced. Does
 NOT write outputs back into the committed notebooks.

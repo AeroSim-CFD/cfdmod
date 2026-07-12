@@ -1,6 +1,6 @@
 """Tests for the high-rise ``pp/`` helper package.
 
-Promotes the checks in ``notebooks/high_rise/_validate_pp.py`` into the pytest
+Promotes the checks in ``notebooks/examples/high_rise/_validate_pp.py`` into the pytest
 suite so the notebook-side glue (HighRiseCase + the Cp / per-floor Cf/Cm
 wiring) is covered by CI. The ``pp`` package lives under ``notebooks/`` and is
 not installed, so it is put on the path here.
@@ -17,7 +17,7 @@ import pytest
 pytestmark = pytest.mark.integration
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
-NB = REPO / "notebooks" / "high_rise"
+NB = REPO / "notebooks" / "examples" / "high_rise"
 if str(NB) not in sys.path:
     sys.path.insert(0, str(NB))
 

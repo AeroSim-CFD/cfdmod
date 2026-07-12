@@ -61,8 +61,8 @@ or drive it from Python over any storage backend:
 
 The `calculate_cp.ipynb <calculate_cp.ipynb>`_ notebook walks through this
 template step by step; a fuller end-to-end version (Cp / Cf / Cm / Ce over
-a container pack) lives at ``notebooks/process_container_pack.ipynb`` in
-the repository root.
+a container pack) lives at ``notebooks/examples/container_pack/process_container_pack.ipynb`` in
+the repository.
 
 Data format
 ===========
