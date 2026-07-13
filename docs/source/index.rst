@@ -50,7 +50,7 @@ or in Python, over any storage backend:
 
 Example Cp / Cf / Cm / Ce templates ship under
 ``fixtures/tests/pressure/templates/``. The full worked example lives at
-``notebooks/process_container_pack.ipynb`` in the repository; the
+``examples/container_pack/process_container_pack.ipynb`` in the repository; the
 :doc:`architecture/data_sources` page explains the paradigm end-to-end.
 
 New here? Start with :doc:`getting_started/index` -- install, the files

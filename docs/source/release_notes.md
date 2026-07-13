@@ -222,8 +222,7 @@ symbols exported from the top-level package: `RegroupConfig`,
 `RegroupSpec`, `RegroupIndex`, `BySizeRoundedPerComponent`,
 `build_regroup_mapping`, `build_regrouped_mesh`,
 `apply_regroup_to_timeseries`, `expand_regroup_chain`, `run_regroup`.
-Driven end-to-end from the new `notebooks/regroup_containers.ipynb`,
-which folds slice + per-face aggregation + remesh into a single
+These fold slice + per-face aggregation + remesh into a single
 in-memory pipeline.
 
 ### Remesh module (`cfdmod.remesh`)
@@ -563,7 +562,7 @@ being smuggled into the statistics block:
 
 ### Documentation / tooling
 
-- Top-level `notebooks/process_container_pack.ipynb` is the worked
+- `examples/container_pack/process_container_pack.ipynb` is the worked
   example: reads `bodies.body_cp body.h5` + `points.point_cp ref.h5`
   from the repo root, auto-detects container partition via a >1 m gap
   rule, runs Cp/Cf/Cm end-to-end with `lever_strategy="region_base"`
