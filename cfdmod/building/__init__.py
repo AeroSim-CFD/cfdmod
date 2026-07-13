@@ -23,6 +23,22 @@ from cfdmod.building.modes_report import (
     plot_mode_shape,
     plot_natural_frequencies,
 )
+from cfdmod.building.fanout import (
+    FanoutPlan,
+    StaticCaseKey,
+    build_static_keys,
+    build_static_solve_fn,
+    default_storage_key,
+    dump_provenance,
+    run_fanout,
+)
+from cfdmod.building.loadcases import (
+    directional_envelopes,
+    effective_load_stats,
+    generate_load_cases,
+    invert_load_cases,
+    save_load_case_tables,
+)
 from cfdmod.building.peaks import PeakMethod, gust_peak_factor, peak_value
 from cfdmod.building.pressure import cf_per_floor, cm_per_floor, cp_from_pressure
 
@@ -41,6 +57,18 @@ __all__ = [
     "PeakMethod",
     "gust_peak_factor",
     "peak_value",
+    "directional_envelopes",
+    "effective_load_stats",
+    "generate_load_cases",
+    "invert_load_cases",
+    "save_load_case_tables",
+    "FanoutPlan",
+    "StaticCaseKey",
+    "build_static_keys",
+    "build_static_solve_fn",
+    "default_storage_key",
+    "run_fanout",
+    "dump_provenance",
     "plot_mode_shape",
     "plot_floor_mass",
     "plot_natural_frequencies",
