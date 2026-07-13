@@ -1,28 +1,33 @@
 """Per-floor structural-handoff load-case tables.
 
-Reduces a multi-direction result container (see
-:mod:`cfdmod.dynamics.cases`) into the Fx / Fy / Mz load tables the structural
-engineer applies: for every wind direction the per-floor static-equivalent
-loads are reduced to ``peak`` / ``min`` / ``max`` envelopes, assembled into
-load cases, and written to CSV via :class:`cfdmod.report.DebugWriter`.
+Reduces a multi-direction result container (see :mod:`cfdmod.dynamics.cases`)
+into the two deliverables the structural engineer receives, faithful to the
+consulting ``hfpi_analysis`` notebook:
 
-Open questions (best-guess implementation, flagged for review):
+1. ``effective_load_stats`` -- the per-floor Fx / Fy / Mz tables, one column per
+   wind direction, for ``peak`` / ``min`` / ``max`` (and ``mean``). ``min`` /
+   ``max`` are the signed per-floor effective-load envelopes; ``peak`` is the
+   *governing* envelope (whichever of min / max has the larger mean magnitude
+   per direction / axis -- the notebook's ``r_peak`` selection).
+2. ``generate_load_cases`` + ``invert_load_cases`` -- the Eberick load cases:
+   for each principal axis the critical direction is picked, then the principal
+   sign (max / min) is combined with all four companion-axis sign combinations
+   (the companion-load method). ``invert_load_cases`` reorganises the resulting
+   cases into per-axis DataFrames (it does *not* negate).
 
-- ``effective_load_stats`` takes the *independent* per-axis envelope: each of
-  Fx / Fy / Mz is reduced on its own (the signed time extrema), matching the
-  existing :func:`cfdmod.dynamics.plotting.effective_peak_loads_per_direction`.
-  The source notebook may instead use *concurrent companion loads* (the
-  governing peak on one axis, with the concurrent values on the other two axes
-  at the governing time index). Confirm against the notebook before locking.
-- ``unit_conversion`` defaults to ``1 / 9806.65`` (N -> tonne-force, N.m ->
-  tf.m). The notebook divides by ``9800``; confirm the exact literal and that
-  moments use the same divisor.
+"Effective" loads combine the dynamic static-equivalent loads with the applied
+quasi-static loads (see :func:`cfdmod.dynamics.get_stats_forces_effective`); the
+fan-out driver attaches the applied loads (``fs_*`` / ``ms_z``) so the
+combination happens automatically. ``unit_conversion`` defaults to the exact
+tonne-force divisor ``1 / 9806.65`` (the notebook used a rounded ``9800`` /
+``9806`` -- a 0.07% difference); pass your own to byte-match an old deliverable.
 """
 
 from __future__ import annotations
 
 __all__ = [
     "LoadStat",
+    "directional_envelopes",
     "effective_load_stats",
     "generate_load_cases",
     "invert_load_cases",
@@ -35,7 +40,6 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from cfdmod.building.peaks import PeakMethod, peak_value
 from cfdmod.dynamics.cases import get_stats_forces_effective, join_by_direction
 
 LoadStat = Literal["peak", "min", "max", "mean"]
@@ -48,12 +52,28 @@ _AXES: tuple[str, str, str] = ("x", "y", "z")
 _N_PER_TF = 9806.65
 
 
-def _peak_per_floor(field: np.ndarray, method: PeakMethod, **peak_kwargs) -> np.ndarray:
-    """Design peak of |series| for each floor row of a ``(n_floors, n_t)`` field."""
-    return np.array(
-        [peak_value(row, method, absolute=True, **peak_kwargs) for row in field],
-        dtype=np.float64,
-    )
+def directional_envelopes(
+    container,
+    *,
+    feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
+) -> tuple[dict[str, dict[str, np.ndarray]], dict[str, dict[str, np.ndarray]]]:
+    """Per-direction effective ``max`` / ``min`` envelopes ``{direction: {axis: arr}}``.
+
+    Exactly one case per direction is required; pre-filter the container (e.g.
+    ``cfdmod.dynamics.filter_by_xi``) so each direction maps to a single case.
+    """
+    max_dict: dict[str, dict[str, np.ndarray]] = {}
+    min_dict: dict[str, dict[str, np.ndarray]] = {}
+    for direction, sub in join_by_direction(container).items():
+        if len(sub) != 1:
+            raise ValueError(
+                f"direction {direction} maps to {len(sub)} cases; pre-filter the container "
+                "to a single case per direction (e.g. one xi / recurrence period)"
+            )
+        response = next(iter(sub.values()))
+        max_dict[direction] = get_stats_forces_effective(response, "max", feq_fields=feq_fields)
+        min_dict[direction] = get_stats_forces_effective(response, "min", feq_fields=feq_fields)
+    return max_dict, min_dict
 
 
 def effective_load_stats(
@@ -62,49 +82,41 @@ def effective_load_stats(
     feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
     stats: tuple[LoadStat, ...] = ("peak", "min", "max"),
     unit_conversion: float = 1.0 / _N_PER_TF,
-    peak_method: PeakMethod = "max",
-    peak_kwargs: dict | None = None,
 ) -> dict[str, dict[str, pd.DataFrame]]:
-    """Per-direction, per-floor Fx / Fy / Mz envelopes for each statistic.
-
-    ``container`` maps case parameters (with a ``direction`` attribute) to
-    building-response data sources carrying the static-equivalent floor loads.
-    Exactly one case per direction is required; pre-filter the container (e.g.
-    ``cfdmod.dynamics.filter_by_xi``) so each direction maps to a single case.
+    """Per-direction, per-floor Fx / Fy / Mz effective-load tables per statistic.
 
     Returns ``{stat: {"Fx": df, "Fy": df, "Mz": df}}`` where each frame has
     rows = floors and one column per direction (label ``f"{direction:.1f}"``).
-    ``min`` / ``max`` / ``mean`` are the signed time reductions; ``peak`` is the
-    design peak of the absolute series (``peak_method``). All values scaled by
-    ``unit_conversion``.
+    ``min`` / ``max`` are the signed effective envelopes, ``mean`` the average,
+    and ``peak`` the governing envelope (larger |mean| of min / max per
+    direction / axis). All values scaled by ``unit_conversion``.
     """
-    peak_kwargs = peak_kwargs or {}
+    max_dict, min_dict = directional_envelopes(container, feq_fields=feq_fields)
+    directions = list(max_dict)
+
+    need_mean = "mean" in stats
+    mean_dict: dict[str, dict[str, np.ndarray]] = {}
+    if need_mean:
+        for direction, sub in join_by_direction(container).items():
+            response = next(iter(sub.values()))
+            mean_dict[direction] = get_stats_forces_effective(
+                response, "mean", feq_fields=feq_fields
+            )
+
     tables: dict[str, dict[str, dict[str, np.ndarray]]] = {
         stat: {name: {} for name in _LOAD_NAMES} for stat in stats
     }
-    for direction, sub in join_by_direction(container).items():
-        if len(sub) != 1:
-            raise ValueError(
-                f"direction {direction} maps to {len(sub)} cases; pre-filter the container "
-                "to a single case per direction (e.g. one xi / recurrence period)"
-            )
-        response = next(iter(sub.values()))
+    for direction in directions:
         col = f"{float(direction):.1f}"
-        for stat in stats:
-            if stat == "peak":
-                per_axis = {
-                    name: _peak_per_floor(
-                        np.asarray(response.fields.read(field), dtype=np.float64),
-                        peak_method,
-                        **peak_kwargs,
-                    )
-                    for name, field in zip(_LOAD_NAMES, feq_fields)
-                }
-            else:
-                reduced = get_stats_forces_effective(response, stat, feq_fields=feq_fields)
-                per_axis = {name: reduced[axis] for name, axis in zip(_LOAD_NAMES, _AXES)}
-            for name, arr in per_axis.items():
-                tables[stat][name][col] = arr * unit_conversion
+        for name, axis in zip(_LOAD_NAMES, _AXES):
+            r_max = max_dict[direction][axis]
+            r_min = min_dict[direction][axis]
+            r_peak = r_min if abs(r_min.mean()) > abs(r_max.mean()) else r_max
+            per_stat = {"max": r_max, "min": r_min, "peak": r_peak}
+            if need_mean:
+                per_stat["mean"] = mean_dict[direction][axis]
+            for stat in stats:
+                tables[stat][name][col] = per_stat[stat] * unit_conversion
 
     return {
         stat: {name: pd.DataFrame(cols) for name, cols in loads.items()}
@@ -113,56 +125,55 @@ def effective_load_stats(
 
 
 def generate_load_cases(
-    stats: dict[str, dict[str, pd.DataFrame]],
+    max_dict: dict[str, dict[str, np.ndarray]],
+    min_dict: dict[str, dict[str, np.ndarray]],
     *,
-    senses: tuple[LoadStat, LoadStat] = ("max", "min"),
-) -> pd.DataFrame:
-    """Assemble the envelope tables into a long-form load-case table.
+    unit_conversion: float = 1.0 / _N_PER_TF,
+) -> dict[int, dict[str, np.ndarray]]:
+    """Eberick companion-load cases from the per-direction envelopes.
 
-    One logical load case per (direction, sense); for each floor it carries the
-    concurrent (Fx, Fy, Mz) taken from that sense's envelope. Columns:
-    ``direction``, ``sense``, ``floor``, ``Fx``, ``Fy``, ``Mz``.
-
-    Note: this uses the independent per-axis envelope (each of Fx/Fy/Mz from its
-    own signed extremum). If the notebook uses concurrent companion loads, the
-    per-axis selection changes but the table shape does not.
+    For each principal axis the critical direction is the one with the largest
+    mean ``max`` load; the principal sign (max / min) is then combined with all
+    four companion-axis sign combinations. Returns ``{case_id: {"Fx","Fy","Mz":
+    per-floor array}}`` (loads scaled by ``unit_conversion``). Mirrors the
+    ``hfpi_analysis`` notebook's ``generate_load_cases``.
     """
-    rows: list[dict[str, float | str | int]] = []
-    for sense in senses:
-        if sense not in stats:
-            raise ValueError(f"sense {sense!r} not in stats (have {sorted(stats)})")
-        fx, fy, mz = stats[sense]["Fx"], stats[sense]["Fy"], stats[sense]["Mz"]
-        n_floors = len(fx)
-        for direction in fx.columns:
-            for floor in range(n_floors):
-                rows.append(
-                    {
-                        "direction": float(direction),
-                        "sense": sense,
-                        "floor": floor,
-                        "Fx": float(fx.iloc[floor][direction]),
-                        "Fy": float(fy.iloc[floor][direction]),
-                        "Mz": float(mz.iloc[floor][direction]),
-                    }
+    axes = list(_AXES)
+    companion_combinations = [("max", "max"), ("max", "min"), ("min", "max"), ("min", "min")]
+    picked = {"max": max_dict, "min": min_dict}
+
+    def axis_name(axis: str) -> str:
+        return ("F" + axis) if axis in ("x", "y") else ("M" + axis)
+
+    load_cases: dict[int, dict[str, np.ndarray]] = {}
+    case_id = 0
+    for principal in axes:
+        theta_star = max(max_dict.keys(), key=lambda d: max_dict[d][principal].mean())
+        b, c = [a for a in axes if a != principal]
+        for principal_sign in ("max", "min"):
+            for comb in companion_combinations:
+                load: dict[str, np.ndarray] = {}
+                load[axis_name(principal)] = (
+                    picked[principal_sign][theta_star][principal] * unit_conversion
                 )
-    return pd.DataFrame(rows, columns=["direction", "sense", "floor", "Fx", "Fy", "Mz"])
+                for axis, sign in zip((b, c), comb):
+                    load[axis_name(axis)] = picked[sign][theta_star][axis] * unit_conversion
+                load_cases[case_id] = load
+                case_id += 1
+    return load_cases
 
 
-def invert_load_cases(cases: pd.DataFrame) -> pd.DataFrame:
-    """Sign-flipped companion of each load case (reversed-sense wind).
+def invert_load_cases(cases: dict[int, dict[str, np.ndarray]]) -> dict[str, pd.DataFrame]:
+    """Reorganise load cases into per-axis DataFrames (rows = floors, cols = case).
 
-    Negates Fx / Fy / Mz and tags the sense with a trailing ``_inv``. Applying
-    it twice restores the original loads (``invert(invert(x)) == x`` on the
-    load columns).
+    Mirrors the notebook's ``invert_load_cases`` -- a transpose of
+    ``{case_id: {axis: arr}}`` into ``{axis: DataFrame}``; it does not negate.
     """
-    out = cases.copy()
-    out[["Fx", "Fy", "Mz"]] = -out[["Fx", "Fy", "Mz"]]
-    out["sense"] = (
-        out["sense"]
-        .astype(str)
-        .apply(lambda s: s[: -len("_inv")] if s.endswith("_inv") else s + "_inv")
-    )
-    return out
+    data: dict[str, dict[int, np.ndarray]] = {axis: {} for axis in _LOAD_NAMES}
+    for case_id, load in cases.items():
+        for axis in _LOAD_NAMES:
+            data[axis][case_id] = load[axis]
+    return {axis: pd.DataFrame(data[axis]) for axis in _LOAD_NAMES}
 
 
 def save_load_case_tables(

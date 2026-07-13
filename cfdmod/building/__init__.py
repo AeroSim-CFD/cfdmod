@@ -33,6 +33,7 @@ from cfdmod.building.fanout import (
     run_fanout,
 )
 from cfdmod.building.loadcases import (
+    directional_envelopes,
     effective_load_stats,
     generate_load_cases,
     invert_load_cases,
@@ -56,6 +57,7 @@ __all__ = [
     "PeakMethod",
     "gust_peak_factor",
     "peak_value",
+    "directional_envelopes",
     "effective_load_stats",
     "generate_load_cases",
     "invert_load_cases",

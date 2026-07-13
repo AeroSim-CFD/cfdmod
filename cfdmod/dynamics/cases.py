@@ -208,30 +208,60 @@ def get_max_acceleration_by_recurrence_period(
     }
 
 
+def _combine_effective(dyn: np.ndarray, static: np.ndarray, stats_type: str) -> np.ndarray:
+    """Effective envelope between the dynamic-equivalent and applied-static loads.
+
+    Mirrors the legacy ``get_stats_among_dct``: elementwise ``max`` / ``min`` /
+    ``mean`` of the two reduced per-floor arrays.
+    """
+    if stats_type == "min":
+        return np.minimum(dyn, static)
+    if stats_type == "max":
+        return np.maximum(dyn, static)
+    return 0.5 * (dyn + static)
+
+
 def get_stats_forces_effective(
     response: PointsDataSource,
     stats_type: StatType,
     *,
     feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
+    static_fields: tuple[str, str, str] | None = ("fs_x", "fs_y", "ms_z"),
 ) -> dict[str, np.ndarray]:
-    """Per-floor ``min`` / ``max`` / ``mean`` of the static-equivalent loads.
+    """Per-floor ``min`` / ``max`` / ``mean`` of the *effective* floor loads.
 
     Reduces the three static-equivalent floor-load fields
     (``feq_x`` / ``feq_y`` / ``meq_z``, each ``(n_floors, n_t)``) over time and
     returns per-floor arrays keyed ``{"x", "y", "z"}``. ``min`` / ``max`` are the
     signed time extrema (the two load envelopes), ``mean`` the time average --
-    not absolute values, so the sign of the governing load is preserved for the
-    downstream load-case tables.
+    not absolute values, so the sign of the governing load is preserved.
+
+    "Effective" (per the legacy ``get_stats_forces_effective``) is the envelope
+    *between* the dynamic static-equivalent loads and the quasi-static applied
+    floor loads: when ``response`` also carries the applied-static fields
+    (``static_fields``, default ``fs_x`` / ``fs_y`` / ``ms_z`` -- attached by the
+    fan-out driver), each per-floor stat is combined elementwise with the applied
+    load (``max`` -> ``np.maximum``, ``min`` -> ``np.minimum``, ``mean`` ->
+    average). With no applied-static fields present it reduces the dynamic
+    static-equivalent loads alone. Pass ``static_fields=None`` to force that.
     """
     reducer = _STAT_REDUCERS.get(stats_type)
     if reducer is None:
         raise ValueError(f"unknown stats_type {stats_type!r}; expected min / max / mean")
-    fx, fy, mz = feq_fields
-    return {
-        "x": reducer(np.asarray(response.fields.read(fx), dtype=np.float64)),
-        "y": reducer(np.asarray(response.fields.read(fy), dtype=np.float64)),
-        "z": reducer(np.asarray(response.fields.read(mz), dtype=np.float64)),
-    }
+
+    def reduce_fields(fields: tuple[str, str, str]) -> dict[str, np.ndarray]:
+        fx, fy, mz = fields
+        return {
+            "x": reducer(np.asarray(response.fields.read(fx), dtype=np.float64)),
+            "y": reducer(np.asarray(response.fields.read(fy), dtype=np.float64)),
+            "z": reducer(np.asarray(response.fields.read(mz), dtype=np.float64)),
+        }
+
+    dyn = reduce_fields(feq_fields)
+    if static_fields is not None and all(f in response.field_names for f in static_fields):
+        static = reduce_fields(static_fields)
+        return {axis: _combine_effective(dyn[axis], static[axis], stats_type) for axis in dyn}
+    return dyn
 
 
 def get_global_peaks_by_direction(

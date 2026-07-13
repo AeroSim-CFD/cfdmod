@@ -134,16 +134,32 @@ def build_static_keys(plan: FanoutPlan) -> list[StaticCaseKey]:
     ]
 
 
-def default_storage_key(kind: str, key: StaticCaseKey) -> str:
-    """Default ``(direction, body)`` -> storage key template.
+# Default storage-key templates. The real consulting layout encodes the
+# direction in a case-name directory and nests the body under a probe path, e.g.
+#   body:  "ClementePereira_{direction}/000/probes/hist_series/cp_analysis_{body}/bodies.{body}"
+#   p_ref: "ClementePereira_{direction}/000/probes/hist_series/cp_analysis_{body}/points.point0"
+# so the template is genuinely case-specific -- pass your own to
+# ``build_static_solve_fn``. The defaults below are the minimal (direction, body)
+# form. Placeholders: {direction} {body} {cp_config}.
+DEFAULT_BODY_KEY = "{direction}/bodies.{body}"
+DEFAULT_PREF_KEY = "{direction}/points.point0"
 
-    ``kind`` is ``"body"`` or ``"p_ref"``. Override via ``build_static_solve_fn``'s
-    ``key_for`` to match a different on-disk layout.
+
+def default_storage_key(kind: str, key: StaticCaseKey) -> str:
+    """Default ``(direction, body)`` -> storage key (the minimal template form).
+
+    ``kind`` is ``"body"`` or ``"p_ref"``. Real cases have a nested, case-named
+    layout -- pass ``body_key_template`` / ``pref_key_template`` (or a full
+    ``key_for``) to :func:`build_static_solve_fn` to match it.
     """
     if kind == "body":
-        return f"{key.direction}/bodies.{key.body}"
+        return DEFAULT_BODY_KEY.format(
+            direction=key.direction, body=key.body, cp_config=key.cp_config
+        )
     if kind == "p_ref":
-        return f"{key.direction}/points.static_pressure"
+        return DEFAULT_PREF_KEY.format(
+            direction=key.direction, body=key.body, cp_config=key.cp_config
+        )
     raise ValueError(f"unknown storage key kind {kind!r}")
 
 
@@ -157,15 +173,28 @@ def build_static_solve_fn(
     damping_ratio: float = 0.02,
     point: tuple[float, float] = (0.0, 0.0),
     cp_statistics: list[str] | None = None,
-    key_for: Callable[[str, StaticCaseKey], str] = default_storage_key,
+    body_key_template: str = DEFAULT_BODY_KEY,
+    pref_key_template: str = DEFAULT_PREF_KEY,
+    key_for: Callable[[str, StaticCaseKey], str] | None = None,
 ) -> Callable[[StaticCaseKey], PointsDataSource]:
     """Build the default per-key pipeline: storage -> Cp -> Cf/Cm -> response.
 
     Returns a ``solve_fn(key) -> response`` (a floor ``PointsDataSource`` carrying
-    ``feq_*`` / ``meq_z`` and ``acc_*`` / ``acc_mag``) ready for ``run_fanout``.
-    Reads its body / reference pressure from ``storage`` inside the call so it
-    stays picklable for a multiprocessing ``Pool``.
+    ``feq_*`` / ``meq_z``, ``acc_*`` / ``acc_mag`` and the applied-static floor
+    loads ``fs_x`` / ``fs_y`` / ``ms_z`` so downstream *effective* stats can
+    combine them). Reads its body / reference pressure from ``storage`` inside the
+    call so it stays picklable for a multiprocessing ``Pool``.
+
+    The ``(direction, body)`` -> storage-key mapping is case-specific: pass
+    ``body_key_template`` / ``pref_key_template`` (``str.format`` templates with
+    ``{direction}`` / ``{body}`` / ``{cp_config}`` placeholders) or a full
+    ``key_for(kind, key)`` override.
     """
+    if key_for is None:
+
+        def key_for(kind: str, key: StaticCaseKey) -> str:
+            template = body_key_template if kind == "body" else pref_key_template
+            return template.format(direction=key.direction, body=key.body, cp_config=key.cp_config)
 
     def solve_fn(key: StaticCaseKey) -> PointsDataSource:
         body = storage.read_data_source(key_for("body", key))
@@ -180,7 +209,14 @@ def build_static_solve_fn(
             else example_building_structure(case, load.n_elements)
         )
         response = solve_building_response(load, struct, damping_ratio=damping_ratio)
-        return floor_accelerations(response, struct, point=point)
+        result = floor_accelerations(response, struct, point=point)
+        # attach the applied-static floor loads so get_stats_forces_effective /
+        # effective_load_stats combine them with the dynamic static-equivalent
+        return (
+            result.with_field("fs_x", load.fields.read("cf_x"))
+            .with_field("fs_y", load.fields.read("cf_y"))
+            .with_field("ms_z", load.fields.read("cm_z"))
+        )
 
     return solve_fn
 
