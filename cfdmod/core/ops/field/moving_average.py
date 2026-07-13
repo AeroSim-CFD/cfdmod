@@ -68,10 +68,10 @@ def _convolve_rows(data: np.ndarray, n: int) -> np.ndarray:
     """
     if n == 1:
         return data
-    kernel = np.ones(n, dtype=np.float64) / n
+    kernel = np.ones(n, dtype=data.dtype) / n
     pad = n // 2
     padded = np.pad(data, ((0, 0), (pad, pad)), mode="edge")
-    out = np.empty_like(data, dtype=np.float64)
+    out = np.empty_like(data)
     for i in range(data.shape[0]):
         out[i, :] = np.convolve(padded[i, :], kernel, mode="valid")
     return out
@@ -89,7 +89,7 @@ def moving_average(ds: DataSource, p: MovingAverageParams) -> DataSource:
     dt = float(ds.time.timestep_size)
     n = window_in_samples(p.window, dt)
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     if arr.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"

@@ -60,7 +60,7 @@ def _first_derivative(arr: np.ndarray, dt: float) -> np.ndarray:
 
     ``arr`` shape ``(n_elements, n_timesteps)``; derivative along axis 1.
     """
-    out = np.zeros_like(arr, dtype=np.float64)
+    out = np.zeros_like(arr)
     out[:, 1:] = (arr[:, 1:] - arr[:, :-1]) / dt
     out[:, 0] = (arr[:, 1] - arr[:, 0]) / dt
     return out
@@ -68,7 +68,7 @@ def _first_derivative(arr: np.ndarray, dt: float) -> np.ndarray:
 
 def _second_derivative(arr: np.ndarray, dt: float) -> np.ndarray:
     """Central difference interior, one-sided three-point at the edges."""
-    out = np.zeros_like(arr, dtype=np.float64)
+    out = np.zeros_like(arr)
     out[:, 1:-1] = (arr[:, 2:] - 2 * arr[:, 1:-1] + arr[:, :-2]) / dt**2
     out[:, 0] = (arr[:, 2] - 2 * arr[:, 1] + arr[:, 0]) / dt**2
     out[:, -1] = (arr[:, -1] - 2 * arr[:, -2] + arr[:, -3]) / dt**2
@@ -86,7 +86,7 @@ def derivative(ds: DataSource, p: DerivativeParams) -> DataSource:
         )
 
     dt = float(ds.time.timestep_size)
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     if arr.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"

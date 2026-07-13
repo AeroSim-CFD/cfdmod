@@ -69,13 +69,12 @@ def moment_contribution(ds: DataSource, p: MomentContributionParams) -> DataSour
             "attach centroids with mesh_attach first."
         )
 
-    centroids = ds.elements.position
-    r = centroids - np.asarray(p.lever_origin, dtype=np.float64)[None, :]
-
-    cf_arrays = {
-        d: np.asarray(ds.fields.read(f"{p.in_prefix}_{d}"), dtype=np.float64)
-        for d in ("x", "y", "z")
-    }
+    # Follow the Cf fields' dtype (see force_contribution) so float32 forces stay
+    # float32 through the moment; cast the lever arm to match.
+    cf_arrays = {d: np.asarray(ds.fields.read(f"{p.in_prefix}_{d}")) for d in ("x", "y", "z")}
+    dt = cf_arrays["x"].dtype
+    centroids = np.asarray(ds.elements.position, dtype=dt)
+    r = centroids - np.asarray(p.lever_origin, dtype=dt)[None, :]
 
     # Undo Cf's nominal-area normalisation -> per-element force.
     fx = cf_arrays["x"] * p.nominal_area

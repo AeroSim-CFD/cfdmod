@@ -64,9 +64,12 @@ All reusable logic lives in the cfdmod library (nothing is high-rise-specific):
 - `cfdmod.building` -- `BuildingCase` (aggregate `case_data`; derive dynamic
   pressure; `with_reference_velocity(u_ref)`), `example_building_case(mesh)`,
   `cp_from_pressure`, `cf_per_floor` / `cm_per_floor` (explicit reference-area
-  normalisation), and the dynamic-response wiring (`floor_load_source`,
-  `example_building_structure` / `structure_from_csvs`, `solve_building_response`,
-  `floor_accelerations`, `peak_response_table`).
+  normalisation), `cf_cm_per_floor` (both from a single force pass),
+  `per_floor_loads` (memory-bounded: fused `Cp -> Cf/Cm` straight from body +
+  reference pressure, time-chunked via `chunk_size`), and the dynamic-response
+  wiring (`floor_load_source`, `example_building_structure` /
+  `structure_from_csvs`, `solve_building_response`, `floor_accelerations`,
+  `peak_response_table`).
 - `cfdmod.report.DebugWriter` -- versioned `debug/` + `deliverables/` paths.
 - `cfdmod.inflow_report` -- vertical-profile detection + validation figures.
 - `cfdmod.mesh_field` -- `facade_groups`, `triangle_field_figure`,
@@ -83,6 +86,16 @@ of the suite itself. Regenerate the notebooks after editing them with
 - Cf/Cm use **explicit reference-area** normalisation (`nominal_area` /
   `nominal_volume`), per the 3.2 decision -- not the legacy per-region
   bounding-box area, so values differ from the earlier per-region deliverables.
+- **Per-floor partition defaults to `centroid`** (whole-triangle assignment,
+  bounded memory, matching the v2 sub-body grouping). `face_cut` (exact triangle
+  slicing) fragments the mesh and is far heavier -- opt in only for small cases.
+- **Memory at production size:** compute per-floor loads with
+  `per_floor_loads(body, p_ref, mesh, case, chunk_size=...)`. It streams the
+  `Cp -> force -> moment -> per-floor sum` chain over time windows so the full
+  `(n_triangles, n_timesteps)` arrays never materialise at once (peak
+  `O(n_triangles * chunk_size)`), and computes in float32 by default. A real
+  ~35k-triangle x ~29k-step direction runs in ~11 GiB peak this way instead of
+  tens of GiB.
 - Numerical validation currently runs on the in-repo `galpao` / `caarc` /
   `pitot_inlet` fixtures. One real consulting case has config but no raw
   pressure data on disk; another has real high-rise raw data for an

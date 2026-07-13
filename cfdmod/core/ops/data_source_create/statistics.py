@@ -99,7 +99,7 @@ def compute_statistics(ds: DataSource, p: StatisticsParams) -> DataSource:
     if ds.time.is_time_aggregated:
         raise ValueError("compute_statistics requires a time-resolved data source")
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     if arr.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"

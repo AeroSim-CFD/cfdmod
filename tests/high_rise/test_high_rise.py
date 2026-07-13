@@ -146,6 +146,64 @@ def test_from_case_data_falls_back_to_yaml_when_alturas_empty(tmp_path):
     assert case2.floor_heights == [0.0, 50.0]
 
 
+@pytest.fixture(scope="module")
+def body_ref():
+    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
+
+    storage = XdmfH5Storage(DATA)
+    body = storage.read_data_source(pathlib.Path("bodies.galpao"))
+    p_ref = storage.read_data_source(pathlib.Path("points.static_pressure"))
+    return body, p_ref
+
+
+def test_cf_cm_per_floor_matches_separate(cp_ds, galpao_case):
+    """The fused single-force-pass Cf/Cm equals the separate cf_/cm_per_floor."""
+    cf, cm = building.cf_cm_per_floor(
+        cp_ds, MESH, galpao_case, cf_directions=("x", "y"), cm_directions=("z",)
+    )
+    cf_ref = building.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x", "y"))
+    cm_ref = building.cm_per_floor(cp_ds, MESH, galpao_case, directions=("z",))
+    for f in ("cf_x", "cf_y"):
+        np.testing.assert_allclose(cf.fields.read(f), cf_ref.fields.read(f))
+    np.testing.assert_allclose(cm.fields.read("cm_z"), cm_ref.fields.read("cm_z"))
+
+
+def test_per_floor_loads_whole_matches_fused(body_ref, galpao_case):
+    """per_floor_loads (whole-series) == cp_from_pressure -> cf_cm_per_floor.
+
+    Mirror per_floor_loads' float32 source cast in the reference so the two
+    compute in the same precision and the equality is exact.
+    """
+    body, p_ref = body_ref
+    cf, cm = building.per_floor_loads(body, p_ref, MESH, galpao_case)
+
+    def _f32(ds):
+        return ds.with_field("pressure", np.asarray(ds.fields.read("pressure"), dtype="float32"))
+
+    cp = building.cp_from_pressure(_f32(body), _f32(p_ref), galpao_case)
+    cf_ref, cm_ref = building.cf_cm_per_floor(cp, MESH, galpao_case)
+    np.testing.assert_allclose(cf.fields.read("cf_x"), cf_ref.fields.read("cf_x"))
+    np.testing.assert_allclose(cm.fields.read("cm_z"), cm_ref.fields.read("cm_z"))
+
+
+@pytest.mark.parametrize("chunk", [1, 2, 3, 5])
+def test_per_floor_loads_chunk_parity(body_ref, galpao_case, chunk):
+    """Time-chunked per_floor_loads matches the whole-series result.
+
+    Per-timestep values are computed identically regardless of windowing; the
+    only difference is float32 summation-order rounding across window shapes
+    (~1 ULP), hence the float32-appropriate tolerance rather than exact equality.
+    """
+    body, p_ref = body_ref
+    cf_w, cm_w = building.per_floor_loads(body, p_ref, MESH, galpao_case, chunk_size=None)
+    cf_c, cm_c = building.per_floor_loads(body, p_ref, MESH, galpao_case, chunk_size=chunk)
+    assert cf_c.time.n_timesteps == cf_w.time.n_timesteps
+    kw = dict(rtol=1e-4, atol=1e-6)
+    np.testing.assert_allclose(cf_c.fields.read("cf_x"), cf_w.fields.read("cf_x"), **kw)
+    np.testing.assert_allclose(cf_c.fields.read("cf_y"), cf_w.fields.read("cf_y"), **kw)
+    np.testing.assert_allclose(cm_c.fields.read("cm_z"), cm_w.fields.read("cm_z"), **kw)
+
+
 def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
     """Both methods integrate the same whole body, so the total over floors matches.
 

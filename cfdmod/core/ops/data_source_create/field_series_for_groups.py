@@ -62,7 +62,7 @@ def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> Gr
         raise ValueError("field_series_for_groups requires a triangle (surface) parent")
 
     grouping = ds.groupings[p.grouping]
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     weights = ds.elements.area
 
     group_ids = groups_in(grouping)
@@ -71,7 +71,11 @@ def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> Gr
     is_time = arr.ndim == 2
     n_t = arr.shape[1] if is_time else 0
 
-    out_arr = np.zeros((n_groups, n_t)) if is_time else np.zeros(n_groups)
+    out_arr = (
+        np.zeros((n_groups, n_t), dtype=arr.dtype)
+        if is_time
+        else np.zeros(n_groups, dtype=arr.dtype)
+    )
     for row, gid in enumerate(group_ids):
         members = np.flatnonzero(grouping.indices == gid)
         out_arr[row] = aggregate_rows(arr, members, p.agg, weights)

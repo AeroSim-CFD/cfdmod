@@ -74,7 +74,7 @@ def probe_extraction(ds: DataSource, p: ProbeExtractionParams) -> PointsDataSour
     if probes.ndim != 2 or probes.shape[1] != 3:
         raise ValueError(f"probes must have shape (n_probes, 3); got {probes.shape}")
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     is_time = arr.ndim == 2
 
     if p.mode == "nearest":
@@ -87,7 +87,7 @@ def probe_extraction(ds: DataSource, p: ProbeExtractionParams) -> PointsDataSour
         if is_time:
             n_probes = probes.shape[0]
             n_t = arr.shape[1]
-            sub = np.empty((n_probes, n_t), dtype=np.float64)
+            sub = np.empty((n_probes, n_t), dtype=arr.dtype)
             for t in range(n_t):
                 sub[:, t] = np.interp(target_z, z_sorted, arr[order, t])
         else:
