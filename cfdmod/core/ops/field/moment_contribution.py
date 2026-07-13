@@ -51,6 +51,7 @@ class MomentContributionParams(OpParams):
     directions: list[Literal["x", "y", "z"]] = ["x", "y", "z"]
     in_prefix: str = "cf"
     out_prefix: str = "cm"
+    compute_dtype: Literal["float32", "float64"] = "float64"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
     requires_element_meta: ClassVar[frozenset[str]] = frozenset({"position"})
@@ -69,12 +70,12 @@ def moment_contribution(ds: DataSource, p: MomentContributionParams) -> DataSour
             "attach centroids with mesh_attach first."
         )
 
-    centroids = ds.elements.position
-    r = centroids - np.asarray(p.lever_origin, dtype=np.float64)[None, :]
+    dt = np.dtype(p.compute_dtype)
+    centroids = np.asarray(ds.elements.position, dtype=dt)
+    r = centroids - np.asarray(p.lever_origin, dtype=dt)[None, :]
 
     cf_arrays = {
-        d: np.asarray(ds.fields.read(f"{p.in_prefix}_{d}"), dtype=np.float64)
-        for d in ("x", "y", "z")
+        d: np.asarray(ds.fields.read(f"{p.in_prefix}_{d}"), dtype=dt) for d in ("x", "y", "z")
     }
 
     # Undo Cf's nominal-area normalisation -> per-element force.

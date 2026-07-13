@@ -81,9 +81,11 @@ def test_face_cut_conserves_total_force(cp_ds, galpao_case):
     whole = galpao_case.model_copy(update={"floor_heights": [zmin, zmax + 1e-6]})
 
     per_floor = building.cf_per_floor(
-        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut"
+        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut", compute_dtype="float64"
     )
-    single = building.cf_per_floor(cp_ds, MESH, whole, directions=("x",), method="face_cut")
+    single = building.cf_per_floor(
+        cp_ds, MESH, whole, directions=("x",), method="face_cut", compute_dtype="float64"
+    )
 
     total_per_floor = per_floor.fields.read("cf_x").sum(axis=0)
     total_single = single.fields.read("cf_x").sum(axis=0)
@@ -169,10 +171,18 @@ def test_cf_cm_per_floor_matches_separate(cp_ds, galpao_case):
 
 
 def test_per_floor_loads_whole_matches_fused(body_ref, galpao_case):
-    """per_floor_loads (whole-series) == cp_from_pressure -> cf_cm_per_floor."""
+    """per_floor_loads (whole-series) == cp_from_pressure -> cf_cm_per_floor.
+
+    Mirror per_floor_loads' float32 source cast in the reference so the two
+    compute in the same precision and the equality is exact.
+    """
     body, p_ref = body_ref
     cf, cm = building.per_floor_loads(body, p_ref, MESH, galpao_case)
-    cp = building.cp_from_pressure(body, p_ref, galpao_case)
+
+    def _f32(ds):
+        return ds.with_field("pressure", np.asarray(ds.fields.read("pressure"), dtype="float32"))
+
+    cp = building.cp_from_pressure(_f32(body), _f32(p_ref), galpao_case)
     cf_ref, cm_ref = building.cf_cm_per_floor(cp, MESH, galpao_case)
     np.testing.assert_allclose(cf.fields.read("cf_x"), cf_ref.fields.read("cf_x"))
     np.testing.assert_allclose(cm.fields.read("cm_z"), cm_ref.fields.read("cm_z"))
@@ -196,8 +206,12 @@ def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
     Per-floor distributions differ (that is the point of face_cut), but the sum
     across all floors is the same whole-body force for either partition.
     """
-    fc = building.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
-    ct = building.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="centroid")
+    fc = building.cf_per_floor(
+        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut", compute_dtype="float64"
+    )
+    ct = building.cf_per_floor(
+        cp_ds, MESH, galpao_case, directions=("x",), method="centroid", compute_dtype="float64"
+    )
     np.testing.assert_allclose(
         fc.fields.read("cf_x").sum(axis=0),
         ct.fields.read("cf_x").sum(axis=0),
