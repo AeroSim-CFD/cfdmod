@@ -300,6 +300,169 @@ outputs back into a fresh ``LnasFormat`` (same surface names,
 
 .. autofunction:: cfdmod.remesh_per_group
 
+Regroup (disk regroup pipeline)
+===============================
+
+``cfdmod.regroup`` takes a geometry plus a per-triangle HDF5 timeseries,
+applies a chain of triangle-grouping specs, and writes two aligned outputs: a
+new ``LnasFormat`` mesh with one named surface per group, and a new HDF5
+timeseries whose columns line up with the new triangle order (or are
+area-weighted aggregates per group). It reuses the grouping kinds above and
+adds one regroup-local spec that fans out per-component target-size
+subdivisions. Runnable as ``python -m cfdmod.regroup``.
+
+.. autoclass:: cfdmod.RegroupConfig
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.BySizeRoundedPerComponent
+   :members:
+   :show-inheritance:
+
+.. autofunction:: cfdmod.build_regroup_mapping
+
+.. autofunction:: cfdmod.build_regrouped_mesh
+
+.. autofunction:: cfdmod.apply_regroup_to_timeseries
+
+.. autofunction:: cfdmod.expand_regroup_chain
+
+.. autofunction:: cfdmod.run_regroup
+
+Building wind-load post-processing
+==================================
+
+``cfdmod.building`` turns a pressure timeseries on a building surface into
+the engineering deliverables of a wind study: per-floor force and moment
+coefficients, the modal dynamic response, occupant-comfort accelerations,
+design load cases, and a multi-direction / multi-body fan-out driver. It
+composes the v3 recipes and ops; nothing here is high-rise-specific -- the
+same helpers serve low-rise studies. Import from the sub-package::
+
+    from cfdmod.building import BuildingCase, cf_per_floor, solve_building_response
+
+Case aggregation
+----------------
+
+.. autoclass:: cfdmod.building.BuildingCase
+   :members:
+   :show-inheritance:
+
+.. autofunction:: cfdmod.building.cp_from_pressure
+
+Per-floor coefficients
+----------------------
+
+.. autofunction:: cfdmod.building.cf_per_floor
+
+.. autofunction:: cfdmod.building.cm_per_floor
+
+Peak statistics
+---------------
+
+The peak of a fluctuating series is taken by one of three selectable
+methods (raw maximum, gust peak-factor, or a Gumbel fit).
+
+.. autofunction:: cfdmod.building.gust_peak_factor
+
+.. autofunction:: cfdmod.building.peak_value
+
+Dynamic response
+----------------
+
+.. autofunction:: cfdmod.building.solve_building_response
+
+.. autofunction:: cfdmod.building.floor_accelerations
+
+.. autofunction:: cfdmod.building.peak_response_table
+
+Occupant comfort
+----------------
+
+Peak top-floor accelerations are checked against the comfort limits of
+three standards -- NBR 6123, Melbourne (1992) and the NBCC.
+``comfort_limit`` dispatches on the selected standard and occupancy;
+the per-standard helpers are also exposed directly.
+
+.. autofunction:: cfdmod.building.comfort_limit
+
+.. autofunction:: cfdmod.building.nbr6123_acceleration_limit
+
+.. autofunction:: cfdmod.building.melbourne1992_acceleration_limit
+
+.. autofunction:: cfdmod.building.nbcc_acceleration_limit
+
+Design load cases
+-----------------
+
+.. autofunction:: cfdmod.building.generate_load_cases
+
+.. autofunction:: cfdmod.building.save_load_case_tables
+
+Multi-direction fan-out
+-----------------------
+
+A single driver runs the whole per-floor / dynamic / comfort chain over
+every (direction, body, config) combination of a parametric study.
+
+.. autoclass:: cfdmod.building.FanoutPlan
+   :members:
+   :show-inheritance:
+
+.. autofunction:: cfdmod.building.run_fanout
+
+Structural model import (dynamics)
+==================================
+
+The building dynamic-response recipe needs a modal model of the structure
+-- per-floor mass, polar inertia, centre of mass, natural periods and the
+per-floor mode shapes. ``cfdmod.dynamics`` reads that model out of the
+structural engineer's design software (TQS, Eberick) and converts it to the
+internal :class:`~cfdmod.dynamics.structural.BuildingStructuralData`. See
+:doc:`use_cases/dynamics/index` for the supported file formats and the
+conversion in detail. ::
+
+    from cfdmod.dynamics import read_tqs_portels, read_tqs_portico, read_eberick
+
+Structural model
+----------------
+
+.. autoclass:: cfdmod.dynamics.structural.BuildingStructuralData
+   :members:
+   :show-inheritance:
+
+Importers
+---------
+
+.. autofunction:: cfdmod.dynamics.read_tqs_portels
+
+.. autofunction:: cfdmod.dynamics.read_tqs_portico
+
+.. autofunction:: cfdmod.dynamics.read_eberick
+
+Conversion
+----------
+
+.. autofunction:: cfdmod.dynamics.imports.aggregate_to_building
+
+.. autoclass:: cfdmod.dynamics.imports.EberickUnits
+   :members:
+   :show-inheritance:
+
+Analytical wind profiles
+========================
+
+Code-based mean-velocity profiles :math:`U(z)` for reference and inflow
+target curves.
+
+.. autoclass:: cfdmod.WindProfile_NBR
+   :members:
+   :show-inheritance:
+
+.. autoclass:: cfdmod.WindProfile_EU
+   :members:
+   :show-inheritance:
+
 Notebook utilities
 ==================
 
