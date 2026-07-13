@@ -110,25 +110,55 @@ def _sum_per_floor(ds: DataSource, fields: list[str]) -> GroupsDataSource:
     return result
 
 
+def _attach_and_partition(
+    cp_ds: DataSource, mesh_path: str, case: BuildingCase, method: FloorMethod
+) -> DataSource:
+    """mesh_attach + per-floor partition, shared by the Cf / Cm recipes.
+
+    ``face_cut`` returns a fragmented surface with fragment areas/normals;
+    ``centroid`` attaches a grouping to the mesh-attached surface. Either way the
+    result is ready for :func:`force_contribution`.
+    """
+    ds = mesh_attach(cp_ds, MeshAttachParams(mesh=mesh_path))
+    return _partition_floors(ds, mesh_path, case, method)
+
+
+def _force(ds: DataSource, case: BuildingCase, directions: list[str]) -> DataSource:
+    return force_contribution(
+        ds, ForceContributionParams(nominal_area=case.nominal_area, directions=directions)
+    )
+
+
+def _moment(ds: DataSource, case: BuildingCase, directions: list[str]) -> DataSource:
+    return moment_contribution(
+        ds,
+        MomentContributionParams(
+            lever_origin=tuple(case.lever_origin),
+            nominal_area=case.nominal_area,
+            nominal_volume=case.nominal_volume,
+            directions=directions,
+        ),
+    )
+
+
 def cf_per_floor(
     cp_ds: DataSource,
     mesh_path: str,
     case: BuildingCase,
     *,
     directions: tuple[str, ...] = ("x", "y"),
-    method: FloorMethod = "face_cut",
+    method: FloorMethod = "centroid",
 ) -> GroupsDataSource:
     """Per-floor force coefficients cf_<dir>, one row per floor slice.
 
-    With ``method="face_cut"`` (default) a triangle straddling a floor boundary
-    contributes its exact partial area to each floor; ``method="centroid"`` uses
-    the faster whole-triangle centroid assignment.
+    ``method="centroid"`` (default) assigns each whole triangle to a floor by its
+    centroid -- fast, bounded memory, and matching the v2 sub-body grouping.
+    ``method="face_cut"`` slices triangles at the floor edges for an exact
+    partial-area split, but fragments the mesh (much heavier); prefer centroid at
+    production sizes. See :func:`cf_cm_per_floor` when you need both Cf and Cm.
     """
-    ds = mesh_attach(cp_ds, MeshAttachParams(mesh=mesh_path))
-    ds = _partition_floors(ds, mesh_path, case, method)
-    ds = force_contribution(
-        ds, ForceContributionParams(nominal_area=case.nominal_area, directions=list(directions))
-    )
+    ds = _attach_and_partition(cp_ds, mesh_path, case, method)
+    ds = _force(ds, case, list(directions))
     return _sum_per_floor(ds, [f"cf_{d}" for d in directions])
 
 
@@ -138,25 +168,87 @@ def cm_per_floor(
     case: BuildingCase,
     *,
     directions: tuple[str, ...] = ("z",),
-    method: FloorMethod = "face_cut",
+    method: FloorMethod = "centroid",
 ) -> GroupsDataSource:
     """Per-floor moment coefficients cm_<dir> about the case lever origin.
 
     See :func:`cf_per_floor` for the ``method`` trade-off.
     """
-    ds = mesh_attach(cp_ds, MeshAttachParams(mesh=mesh_path))
-    ds = _partition_floors(ds, mesh_path, case, method)
+    ds = _attach_and_partition(cp_ds, mesh_path, case, method)
     # moment_contribution reads all three force components, so produce them all.
-    ds = force_contribution(
-        ds, ForceContributionParams(nominal_area=case.nominal_area, directions=["x", "y", "z"])
-    )
-    ds = moment_contribution(
-        ds,
-        MomentContributionParams(
-            lever_origin=tuple(case.lever_origin),
-            nominal_area=case.nominal_area,
-            nominal_volume=case.nominal_volume,
-            directions=list(directions),
-        ),
-    )
+    ds = _force(ds, case, ["x", "y", "z"])
+    ds = _moment(ds, case, list(directions))
     return _sum_per_floor(ds, [f"cm_{d}" for d in directions])
+
+
+def cf_cm_per_floor(
+    cp_ds: DataSource,
+    mesh_path: str,
+    case: BuildingCase,
+    *,
+    cf_directions: tuple[str, ...] = ("x", "y"),
+    cm_directions: tuple[str, ...] = ("z",),
+    method: FloorMethod = "centroid",
+) -> tuple[GroupsDataSource, GroupsDataSource]:
+    """Per-floor Cf and Cm from a **single** mesh-attach + partition + force pass.
+
+    Computing Cf and Cm separately (``cf_per_floor`` + ``cm_per_floor``) runs the
+    heavy ``mesh_attach`` + partition + ``force_contribution`` twice. When both
+    are needed -- the normal high-rise case -- this fuses them: the three force
+    components are computed once and reused for the Cf sums and the moment.
+    Returns ``(cf, cm)``.
+    """
+    ds = _attach_and_partition(cp_ds, mesh_path, case, method)
+    ds = _force(ds, case, ["x", "y", "z"])
+    cf = _sum_per_floor(ds, [f"cf_{d}" for d in cf_directions])
+    ds = _moment(ds, case, list(cm_directions))
+    cm = _sum_per_floor(ds, [f"cm_{d}" for d in cm_directions])
+    return cf, cm
+
+
+def per_floor_loads(
+    body: DataSource,
+    p_ref,
+    mesh_path: str,
+    case: BuildingCase,
+    *,
+    cf_directions: tuple[str, ...] = ("x", "y"),
+    cm_directions: tuple[str, ...] = ("z",),
+    method: FloorMethod = "centroid",
+    chunk_size: int | None = None,
+) -> tuple[GroupsDataSource, GroupsDataSource]:
+    """Memory-bounded per-floor Cf / Cm straight from body + reference pressure.
+
+    Fuses ``Cp -> force -> moment -> per-floor sum`` and streams it over time
+    windows of ``chunk_size`` timesteps, so the full ``(n_triangles,
+    n_timesteps)`` Cp / force arrays never materialise at once: peak memory is
+    ``O(n_triangles * chunk_size)`` while the returned per-floor series is small.
+    With ``chunk_size=None`` (default) it runs whole-series (identical result);
+    pass a chunk (e.g. a few thousand) for production-size cases. Returns
+    ``(cf, cm)`` with the full time axis, ready for
+    :func:`cfdmod.building.floor_load_source`.
+    """
+    from cfdmod.core.chunked import concat_time, slice_time, time_windows
+
+    def _window(b: DataSource, r) -> tuple[GroupsDataSource, GroupsDataSource]:
+        cp = cp_from_pressure(b, r, case)
+        return cf_cm_per_floor(
+            cp,
+            mesh_path,
+            case,
+            cf_directions=cf_directions,
+            cm_directions=cm_directions,
+            method=method,
+        )
+
+    n_t = body.time.n_timesteps
+    if chunk_size is None or n_t == 0 or chunk_size >= n_t:
+        return _window(body, p_ref)
+
+    cf_parts: list[GroupsDataSource] = []
+    cm_parts: list[GroupsDataSource] = []
+    for sl in time_windows(n_t, chunk_size):
+        cf_w, cm_w = _window(slice_time(body, sl), slice_time(p_ref, sl))
+        cf_parts.append(cf_w)
+        cm_parts.append(cm_w)
+    return concat_time(cf_parts), concat_time(cm_parts)
