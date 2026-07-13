@@ -33,8 +33,9 @@
 - External mesh format: `aerosim-lnas` (`LnasFormat`, `LnasGeometry`). Prefer lnas over trimesh for loading STL/LNAS surfaces.
 - Testing: pytest, fixture files under `fixtures/tests/`, tests mirror source structure under `tests/`.
 - **Plans for issues belong on the issue.** When you produce an implementation plan tied to an existing GitHub issue, post it as a comment on that issue (`gh issue comment <n>`) so the design lives next to the work item.
-- **Implement on a feature branch, not on main.** Before starting any non-trivial implementation, create a branch (`git checkout -b feat/<short-name>` or `fix/<short-name>`) off main and commit work there in logical chunks. Never accumulate uncommitted work on main.
-- **Always push commits.** After committing on a feature branch, push it to `origin` (`git push`) so the remote branch / PR stays current. Do not leave commits sitting only in the local worktree.
+- **Work in a git worktree, not the main checkout.** Unless specifically told otherwise, do any change on a dedicated branch inside its own worktree (e.g. `git worktree add ../cfdmod-<short-name> -b feat/<short-name>`), so the primary working directory never accumulates local changes. Remove the worktree once the branch is merged (`git worktree remove <path>`).
+- **Implement on a feature branch, not on main.** Before starting any non-trivial implementation, create a branch (`feat/<short-name>` or `fix/<short-name>`) off main. Never accumulate uncommitted work on main.
+- **Always commit and push (never directly on main).** Commit work in logical chunks on the feature branch and push each to `origin` (`git push`) so the remote branch / PR stays current. Do not leave changes uncommitted or commits sitting only locally. The one exception is `main` itself: never commit directly to it.
 
 ---
 
