@@ -10,6 +10,16 @@ is the building-specific glue on top.
 from __future__ import annotations
 
 from cfdmod.building.case import BuildingCase, example_building_case
+from cfdmod.building.comfort import (
+    Occupancy,
+    Standard,
+    comfort_limit,
+    melbourne1992_acceleration_limit,
+    milli_g_to_mps2,
+    mps2_to_milli_g,
+    nbcc_acceleration_limit,
+    nbr6123_acceleration_limit,
+)
 from cfdmod.building.dynamic import (
     example_building_structure,
     floor_accelerations,
@@ -41,6 +51,14 @@ __all__ = [
     "PeakMethod",
     "gust_peak_factor",
     "peak_value",
+    "Occupancy",
+    "Standard",
+    "comfort_limit",
+    "nbr6123_acceleration_limit",
+    "melbourne1992_acceleration_limit",
+    "nbcc_acceleration_limit",
+    "milli_g_to_mps2",
+    "mps2_to_milli_g",
     "plot_mode_shape",
     "plot_floor_mass",
     "plot_natural_frequencies",
