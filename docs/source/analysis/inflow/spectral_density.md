@@ -1,6 +1,4 @@
-****************
-Spectral Density
-****************
+# Spectral Density
 
 Spectral density analysis is a detailed examination of the **frequency distribution of turbulent fluctuations** in the incoming wind.
 By decomposing the turbulent signal into its constituent frequencies, spectral density provides valuable information about the **energy distribution across different scales**.
@@ -10,8 +8,9 @@ Spectral characteristics of the inflow helps in validating CFD simulations to re
 The relationship between spectral density and LES mesh size can be expressed through a power-law scaling, recognizing that the **mesh size influences the resolved range of turbulent eddies**.
 The correlation can be formulated as:
 
-.. math::
-    S(f) \propto \frac{1}{(\Delta x)^\alpha}
+$$
+S(f) \propto \frac{1}{(\Delta x)^\alpha}
+$$
 
 The scaling exponent depends on the specific characteristics of the turbulent flow being simulated and the numerical methods employed.
 It reflects the rate at which **spectral density diminishes with decreasing mesh size**.

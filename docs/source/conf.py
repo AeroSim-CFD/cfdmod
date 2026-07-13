@@ -44,6 +44,18 @@ napoleon_use_rtype = True
 source_suffix = [".rst", ".md"]
 bibtex_bibfiles = ["_refs/refs.bib"]
 
+# MyST (Markdown) configuration. The docs are authored in MyST Markdown;
+# these extensions enable the syntax the pages rely on: dollar-delimited
+# math ($...$ / $$...$$), colon-fenced directives (:::{note}), definition
+# lists, and field lists.
+myst_enable_extensions = [
+    "dollarmath",
+    "colon_fence",
+    "deflist",
+    "fieldlist",
+]
+myst_heading_anchors = 3
+
 # Include TODOs (check https://www.sphinx-doc.org/en/master/usage/extensions/todo.html)
 todo_include_todos = True
 
