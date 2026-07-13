@@ -1,0 +1,114 @@
+<!-- CFD Mod documentation master file -->
+
+# CFD Mod docs
+
+[CFD Mod](https://github.com/AeroSim-CFD/cfdmod) **is a Python library for
+post-processing and geometry preparation of CFD wind-tunnel simulations.** It
+covers pressure (`Cp`), force (`Cf`), moment (`Cm`) and shape (`Ce`)
+coefficients; terrain loft and roughness elements; inflow / climate / Lawson
+statistics; and ParaView snapshot automation.
+
+:::{note}
+v3 reorganizes post-processing around a single data structure -- the
+{class}`~cfdmod.DataSource` -- and composable ops driven by YAML pipeline
+templates. The legacy per-coefficient functions (`run_cp` / `run_cf` /
+`run_cm` / `run_ce`) and their `*CaseConfig` models are removed; every flow
+now runs through `cfdmod run <template>`. See {doc}`architecture/v3_migration`
+for the mapping and [Release Notes](release_notes.md) for the full changeset.
+:::
+
+(quickstart)=
+
+## Quickstart
+
+Post-processing is a pipeline template: a YAML document declaring inputs, a
+sequence of ops, and outputs. Run it from the command line:
+
+```bash
+cfdmod run path/to/cp.yaml
+```
+
+or in Python, over any storage backend:
+
+```python
+from cfdmod import load_template, run_template, XdmfH5Storage
+
+template = load_template("path/to/cp.yaml")
+bindings = run_template(template, storage=XdmfH5Storage(root="."))
+```
+
+:::{note}
+`cfdmod run <template>` is the Python snippet above wrapped for convenience:
+it loads the template and runs it over an `XdmfH5Storage` rooted at the
+template's directory (exposed in the library as `cfdmod.recipes.run_yaml`).
+Call `load_template` + `run_template` directly when you need a different
+storage backend -- for example `MemoryStorage` in tests.
+:::
+
+Example Cp / Cf / Cm / Ce templates ship under
+`fixtures/tests/pressure/templates/`. The full worked example lives at
+`examples/container_pack/process_container_pack.ipynb` in the repository; the
+{doc}`architecture/data_sources` page explains the paradigm end-to-end.
+
+New here? Start with {doc}`getting_started/index` -- install, the files you
+need on disk, a first Cp run, and how to read the outputs back into ParaView
+or pandas.
+
+```{toctree}
+:maxdepth: 1
+:caption: Getting Started
+:hidden:
+
+Getting started <getting_started/index.md>
+Reading outputs <getting_started/reading_outputs.md>
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Architecture
+:hidden:
+
+Data sources & pipelines <architecture/data_sources.md>
+v3 migration guide <architecture/v3_migration.md>
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Library API
+:hidden:
+
+API Reference <api_reference.md>
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Use Cases
+:hidden:
+
+Altimetry <use_cases/altimetry/index.md>
+Loft <use_cases/loft/index.md>
+S1 <use_cases/s1/index.md>
+Roughness Elements <use_cases/roughness_gen/index.md>
+Pressure <use_cases/pressure/index.md>
+Snapshot <use_cases/snapshot/index.md>
+Grouping & Regroup <use_cases/geometry_prep/index.md>
+Building wind loads <use_cases/building/index.md>
+Structural Import <use_cases/dynamics/index.md>
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Analysis
+:hidden:
+
+Inflow <analysis/inflow/index.md>
+Climate <analysis/climate/index.md>
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Others
+:hidden:
+
+Release Notes <release_notes.md>
+```

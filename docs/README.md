@@ -1,7 +1,8 @@
 # Documentation
 
-We use [reStructuredText](https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html)
+We use [MyST Markdown](https://myst-parser.readthedocs.io/en/latest/)
 along with [Sphinx](https://www.sphinx-doc.org/en/master/index.html) for generating documentation.
+Pages are authored as `.md` (MyST); the tutorial pages are Jupyter notebooks (`.ipynb`).
 
 
 ## Commands

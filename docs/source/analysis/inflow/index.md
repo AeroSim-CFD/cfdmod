@@ -1,6 +1,4 @@
-***************
-Inflow analysis
-***************
+# Inflow analysis
 
 The analysis of inflow conditions plays a crucial role in **accurately simulating atmospheric boundary layer** (ABL) flows.
 
@@ -9,19 +7,21 @@ Understanding and characterizing the inflow conditions that govern the ABL flow 
 Especially when investigating transient flow conditions such as wind induced pressure distribution in structures, for dynamic analysis.
 
 Inflow analysis refers to the comprehensive examination of the incoming flow parameters that impact the simulation domain.
-This involves a detailed investigation into the **velocity profiles and turbulence characteristics** of the incoming air injected into the numerical domain. 
+This involves a detailed investigation into the **velocity profiles and turbulence characteristics** of the incoming air injected into the numerical domain.
 
 The accuracy of these inflow conditions significantly influences the fidelity of CFD simulations, as discrepancies in the representation of the atmospheric boundary layer can lead to **inaccurate predictions and compromise the reliability** of the results.
 
-.. note::
-   Check the `notebook <./inflow_analysis.ipynb>`_ for examples on how to perform the inflow analysis.
+:::{note}
+Check the [notebook](./inflow_analysis.ipynb) for examples on how to perform the inflow analysis.
+:::
 
-.. toctree::
-   :maxdepth: 1
-   :hidden:
+```{toctree}
+:maxdepth: 1
+:hidden:
 
-   Mean Velocity Profile <./mean_velocity.rst>
-   Turbulence Intensity <./turbulence_intensity.rst>
-   Spectral Density <./spectral_density.rst>
-   Length Scale <./length_scale.rst>
-   Usage <./inflow_analysis.ipynb>
+Mean Velocity Profile <./mean_velocity.md>
+Turbulence Intensity <./turbulence_intensity.md>
+Spectral Density <./spectral_density.md>
+Length Scale <./length_scale.md>
+Usage <./inflow_analysis.ipynb>
+```

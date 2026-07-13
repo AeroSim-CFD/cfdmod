@@ -1,5 +1,60 @@
 # Release Notes
 
+## Unreleased
+
+Additive feature work on top of v3.1.0: a building wind-load
+post-processing layer (`cfdmod.building`), structural-model importers
+(`cfdmod.dynamics`), and mesh-field rendering (`cfdmod.mesh_field`). No
+public v3 symbol is removed or changed in signature.
+
+### Building wind-load post-processing (`cfdmod.building`)
+
+- `BuildingCase` aggregates a case's inputs (pressure timeseries, dynamic
+  pressure, geometry) and `cp_from_pressure` derives Cp from a raw
+  pressure signal, feeding the per-floor and dynamic stages.
+- Per-floor `cf_per_floor` / `cm_per_floor` normalise with an explicit
+  reference area / volume (`nominal_area` / `nominal_volume`), not the
+  legacy per-region bounding-box area.
+- Peak extraction is selectable: raw maximum, gust `gust_peak_factor`, or
+  a Gumbel fit (`PeakMethod`).
+- Dynamic response: `solve_building_response`, `floor_accelerations` and
+  `peak_response_table` run the modal SDOF solver over a per-floor load
+  source and report peak floor accelerations.
+- Occupant comfort: `comfort_limit` checks peak accelerations against
+  NBR 6123, Melbourne (1992) and NBCC limits (with `nbr6123_`,
+  `melbourne1992_` and `nbcc_acceleration_limit` exposed directly, plus
+  `milli_g_to_mps2` / `mps2_to_milli_g` conversions). The NBCC commercial
+  limit is 25 milli-g.
+- Design load cases: `generate_load_cases` / `save_load_case_tables` write
+  per-floor Fx / Fy / Mz peak/min/max load-case tables to CSV.
+- Multi-direction fan-out: `FanoutPlan` + `run_fanout` drive the whole
+  per-floor / dynamic / comfort chain over every (direction, body, config)
+  combination of a parametric study, with `directional_envelopes` and the
+  `join_by_*` / `filter_by_*` reducers for cross-direction results.
+
+### Structural model import (`cfdmod.dynamics`)
+
+- `read_tqs_portels` (TQS Portico Espacial, nodal), `read_tqs_portico`
+  (TQS per-floor) and `read_eberick` (AltoQi Eberick) convert design-tool
+  modal exports into the internal `BuildingStructuralData` the dynamic
+  recipe consumes, removing a manual transcription step.
+- Nodal TQS data is aggregated to per-floor lumped mass / inertia / centre
+  of mass / rigid-diaphragm mode shape (`aggregate_to_building`); units are
+  converted to SI (`EberickUnits`) and mode shapes are mass-normalized to
+  unit generalized mass.
+- `BuildingStructuralData` round-trips through `modes.csv` / `floors.csv`
+  / `phi{m}.csv` (`from_csvs`) and is writable from the command line
+  (`cfdmod dynamics <export_dir> --out ... --format tqs|portico|eberick`).
+- See the Structural Model Import use-case page for the file formats.
+
+### Mesh-field rendering (`cfdmod.mesh_field`)
+
+- Per-triangle matplotlib mesh-field renders (`triangle_field_figure`) and
+  facade Cp snapshots, plus a PyVista plane-slice field render
+  (`render_plane_slice` / `slice_field_on_plane`) and line sampling
+  (`sample_field_along_line`) for cutting through a volume field.
+- `moving_average_stats` reuses the core `moving_average` op.
+
 ## v3.1.0
 
 Minor release. Turns the v3 core from "a library you call" into "a
