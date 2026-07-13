@@ -442,7 +442,7 @@ def plot_acceleration_floor_by_floor(
         if std == "nbcc_res":
             return 15 * (9.806 / 1000) * unit_conversion
         if std == "nbcc_com":
-            return 20 * (9.806 / 1000) * unit_conversion
+            return 25 * (9.806 / 1000) * unit_conversion
         # melbourne
         return (
             unit_conversion
