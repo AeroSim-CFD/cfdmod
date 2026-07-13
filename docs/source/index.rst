@@ -91,6 +91,8 @@ ParaView or pandas.
    Roughness Elements <use_cases/roughness_gen/index.rst>
    Pressure <use_cases/pressure/index.rst>
    Snapshot <use_cases/snapshot/index.rst>
+   Grouping & Regroup <use_cases/geometry_prep/index.rst>
+   Building wind loads <use_cases/building/index.rst>
    Structural Import <use_cases/dynamics/index.rst>
 
 .. toctree::
@@ -99,6 +101,7 @@ ParaView or pandas.
    :hidden:
 
    Inflow <analysis/inflow/index.rst>
+   Climate <analysis/climate/index.rst>
 
 
 .. toctree::
