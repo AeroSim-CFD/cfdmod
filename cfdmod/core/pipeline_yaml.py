@@ -77,6 +77,8 @@ __all__ = [
     "OpInfo",
     "list_ops",
     "op_info",
+    "DigestStrategy",
+    "FreshnessConfig",
 ]
 
 import pathlib
@@ -370,6 +372,26 @@ def op_info(kind: str) -> OpInfo:
 
 InputKind = Literal["surface", "volume", "points", "groups", "modes"]
 
+DigestStrategy = Literal["size_mtime", "content", "backend"]
+"""How an input's change-detection token is derived. See :meth:`Storage.digest`."""
+
+
+class FreshnessConfig(BaseModel):
+    """Output-staleness settings for a template.
+
+    Attributes:
+        digest: Default strategy used to digest input dependencies when
+            computing an output's signature. ``size_mtime`` (the default)
+            reads no bytes.
+        per_input: Optional per-input override, mapping an ``inputs:`` name
+            to a strategy that wins over ``digest`` for that input only.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    digest: DigestStrategy = "size_mtime"
+    per_input: dict[str, DigestStrategy] = Field(default_factory=dict)
+
 
 class InputSpec(BaseModel):
     """One entry under ``inputs:``.
@@ -436,6 +458,7 @@ class PipelineTemplate(BaseModel):
     inputs: dict[str, InputSpec] = Field(default_factory=dict)
     pipeline: list[OpSpec] = Field(default_factory=list)
     outputs: dict[str, OutputSpec] = Field(default_factory=dict)
+    freshness: FreshnessConfig = Field(default_factory=FreshnessConfig)
 
 
 # Backwards-compat alias for symmetry with OpSpec.
@@ -702,20 +725,56 @@ def run_template(
     template: PipelineTemplate,
     *,
     storage: Storage,
+    skip_fresh: bool = False,
 ) -> dict[str, DataSource]:
     """Run a parsed template against a :class:`Storage`.
 
     Returns the dict of all named values (inputs + step outputs) so
     callers can inspect intermediates. The ``outputs:`` block is
     written through ``storage.write_data_source`` as a side effect.
+
+    Each written output is stamped with a freshness signature (via
+    ``storage.write_signature``) when the backend supports it, so a later
+    :func:`~cfdmod.core.freshness.output_status` / ``skip_fresh`` run can
+    tell fresh outputs from stale ones.
+
+    With ``skip_fresh=True`` the runner first asks which outputs are stale
+    (``freshness.output_status``), then runs only the steps and loads only
+    the inputs those stale outputs depend on -- fresh outputs are neither
+    recomputed nor rewritten. If every declared output is already fresh the
+    run is a no-op and returns an empty binding dict.
     """
     _populate_default_registry()
     # Static validation first: fail on typos/dangling refs before any I/O.
     validate_template(template)
 
-    # 1. Load inputs.
+    strategy = template.freshness.digest
+    supports_freshness = hasattr(storage, "write_signature") and hasattr(storage, "digest")
+
+    stale_outputs: set[str] | None = None
+    needed_steps: set[str] | None = None
+    needed_inputs: set[str] | None = None
+    if skip_fresh:
+        if not supports_freshness:
+            raise TemplateError(
+                "skip_fresh=True requires a storage backend with digest/read_signature/"
+                "write_signature; this backend has none"
+            )
+        from cfdmod.core.freshness import closure_for_outputs, output_status
+
+        statuses = output_status(template, storage, strategy)
+        stale_outputs = {n for n, s in statuses.items() if not s.is_fresh}
+        if template.outputs and not stale_outputs:
+            # Everything is up to date -- nothing to load, run, or write.
+            return {}
+        needed_steps, needed_inputs = closure_for_outputs(template, stale_outputs)
+
+    # 1. Load inputs (all, or -- under skip_fresh -- only those the stale
+    #    outputs depend on).
     bindings: dict[str, DataSource] = {}
     for name, spec in template.inputs.items():
+        if needed_inputs is not None and name not in needed_inputs:
+            continue
         # Storage keys are logical names. We treat the resolved path as
         # the storage key so the adapter can map it to its on-disk
         # layout.
@@ -734,6 +793,8 @@ def run_template(
     # 2. Walk pipeline.
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
+        if needed_steps is not None and step_id not in needed_steps:
+            continue
         if step.kind not in OP_REGISTRY:
             raise TemplateReferenceError(
                 f"unknown op kind {step.kind!r} at step {step_id!r}; "
@@ -776,12 +837,21 @@ def run_template(
 
         bindings[step_id] = result
 
-    # 3. Write outputs.
-    for _, out in template.outputs.items():
+    # 3. Write outputs (skipping fresh ones under skip_fresh) and stamp each
+    #    with its freshness signature when the backend supports it.
+    sign = None
+    if supports_freshness and template.outputs:
+        from cfdmod.core.freshness import signature as sign
+
+    for out_name, out in template.outputs.items():
+        if stale_outputs is not None and out_name not in stale_outputs:
+            continue
         if out.source not in bindings:
             raise TemplateReferenceError(f"output references unknown source {out.source!r}")
         key = _resolve_key(template.root, out.path)
         storage.write_data_source(key, bindings[out.source])
+        if sign is not None:
+            storage.write_signature(key, sign(template, out_name, storage, strategy))
 
     return bindings
 

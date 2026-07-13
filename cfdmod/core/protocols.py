@@ -161,6 +161,43 @@ class Storage(Protocol):
         """Iterate the logical keys held by this storage."""
         ...
 
+    # --- Freshness / provenance (optional) --------------------------------
+    #
+    # The three methods below back output-staleness detection (skip vs.
+    # recompute). They are part of the protocol so every built-in adapter
+    # implements them, but the default ``run_template`` path calls them only
+    # when the backend advertises them (``hasattr``), so a pre-existing
+    # third-party ``Storage`` that omits them keeps working unchanged.
+
+    def digest(self, key: str, strategy: str = "size_mtime") -> str:
+        """Return a cheap change-detecting token for the object under ``key``.
+
+        ``strategy`` selects how the token is derived:
+
+        - ``"size_mtime"`` -- size + mtime, no byte reads (default; fast).
+        - ``"content"`` -- a strong content hash of the stored bytes.
+        - ``"backend"`` -- the backend's own token (e.g. an object-store
+          ETag) resolved without transferring bytes; adapters with no
+          native token fall back to ``size_mtime``.
+
+        The returned string embeds the strategy so switching strategy is
+        itself a change signal. Raises :class:`StorageKeyError` when the
+        key is absent.
+        """
+        ...
+
+    def read_signature(self, key: str) -> "str | None":
+        """Return the freshness signature stamped on ``key``, or ``None``.
+
+        ``None`` means "no signature recorded" (never written with
+        freshness tracking) and is treated as ``missing`` by the caller.
+        """
+        ...
+
+    def write_signature(self, key: str, signature: str) -> None:
+        """Stamp ``signature`` onto an already-written object at ``key``."""
+        ...
+
 
 @runtime_checkable
 class BlobStore(Protocol):

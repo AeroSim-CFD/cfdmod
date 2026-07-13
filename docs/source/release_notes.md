@@ -55,6 +55,25 @@ public v3 symbol is removed or changed in signature.
   (`sample_field_along_line`) for cutting through a volume field.
 - `moving_average_stats` reuses the core `moving_average` op.
 
+### Output freshness / incremental runs
+
+- Each output a template writes is stamped with a **signature** hashed over
+  the params and wiring of the steps that feed it, a change-detecting
+  digest of the input files it depends on, and a code/format version tag.
+- `output_status(template, storage)` reports each declared output as
+  `fresh`, `stale`, or `missing` without running anything; `cfdmod status
+  <template>` prints the same and exits non-zero if anything is stale
+  (usable as a CI / Makefile gate).
+- `run_template(..., skip_fresh=True)` (and `cfdmod run --skip-fresh`)
+  skips recomputing outputs that are already up to date and runs only the
+  steps the stale outputs depend on, so touching one late stage no longer
+  recomputes fresh upstreams.
+- The input-digest strategy is configurable (template `freshness.digest`
+  or `--digest`): `size_mtime` (default, no byte reads), `content` (a
+  strong hash), or `backend` (the backend's native token). `Storage` gains
+  `digest` / `read_signature` / `write_signature`; the default run path is
+  unchanged for backends that do not implement them.
+
 ## v3.1.0
 
 Minor release. Turns the v3 core from "a library you call" into "a
