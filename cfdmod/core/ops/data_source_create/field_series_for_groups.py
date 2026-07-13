@@ -71,7 +71,11 @@ def field_series_for_groups(ds: DataSource, p: FieldSeriesForGroupsParams) -> Gr
     is_time = arr.ndim == 2
     n_t = arr.shape[1] if is_time else 0
 
-    out_arr = (np.zeros((n_groups, n_t), dtype=arr.dtype) if is_time else np.zeros(n_groups, dtype=arr.dtype))
+    out_arr = (
+        np.zeros((n_groups, n_t), dtype=arr.dtype)
+        if is_time
+        else np.zeros(n_groups, dtype=arr.dtype)
+    )
     for row, gid in enumerate(group_ids):
         members = np.flatnonzero(grouping.indices == gid)
         out_arr[row] = aggregate_rows(arr, members, p.agg, weights)
