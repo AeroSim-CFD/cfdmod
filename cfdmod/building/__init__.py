@@ -23,6 +23,15 @@ from cfdmod.building.modes_report import (
     plot_mode_shape,
     plot_natural_frequencies,
 )
+from cfdmod.building.fanout import (
+    FanoutPlan,
+    StaticCaseKey,
+    build_static_keys,
+    build_static_solve_fn,
+    default_storage_key,
+    dump_provenance,
+    run_fanout,
+)
 from cfdmod.building.loadcases import (
     effective_load_stats,
     generate_load_cases,
@@ -51,6 +60,13 @@ __all__ = [
     "generate_load_cases",
     "invert_load_cases",
     "save_load_case_tables",
+    "FanoutPlan",
+    "StaticCaseKey",
+    "build_static_keys",
+    "build_static_solve_fn",
+    "default_storage_key",
+    "run_fanout",
+    "dump_provenance",
     "plot_mode_shape",
     "plot_floor_mass",
     "plot_natural_frequencies",
