@@ -244,26 +244,41 @@ def run_fanout(
         results = pool.map(solve_fn, keys)
     container = Container(items=dict(zip(keys, results)))
     if writer is not None and case is not None:
-        dump_provenance(writer, case, plan)
+        # actual computed floor count (pressure may drop empty floor slices)
+        n_floors = next(iter(container.values())).n_elements if len(container) else None
+        dump_provenance(writer, case, plan, n_floors=n_floors)
     return container
 
 
-def dump_provenance(writer, case: BuildingCase, plan: FanoutPlan) -> dict[str, pathlib.Path]:
+def dump_provenance(
+    writer,
+    case: BuildingCase,
+    plan: FanoutPlan,
+    *,
+    n_floors: int | None = None,
+) -> dict[str, pathlib.Path]:
     """Write the per-floor region info (z-edges) and the resolved config yaml.
 
     Mirrors the notebooks' ``save_region_info`` + ``save_yaml``: a
     ``region_info.csv`` (one row per floor with ``z_min`` / ``z_max``) and a
     ``config.yaml`` (case + plan dump), written to the writer's debug root.
     Returns ``{name: path}``.
+
+    The case z-edges are used when they match the actual computed floor count
+    (``n_floors``); if the pressure stage dropped empty floor slices they will
+    not, so a plain floor-index ladder is written instead of misleading edges.
     """
     edges = np.asarray(case.floor_heights, dtype=np.float64)
-    region = pd.DataFrame(
-        {
-            "floor": np.arange(len(edges) - 1),
-            "z_min": edges[:-1],
-            "z_max": edges[1:],
-        }
-    )
+    if n_floors is None or len(edges) == n_floors + 1:
+        region = pd.DataFrame(
+            {
+                "floor": np.arange(len(edges) - 1),
+                "z_min": edges[:-1],
+                "z_max": edges[1:],
+            }
+        )
+    else:
+        region = pd.DataFrame({"floor": np.arange(n_floors)})
     region_path = writer.save_csv(region, "region_info.csv")
     config_path = writer.debug_path("config.yaml")
     save_yaml({"case": case.model_dump(), "plan": plan.model_dump()}, config_path)

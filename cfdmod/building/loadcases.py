@@ -91,30 +91,32 @@ def effective_load_stats(
     and ``peak`` the governing envelope (larger |mean| of min / max per
     direction / axis). All values scaled by ``unit_conversion``.
     """
-    max_dict, min_dict = directional_envelopes(container, feq_fields=feq_fields)
-    directions = list(max_dict)
-
     need_mean = "mean" in stats
-    mean_dict: dict[str, dict[str, np.ndarray]] = {}
-    if need_mean:
-        for direction, sub in join_by_direction(container).items():
-            response = next(iter(sub.values()))
-            mean_dict[direction] = get_stats_forces_effective(
-                response, "mean", feq_fields=feq_fields
-            )
-
     tables: dict[str, dict[str, dict[str, np.ndarray]]] = {
         stat: {name: {} for name in _LOAD_NAMES} for stat in stats
     }
-    for direction in directions:
+    # Partition by direction once; reduce each single-case response inline.
+    for direction, sub in join_by_direction(container).items():
+        if len(sub) != 1:
+            raise ValueError(
+                f"direction {direction} maps to {len(sub)} cases; pre-filter the container "
+                "to a single case per direction (e.g. one xi / recurrence period)"
+            )
+        response = next(iter(sub.values()))
+        r_max = get_stats_forces_effective(response, "max", feq_fields=feq_fields)
+        r_min = get_stats_forces_effective(response, "min", feq_fields=feq_fields)
+        r_mean = (
+            get_stats_forces_effective(response, "mean", feq_fields=feq_fields)
+            if need_mean
+            else None
+        )
         col = f"{float(direction):.1f}"
         for name, axis in zip(_LOAD_NAMES, _AXES):
-            r_max = max_dict[direction][axis]
-            r_min = min_dict[direction][axis]
-            r_peak = r_min if abs(r_min.mean()) > abs(r_max.mean()) else r_max
-            per_stat = {"max": r_max, "min": r_min, "peak": r_peak}
+            mx, mn = r_max[axis], r_min[axis]
+            r_peak = mn if abs(mn.mean()) > abs(mx.mean()) else mx
+            per_stat = {"max": mx, "min": mn, "peak": r_peak}
             if need_mean:
-                per_stat["mean"] = mean_dict[direction][axis]
+                per_stat["mean"] = r_mean[axis]
             for stat in stats:
                 tables[stat][name][col] = per_stat[stat] * unit_conversion
 
