@@ -7,7 +7,7 @@ Three criteria are supported:
 - ``"nbr"`` -- ABNT NBR 6123 serviceability limit, a decreasing power law in the
   fundamental sway frequency ``f0`` with separate residential / commercial
   coefficients.
-- ``"melbourne"`` -- Melbourne & Cheung (1992) serviceable-acceleration curve,
+- ``"melbourne"`` -- Melbourne & Palmer (1992) serviceable-acceleration curve,
   a function of ``f0`` and the return period in years.
 - ``"nbcc"`` -- NBCC occupant-comfort criterion, a flat (frequency-independent)
   limit at a 10-year return period: 15 milli-g residential, 25 milli-g office /
@@ -28,14 +28,18 @@ import numpy as np
 Occupancy = Literal["residential", "commercial"]
 Standard = Literal["nbr", "melbourne", "nbcc"]
 
-# Standard-of-record constants, matching AeroSim's production hfpi_analysis
-# notebook (the delivered comfort criterion) and the inline expressions in
-# cfdmod/dynamics/plotting.py. NBCC (15 / 25 milli-g at a 10-year return period)
-# is verified against the wind-engineering literature. The NBR 6123
-# (4.08 / 6.12, exponent -0.445) and Melbourne 1992 forms match the production
-# notebook and are consistent with published perception curves (residential more
-# stringent, decreasing with f0); a primary-standard clause citation is still
-# pending as ABNT NBR 6123:2023 / Melbourne & Cheung 1992 are paywalled.
+# Standard-of-record constants, VERIFIED against the primary sources:
+# - NBR 6123 (Projeto NBR 6123, sec. 9.6.2 "Aceleracao limite para garantia do
+#   conforto humano"): a_lim = 0.01 * k_c * f^-0.445 in m/s^2, with k_c = 4.08
+#   (residential) / 6.12 (commercial and office). Valid over 0.06-1.00 Hz, at a
+#   1-year return period. The perception curve is ISO 2631-2 / ISO 10137 Annex D
+#   (residential ~8x, commercial ~12x the lower perception threshold).
+# - Melbourne & Palmer (1992), "Accelerations and comfort criteria for buildings
+#   undergoing complex motions", Eq. 3: a = sqrt(2 ln(n0 T)) * (0.68 + ln(R)/5)
+#   * exp(-3.65 - 0.41 ln(n0)), with T = 600 s, in m/s^2. Valid over
+#   0.06 < n0 < 1.0 Hz and 0.5 < R < 10 years.
+# - NBCC: 15 / 25 milli-g (residential / office) at a 10-year return period.
+# All three also match AeroSim's production hfpi_analysis notebook.
 _NBR_C_RESIDENTIAL = 4.08
 _NBR_C_COMMERCIAL = 6.12
 _NBR_EXP = -0.445
@@ -84,11 +88,12 @@ def nbr6123_acceleration_limit(
     f0: float | np.ndarray,
     occupancy: Occupancy = "residential",
 ) -> float | np.ndarray:
-    """ABNT NBR 6123 serviceability acceleration limit.
+    """ABNT NBR 6123 serviceability acceleration limit (sec. 9.6.2).
 
     ``a_lim = 0.01 * coeff * f0**-0.445`` with ``coeff`` 4.08 (residential) or
     6.12 (commercial); ``f0`` the fundamental sway frequency in Hz. The ``0.01``
-    converts the standard's cm/s^2 expression to m/s^2. Returns m/s^2.
+    converts the standard's cm/s^2 expression to m/s^2. Returns m/s^2. The
+    standard states this over 0.06-1.00 Hz at a 1-year return period.
     """
     arr = _require_positive_f0(f0)
     if occupancy == "residential":
@@ -105,11 +110,12 @@ def melbourne1992_acceleration_limit(
     f0: float | np.ndarray,
     return_period_years: float = 10.0,
 ) -> float | np.ndarray:
-    """Melbourne & Cheung (1992) serviceable-acceleration limit.
+    """Melbourne & Palmer (1992) serviceable peak-acceleration limit (Eq. 3).
 
     ``a_lim = sqrt(2 ln(600 f0)) * (0.68 + ln(R) / 5) * exp(-3.65 - 0.41 ln f0)``
     with ``f0`` the fundamental sway frequency (Hz), ``R`` the return period in
-    years and ``600`` the averaging window (s). Returns m/s^2.
+    years and ``600`` the averaging window (s). Returns m/s^2. The paper states
+    this over 0.06 < f0 < 1.0 Hz and 0.5 < R < 10 years.
     """
     arr = _require_positive_f0(f0)
     if return_period_years <= 0.0:

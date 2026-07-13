@@ -45,7 +45,7 @@ def test_nbr_decreasing_in_f0():
 
 
 def test_melbourne_reference_point():
-    # source: Melbourne & Cheung (1992), a_lim =
+    # source: Melbourne & Palmer (1992), a_lim =
     #   sqrt(2 ln(600 f0)) * (0.68 + ln(R)/5) * exp(-3.65 - 0.41 ln f0) (m/s^2)
     # at f0 = 0.2 Hz, R = 10 yr -> 0.177449030031
     assert melbourne1992_acceleration_limit(0.2, return_period_years=10.0) == pytest.approx(
