@@ -28,9 +28,14 @@ import numpy as np
 Occupancy = Literal["residential", "commercial"]
 Standard = Literal["nbr", "melbourne", "nbcc"]
 
-# Standard-of-record constants. These were ported from the source analysis
-# notebook and mirror the inline expressions in cfdmod/dynamics/plotting.py.
-# TODO(source): verify against ABNT NBR 6123 / Melbourne & Cheung 1992
+# Standard-of-record constants, matching AeroSim's production hfpi_analysis
+# notebook (the delivered comfort criterion) and the inline expressions in
+# cfdmod/dynamics/plotting.py. NBCC (15 / 25 milli-g at a 10-year return period)
+# is verified against the wind-engineering literature. The NBR 6123
+# (4.08 / 6.12, exponent -0.445) and Melbourne 1992 forms match the production
+# notebook and are consistent with published perception curves (residential more
+# stringent, decreasing with f0); a primary-standard clause citation is still
+# pending as ABNT NBR 6123:2023 / Melbourne & Cheung 1992 are paywalled.
 _NBR_C_RESIDENTIAL = 4.08
 _NBR_C_COMMERCIAL = 6.12
 _NBR_EXP = -0.445
