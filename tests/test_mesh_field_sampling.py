@@ -57,7 +57,9 @@ def test_moving_average_stats_smooths_and_peaks():
 
 def test_moving_average_stats_window_rounds_odd_and_stays_aligned():
     # window_s/dt = 3 (odd) -> window 3; edge-padded output keeps the input length.
-    out = mesh_field.moving_average_stats(np.array([0.0, 0.0, 9.0, 0.0, 0.0]), dt=1.0, window_s=3.0)
+    out = mesh_field.moving_average_stats(
+        np.array([0.0, 0.0, 9.0, 0.0, 0.0]), dt=1.0, window_s=3.0
+    )
     assert out["window"] == 3
     assert out["ma"].shape == (5,)
 
