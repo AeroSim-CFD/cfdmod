@@ -235,7 +235,7 @@ def extreme_value(ds: DataSource, p: ExtremeValueParams) -> DataSource:
             f"extreme_value requires at least 2 timesteps (got n_timesteps={ds.time.n_timesteps})"
         )
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     if arr.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"

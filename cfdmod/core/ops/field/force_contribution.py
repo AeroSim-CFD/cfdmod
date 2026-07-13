@@ -46,7 +46,6 @@ class ForceContributionParams(OpParams):
     nominal_area: float = Field(gt=0)
     directions: list[Literal["x", "y", "z"]] = ["x", "y", "z"]
     out_prefix: str = "cf"
-    compute_dtype: Literal["float32", "float64"] = "float64"
 
     chunkable_along: ClassVar[frozenset[str]] = frozenset({"time"})
     requires_element_meta: ClassVar[frozenset[str]] = frozenset({"area", "normal"})
@@ -62,16 +61,16 @@ def force_contribution(ds: DataSource, p: ForceContributionParams) -> DataSource
             "attach them with mesh_attach first."
         )
 
-    dt = np.dtype(p.compute_dtype)
-    cp = np.asarray(ds.fields.read(p.field), dtype=dt)
+    # Preserve the Cp field's dtype (float32 for solver output, float64 for
+    # float64 sources) rather than upcasting; cast the geometric factor to match
+    # so a float64 area does not silently promote a float32 result back up.
+    cp = np.asarray(ds.fields.read(p.field))
     if cp.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got {cp.shape}"
         )
 
-    # Cast the geometric factor to the compute dtype too so the per-element
-    # product stays in float32 when requested (float64 area * float32 cp would
-    # otherwise upcast the large result back to float64).
+    dt = cp.dtype
     area = np.asarray(ds.elements.area, dtype=dt)
     normals = np.asarray(ds.elements.normal, dtype=dt)
     axis_map = {"x": 0, "y": 1, "z": 2}

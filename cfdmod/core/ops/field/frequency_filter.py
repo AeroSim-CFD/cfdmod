@@ -108,7 +108,7 @@ def frequency_filter(ds: DataSource, p: FrequencyFilterParams) -> DataSource:
 
     sos = butter(p.order, p.cutoff, btype=p.btype, fs=fs, output="sos")
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     if arr.ndim != 2:
         raise ValueError(
             f"field {p.field!r} must be 2-D (n_elements, n_timesteps); got shape {arr.shape}"
@@ -129,7 +129,7 @@ def frequency_filter(ds: DataSource, p: FrequencyFilterParams) -> DataSource:
             ) from e
     else:
         out = sosfilt(sos, arr, axis=1)
-    out = np.ascontiguousarray(out, dtype=np.float64)
+    out = np.ascontiguousarray(out, dtype=arr.dtype)
 
     target = p.out or p.field
     src_meta = ds.field_meta.get(p.field)

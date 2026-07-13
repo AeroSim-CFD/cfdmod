@@ -81,11 +81,9 @@ def test_face_cut_conserves_total_force(cp_ds, galpao_case):
     whole = galpao_case.model_copy(update={"floor_heights": [zmin, zmax + 1e-6]})
 
     per_floor = building.cf_per_floor(
-        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut", compute_dtype="float64"
+        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut"
     )
-    single = building.cf_per_floor(
-        cp_ds, MESH, whole, directions=("x",), method="face_cut", compute_dtype="float64"
-    )
+    single = building.cf_per_floor(cp_ds, MESH, whole, directions=("x",), method="face_cut")
 
     total_per_floor = per_floor.fields.read("cf_x").sum(axis=0)
     total_single = single.fields.read("cf_x").sum(axis=0)
@@ -190,14 +188,20 @@ def test_per_floor_loads_whole_matches_fused(body_ref, galpao_case):
 
 @pytest.mark.parametrize("chunk", [1, 2, 3, 5])
 def test_per_floor_loads_chunk_parity(body_ref, galpao_case, chunk):
-    """Time-chunked per_floor_loads matches the whole-series result exactly."""
+    """Time-chunked per_floor_loads matches the whole-series result.
+
+    Per-timestep values are computed identically regardless of windowing; the
+    only difference is float32 summation-order rounding across window shapes
+    (~1 ULP), hence the float32-appropriate tolerance rather than exact equality.
+    """
     body, p_ref = body_ref
     cf_w, cm_w = building.per_floor_loads(body, p_ref, MESH, galpao_case, chunk_size=None)
     cf_c, cm_c = building.per_floor_loads(body, p_ref, MESH, galpao_case, chunk_size=chunk)
     assert cf_c.time.n_timesteps == cf_w.time.n_timesteps
-    np.testing.assert_allclose(cf_c.fields.read("cf_x"), cf_w.fields.read("cf_x"))
-    np.testing.assert_allclose(cf_c.fields.read("cf_y"), cf_w.fields.read("cf_y"))
-    np.testing.assert_allclose(cm_c.fields.read("cm_z"), cm_w.fields.read("cm_z"))
+    kw = dict(rtol=1e-4, atol=1e-6)
+    np.testing.assert_allclose(cf_c.fields.read("cf_x"), cf_w.fields.read("cf_x"), **kw)
+    np.testing.assert_allclose(cf_c.fields.read("cf_y"), cf_w.fields.read("cf_y"), **kw)
+    np.testing.assert_allclose(cm_c.fields.read("cm_z"), cm_w.fields.read("cm_z"), **kw)
 
 
 def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
@@ -206,12 +210,8 @@ def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
     Per-floor distributions differ (that is the point of face_cut), but the sum
     across all floors is the same whole-body force for either partition.
     """
-    fc = building.cf_per_floor(
-        cp_ds, MESH, galpao_case, directions=("x",), method="face_cut", compute_dtype="float64"
-    )
-    ct = building.cf_per_floor(
-        cp_ds, MESH, galpao_case, directions=("x",), method="centroid", compute_dtype="float64"
-    )
+    fc = building.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="face_cut")
+    ct = building.cf_per_floor(cp_ds, MESH, galpao_case, directions=("x",), method="centroid")
     np.testing.assert_allclose(
         fc.fields.read("cf_x").sum(axis=0),
         ct.fields.read("cf_x").sum(axis=0),

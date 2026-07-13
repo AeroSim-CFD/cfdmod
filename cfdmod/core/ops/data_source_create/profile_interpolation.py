@@ -54,10 +54,10 @@ def profile_interpolation(ds: PointsDataSource, p: ProfileInterpolationParams) -
     order = np.argsort(z_src)
     z_sorted = z_src[order]
 
-    arr = np.asarray(ds.fields.read(p.field), dtype=np.float64)
+    arr = np.asarray(ds.fields.read(p.field))
     is_time = arr.ndim == 2
     if is_time:
-        out = np.empty((z_target.size, arr.shape[1]), dtype=np.float64)
+        out = np.empty((z_target.size, arr.shape[1]), dtype=arr.dtype)
         for t in range(arr.shape[1]):
             out[:, t] = np.interp(z_target, z_sorted, arr[order, t])
     else:

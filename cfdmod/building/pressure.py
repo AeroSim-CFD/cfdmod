@@ -30,6 +30,7 @@ from typing import Literal
 import numpy as np
 
 from cfdmod.core.data_source import DataSource, GroupsDataSource
+from cfdmod.core.dtypes import FIELD_DTYPE
 from cfdmod.core.ops.data_source_create.face_cut import FaceCutParams, face_cut
 from cfdmod.core.ops.data_source_create.field_series_for_groups import (
     FieldSeriesForGroupsParams,
@@ -49,12 +50,6 @@ from .case import BuildingCase
 _FLOOR = "floor"
 
 FloorMethod = Literal["face_cut", "centroid"]
-ComputeDtype = Literal["float32", "float64"]
-# Default compute precision for the building load path. float32 is enough for
-# these coefficients and halves the per-triangle array footprint on top of the
-# time-chunking; pass "float64" for exactness checks. (The library-wide op
-# defaults stay float64; flipping those globally is tracked separately.)
-_DEFAULT_DTYPE: ComputeDtype = "float32"
 
 
 def cp_from_pressure(
@@ -131,20 +126,13 @@ def _attach_and_partition(
     return _partition_floors(ds, mesh_path, case, method)
 
 
-def _force(
-    ds: DataSource, case: BuildingCase, directions: list[str], dtype: ComputeDtype
-) -> DataSource:
+def _force(ds: DataSource, case: BuildingCase, directions: list[str]) -> DataSource:
     return force_contribution(
-        ds,
-        ForceContributionParams(
-            nominal_area=case.nominal_area, directions=directions, compute_dtype=dtype
-        ),
+        ds, ForceContributionParams(nominal_area=case.nominal_area, directions=directions)
     )
 
 
-def _moment(
-    ds: DataSource, case: BuildingCase, directions: list[str], dtype: ComputeDtype
-) -> DataSource:
+def _moment(ds: DataSource, case: BuildingCase, directions: list[str]) -> DataSource:
     return moment_contribution(
         ds,
         MomentContributionParams(
@@ -152,7 +140,6 @@ def _moment(
             nominal_area=case.nominal_area,
             nominal_volume=case.nominal_volume,
             directions=directions,
-            compute_dtype=dtype,
         ),
     )
 
@@ -164,7 +151,6 @@ def cf_per_floor(
     *,
     directions: tuple[str, ...] = ("x", "y"),
     method: FloorMethod = "centroid",
-    compute_dtype: ComputeDtype = _DEFAULT_DTYPE,
 ) -> GroupsDataSource:
     """Per-floor force coefficients cf_<dir>, one row per floor slice.
 
@@ -173,10 +159,10 @@ def cf_per_floor(
     ``method="face_cut"`` slices triangles at the floor edges for an exact
     partial-area split, but fragments the mesh (much heavier); prefer centroid at
     production sizes. See :func:`cf_cm_per_floor` when you need both Cf and Cm.
-    ``compute_dtype`` controls the per-triangle force precision (float32 default).
+    Precision follows the Cp field's dtype (float32 for solver output).
     """
     ds = _attach_and_partition(cp_ds, mesh_path, case, method)
-    ds = _force(ds, case, list(directions), compute_dtype)
+    ds = _force(ds, case, list(directions))
     return _sum_per_floor(ds, [f"cf_{d}" for d in directions])
 
 
@@ -187,7 +173,6 @@ def cm_per_floor(
     *,
     directions: tuple[str, ...] = ("z",),
     method: FloorMethod = "centroid",
-    compute_dtype: ComputeDtype = _DEFAULT_DTYPE,
 ) -> GroupsDataSource:
     """Per-floor moment coefficients cm_<dir> about the case lever origin.
 
@@ -195,8 +180,8 @@ def cm_per_floor(
     """
     ds = _attach_and_partition(cp_ds, mesh_path, case, method)
     # moment_contribution reads all three force components, so produce them all.
-    ds = _force(ds, case, ["x", "y", "z"], compute_dtype)
-    ds = _moment(ds, case, list(directions), compute_dtype)
+    ds = _force(ds, case, ["x", "y", "z"])
+    ds = _moment(ds, case, list(directions))
     return _sum_per_floor(ds, [f"cm_{d}" for d in directions])
 
 
@@ -208,7 +193,6 @@ def cf_cm_per_floor(
     cf_directions: tuple[str, ...] = ("x", "y"),
     cm_directions: tuple[str, ...] = ("z",),
     method: FloorMethod = "centroid",
-    compute_dtype: ComputeDtype = _DEFAULT_DTYPE,
 ) -> tuple[GroupsDataSource, GroupsDataSource]:
     """Per-floor Cf and Cm from a **single** mesh-attach + partition + force pass.
 
@@ -219,9 +203,9 @@ def cf_cm_per_floor(
     Returns ``(cf, cm)``.
     """
     ds = _attach_and_partition(cp_ds, mesh_path, case, method)
-    ds = _force(ds, case, ["x", "y", "z"], compute_dtype)
+    ds = _force(ds, case, ["x", "y", "z"])
     cf = _sum_per_floor(ds, [f"cf_{d}" for d in cf_directions])
-    ds = _moment(ds, case, list(cm_directions), compute_dtype)
+    ds = _moment(ds, case, list(cm_directions))
     cm = _sum_per_floor(ds, [f"cm_{d}" for d in cm_directions])
     return cf, cm
 
@@ -236,7 +220,7 @@ def per_floor_loads(
     cm_directions: tuple[str, ...] = ("z",),
     method: FloorMethod = "centroid",
     chunk_size: int | None = None,
-    compute_dtype: ComputeDtype = _DEFAULT_DTYPE,
+    compute_dtype=FIELD_DTYPE,
 ) -> tuple[GroupsDataSource, GroupsDataSource]:
     """Memory-bounded per-floor Cf / Cm straight from body + reference pressure.
 
@@ -245,17 +229,18 @@ def per_floor_loads(
     n_timesteps)`` Cp / force arrays never materialise at once: peak memory is
     ``O(n_triangles * chunk_size)`` while the returned per-floor series is small.
     With ``chunk_size=None`` (default) it runs whole-series (identical result);
-    pass a chunk (e.g. a few thousand) for production-size cases. ``compute_dtype``
-    (float32 default) sets the per-triangle precision. Returns ``(cf, cm)`` with
-    the full time axis, ready for :func:`cfdmod.building.floor_load_source`.
+    pass a chunk (e.g. a few thousand) for production-size cases. The source
+    pressure is cast to ``compute_dtype`` (float32 default) so the whole
+    per-triangle chain runs in that precision. Returns ``(cf, cm)`` with the full
+    time axis, ready for :func:`cfdmod.building.floor_load_source`.
     """
     from cfdmod.core.chunked import concat_time, slice_time, time_windows
 
     dt = np.dtype(compute_dtype)
 
     def _cast(ds: DataSource) -> DataSource:
-        # Cast the source pressure so Cp (and everything downstream) is computed
-        # in the requested precision, not just the force step.
+        # Cast the source pressure so Cp (and everything downstream) inherits the
+        # precision; the ops then preserve this dtype through force / moment / sum.
         return ds.with_field("pressure", np.asarray(ds.fields.read("pressure"), dtype=dt))
 
     def _window(b: DataSource, r) -> tuple[GroupsDataSource, GroupsDataSource]:
@@ -267,7 +252,6 @@ def per_floor_loads(
             cf_directions=cf_directions,
             cm_directions=cm_directions,
             method=method,
-            compute_dtype=compute_dtype,
         )
 
     n_t = body.time.n_timesteps
