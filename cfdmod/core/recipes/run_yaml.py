@@ -27,9 +27,7 @@ from cfdmod.core.data_source import DataSource
 from cfdmod.core.pipeline_yaml import DigestStrategy, load_template, run_template
 
 
-def _load_with_digest(
-    template_path: pathlib.Path | str, digest: DigestStrategy | None
-):
+def _load_with_digest(template_path: pathlib.Path | str, digest: DigestStrategy | None):
     template = load_template(pathlib.Path(template_path))
     if digest is not None:
         template = template.model_copy(

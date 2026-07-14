@@ -371,9 +371,7 @@ class XdmfH5Storage:
     def write_signature(self, key: str, signature: str) -> None:
         h5_path = self.h5_path(key)
         if not h5_path.exists():
-            raise StorageKeyError(
-                f"cannot stamp signature: no h5 under key {key!r} ({h5_path})"
-            )
+            raise StorageKeyError(f"cannot stamp signature: no h5 under key {key!r} ({h5_path})")
         with h5py.File(h5_path, "a") as f:
             f.attrs[_SIGNATURE_ATTR] = signature
 
