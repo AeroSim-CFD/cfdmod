@@ -184,3 +184,6 @@ cython_debug/
 
 # Local run artifacts / deliverables (not tracked)
 out/
+
+# Local client consulting working data (never tracked)
+fixtures/example_consulting/

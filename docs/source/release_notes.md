@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## 3.2.0
 
 Additive feature work on top of v3.1.0: a building wind-load
 post-processing layer (`cfdmod.building`), structural-model importers
