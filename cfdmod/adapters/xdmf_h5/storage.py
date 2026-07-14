@@ -32,6 +32,7 @@ from __future__ import annotations
 
 __all__ = ["XdmfH5Storage"]
 
+import hashlib
 import pathlib
 from typing import Iterable
 
@@ -50,6 +51,11 @@ from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import ElementMeta, Topology
 from cfdmod.io import xdmf as _xdmf
+
+# Root-level h5 attribute the freshness layer stamps an output's signature
+# under. It lives in ``.attrs`` (not a dataset), so ``read_data_source``
+# ignores it and the round-trip byte layout is unchanged.
+_SIGNATURE_ATTR = "cfdmod_signature"
 
 _RESERVED_ROOT_KEYS = frozenset({"Triangles", "Geometry", "Connectivity", "meta"})
 # Geometry datasets embedded inside a stats group (so write_stats_xdmf can
@@ -318,6 +324,58 @@ class XdmfH5Storage:
                 _xdmf.write_stats_xdmf(h5_path, xdmf_path)
             elif groups_for_xdmf:
                 _xdmf.write_temporal_xdmf(h5_path, xdmf_path, groups_for_xdmf)
+
+    # --- Freshness ---------------------------------------------------------
+
+    def digest(self, key: str, strategy: str = "size_mtime") -> str:
+        """Change-detecting token for the ``<key>.h5`` (+ ``.xdmf``) pair.
+
+        - ``size_mtime`` (default): size + mtime of the file(s); no reads.
+        - ``content``: a blake2b hash of the file bytes, streamed.
+        - ``backend``: the local filesystem has no native token, so this
+          falls back to ``size_mtime`` (tagged so the fallback is visible).
+        """
+        h5_path = self.h5_path(key)
+        if not h5_path.exists():
+            raise StorageKeyError(
+                f"XdmfH5Storage has no data source under key {key!r} ({h5_path})"
+            )
+        paths = [h5_path]
+        xdmf = self.xdmf_path(key)
+        if xdmf.exists():
+            paths.append(xdmf)
+
+        if strategy == "content":
+            h = hashlib.blake2b(digest_size=32)
+            for p in paths:
+                with open(p, "rb") as f:
+                    for block in iter(lambda: f.read(1 << 20), b""):
+                        h.update(block)
+            return f"content:{h.hexdigest()}"
+
+        # size_mtime and backend (backend has no FS-native token -> fall back)
+        prefix = "size_mtime" if strategy != "backend" else "backend_fs"
+        parts = [f"{p.stat().st_size}:{p.stat().st_mtime_ns}" for p in paths]
+        return f"{prefix}:" + "|".join(parts)
+
+    def read_signature(self, key: str) -> str | None:
+        h5_path = self.h5_path(key)
+        if not h5_path.exists():
+            return None
+        with h5py.File(h5_path, "r") as f:
+            raw = f.attrs.get(_SIGNATURE_ATTR)
+        if raw is None:
+            return None
+        return raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
+
+    def write_signature(self, key: str, signature: str) -> None:
+        h5_path = self.h5_path(key)
+        if not h5_path.exists():
+            raise StorageKeyError(
+                f"cannot stamp signature: no h5 under key {key!r} ({h5_path})"
+            )
+        with h5py.File(h5_path, "a") as f:
+            f.attrs[_SIGNATURE_ATTR] = signature
 
 
 def _groups_to_parent_surface(ds: GroupsDataSource) -> SurfaceDataSource:

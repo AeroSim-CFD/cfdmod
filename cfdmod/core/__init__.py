@@ -35,8 +35,15 @@ from cfdmod.core.data_source import (
 from cfdmod.core.field_meta import FieldMeta
 from cfdmod.core.grouping import Grouping, elements_in_group, groups_in
 from cfdmod.core.pipeline import Pipeline, compose, identity
+from cfdmod.core.freshness import (
+    OutputStatus,
+    output_status,
+    signature,
+)
 from cfdmod.core.pipeline_yaml import (
     OP_REGISTRY,
+    DigestStrategy,
+    FreshnessConfig,
     OpInfo,
     PipelineTemplate,
     list_ops,
@@ -81,6 +88,11 @@ __all__ = [
     "OpInfo",
     "list_ops",
     "op_info",
+    "DigestStrategy",
+    "FreshnessConfig",
+    "OutputStatus",
+    "output_status",
+    "signature",
     "CfdmodError",
     "TemplateError",
     "TemplateReferenceError",

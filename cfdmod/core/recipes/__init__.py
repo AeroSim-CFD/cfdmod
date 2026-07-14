@@ -47,6 +47,7 @@ __all__ = [
     "ComfortConfig",
     "build_point_accelerations",
     "run_yaml",
+    "status_yaml",
 ]
 
 from cfdmod.core.recipes.ce import CeRecipeConfig, ce_pipeline
@@ -67,5 +68,5 @@ from cfdmod.core.recipes.dynamic import (
     identity_solver,
     sdof_rk45_solver,
 )
-from cfdmod.core.recipes.run_yaml import run_yaml
+from cfdmod.core.recipes.run_yaml import run_yaml, status_yaml
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline

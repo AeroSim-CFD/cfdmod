@@ -110,6 +110,10 @@ __all__ = [
     "OpInfo",
     "list_ops",
     "op_info",
+    # Freshness / output staleness
+    "output_status",
+    "OutputStatus",
+    "FreshnessConfig",
     # Errors (issue #147)
     "CfdmodError",
     "TemplateError",
@@ -242,6 +246,9 @@ _SYMBOL_MODULE: dict[str, str] = {
     "OpInfo": "cfdmod.core",
     "list_ops": "cfdmod.core",
     "op_info": "cfdmod.core",
+    "output_status": "cfdmod.core",
+    "OutputStatus": "cfdmod.core",
+    "FreshnessConfig": "cfdmod.core",
     # Errors
     "CfdmodError": "cfdmod.core",
     "TemplateError": "cfdmod.core",

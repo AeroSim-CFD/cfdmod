@@ -81,3 +81,39 @@ class XdmfH5BlobStorage:
                 produced = root / f"{key}{suffix}"
                 if produced.exists():
                     self._blobs.put_bytes(f"{key}{suffix}", produced.read_bytes())
+
+    # --- Freshness --------------------------------------------------------
+
+    def digest(self, key: str, strategy: str = "size_mtime") -> str:
+        """Change-detecting token for the object bytes under ``key``.
+
+        A plain ``BlobStore`` exposes no native size/mtime/ETag, so every
+        strategy degrades to a content hash of the ``.h5`` (+ ``.xdmf``)
+        blobs. The requested strategy is embedded so a strategy switch is
+        still a change signal. A backend that exposes an S3 ETag / checksum
+        can subclass and override ``backend`` without transferring bytes.
+        """
+        import hashlib
+
+        blob_key = f"{key}.h5"
+        try:
+            data = self._blobs.get_bytes(blob_key)
+        except KeyError as exc:
+            raise StorageKeyError(
+                f"XdmfH5BlobStorage has no data source under key {key!r} (blob {blob_key!r})"
+            ) from exc
+        h = hashlib.blake2b(digest_size=32)
+        h.update(data)
+        xdmf_key = f"{key}.xdmf"
+        if xdmf_key in self._blobs:
+            h.update(self._blobs.get_bytes(xdmf_key))
+        return f"{strategy}:blob:{h.hexdigest()}"
+
+    def read_signature(self, key: str) -> str | None:
+        sig_key = f"{key}.sig"
+        if sig_key not in self._blobs:
+            return None
+        return self._blobs.get_bytes(sig_key).decode("utf-8")
+
+    def write_signature(self, key: str, signature: str) -> None:
+        self._blobs.put_bytes(f"{key}.sig", signature.encode("utf-8"))
