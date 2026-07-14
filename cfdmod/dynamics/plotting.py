@@ -213,7 +213,7 @@ def plot_global_stats_per_direction(
         ax.set_ylabel(f"{scalar_name} ({unit})", weight="bold")
         ax.set_xticks(np.arange(0, max_dir + 1, xticks))
         ax.set_xlim(-1, max_dir + 1)
-        ax.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.0f} deg"))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda val, _: rf"${val:g}^\circ$"))
 
     text_sta = "estatico" if language == "pt-br" else "static"
     text_dyn = "estatico equivalente" if language == "pt-br" else "static equivalent"
@@ -316,7 +316,7 @@ def plot_floor_by_floor_mean_peaks(
     axs[1].set_xlabel(f"{vals_labels[1]} ({unit_name})", weight="bold")
     axs[2].set_xlabel(f"{vals_labels[2]} ({unit_name}.m)", weight="bold")
     axs.flat[0].legend(loc="best", frameon=False, ncol=1, fontsize=10)
-    fig.suptitle(f"wind {float(wind_dir):.1f} deg", fontweight="bold")
+    fig.suptitle(rf"wind ${float(wind_dir):g}^\circ$", fontweight="bold")
     return fig, axs
 
 
