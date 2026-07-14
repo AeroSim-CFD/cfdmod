@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cfdmod.geometry.grouping.kinds.by_surface - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../../../genindex.html" /><link rel="search" title="Search" href="../../../../../search.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="cfdmod.geometry.grouping.kinds.by_surface"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../../index.html"><span itemprop="name">Module code</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">cfdmod.geometry.grouping.kinds.by_surface</strong>
+        <meta itemprop="position" content="3" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <h1>Source code for cfdmod.geometry.grouping.kinds.by_surface</h1><div class="highlight"><pre>
+<span></span><span data-line="1"><span class="sd">&quot;&quot;&quot;Group triangles by named LNAS surfaces.</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="sd">Each entry in ``sets`` becomes a single named group containing the union</span>
+</span><span data-line="4"><span class="sd">of the triangle indices of the listed surfaces. This is the</span>
+</span><span data-line="5"><span class="sd">generalisation of today&#39;s ``BodyDefinition.surfaces`` and</span>
+</span><span data-line="6"><span class="sd">``CeConfig.sets`` constructs.</span>
+</span><span data-line="7">
+</span><span data-line="8"><span class="sd">``BySurfaceGrouping`` is a *selection* grouping: it picks triangles by</span>
+</span><span data-line="9"><span class="sd">name from ``LnasFormat.surfaces``. The legacy ``restrict_to`` field is</span>
+</span><span data-line="10"><span class="sd">not supported here because there is nothing to discover - the user</span>
+</span><span data-line="11"><span class="sd">explicitly names which surfaces compose each group.</span>
+</span><span data-line="12"><span class="sd">&quot;&quot;&quot;</span>
+</span><span data-line="13">
+</span><span data-line="14"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span data-line="15">
+</span><span data-line="16"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span>
+</span><span data-line="17">
+</span><span data-line="18"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span data-line="19"><span class="kn">from</span><span class="w"> </span><span class="nn">lnas</span><span class="w"> </span><span class="kn">import</span> <span class="n">LnasFormat</span>
+</span><span data-line="20"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">field_validator</span>
+</span><span data-line="21">
+</span><span data-line="22">
+<div class="viewcode-block" id="BySurfaceGrouping">
+<a class="viewcode-back" href="../../../../../api_reference.html#cfdmod.BySurfaceGrouping">[docs]</a>
+</span><span data-line="23"><span class="k">class</span><span class="w"> </span><span class="nc">BySurfaceGrouping</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="24"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Group triangles by named LNAS surfaces.</span>
+</span><span data-line="25">
+</span><span data-line="26"><span class="sd">    Args:</span>
+</span><span data-line="27"><span class="sd">        kind: Discriminator literal, always ``&quot;by_surface&quot;``.</span>
+</span><span data-line="28"><span class="sd">        sets: ``group_name -&gt; list of LnasFormat.surfaces keys``. Each</span>
+</span><span data-line="29"><span class="sd">            named set becomes one group containing the union of those</span>
+</span><span data-line="30"><span class="sd">            surfaces&#39; triangle indices.</span>
+</span><span data-line="31"><span class="sd">        include_unlisted: When True, all surfaces in ``LnasFormat.surfaces``</span>
+</span><span data-line="32"><span class="sd">            not referenced in ``sets`` are added as singleton groups</span>
+</span><span data-line="33"><span class="sd">            keyed by surface name.</span>
+</span><span data-line="34"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="35">
+</span><span data-line="36">    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;by_surface&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;by_surface&quot;</span>
+</span><span data-line="37">    <span class="n">sets</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+</span><span data-line="38">        <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+</span><span data-line="39">        <span class="n">Field</span><span class="p">(</span>
+</span><span data-line="40">            <span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span>
+</span><span data-line="41">            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;group_name -&gt; list of LnasFormat.surfaces keys&quot;</span><span class="p">,</span>
+</span><span data-line="42">        <span class="p">),</span>
+</span><span data-line="43">    <span class="p">]</span>
+</span><span data-line="44">    <span class="n">include_unlisted</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+</span><span data-line="45">        <span class="nb">bool</span><span class="p">,</span>
+</span><span data-line="46">        <span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Add unreferenced surfaces as singleton groups&quot;</span><span class="p">),</span>
+</span><span data-line="47">    <span class="p">]</span>
+</span><span data-line="48">
+</span><span data-line="49">    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;sets&quot;</span><span class="p">)</span>
+</span><span data-line="50">    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_sets</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+</span><span data-line="51">        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">surfaces</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="52">            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+</span><span data-line="53">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;BySurfaceGrouping.sets: group name must be non-empty&quot;</span><span class="p">)</span>
+</span><span data-line="54">            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">surfaces</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">surfaces</span><span class="p">)):</span>
+</span><span data-line="55">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;BySurfaceGrouping.sets[</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">]: surface names must be unique&quot;</span><span class="p">)</span>
+</span><span data-line="56">        <span class="k">return</span> <span class="n">v</span></div>
+
+</span><span data-line="57">
+</span><span data-line="58">
+</span><span data-line="59"><span class="k">def</span><span class="w"> </span><span class="nf">apply_by_surface</span><span class="p">(</span>
+</span><span data-line="60">    <span class="n">spec</span><span class="p">:</span> <span class="n">BySurfaceGrouping</span><span class="p">,</span>
+</span><span data-line="61">    <span class="n">mesh</span><span class="p">:</span> <span class="n">LnasFormat</span><span class="p">,</span>
+</span><span data-line="62">    <span class="n">allowed</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+</span><span data-line="63"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="64"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build groups from named LNAS surfaces.</span>
+</span><span data-line="65">
+</span><span data-line="66"><span class="sd">    Args:</span>
+</span><span data-line="67"><span class="sd">        spec: The grouping spec.</span>
+</span><span data-line="68"><span class="sd">        mesh: Parent mesh.</span>
+</span><span data-line="69"><span class="sd">        allowed: Ignored - by_surface is a selection grouping.</span>
+</span><span data-line="70">
+</span><span data-line="71"><span class="sd">    Returns:</span>
+</span><span data-line="72"><span class="sd">        ``dict[group_name, sorted unique int64 triangle indices]``.</span>
+</span><span data-line="73">
+</span><span data-line="74"><span class="sd">    Raises:</span>
+</span><span data-line="75"><span class="sd">        KeyError: If a referenced surface is not in ``mesh.surfaces``.</span>
+</span><span data-line="76"><span class="sd">        ValueError: If a triangle would belong to two groups produced by</span>
+</span><span data-line="77"><span class="sd">            the same spec (use a separate spec for overlap on purpose).</span>
+</span><span data-line="78"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="79">    <span class="k">del</span> <span class="n">allowed</span>  <span class="c1"># unused</span>
+</span><span data-line="80">    <span class="n">available</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">surfaces</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</span><span data-line="81">
+</span><span data-line="82">    <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="83">    <span class="n">used_in_sets</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span data-line="84">
+</span><span data-line="85">    <span class="k">for</span> <span class="n">group_name</span><span class="p">,</span> <span class="n">surface_names</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">sets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="86">        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">surface_names</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available</span><span class="p">]</span>
+</span><span data-line="87">        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+</span><span data-line="88">            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+</span><span data-line="89">                <span class="sa">f</span><span class="s2">&quot;BySurfaceGrouping.sets[</span><span class="si">{</span><span class="n">group_name</span><span class="si">!r}</span><span class="s2">]: surfaces not in mesh: &quot;</span>
+</span><span data-line="90">                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">. Available: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">available</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="91">            <span class="p">)</span>
+</span><span data-line="92">        <span class="n">idxs_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">surface_names</span><span class="p">]</span>
+</span><span data-line="93">        <span class="n">merged</span> <span class="o">=</span> <span class="p">(</span>
+</span><span data-line="94">            <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">idxs_parts</span><span class="p">))</span> <span class="k">if</span> <span class="n">idxs_parts</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="95">        <span class="p">)</span>
+</span><span data-line="96">        <span class="n">out</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged</span>
+</span><span data-line="97">        <span class="n">used_in_sets</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">surface_names</span><span class="p">)</span>
+</span><span data-line="98">
+</span><span data-line="99">    <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">include_unlisted</span><span class="p">:</span>
+</span><span data-line="100">        <span class="k">for</span> <span class="n">sfc</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">surfaces</span><span class="p">:</span>
+</span><span data-line="101">            <span class="k">if</span> <span class="n">sfc</span> <span class="ow">in</span> <span class="n">used_in_sets</span> <span class="ow">or</span> <span class="n">sfc</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+</span><span data-line="102">                <span class="k">continue</span>
+</span><span data-line="103">            <span class="n">out</span><span class="p">[</span><span class="n">sfc</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">sfc</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span data-line="104">
+</span><span data-line="105">    <span class="k">return</span> <span class="n">out</span>
+</span></pre></div>
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../../_static/shibuya.js?v=50760d75"></script></body>
+</html>

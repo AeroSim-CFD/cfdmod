@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pressure Coefficients - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" /><link rel="next" title="Pressure Coefficient" href="pressure_coefficient.html" /><link rel="prev" title="Statistics" href="../statistics.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="Pressure Coefficients"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Pressure</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../statistics.html">Statistics</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#available-coefficients">Available Coefficients</a></li>
+<li><a class="reference internal" href="#geometry-artifact">Geometry Artifact</a></li>
+<li><a class="reference internal" href="#filtering-between-coefficients">Filtering between coefficients</a></li>
+<li><a class="reference internal" href="#worked-example">Worked example</a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">Pressure</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Pressure Coefficients</strong>
+        <meta itemprop="position" content="3" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section class="tex2jax_ignore mathjax_ignore" id="pressure-coefficients">
+<h1>Pressure Coefficients<a class="headerlink" href="#pressure-coefficients" title="Link to this heading">#</a></h1>
+<p>As stated before, the pressure data is relevant for structural engineers to understand the <strong>wind induced stress</strong>.</p>
+<p>However, it comes in handy to adimensionalize the pressure data into <strong>coefficients</strong>.
+Therefore, the analysis is <strong>independent of the scale or unit system</strong>.
+It is a way to generalize the pressure data.</p>
+<section id="available-coefficients">
+<h2>Available Coefficients<a class="headerlink" href="#available-coefficients" title="Link to this heading">#</a></h2>
+<p>There are several different coefficients, that are commonly used in the wind industry, such as:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="pressure_coefficient.html"><span class="std std-doc">Pressure Coefficient</span></a>: It is a fundamental adimensionalization of the pressure data. It is obtained by dividing a pressure difference by the <strong>dynamic pressure</strong>.</p></li>
+<li><p><a class="reference internal" href="shape_coefficient.html"><span class="std std-doc">Shape Coefficient</span></a>: It is equivalent to a resulting pressure coefficient over an <strong>area of interest</strong>. It is used to combine the pressure effects over the area, in a way to <strong>sum the exerted force in each triangle</strong> inside this area. Some peaks in each triangle <strong>may cancel each other</strong> in when calculating the shape coefficient.</p></li>
+<li><p><a class="reference internal" href="force_coefficient.html"><span class="std std-doc">Force Coefficient</span></a>: It is a general adimensionalization of the resulting <strong>wind induced force</strong> over a body. It is calculated by summing the resulting force of each triangle, and dividing it by a <strong>representative area</strong>.</p></li>
+<li><p><a class="reference internal" href="moment_coefficient.html"><span class="std std-doc">Moment Coefficient</span></a>: It is a general adimensionalization of the resulting <strong>wind induced momentum</strong> over a body. It is calculated by summing the resulting momentum of each triangle, and dividing it by a <strong>representative volume</strong>. The anchor point to define the momentum lever is an <strong>arbitrary point for the whole body</strong>.</p></li>
+</ul>
+</section>
+<section id="geometry-artifact">
+<h2>Geometry Artifact<a class="headerlink" href="#geometry-artifact" title="Link to this heading">#</a></h2>
+<p>Each coefficient has its own artifacts dependencies.
+However, a common artifact shared between all of them, is a <strong>description of the structure geometry</strong>.</p>
+<p>The pipeline accepts geometry in any of the following formats and dispatches by suffix via <code class="xref py py-func docutils literal notranslate"><span class="pre">cfdmod.io.load_mesh()</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.lnas</span></code> – the AeroSim native LNAS file with authored surfaces.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.stl</span></code> – a triangle mesh; treated as a single <code class="docutils literal notranslate"><span class="pre">&quot;all&quot;</span></code> surface.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.h5</span></code> – an XDMF+H5 with embedded <code class="docutils literal notranslate"><span class="pre">/Triangles</span> <span class="pre">+</span> <span class="pre">/Geometry</span></code>; single <code class="docutils literal notranslate"><span class="pre">&quot;all&quot;</span></code> surface.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.xdmf</span></code> – redirects to its sibling <code class="docutils literal notranslate"><span class="pre">.h5</span></code>.</p></li>
+</ul>
+<p>The mesh is attached to a Cp time series by the <code class="docutils literal notranslate"><span class="pre">mesh_attach</span></code> op, which pulls per-triangle areas, normals and centroids from the <code class="docutils literal notranslate"><span class="pre">.lnas</span></code> (or <code class="docutils literal notranslate"><span class="pre">.h5</span></code>) geometry. The Cf / Cm / Ce templates all start with a <code class="docutils literal notranslate"><span class="pre">mesh_attach</span></code> step; the Cp template itself does not need a mesh.</p>
+<p>When the same building is simulated at several wind directions, each solver run produces a body H5 in its own wind-aligned (“spun”) coordinate frame. Point every template’s <code class="docutils literal notranslate"><span class="pre">mesh_attach</span></code> at a single fixed-frame mesh and all coefficients are expressed in that shared frame. Triangle ordering must match the body H5 – only vertex coordinates may differ.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For LNAS-specific details, see the documentation inside the <a class="reference external" href="https://github.com/AeroSim-CFD/stl2lnas">LNAS repository</a>.</p>
+</div>
+</section>
+<section id="filtering-between-coefficients">
+<h2>Filtering between coefficients<a class="headerlink" href="#filtering-between-coefficients" title="Link to this heading">#</a></h2>
+<p>A coefficient time series is carried by a <a class="reference internal" href="../../../api_reference.html#cfdmod.DataSource" title="cfdmod.DataSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">cfdmod.DataSource</span></code></a>, so
+signal-processing steps are just more ops in the pipeline. To smooth a
+series, insert a <code class="docutils literal notranslate"><span class="pre">moving_average</span></code> step; the window is expressed in the
+input time units and the result is another field on the same data source,
+ready to feed the next step.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp_smoothed</span>
+</span><span data-line="2"><span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moving_average</span>
+</span><span data-line="3"><span class="w">  </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp_t</span>
+</span><span data-line="4"><span class="w">  </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp</span>
+</span><span data-line="5"><span class="w">  </span><span class="nt">window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+</span><span data-line="6"><span class="w">  </span><span class="nt">out</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp</span>
+</span></pre></div>
+</div>
+<p>Placing smoothing in the pipeline (rather than inside a statistics block)
+keeps the lineage explicit: every step is recorded in the template that
+produced the output.</p>
+</section>
+<section id="worked-example">
+<h2>Worked example<a class="headerlink" href="#worked-example" title="Link to this heading">#</a></h2>
+<p>An end-to-end example lives at <code class="docutils literal notranslate"><span class="pre">examples/container_pack/process_container_pack.ipynb</span></code>
+in the repo. It builds a Cp / Cf / Cm / Ce pipeline as YAML templates,
+runs them with <code class="docutils literal notranslate"><span class="pre">run_template</span></code> over the on-disk XDMF+H5 storage, and
+streams the results back onto a coarse mesh. The per-coefficient
+tutorials below run the same shipped templates
+(<code class="docutils literal notranslate"><span class="pre">fixtures/tests/pressure/templates/</span></code>) step by step.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="../statistics.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Statistics</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="pressure_coefficient.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Pressure Coefficient</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/shibuya.js?v=50760d75"></script></body>
+</html>

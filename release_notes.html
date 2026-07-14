@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Release Notes - AeroSim CFDmod</title><link rel="shortcut icon" href="_static/favicon.svg"/><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="Climate and Wind Statistics" href="analysis/climate/index.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="Release Notes"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#id1">3.2.0</a><ul>
+<li><a class="reference internal" href="#building-wind-load-post-processing-cfdmod-building">Building wind-load post-processing (<code class="docutils literal notranslate"><span class="pre">cfdmod.building</span></code>)</a></li>
+<li><a class="reference internal" href="#structural-model-import-cfdmod-dynamics">Structural model import (<code class="docutils literal notranslate"><span class="pre">cfdmod.dynamics</span></code>)</a></li>
+<li><a class="reference internal" href="#mesh-field-rendering-cfdmod-mesh-field">Mesh-field rendering (<code class="docutils literal notranslate"><span class="pre">cfdmod.mesh_field</span></code>)</a></li>
+<li><a class="reference internal" href="#output-freshness-incremental-runs">Output freshness / incremental runs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v3-1-0">v3.1.0</a><ul>
+<li><a class="reference internal" href="#op-catalog-and-introspection">Op catalog and introspection</a></li>
+<li><a class="reference internal" href="#static-template-validation">Static template validation</a></li>
+<li><a class="reference internal" href="#dependency-light-import">Dependency-light import</a></li>
+<li><a class="reference internal" href="#typed-errors">Typed errors</a></li>
+<li><a class="reference internal" href="#object-store-storage">Object-store storage</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v3-0-0">v3.0.0</a><ul>
+<li><a class="reference internal" href="#v3-foundation">v3 foundation</a></li>
+<li><a class="reference internal" href="#yaml-pipeline-cli">YAML pipeline + CLI</a></li>
+<li><a class="reference internal" href="#migration">Migration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v2-1-0">v2.1.0</a><ul>
+<li><a class="reference internal" href="#triangle-grouping-pipeline-cfdmod-geometry-grouping">Triangle-grouping pipeline (<code class="docutils literal notranslate"><span class="pre">cfdmod.geometry.grouping</span></code>)</a></li>
+<li><a class="reference internal" href="#regroup-module-cfdmod-regroup">Regroup module (<code class="docutils literal notranslate"><span class="pre">cfdmod.regroup</span></code>)</a></li>
+<li><a class="reference internal" href="#remesh-module-cfdmod-remesh">Remesh module (<code class="docutils literal notranslate"><span class="pre">cfdmod.remesh</span></code>)</a></li>
+<li><a class="reference internal" href="#relaxed-dependency-bounds">Relaxed dependency bounds</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v2-0-1">v2.0.1</a><ul>
+<li><a class="reference internal" href="#notebook-process-container-pack-ipynb">Notebook (<code class="docutils literal notranslate"><span class="pre">process_container_pack.ipynb</span></code>)</a></li>
+<li><a class="reference internal" href="#pressure-pipeline">Pressure pipeline</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v2-0-0">v2.0.0</a><ul>
+<li><a class="reference internal" href="#sane-defaults-and-explicit-knobs">Sane defaults and explicit knobs</a></li>
+<li><a class="reference internal" href="#reference-frame-override-multi-direction-sweeps">Reference-frame override (multi-direction sweeps)</a></li>
+<li><a class="reference internal" href="#first-class-filter-chain">First-class filter chain</a></li>
+<li><a class="reference internal" href="#pipeline-cp-cf-cm-ce">Pipeline (Cp / Cf / Cm / Ce)</a></li>
+<li><a class="reference internal" href="#new-cm-features">New Cm features</a></li>
+<li><a class="reference internal" href="#public-api">Public API</a></li>
+<li><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
+<li><a class="reference internal" href="#compatibility-migration">Compatibility / migration</a></li>
+<li><a class="reference internal" href="#documentation-tooling">Documentation / tooling</a></li>
+<li><a class="reference internal" href="#tests-quality">Tests / quality</a></li>
+<li><a class="reference internal" href="#dependencies-packaging">Dependencies / packaging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v1-1-2">v1.1.2</a></li>
+<li><a class="reference internal" href="#v1-1-1">v1.1.1</a></li>
+<li><a class="reference internal" href="#v1-1-0">v1.1.0</a></li>
+<li><a class="reference internal" href="#v1-0-0">v1.0.0</a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Release Notes</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section class="tex2jax_ignore mathjax_ignore" id="release-notes">
+<h1>Release Notes<a class="headerlink" href="#release-notes" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>3.2.0<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<p>Additive feature work on top of v3.1.0: a building wind-load
+post-processing layer (<code class="docutils literal notranslate"><span class="pre">cfdmod.building</span></code>), structural-model importers
+(<code class="docutils literal notranslate"><span class="pre">cfdmod.dynamics</span></code>), and mesh-field rendering (<code class="docutils literal notranslate"><span class="pre">cfdmod.mesh_field</span></code>). No
+public v3 symbol is removed or changed in signature.</p>
+<section id="building-wind-load-post-processing-cfdmod-building">
+<h3>Building wind-load post-processing (<code class="docutils literal notranslate"><span class="pre">cfdmod.building</span></code>)<a class="headerlink" href="#building-wind-load-post-processing-cfdmod-building" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BuildingCase</span></code> aggregates a case’s inputs (pressure timeseries, dynamic
+pressure, geometry) and <code class="docutils literal notranslate"><span class="pre">cp_from_pressure</span></code> derives Cp from a raw
+pressure signal, feeding the per-floor and dynamic stages.</p></li>
+<li><p>Per-floor <code class="docutils literal notranslate"><span class="pre">cf_per_floor</span></code> / <code class="docutils literal notranslate"><span class="pre">cm_per_floor</span></code> normalise with an explicit
+reference area / volume (<code class="docutils literal notranslate"><span class="pre">nominal_area</span></code> / <code class="docutils literal notranslate"><span class="pre">nominal_volume</span></code>), not the
+legacy per-region bounding-box area.</p></li>
+<li><p>Peak extraction is selectable: raw maximum, gust <code class="docutils literal notranslate"><span class="pre">gust_peak_factor</span></code>, or
+a Gumbel fit (<code class="docutils literal notranslate"><span class="pre">PeakMethod</span></code>).</p></li>
+<li><p>Dynamic response: <code class="docutils literal notranslate"><span class="pre">solve_building_response</span></code>, <code class="docutils literal notranslate"><span class="pre">floor_accelerations</span></code> and
+<code class="docutils literal notranslate"><span class="pre">peak_response_table</span></code> run the modal SDOF solver over a per-floor load
+source and report peak floor accelerations.</p></li>
+<li><p>Occupant comfort: <code class="docutils literal notranslate"><span class="pre">comfort_limit</span></code> checks peak accelerations against
+NBR 6123, Melbourne (1992) and NBCC limits (with <code class="docutils literal notranslate"><span class="pre">nbr6123_</span></code>,
+<code class="docutils literal notranslate"><span class="pre">melbourne1992_</span></code> and <code class="docutils literal notranslate"><span class="pre">nbcc_acceleration_limit</span></code> exposed directly, plus
+<code class="docutils literal notranslate"><span class="pre">milli_g_to_mps2</span></code> / <code class="docutils literal notranslate"><span class="pre">mps2_to_milli_g</span></code> conversions). The NBCC commercial
+limit is 25 milli-g.</p></li>
+<li><p>Design load cases: <code class="docutils literal notranslate"><span class="pre">generate_load_cases</span></code> / <code class="docutils literal notranslate"><span class="pre">save_load_case_tables</span></code> write
+per-floor Fx / Fy / Mz peak/min/max load-case tables to CSV.</p></li>
+<li><p>Multi-direction fan-out: <code class="docutils literal notranslate"><span class="pre">FanoutPlan</span></code> + <code class="docutils literal notranslate"><span class="pre">run_fanout</span></code> drive the whole
+per-floor / dynamic / comfort chain over every (direction, body, config)
+combination of a parametric study, with <code class="docutils literal notranslate"><span class="pre">directional_envelopes</span></code> and the
+<code class="docutils literal notranslate"><span class="pre">join_by_*</span></code> / <code class="docutils literal notranslate"><span class="pre">filter_by_*</span></code> reducers for cross-direction results.</p></li>
+</ul>
+</section>
+<section id="structural-model-import-cfdmod-dynamics">
+<h3>Structural model import (<code class="docutils literal notranslate"><span class="pre">cfdmod.dynamics</span></code>)<a class="headerlink" href="#structural-model-import-cfdmod-dynamics" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">read_tqs_portels</span></code> (TQS Portico Espacial, nodal), <code class="docutils literal notranslate"><span class="pre">read_tqs_portico</span></code>
+(TQS per-floor) and <code class="docutils literal notranslate"><span class="pre">read_eberick</span></code> (AltoQi Eberick) convert design-tool
+modal exports into the internal <code class="docutils literal notranslate"><span class="pre">BuildingStructuralData</span></code> the dynamic
+recipe consumes, removing a manual transcription step.</p></li>
+<li><p>Nodal TQS data is aggregated to per-floor lumped mass / inertia / centre
+of mass / rigid-diaphragm mode shape (<code class="docutils literal notranslate"><span class="pre">aggregate_to_building</span></code>); units are
+converted to SI (<code class="docutils literal notranslate"><span class="pre">EberickUnits</span></code>) and mode shapes are mass-normalized to
+unit generalized mass.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BuildingStructuralData</span></code> round-trips through <code class="docutils literal notranslate"><span class="pre">modes.csv</span></code> / <code class="docutils literal notranslate"><span class="pre">floors.csv</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">phi{m}.csv</span></code> (<code class="docutils literal notranslate"><span class="pre">from_csvs</span></code>) and is writable from the command line
+(<code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">dynamics</span> <span class="pre">&lt;export_dir&gt;</span> <span class="pre">--out</span> <span class="pre">...</span> <span class="pre">--format</span> <span class="pre">tqs|portico|eberick</span></code>).</p></li>
+<li><p>See the Structural Model Import use-case page for the file formats.</p></li>
+</ul>
+</section>
+<section id="mesh-field-rendering-cfdmod-mesh-field">
+<h3>Mesh-field rendering (<code class="docutils literal notranslate"><span class="pre">cfdmod.mesh_field</span></code>)<a class="headerlink" href="#mesh-field-rendering-cfdmod-mesh-field" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Per-triangle matplotlib mesh-field renders (<code class="docutils literal notranslate"><span class="pre">triangle_field_figure</span></code>) and
+facade Cp snapshots, plus a PyVista plane-slice field render
+(<code class="docutils literal notranslate"><span class="pre">render_plane_slice</span></code> / <code class="docutils literal notranslate"><span class="pre">slice_field_on_plane</span></code>) and line sampling
+(<code class="docutils literal notranslate"><span class="pre">sample_field_along_line</span></code>) for cutting through a volume field.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">moving_average_stats</span></code> reuses the core <code class="docutils literal notranslate"><span class="pre">moving_average</span></code> op.</p></li>
+</ul>
+</section>
+<section id="output-freshness-incremental-runs">
+<h3>Output freshness / incremental runs<a class="headerlink" href="#output-freshness-incremental-runs" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Each output a template writes is stamped with a <strong>signature</strong> hashed over
+the params and wiring of the steps that feed it, a change-detecting
+digest of the input files it depends on, and a code/format version tag.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_status(template,</span> <span class="pre">storage)</span></code> reports each declared output as
+<code class="docutils literal notranslate"><span class="pre">fresh</span></code>, <code class="docutils literal notranslate"><span class="pre">stale</span></code>, or <code class="docutils literal notranslate"><span class="pre">missing</span></code> without running anything; <code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">status</span> <span class="pre">&lt;template&gt;</span></code> prints the same and exits non-zero if anything is stale
+(usable as a CI / Makefile gate).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_template(...,</span> <span class="pre">skip_fresh=True)</span></code> (and <code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">--skip-fresh</span></code>)
+skips recomputing outputs that are already up to date and runs only the
+steps the stale outputs depend on, so touching one late stage no longer
+recomputes fresh upstreams.</p></li>
+<li><p>The input-digest strategy is configurable (template <code class="docutils literal notranslate"><span class="pre">freshness.digest</span></code>
+or <code class="docutils literal notranslate"><span class="pre">--digest</span></code>): <code class="docutils literal notranslate"><span class="pre">size_mtime</span></code> (default, no byte reads), <code class="docutils literal notranslate"><span class="pre">content</span></code> (a
+strong hash), or <code class="docutils literal notranslate"><span class="pre">backend</span></code> (the backend’s native token). <code class="docutils literal notranslate"><span class="pre">Storage</span></code> gains
+<code class="docutils literal notranslate"><span class="pre">digest</span></code> / <code class="docutils literal notranslate"><span class="pre">read_signature</span></code> / <code class="docutils literal notranslate"><span class="pre">write_signature</span></code>; the default run path is
+unchanged for backends that do not implement them.</p></li>
+</ul>
+</section>
+</section>
+<section id="v3-1-0">
+<h2>v3.1.0<a class="headerlink" href="#v3-1-0" title="Link to this heading">#</a></h2>
+<p>Minor release. Turns the v3 core from “a library you call” into “a
+contract a service can reflect on and drive from a UI”,
+additively – no public symbol is removed or changed in signature, and
+every new error subclasses the builtin it replaced, so existing
+<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">(KeyError,</span> <span class="pre">ValueError)</span></code> handlers keep working.</p>
+<section id="op-catalog-and-introspection">
+<h3>Op catalog and introspection<a class="headerlink" href="#op-catalog-and-introspection" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>The op registry is now populated at import, so <code class="docutils literal notranslate"><span class="pre">OP_REGISTRY</span></code> is
+non-empty without first running a template.</p></li>
+<li><p>New <code class="docutils literal notranslate"><span class="pre">list_ops()</span></code> / <code class="docutils literal notranslate"><span class="pre">op_info(kind)</span></code> return each op’s arity, family,
+data-source contract, and <strong>parameter JSON Schema</strong> – enough for a
+node-based pipeline editor to render a form and validate a connection.</p></li>
+<li><p>Ops declare a machine-readable contract on <code class="docutils literal notranslate"><span class="pre">OpParams</span></code>
+(<code class="docutils literal notranslate"><span class="pre">consumes</span></code> / <code class="docutils literal notranslate"><span class="pre">produces</span></code> kinds, <code class="docutils literal notranslate"><span class="pre">requires_element_meta</span></code> /
+<code class="docutils literal notranslate"><span class="pre">produces_element_meta</span></code>, <code class="docutils literal notranslate"><span class="pre">replaces_fields</span></code>,
+<code class="docutils literal notranslate"><span class="pre">consumed_fields()</span></code> / <code class="docutils literal notranslate"><span class="pre">produced_fields()</span></code>).</p></li>
+<li><p>Custom ops registered via <code class="docutils literal notranslate"><span class="pre">register_op</span></code> are first-class: usable in
+templates, validated, and listed by <code class="docutils literal notranslate"><span class="pre">list_ops</span></code>.</p></li>
+</ul>
+</section>
+<section id="static-template-validation">
+<h3>Static template validation<a class="headerlink" href="#static-template-validation" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">validate_template</span></code> now runs a symbolic contract pass over the op
+catalog before any I/O – catching graph-wiring mistakes such as a
+<code class="docutils literal notranslate"><span class="pre">force_contribution</span></code> before <code class="docutils literal notranslate"><span class="pre">mesh_attach</span></code>, or a surface-only op fed a
+points binding. Strict on kinds / element metadata, permissive on
+fields when the input’s fields were not declared. All shipped
+cp/cf/cm/ce templates still validate.</p></li>
+</ul>
+</section>
+<section id="dependency-light-import">
+<h3>Dependency-light import<a class="headerlink" href="#dependency-light-import" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">cfdmod</span></code> – and importing the template schema / op catalog
+under <code class="docutils literal notranslate"><span class="pre">cfdmod.core</span></code> – no longer pulls the heavy scientific stack
+(h5py, matplotlib, pandas, pyarrow, vtk, trimesh). They load lazily,
+only when a symbol that needs them is first accessed. A web / API
+layer can build and validate templates without the numeric stack
+installed.</p></li>
+</ul>
+</section>
+<section id="typed-errors">
+<h3>Typed errors<a class="headerlink" href="#typed-errors" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>New <code class="docutils literal notranslate"><span class="pre">CfdmodError</span></code> hierarchy: <code class="docutils literal notranslate"><span class="pre">TemplateError</span></code> (a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>),
+<code class="docutils literal notranslate"><span class="pre">TemplateReferenceError</span></code> (a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>), <code class="docutils literal notranslate"><span class="pre">OpError</span></code> (a <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>
+carrying <code class="docutils literal notranslate"><span class="pre">step_id</span></code> / <code class="docutils literal notranslate"><span class="pre">op_kind</span></code>), and <code class="docutils literal notranslate"><span class="pre">StorageKeyError</span></code> (a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>).
+<code class="docutils literal notranslate"><span class="pre">run_template</span></code> wraps op-execution failures in <code class="docutils literal notranslate"><span class="pre">OpError</span></code>.</p></li>
+</ul>
+</section>
+<section id="object-store-storage">
+<h3>Object-store storage<a class="headerlink" href="#object-store-storage" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>New <code class="docutils literal notranslate"><span class="pre">BlobStore</span></code> protocol and <code class="docutils literal notranslate"><span class="pre">XdmfH5BlobStorage</span></code> run the same pipeline
+against any blob backend (an object store such as S3, a DB blob
+column) by reusing the exact XDMF+H5 byte layout – cfdmod stays free
+of any cloud SDK. <code class="docutils literal notranslate"><span class="pre">MemoryBlobStore</span></code> is provided for tests and
+in-process pipelines.</p></li>
+</ul>
+</section>
+</section>
+<section id="v3-0-0">
+<h2>v3.0.0<a class="headerlink" href="#v3-0-0" title="Link to this heading">#</a></h2>
+<p>Major release. Introduces the v3 data-source paradigm and
+<strong>hard-removes the v2 pressure module</strong>. All Cp/Cf/Cm/Ce work now flows
+through pipeline-as-YAML templates executed via <code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">&lt;template.yaml&gt;</span></code> or the Python <code class="docutils literal notranslate"><span class="pre">run_template</span></code> API. This is a breaking
+change: the v2 <code class="docutils literal notranslate"><span class="pre">cfdmod.pressure</span></code> package and its ~20 top-level exports
+(<code class="docutils literal notranslate"><span class="pre">CpCaseConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">run_cp</span></code>, <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">apply_filters</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ZoningModel</span></code>, …) are gone.</p>
+<section id="v3-foundation">
+<h3>v3 foundation<a class="headerlink" href="#v3-foundation" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Frozen <code class="docutils literal notranslate"><span class="pre">DataSource</span></code> (five kinds), affine <code class="docutils literal notranslate"><span class="pre">TimeAxis</span></code>, <code class="docutils literal notranslate"><span class="pre">Topology</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Container</span></code>, and the <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code>/<code class="docutils literal notranslate"><span class="pre">Storage</span></code> protocols with in-memory
+and XDMF+H5 adapters.</p></li>
+<li><p>Time ops and the <code class="docutils literal notranslate"><span class="pre">moving_average</span></code> field op; field-algebra wrappers,
+<code class="docutils literal notranslate"><span class="pre">compute_statistics</span></code>, and grouping ops.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">modal_projection</span></code> / <code class="docutils literal notranslate"><span class="pre">modal_recomposition</span></code> and the dynamic-analysis
+recipe with an injected modal solver.</p></li>
+<li><p>S1, pedestrian comfort, probe extraction, profile interpolation, and
+1-D algebra.</p></li>
+<li><p>Cp/Cf/Cm/Ce expressed as composable recipe helpers and shipped as
+example templates under <code class="docutils literal notranslate"><span class="pre">fixtures/tests/pressure/templates/</span></code>.</p></li>
+</ul>
+</section>
+<section id="yaml-pipeline-cli">
+<h3>YAML pipeline + CLI<a class="headerlink" href="#yaml-pipeline-cli" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.core.pipeline_yaml</span></code>: parse a steps array, walk inputs -&gt;
+pipeline -&gt; outputs, and dispatch each step into the op registry
+(step-id cross references, binary-op rhs resolution, path-like-field
+resolution against the template <code class="docutils literal notranslate"><span class="pre">root:</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">&lt;template.yaml&gt;</span></code> CLI entry point.</p></li>
+<li><p>Four introductory tutorial notebooks (<code class="docutils literal notranslate"><span class="pre">01_data_sources</span></code>,
+<code class="docutils literal notranslate"><span class="pre">02_recipes</span></code>, <code class="docutils literal notranslate"><span class="pre">03_pipelines</span></code>, <code class="docutils literal notranslate"><span class="pre">04_containers</span></code>) that run end-to-end on
+synthetic data.</p></li>
+</ul>
+</section>
+<section id="migration">
+<h3>Migration<a class="headerlink" href="#migration" title="Link to this heading">#</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>v2</p></th>
+<th class="head"><p>v3 equivalent</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cp_params.yaml</span></code> + <code class="docutils literal notranslate"><span class="pre">run_cp(...)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cp.yaml</span></code> template + <code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">cp.yaml</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Cf_params.yaml</span></code> + <code class="docutils literal notranslate"><span class="pre">run_cf(...)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cf.yaml</span></code> template</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Cm_params.yaml</span></code> + <code class="docutils literal notranslate"><span class="pre">run_cm(...)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cm.yaml</span></code> template</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ce_params.yaml</span></code> + <code class="docutils literal notranslate"><span class="pre">run_ce(...)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ce.yaml</span></code> template</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">apply_filters(...)</span></code> with <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">moving_average</span></code> op step</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CpCaseConfig</span></code> Python instance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CpRecipeConfig</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>See the v3 migration guide for the full mapping.</p>
+</section>
+</section>
+<section id="v2-1-0">
+<h2>v2.1.0<a class="headerlink" href="#v2-1-0" title="Link to this heading">#</a></h2>
+<p>Minor release on top of v2.0.1. Three geometry-preprocessing
+subpackages land – the triangle-grouping pipeline
+(<code class="docutils literal notranslate"><span class="pre">cfdmod.geometry.grouping</span></code>), the regroup module (<code class="docutils literal notranslate"><span class="pre">cfdmod.regroup</span></code>),
+and the remesh module (<code class="docutils literal notranslate"><span class="pre">cfdmod.remesh</span></code>) – all exported from the
+top-level <code class="docutils literal notranslate"><span class="pre">cfdmod</span></code> package and driven from the new notebooks. The
+release also relaxes the dependency version bounds so <code class="docutils literal notranslate"><span class="pre">aerosim-cfdmod</span></code>
+can be co-installed as a library without forcing resolution conflicts
+on consumers. No breaking changes to existing public APIs; the legacy
+<code class="docutils literal notranslate"><span class="pre">sub_bodies</span></code> YAML form and the v2.0 Cp/Cf/Cm/Ce output layout are
+unchanged.</p>
+<section id="triangle-grouping-pipeline-cfdmod-geometry-grouping">
+<h3>Triangle-grouping pipeline (<code class="docutils literal notranslate"><span class="pre">cfdmod.geometry.grouping</span></code>)<a class="headerlink" href="#triangle-grouping-pipeline-cfdmod-geometry-grouping" title="Link to this heading">#</a></h3>
+<p>A new top-level subpackage promotes triangle grouping to a
+first-class pipeline step, mirroring the v2.0 filter pipeline for
+time-series. Specs are Pydantic models in a discriminated union
+(<code class="docutils literal notranslate"><span class="pre">GroupingSpec</span></code>), composed left-to-right with <code class="docutils literal notranslate"><span class="pre">apply_groupings</span></code>, and
+a triangle may belong to zero, one, or many groups. Three kinds ship
+out of the box:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BySurfaceGrouping</span></code> – collect named LNAS surfaces into one or
+more groups (generalises the legacy <code class="docutils literal notranslate"><span class="pre">BodyDefinition.surfaces</span></code> and
+<code class="docutils literal notranslate"><span class="pre">CeConfig.sets</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByZoningGrouping</span></code> – axis-aligned centroid binning into a
+Cartesian grid of regions (generalises <code class="docutils literal notranslate"><span class="pre">ZoningModel</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByDivisionsGrouping</span></code> – convenience wrapper over <code class="docutils literal notranslate"><span class="pre">ByZoningGrouping</span></code>
+that splits each axis into <code class="docutils literal notranslate"><span class="pre">n_div_{x,y,z}</span></code> equal cells over the
+candidate centroid bounding box.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BySizeGrouping</span></code> – convenience wrapper that builds cells of a
+fixed <code class="docutils literal notranslate"><span class="pre">size_{x,y,z}</span></code> per axis anchored at the bounding-box minimum.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByConnectivityGrouping</span></code> – one group per connected component of
+the (sub)mesh, defined by shared-edge adjacency. The first kind
+the legacy <code class="docutils literal notranslate"><span class="pre">sub_bodies</span></code> field could not express.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByNormalGrouping</span></code> – bucket triangles by the cardinal direction
+their outward normal best aligns with (windward / leeward / roof /
+sidewall in one shot, with a tolerance angle).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByPlaneGrouping</span></code> – bin centroids by signed distance from an
+oriented plane. Generalises <code class="docutils literal notranslate"><span class="pre">ByZoningGrouping</span></code> to non-axis-aligned
+half-space splits; the default produces two halves on either side
+of the plane.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByPercentileGrouping</span></code> – equal-count quantile bins along one axis,
+for stable per-cell statistics when triangle density is uneven.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ByCylindricalGrouping</span></code> – Cartesian product of (r, theta, axial)
+bins around a user-chosen cylinder axis. Natural fit for towers,
+silos, chimneys and any partition that prefers cylindrical
+coordinates over Cartesian.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CustomGrouping</span></code> – escape hatch for grouping logic the built-in
+kinds cannot express: user supplies a Python callback (importable
+dotted path or a direct callable) plus an opaque <code class="docutils literal notranslate"><span class="pre">params</span></code> dict, and
+the callback returns the standard <code class="docutils literal notranslate"><span class="pre">{group_name:</span> <span class="pre">triangle_indices}</span></code>
+mapping. Callback signature is fixed (<code class="docutils literal notranslate"><span class="pre">(mesh,</span> <span class="pre">candidate_idxs,</span> <span class="pre">params)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code>); the driver validates indices are in range and
+honor <code class="docutils literal notranslate"><span class="pre">restrict_to</span></code>. Dotted-path callbacks round-trip cleanly
+through <code class="docutils literal notranslate"><span class="pre">dump_groupings</span></code> / <code class="docutils literal notranslate"><span class="pre">load_groupings</span></code>; direct callables are
+serialised by deriving their import path when stable (lambdas and
+local functions raise on serialise).</p></li>
+</ul>
+<p>Each spec exposes a <code class="docutils literal notranslate"><span class="pre">restrict_to:</span> <span class="pre">list[str]</span> <span class="pre">|</span> <span class="pre">None</span></code> field so later
+steps can scope their work to triangles already in earlier groups;
+this is how the legacy <code class="docutils literal notranslate"><span class="pre">surface</span> <span class="pre">-&gt;</span> <span class="pre">sub_body</span></code> nesting is reproduced.</p>
+<p><code class="docutils literal notranslate"><span class="pre">BodyConfig</span></code> (and <code class="docutils literal notranslate"><span class="pre">MomentBodyConfig</span></code>) gain an opt-in
+<code class="docutils literal notranslate"><span class="pre">groupings:</span> <span class="pre">list[GroupingSpec]</span> <span class="pre">|</span> <span class="pre">None</span></code> field. When set, it replaces
+the implicit <code class="docutils literal notranslate"><span class="pre">[BySurface,</span> <span class="pre">ByZoning(sub_bodies)]</span></code> chain entirely;
+mixing it with a non-default <code class="docutils literal notranslate"><span class="pre">sub_bodies</span></code> is rejected. The legacy
+YAML form (<code class="docutils literal notranslate"><span class="pre">sub_bodies</span></code> only) keeps working untouched – the
+canonical chain is synthesized internally via
+<code class="docutils literal notranslate"><span class="pre">BodyConfig.resolved_groupings(sfc_list)</span></code>.</p>
+<p>Internally, <code class="docutils literal notranslate"><span class="pre">cfdmod/pressure/geometry.py</span></code> was refactored to consume
+<code class="docutils literal notranslate"><span class="pre">GroupingResult</span></code> end-to-end. <code class="docutils literal notranslate"><span class="pre">GeometryData.zoning_to_use</span></code> is gone;
+the new fields are <code class="docutils literal notranslate"><span class="pre">grouping</span></code>, <code class="docutils literal notranslate"><span class="pre">spec_chain</span></code>, and <code class="docutils literal notranslate"><span class="pre">body_label</span></code>.
+Region labels (<code class="docutils literal notranslate"><span class="pre">&quot;{idx}-{body}&quot;</span></code> and the <code class="docutils literal notranslate"><span class="pre">&quot;-1-{body}&quot;</span></code> sentinel for
+unbinned triangles) are byte-identical with the legacy output, so
+existing downstream consumers, notebooks, and <code class="docutils literal notranslate"><span class="pre">process_container_pack</span></code>
+runs are unaffected.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CeConfig.zoning</span></code> keeps its current per-surface, normal-axis-aware
+shape; promoting it onto the same explicit-chain pattern is tracked
+as a follow-up.</p>
+<p>A grouping chain may be persisted alongside the existing <code class="docutils literal notranslate"><span class="pre">filters</span></code>
+chain in <code class="docutils literal notranslate"><span class="pre">processing_metadata</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="n">write_processing_metadata</span><span class="p">(</span><span class="n">h5</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="p">{</span>
+</span><span data-line="2">    <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">filter_chain</span><span class="p">],</span>
+</span><span data-line="3">    <span class="s2">&quot;groupings&quot;</span><span class="p">:</span> <span class="n">dump_groupings</span><span class="p">(</span><span class="n">grouping_chain</span><span class="p">),</span>
+</span><span data-line="4"><span class="p">})</span>
+</span></pre></div>
+</div>
+<p>See <code class="docutils literal notranslate"><span class="pre">fixtures/tests/pressure/Cf_params_groupings.yaml</span></code> for the new
+explicit YAML form, and the API reference for the full surface.</p>
+</section>
+<section id="regroup-module-cfdmod-regroup">
+<h3>Regroup module (<code class="docutils literal notranslate"><span class="pre">cfdmod.regroup</span></code>)<a class="headerlink" href="#regroup-module-cfdmod-regroup" title="Link to this heading">#</a></h3>
+<p>A standalone preprocessing module that takes a geometry plus a
+per-triangle HDF5 timeseries (Cp-style: rows = timesteps, columns =
+parent triangle ids), applies a chain of triangle-grouping specs
+(Ce-style 90-degree zoning cuts, connectivity-based container
+separation, etc.), and writes two aligned outputs:</p>
+<ul class="simple">
+<li><p>a new <code class="docutils literal notranslate"><span class="pre">LnasFormat</span></code> mesh with one named surface per group, and</p></li>
+<li><p>a new HDF5 timeseries whose columns line up with the new triangle
+order (<code class="docutils literal notranslate"><span class="pre">per_triangle</span></code> mode) or whose values are area-weighted
+aggregates per group broadcast over each group’s triangles
+(<code class="docutils literal notranslate"><span class="pre">area_weighted_mean</span></code> mode).</p></li>
+</ul>
+<p>It reuses <code class="docutils literal notranslate"><span class="pre">cfdmod.geometry.grouping</span></code> for all binning kinds and adds
+one regroup-local spec, <code class="docutils literal notranslate"><span class="pre">BySizeRoundedPerComponent</span></code>, that fans out
+per-component target-size subdivisions (resolved by <code class="docutils literal notranslate"><span class="pre">run_regroup</span></code>).
+The module follows the standard domain layout (config / cli / run /
+functions) and is runnable as <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">cfdmod.regroup</span></code>. New public
+symbols exported from the top-level package: <code class="docutils literal notranslate"><span class="pre">RegroupConfig</span></code>,
+<code class="docutils literal notranslate"><span class="pre">RegroupSpec</span></code>, <code class="docutils literal notranslate"><span class="pre">RegroupIndex</span></code>, <code class="docutils literal notranslate"><span class="pre">BySizeRoundedPerComponent</span></code>,
+<code class="docutils literal notranslate"><span class="pre">build_regroup_mapping</span></code>, <code class="docutils literal notranslate"><span class="pre">build_regrouped_mesh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">apply_regroup_to_timeseries</span></code>, <code class="docutils literal notranslate"><span class="pre">expand_regroup_chain</span></code>, <code class="docutils literal notranslate"><span class="pre">run_regroup</span></code>.
+These fold slice + per-face aggregation + remesh into a single
+in-memory pipeline.</p>
+</section>
+<section id="remesh-module-cfdmod-remesh">
+<h3>Remesh module (<code class="docutils literal notranslate"><span class="pre">cfdmod.remesh</span></code>)<a class="headerlink" href="#remesh-module-cfdmod-remesh" title="Link to this heading">#</a></h3>
+<p>Per-group triangle coarsening for grouped <code class="docutils literal notranslate"><span class="pre">LnasFormat</span></code> meshes. The
+default path is exact coplanar-fan merging: within each group,
+adjacent triangles that share a plane are replaced by the minimum
+triangulation of their joined region (a flat NxN-subdivided square
+collapses to 2 triangles). It is lossless, deterministic, and pulls
+in no external dependency. An opt-in path runs Quadric Error Metrics
+(QEM) decimation on top via <code class="docutils literal notranslate"><span class="pre">fast-simplification</span></code> (MIT-licensed,
+available through the new <code class="docutils literal notranslate"><span class="pre">remesh</span></code> extra) for groups on curved
+surfaces where coplanar merge cannot reduce the count further.</p>
+<p>API surface only – no CLI, no YAML config, no HDF5 I/O – intended
+for in-process use from notebooks and debugging scripts. New public
+symbols exported from the top-level package: <code class="docutils literal notranslate"><span class="pre">merge_coplanar</span></code>,
+<code class="docutils literal notranslate"><span class="pre">decimate_qem</span></code>, <code class="docutils literal notranslate"><span class="pre">remesh_per_group</span></code>.</p>
+</section>
+<section id="relaxed-dependency-bounds">
+<h3>Relaxed dependency bounds<a class="headerlink" href="#relaxed-dependency-bounds" title="Link to this heading">#</a></h3>
+<p>The runtime dependency pins were loosened from capped ranges to
+floors-only so <code class="docutils literal notranslate"><span class="pre">aerosim-cfdmod</span></code> can be co-installed as a library
+without forcing version-resolution conflicts on downstream projects
+(for example one that needs pandas 3.x). The upper caps were dropped
+from <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="docutils literal notranslate"><span class="pre">scipy</span></code>, <code class="docutils literal notranslate"><span class="pre">pandas</span></code>, <code class="docutils literal notranslate"><span class="pre">pydantic</span></code>, <code class="docutils literal notranslate"><span class="pre">ruamel-yaml</span></code>,
+<code class="docutils literal notranslate"><span class="pre">colorama</span></code>, <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>, <code class="docutils literal notranslate"><span class="pre">pyarrow</span></code>, and <code class="docutils literal notranslate"><span class="pre">aerosim-lnas</span></code>, and from the
+<code class="docutils literal notranslate"><span class="pre">geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">remesh</span></code>, and <code class="docutils literal notranslate"><span class="pre">vtk</span></code> optional extras. Lower bounds (the
+minimum tested versions) are unchanged. The <code class="docutils literal notranslate"><span class="pre">legacy</span></code>/<code class="docutils literal notranslate"><span class="pre">dev</span></code> <code class="docutils literal notranslate"><span class="pre">tables</span></code>
+pin keeps its <code class="docutils literal notranslate"><span class="pre">&lt;4</span></code> cap, which guards Python 3.10 support. Consuming
+applications should pin exact versions themselves; this library only
+declares floors.</p>
+</section>
+</section>
+<section id="v2-0-1">
+<h2>v2.0.1<a class="headerlink" href="#v2-0-1" title="Link to this heading">#</a></h2>
+<p>Patch release on top of v2.0.0 covering the worked-notebook polish
+and one Cm regression that surfaced the first time a user ran
+<code class="docutils literal notranslate"><span class="pre">run_cm</span></code> with the new reference-mesh path on a real container pack.</p>
+<section id="notebook-process-container-pack-ipynb">
+<h3>Notebook (<code class="docutils literal notranslate"><span class="pre">process_container_pack.ipynb</span></code>)<a class="headerlink" href="#notebook-process-container-pack-ipynb" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>The geometry-inspect and zoning auto-detect cells now load
+<code class="docutils literal notranslate"><span class="pre">REFERENCE_MESH</span></code> when set, falling back to the body H5’s embedded
+geometry when not. Previously they always called
+<code class="docutils literal notranslate"><span class="pre">mesh_from_h5(BODY_H5)</span></code>, so when a user pointed <code class="docutils literal notranslate"><span class="pre">REFERENCE_MESH</span></code>
+at a fixed-frame STL the auto-detect partitioned the <em>body H5’s</em>
+wind-aligned frame and then applied those boundaries to the
+reference-frame Cp output – producing wrong region splits along
+whichever axis the wind was aligned with.</p></li>
+<li><p>Zoning detection is now <strong>hierarchical 2D</strong>. The previous
+implementation projected centroids on each axis independently,
+which lumped misaligned containers together along whichever axis
+had row overlap. New algorithm: pick the xy axis with the largest
+single gap as the <em>primary</em> split, then within each primary
+subset detect secondary boundaries on the other xy axis; the
+Cartesian <code class="docutils literal notranslate"><span class="pre">ZoningModel</span></code>’s secondary intervals are the union of
+all per-subset boundaries. Misaligned rows now produce extra
+empty cells (harmless – the pipeline treats them as zero-area
+regions) but each container ends up in its own region.</p></li>
+<li><p>Z is no longer partitioned automatically; <code class="docutils literal notranslate"><span class="pre">z_intervals</span></code> is
+fixed at <code class="docutils literal notranslate"><span class="pre">[-inf,</span> <span class="pre">+inf]</span></code>. The container-pack use case has all
+containers on the ground; vertical splits are out of scope.</p></li>
+<li><p>The auto-detect cell now prints the resulting <code class="docutils literal notranslate"><span class="pre">x_intervals</span></code>,
+<code class="docutils literal notranslate"><span class="pre">y_intervals</span></code>, <code class="docutils literal notranslate"><span class="pre">z_intervals</span></code> so users can map regions to
+physical containers without inspecting the model object.</p></li>
+</ul>
+</section>
+<section id="pressure-pipeline">
+<h3>Pressure pipeline<a class="headerlink" href="#pressure-pipeline" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">_resolve_region_origin</span></code> (in <code class="docutils literal notranslate"><span class="pre">cfdmod/pressure/functions.py</span></code>)
+used to parse the integer prefix of a region label via
+<code class="docutils literal notranslate"><span class="pre">int(region_label.split(&quot;-&quot;,</span> <span class="pre">1)[0])</span></code>. For triangles whose
+centroid did not fall into any zoning cell –
+<code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.geometry.get_indexing_mask</span></code> initialises the
+region array to <code class="docutils literal notranslate"><span class="pre">-1</span></code> and only updates entries that match a
+cell – the resulting label was <code class="docutils literal notranslate"><span class="pre">&quot;-1-&lt;body&gt;&quot;</span></code>, and the split
+produced an empty-string head, raising
+<code class="docutils literal notranslate"><span class="pre">ValueError:</span> <span class="pre">invalid</span> <span class="pre">literal</span> <span class="pre">for</span> <span class="pre">int()</span> <span class="pre">with</span> <span class="pre">base</span> <span class="pre">10:</span> <span class="pre">''</span></code>. Cf
+and Ce survived because they only group by the string label;
+only Cm parsed the integer back. Switched the parser to
+<code class="docutils literal notranslate"><span class="pre">rsplit(&quot;-&quot;,</span> <span class="pre">1)</span></code> so the body suffix is peeled from the right
+and negative ints survive: <code class="docutils literal notranslate"><span class="pre">&quot;-1-pack&quot;</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">(&quot;-1&quot;,</span> <span class="pre">&quot;pack&quot;)</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">int(&quot;-1&quot;)</span></code>. Sentinel triangles now fall through to the
+<code class="docutils literal notranslate"><span class="pre">lever_strategy</span></code> branch (region_base computes a meaningful
+<code class="docutils literal notranslate"><span class="pre">(mean_x,</span> <span class="pre">mean_y,</span> <span class="pre">min_z)</span></code> from their own rows; fixed picks up
+the body’s <code class="docutils literal notranslate"><span class="pre">lever_origin</span></code>). Three regression tests under
+<code class="docutils literal notranslate"><span class="pre">tests/pressure/test_functions_cm.py</span></code> pin the behaviour for
+fixed, region_base, and explicit-override on a negative key.</p></li>
+</ul>
+</section>
+</section>
+<section id="v2-0-0">
+<h2>v2.0.0<a class="headerlink" href="#v2-0-0" title="Link to this heading">#</a></h2>
+<p>API-first rewrite of the post-processing pipeline. The branch focus was
+“library that external scripts and notebooks can drive” – the public API,
+the I/O contract and the output layout were all redesigned around that goal.</p>
+<section id="sane-defaults-and-explicit-knobs">
+<h3>Sane defaults and explicit knobs<a class="headerlink" href="#sane-defaults-and-explicit-knobs" title="Link to this heading">#</a></h3>
+<p>The Cp config inputs were tightened so the pipeline never silently
+guesses something the user didn’t ask for. All of these are
+behaviour-changing relative to v1.x:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CpConfig.macroscopic_type</span></code> now defaults to <code class="docutils literal notranslate"><span class="pre">&quot;pressure&quot;</span></code> (was
+<code class="docutils literal notranslate"><span class="pre">&quot;rho&quot;</span></code>). The description lists both options. If the solver wrote
+real pressure – the common case – you can leave it unset.</p></li>
+<li><p>New <code class="docutils literal notranslate"><span class="pre">CpConfig.reference_pressure:</span> <span class="pre">Literal[&quot;probe&quot;,</span> <span class="pre">&quot;average&quot;]</span></code>,
+default <code class="docutils literal notranslate"><span class="pre">&quot;probe&quot;</span></code>. <code class="docutils literal notranslate"><span class="pre">&quot;probe&quot;</span></code> uses the first probe point (the
+reference probe placed above the body, the standard wind-tunnel
+choice); <code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code> takes the spatial mean across all probe points
+at each timestep.</p></li>
+<li><p>New <code class="docutils literal notranslate"><span class="pre">CpConfig.normalize_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></code>. Time-axis
+normalisation is now opt-in: with the default <code class="docutils literal notranslate"><span class="pre">False</span></code>,
+<code class="docutils literal notranslate"><span class="pre">/meta/time_normalized</span></code> carries raw solver time (nothing is
+silently divided by <code class="docutils literal notranslate"><span class="pre">L/U</span></code>). Filters and statistics downstream
+operate in whichever units this setting selects.
+<code class="docutils literal notranslate"><span class="pre">simul_characteristic_length</span></code> becomes meaningful only when
+<code class="docutils literal notranslate"><span class="pre">normalize_time=True</span></code>; <code class="docutils literal notranslate"><span class="pre">simul_U_H</span></code> stays a hard requirement (it is
+in the Cp dynamic-pressure denominator regardless).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CfConfig.nominal_area</span></code> and <code class="docutils literal notranslate"><span class="pre">CmConfig.nominal_volume</span></code> are now
+required (<code class="docutils literal notranslate"><span class="pre">gt=0</span></code>). The previous “fall back to tribute area / volume
+when zero” behaviour is gone – without an explicit reference
+value, the resulting Cf / Cm cannot be converted back to real-scale
+forces / moments unambiguously, so the program no longer chooses
+for you. The unreachable tribute-area / tribute-volume code paths
+in <code class="docutils literal notranslate"><span class="pre">transform_Cf</span></code> / <code class="docutils literal notranslate"><span class="pre">transform_Cm</span></code> were removed.</p></li>
+<li><p>For Cf / Cm, <code class="docutils literal notranslate"><span class="pre">full_scale_U_H</span></code> and <code class="docutils literal notranslate"><span class="pre">full_scale_characteristic_length</span></code>
+on <code class="docutils literal notranslate"><span class="pre">ExtremeGumbelParamsModel</span></code> are now optional. When omitted the
+runner reads them from the Cp metadata embedded in <code class="docutils literal notranslate"><span class="pre">cp_h5</span></code>
+(<code class="docutils literal notranslate"><span class="pre">/processing_metadata</span></code>) – so you only need to specify those
+scales once, in the Cp scope. Cp itself still requires explicit
+values.</p></li>
+</ul>
+</section>
+<section id="reference-frame-override-multi-direction-sweeps">
+<h3>Reference-frame override (multi-direction sweeps)<a class="headerlink" href="#reference-frame-override-multi-direction-sweeps" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">run_cp(mesh_path=...)</span></code> now actually embeds that mesh’s triangles +
+vertices into the Cp output via <code class="docutils literal notranslate"><span class="pre">process_xdmf_to_cp(mesh_override=...)</span></code>,
+with a triangle-count safety check. Use case: same building, several
+wind directions; each solver run produces a body H5 in its own wind-
+aligned (“spun”) coordinate frame, and you want all cp / cf / cm / ce
+outputs in a single fixed reference frame for cross-direction
+comparison. Downstream <code class="docutils literal notranslate"><span class="pre">run_cf</span></code> / <code class="docutils literal notranslate"><span class="pre">run_cm</span></code> / <code class="docutils literal notranslate"><span class="pre">run_ce</span></code> already default
+mesh from <code class="docutils literal notranslate"><span class="pre">cp_h5</span></code>, so the reference frame propagates without re-passing
+<code class="docutils literal notranslate"><span class="pre">mesh_path</span></code> per call.</p>
+</section>
+<section id="first-class-filter-chain">
+<h3>First-class filter chain<a class="headerlink" href="#first-class-filter-chain" title="Link to this heading">#</a></h3>
+<p>Signal-processing filters are now their own pipeline stage rather than
+being smuggled into the statistics block:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.filters.apply_filters(input_h5,</span> <span class="pre">output_h5,</span> <span class="pre">filters=[...],</span> <span class="pre">group=...)</span></code> reads any coefficient timeseries, applies
+the chain in order, and writes a new <code class="docutils literal notranslate"><span class="pre">*.time_series.h5</span></code> with the
+same on-disk shape (<code class="docutils literal notranslate"><span class="pre">/Triangles</span> <span class="pre">+</span> <span class="pre">/Geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">/{group}/t{T}</span></code> per
+timestep, <code class="docutils literal notranslate"><span class="pre">/meta/...</span></code>, sibling temporal XDMF). The applied chain is
+recorded under <code class="docutils literal notranslate"><span class="pre">/processing_metadata</span></code> so the lineage is self-
+describing.</p></li>
+<li><p>Initial filter type: <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter(window=...)</span></code>. <code class="docutils literal notranslate"><span class="pre">window</span></code> is
+in the input file’s own time-axis units (raw solver time by
+default; convective time when <code class="docutils literal notranslate"><span class="pre">normalize_time=True</span></code>). No implicit
+unit conversion. Implemented via a flat Pydantic discriminated
+union, so a new filter is one new class added to the union and one
+branch in <code class="docutils literal notranslate"><span class="pre">_apply_one</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ExtremeMovingAverageParamsModel</span></code>,
+<code class="docutils literal notranslate"><span class="pre">moving_average_extreme_values</span></code>, and the <code class="docutils literal notranslate"><span class="pre">&quot;Moving</span> <span class="pre">Average&quot;</span></code> entry
+in <code class="docutils literal notranslate"><span class="pre">ExtremeMethods</span></code> were <strong>removed</strong>. Statistics now expose only
+the three real peak-factor methods: <code class="docutils literal notranslate"><span class="pre">Absolute</span></code>, <code class="docutils literal notranslate"><span class="pre">Peak</span></code>, <code class="docutils literal notranslate"><span class="pre">Gumbel</span></code>.
+Moving-average smoothing is done in the filter stage, then
+statistics run over the filtered file.</p></li>
+</ul>
+</section>
+<section id="pipeline-cp-cf-cm-ce">
+<h3>Pipeline (Cp / Cf / Cm / Ce)<a class="headerlink" href="#pipeline-cp-cf-cm-ce" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Disk-first stats contract. Every coefficient persists its full per-triangle
+timeseries to an XDMF+H5 file <em>before</em> statistics are computed. Statistics
+are then read back from disk via
+<code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.statistics_runner.calculate_statistics_from_h5</span></code> so memory
+pressure no longer scales with the number of timesteps.</p></li>
+<li><p>Single combined <code class="docutils literal notranslate"><span class="pre">stats.{h5,xdmf}</span></code> for the whole run, with an embedded mesh
+per leaf group. <code class="docutils literal notranslate"><span class="pre">write_stats_xdmf</span></code> walks the H5 tree and emits one
+<code class="docutils literal notranslate"><span class="pre">&lt;Grid&gt;</span></code> per <code class="docutils literal notranslate"><span class="pre">(coefficient,</span> <span class="pre">body[,</span> <span class="pre">direction[,</span> <span class="pre">case]])</span></code> triple, each on
+the correct sub-mesh – fixes the silent length-mismatch behaviour in
+v1.x where Cf/Cm/Ce stats were written against the full-mesh topology
+while their values were per-body or per-region.</p></li>
+<li><p>Multi-attribute temporal XDMF for Cf/Cm body timeseries: pick <code class="docutils literal notranslate"><span class="pre">cf_x</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cf_y</span></code>, <code class="docutils literal notranslate"><span class="pre">cf_z</span></code> (or <code class="docutils literal notranslate"><span class="pre">cm_x/y/z</span></code>) from the ParaView Attribute selector on the
+same animation.</p></li>
+<li><p>The user’s input H5 files are read-only. The previous in-place mutator
+(<code class="docutils literal notranslate"><span class="pre">add_cp2xdmf</span></code>) is gone, and a regression test pins body / probe size and
+modification-time across a full <code class="docutils literal notranslate"><span class="pre">run_cp</span></code>.</p></li>
+<li><p>Multi-format mesh resolver. <code class="docutils literal notranslate"><span class="pre">mesh_path</span></code> now accepts <code class="docutils literal notranslate"><span class="pre">.lnas</span></code> / <code class="docutils literal notranslate"><span class="pre">.stl</span></code> /
+<code class="docutils literal notranslate"><span class="pre">.h5</span></code> / <code class="docutils literal notranslate"><span class="pre">.xdmf</span></code> (or a pre-loaded <code class="docutils literal notranslate"><span class="pre">LnasFormat</span></code>). It is also optional –
+when omitted, the geometry is read from the source H5’s embedded
+<code class="docutils literal notranslate"><span class="pre">/Triangles</span> <span class="pre">+</span> <span class="pre">/Geometry</span></code>. Internally LnasFormat is still the carrier;
+externally STL/XDMF/H5 are first-class.</p></li>
+<li><p>Embedded post-processing metadata. Every output H5 carries
+<code class="docutils literal notranslate"><span class="pre">&lt;group&gt;/processing_metadata/config.yaml</span></code> plus group attrs for
+<code class="docutils literal notranslate"><span class="pre">produced_at</span></code>, <code class="docutils literal notranslate"><span class="pre">cfdmod_version</span></code>, <code class="docutils literal notranslate"><span class="pre">coefficient</span></code>, <code class="docutils literal notranslate"><span class="pre">cfg_lbl</span></code>, <code class="docutils literal notranslate"><span class="pre">body</span></code>,
+<code class="docutils literal notranslate"><span class="pre">direction</span></code>, and the input paths. <code class="docutils literal notranslate"><span class="pre">read_processing_metadata(path,</span> <span class="pre">group)</span></code>
+round-trips back to a dict.</p></li>
+<li><p>Output layout is flat by default: every artefact for a <code class="docutils literal notranslate"><span class="pre">(coefficient,</span> <span class="pre">cfg_lbl[,</span> <span class="pre">body[,</span> <span class="pre">case]])</span></code> triple sits directly in <code class="docutils literal notranslate"><span class="pre">output_path</span></code> with
+dot-separated filenames (<code class="docutils literal notranslate"><span class="pre">cp.default.time_series.h5</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Cf.containers.pack.time_series.h5</span></code>, …). Combined stats land in
+<code class="docutils literal notranslate"><span class="pre">stats.{h5,xdmf}</span></code>.</p></li>
+</ul>
+</section>
+<section id="new-cm-features">
+<h3>New Cm features<a class="headerlink" href="#new-cm-features" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lever_strategy=&quot;region_base&quot;</span></code> derives a per-region base from each
+region’s triangle vertices <code class="docutils literal notranslate"><span class="pre">(mean_x,</span> <span class="pre">mean_y,</span> <span class="pre">min_z)</span></code> – the natural
+reference for overturning moments about the floor footprint.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lever_strategy=&quot;region_bbox_corners_xy&quot;</span></code> expands one body into four
+independent runs (<code class="docutils literal notranslate"><span class="pre">xmin_ymin</span></code>, <code class="docutils literal notranslate"><span class="pre">xmin_ymax</span></code>, <code class="docutils literal notranslate"><span class="pre">xmax_ymin</span></code>, <code class="docutils literal notranslate"><span class="pre">xmax_ymax</span></code>)
+so external pipelines can scan worst-case overturning moments around
+every footprint corner without doing the orchestration themselves.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">region_lever_origins:</span> <span class="pre">dict[int,</span> <span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)]</span></code> for explicit per-region
+centers (HFPI-style externally-known centers of mass).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lever_origin_cases:</span> <span class="pre">dict[case_label,</span> <span class="pre">dict[region_int,</span> <span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)]]</span></code> for
+arbitrary case scans.</p></li>
+</ul>
+</section>
+<section id="public-api">
+<h3>Public API<a class="headerlink" href="#public-api" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod</span> <span class="pre">import</span> <span class="pre">run_cp,</span> <span class="pre">run_cf,</span> <span class="pre">run_cm,</span> <span class="pre">run_ce</span></code> – canonical pipeline
+entry points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod</span> <span class="pre">import</span> <span class="pre">load_mesh,</span> <span class="pre">mesh_from_h5,</span> <span class="pre">read_processing_metadata,</span> <span class="pre">write_processing_metadata</span></code> – IO helpers
+surfaced for external consumers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod</span> <span class="pre">import</span> <span class="pre">read_timeseries_df,</span> <span class="pre">to_csv,</span> <span class="pre">plot_timeseries</span></code> –
+pull a <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code> out of any <code class="docutils literal notranslate"><span class="pre">*.time_series.h5</span></code> (with optional
+triangle / region / timestep filtering), export to CSV, or plot
+selected columns with one call. <code class="docutils literal notranslate"><span class="pre">regions=True</span></code> deduplicates the
+per-triangle broadcast of Cf/Cm so you get one column per region
+instead of one per triangle.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod</span> <span class="pre">import</span> <span class="pre">MovingAverageFilter,</span> <span class="pre">apply_filters</span></code> – the
+filter chain (see “First-class filter chain” above). <code class="docutils literal notranslate"><span class="pre">FilterSpec</span></code>
+is also exported for type annotations of user-built chains.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfg_path</span></code> accepts either a YAML path <em>or</em> a pre-built
+<code class="docutils literal notranslate"><span class="pre">CpCaseConfig</span></code> / <code class="docutils literal notranslate"><span class="pre">CfCaseConfig</span></code> / <code class="docutils literal notranslate"><span class="pre">CmCaseConfig</span></code> / <code class="docutils literal notranslate"><span class="pre">CeCaseConfig</span></code>
+instance, so in-memory pipelines don’t need sidecar YAMLs.</p></li>
+<li><p>CLI subcommands (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">cfdmod</span> <span class="pre">pressure</span> <span class="pre">cp|cf|cm|ce</span></code>) accept all
+mesh formats with <code class="docutils literal notranslate"><span class="pre">--mesh</span></code> now optional.</p></li>
+</ul>
+</section>
+<section id="breaking-changes">
+<h3>Breaking changes<a class="headerlink" href="#breaking-changes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.add_cp2xdmf</span></code> removed (it mutated the input body H5).
+External callers should use <code class="docutils literal notranslate"><span class="pre">run_cp</span></code>, which writes to a separate
+output file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.add_lever_arm_to_geometry_df</span></code> signature changed:
+the third argument is now a <code class="docutils literal notranslate"><span class="pre">MomentBodyConfig</span></code> instead of a bare
+<code class="docutils literal notranslate"><span class="pre">lever_origin</span></code> tuple, so the per-region lever logic can be applied
+without the caller re-implementing it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MomentBodyConfig.lever_origin</span></code> is now optional with default
+<code class="docutils literal notranslate"><span class="pre">(0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0)</span></code>. Configs that previously relied on it being required
+will continue to load.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.path_manager.{get_results_h5_path,</span> <span class="pre">get_results_xdmf_path}</span></code>
+renamed to <code class="docutils literal notranslate"><span class="pre">get_stats_h5_path</span></code> / <code class="docutils literal notranslate"><span class="pre">get_stats_xdmf_path</span></code>. The output files
+are now <code class="docutils literal notranslate"><span class="pre">stats.{h5,xdmf}</span></code> (was <code class="docutils literal notranslate"><span class="pre">results.{h5,xdmf}</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.api</span></code> and <code class="docutils literal notranslate"><span class="pre">cfdmod.use_cases</span></code> shims have been <strong>removed</strong>.
+v1.x scripts that imported via these paths must update to the
+top-level domain modules (<code class="docutils literal notranslate"><span class="pre">cfdmod.io</span></code> and the per-domain packages
+such as <code class="docutils literal notranslate"><span class="pre">cfdmod.loft</span></code>, <code class="docutils literal notranslate"><span class="pre">cfdmod.pressure</span></code>, <code class="docutils literal notranslate"><span class="pre">cfdmod.roughness</span></code>, …).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.config</span></code> and <code class="docutils literal notranslate"><span class="pre">cfdmod.HashableConfig</span></code> have been <strong>removed</strong>.
+The base class added a <code class="docutils literal notranslate"><span class="pre">to_yaml()</span></code> method that no caller used, a
+<code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> method that was a one-line wrapper around Pydantic’s
+built-in <code class="docutils literal notranslate"><span class="pre">model_dump()</span></code>, and a <code class="docutils literal notranslate"><span class="pre">sha256()</span></code> config-fingerprint helper
+that only one scratch notebook ever called. Configs now subclass
+<code class="docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code> directly. Migration:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.to_dict()</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">config.model_dump()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.to_yaml(path)</span></code> -&gt; serialise via your YAML library of
+choice (e.g. <code class="docutils literal notranslate"><span class="pre">ruamel.yaml.YAML().dump(config.model_dump(),</span> <span class="pre">fh)</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.sha256()</span></code> -&gt; compute it externally:
+<code class="docutils literal notranslate"><span class="pre">hashlib.sha256(config.model_dump_json().encode()).hexdigest()</span></code>
+The per-<code class="docutils literal notranslate"><span class="pre">*CaseConfig</span></code> <code class="docutils literal notranslate"><span class="pre">from_file(path)</span></code> classmethods are unchanged.</p></li>
+</ul>
+</li>
+<li><p>Pre-typer argparse entry points were removed: <code class="docutils literal notranslate"><span class="pre">cfdmod.loft.main</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cfdmod.roughness.main</span></code>, and <code class="docutils literal notranslate"><span class="pre">cfdmod.altimetry.main</span></code>. Each module
+now exposes a typer app at <code class="docutils literal notranslate"><span class="pre">cfdmod.&lt;module&gt;.cli:app</span></code>, registered
+under the unified <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">cfdmod</span> <span class="pre">&lt;module&gt;</span></code> entry point.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.snapshot.__main__</span></code> was removed (it imported a non-existent
+<code class="docutils literal notranslate"><span class="pre">cfdmod.snapshot.main</span></code>). The snapshot module currently has no CLI
+entry point; use the Python API directly until one lands.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CpConfig.macroscopic_type</span></code> default flipped from <code class="docutils literal notranslate"><span class="pre">&quot;rho&quot;</span></code> to
+<code class="docutils literal notranslate"><span class="pre">&quot;pressure&quot;</span></code>. Configs that rely on the implicit default but actually
+feed LBM density now need to set <code class="docutils literal notranslate"><span class="pre">macroscopic_type=&quot;rho&quot;</span></code> explicitly.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CpConfig</span></code> time-axis normalisation is now opt-in via
+<code class="docutils literal notranslate"><span class="pre">normalize_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></code>. The previous behaviour (always
+divide by <code class="docutils literal notranslate"><span class="pre">L/U</span></code>) becomes <code class="docutils literal notranslate"><span class="pre">normalize_time=True</span></code>. With the new
+default, <code class="docutils literal notranslate"><span class="pre">/meta/time_normalized</span></code> carries raw solver time, and
+filter / Gumbel windows operate in the same raw-time units.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CfConfig.nominal_area</span></code> and <code class="docutils literal notranslate"><span class="pre">CmConfig.nominal_volume</span></code> are now
+required (<code class="docutils literal notranslate"><span class="pre">gt=0</span></code>); the implicit-tribute fallback was removed.
+Configs that previously left them unset (or set them to <code class="docutils literal notranslate"><span class="pre">0</span></code>) need
+to provide an explicit reference area / volume. Only <code class="docutils literal notranslate"><span class="pre">transform_Cf</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">transform_Cm</span></code> were affected; the public <code class="docutils literal notranslate"><span class="pre">get_representative_areas</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">get_representative_volume</span></code> helpers are still exported.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ExtremeMovingAverageParamsModel</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.functions.moving_average_extreme_values</span></code>, and the
+<code class="docutils literal notranslate"><span class="pre">&quot;Moving</span> <span class="pre">Average&quot;</span></code> entry in <code class="docutils literal notranslate"><span class="pre">ExtremeMethods</span></code> were removed. To get
+stats over a moving-average-smoothed signal, run
+<code class="docutils literal notranslate"><span class="pre">apply_filters([MovingAverageFilter(window=...)])</span></code> first and then
+run statistics over the filtered file.</p></li>
+<li><p>The pressure pipeline is a single chain now: <code class="docutils literal notranslate"><span class="pre">run_cp</span></code> -&gt; optional
+<code class="docutils literal notranslate"><span class="pre">apply_filters</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">run_cf</span></code> / <code class="docutils literal notranslate"><span class="pre">run_cm</span></code> / <code class="docutils literal notranslate"><span class="pre">run_ce</span></code> -&gt; stats merged
+into <code class="docutils literal notranslate"><span class="pre">stats.{h5,xdmf}</span></code>. The in-memory transform helpers
+(<code class="docutils literal notranslate"><span class="pre">process_xdmf_to_cp</span></code>, <code class="docutils literal notranslate"><span class="pre">process_Cf</span></code>, <code class="docutils literal notranslate"><span class="pre">process_Cm</span></code>, <code class="docutils literal notranslate"><span class="pre">process_Ce</span></code>,
+<code class="docutils literal notranslate"><span class="pre">process_timeseries</span></code>, <code class="docutils literal notranslate"><span class="pre">process_surfaces</span></code>, <code class="docutils literal notranslate"><span class="pre">transform_Cf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">transform_Cm</span></code>, <code class="docutils literal notranslate"><span class="pre">transform_Ce</span></code>, <code class="docutils literal notranslate"><span class="pre">calculate_statistics</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tabulate_geometry_data</span></code>, <code class="docutils literal notranslate"><span class="pre">combine_stats_data_with_mesh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">add_lever_arm_to_geometry_df</span></code>, <code class="docutils literal notranslate"><span class="pre">get_indexing_mask</span></code>,
+<code class="docutils literal notranslate"><span class="pre">get_representative_areas</span></code>, <code class="docutils literal notranslate"><span class="pre">get_representative_volume</span></code>,
+<code class="docutils literal notranslate"><span class="pre">get_surface_dict</span></code>) and the data-class containers
+(<code class="docutils literal notranslate"><span class="pre">GeometryData</span></code>, <code class="docutils literal notranslate"><span class="pre">ProcessedEntity</span></code>, <code class="docutils literal notranslate"><span class="pre">CommonOutput</span></code>, <code class="docutils literal notranslate"><span class="pre">CeOutput</span></code>)
+are no longer part of the public API. They remain reachable as
+<code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.functions.*</span></code> / <code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.geometry.*</span></code> for
+users who need them in tests, but only <code class="docutils literal notranslate"><span class="pre">run_*</span></code>, <code class="docutils literal notranslate"><span class="pre">apply_filters</span></code>,
+<code class="docutils literal notranslate"><span class="pre">calculate_statistics_from_h5</span></code>, the filter / config types, and the
+zoning / body / statistics models are exposed from
+<code class="docutils literal notranslate"><span class="pre">cfdmod.pressure</span></code> and the top-level package. Same goes for the
+<code class="docutils literal notranslate"><span class="pre">cfdmod.process_Cf</span></code> / <code class="docutils literal notranslate"><span class="pre">process_Cm</span></code> / <code class="docutils literal notranslate"><span class="pre">process_Ce</span></code> top-level
+re-exports that used to exist; those are gone.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">cfdmod.analysis</span></code> package was removed. Inflow lives in a
+single top-level module now, <code class="docutils literal notranslate"><span class="pre">cfdmod.inflow</span></code>. Migration:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod.analysis.inflow.profile</span> <span class="pre">import</span> <span class="pre">InflowData,</span> <span class="pre">NormalizationParameters</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod.inflow</span> <span class="pre">import</span> <span class="pre">InflowData,</span> <span class="pre">NormalizationParameters</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod.analysis.inflow.functions</span> <span class="pre">import</span> <span class="pre">calculate_mean_velocity,</span> <span class="pre">...</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod.inflow</span> <span class="pre">import</span> <span class="pre">calculate_mean_velocity,</span> <span class="pre">...</span></code>
+The top-level <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">cfdmod</span> <span class="pre">import</span> <span class="pre">InflowData,</span> <span class="pre">NormalizationParameters</span></code> re-export is unchanged.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="compatibility-migration">
+<h3>Compatibility / migration<a class="headerlink" href="#compatibility-migration" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Legacy pandas-HDFStore inputs from inflow (<code class="docutils literal notranslate"><span class="pre">cfdmod.inflow</span></code>) and HFPI
+(<code class="docutils literal notranslate"><span class="pre">cfdmod.hfpi.static.read_static_forces</span></code>) are read with a
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>; the readers prefer the new layout but accept
+the old one.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.migrate.migrate_body_h5</span></code> and <code class="docutils literal notranslate"><span class="pre">migrate_probe_h5</span></code> convert
+legacy pandas-HDFStore body/probe files to the new XDMF+H5 layout
+on disk for users who want to upgrade their fixtures.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aerosim-lnas</span></code> upgraded to <code class="docutils literal notranslate"><span class="pre">&gt;=0.6.9,&lt;0.7</span></code>.</p></li>
+</ul>
+</section>
+<section id="documentation-tooling">
+<h3>Documentation / tooling<a class="headerlink" href="#documentation-tooling" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">examples/container_pack/process_container_pack.ipynb</span></code> is the worked
+example: reads <code class="docutils literal notranslate"><span class="pre">bodies.body_cp</span> <span class="pre">body.h5</span></code> + <code class="docutils literal notranslate"><span class="pre">points.point_cp</span> <span class="pre">ref.h5</span></code>
+from the repo root, auto-detects container partition via a &gt;1 m gap
+rule, runs Cp/Cf/Cm end-to-end with <code class="docutils literal notranslate"><span class="pre">lever_strategy=&quot;region_base&quot;</span></code>
+(footprint-base lever) by default, and never authors a surface label
+(geometry is read straight from the body H5). Cf and Cm runs in the
+notebook are configured for <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> only – the most common
+client-facing case.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.notebook_utils</span></code> provides <code class="docutils literal notranslate"><span class="pre">mesh_summary</span></code>, <code class="docutils literal notranslate"><span class="pre">show_config</span></code>,
+<code class="docutils literal notranslate"><span class="pre">load_lnas</span></code> for exploratory notebook work.</p></li>
+<li><p>ASCII-only convention is now project-wide (CLAUDE.md):
+no em-dash, ellipsis, arrow glyphs, typographic quotes, or other
+non-ASCII characters in source, configs, notebooks or docs. Use
+<code class="docutils literal notranslate"><span class="pre">--</span></code>, <code class="docutils literal notranslate"><span class="pre">...</span></code>, <code class="docutils literal notranslate"><span class="pre">-&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">'</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;</span></code> instead. The codebase was swept to
+match.</p></li>
+</ul>
+</section>
+<section id="tests-quality">
+<h3>Tests / quality<a class="headerlink" href="#tests-quality" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>pytest markers for the suite: <code class="docutils literal notranslate"><span class="pre">unit</span></code> (pure-function, fast),
+<code class="docutils literal notranslate"><span class="pre">integration</span></code> (multi-component end-to-end), and <code class="docutils literal notranslate"><span class="pre">perf</span></code> (synthetic
+big-data benchmarks). Default invocation excludes <code class="docutils literal notranslate"><span class="pre">perf</span></code>; run it
+explicitly with <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">-m</span> <span class="pre">perf</span></code>.</p></li>
+<li><p>Shared pressure conftest centralises fixture paths, config
+builders (<code class="docutils literal notranslate"><span class="pre">make_cp_cfg</span></code>, <code class="docutils literal notranslate"><span class="pre">make_cf_cfg</span></code>, <code class="docutils literal notranslate"><span class="pre">make_cm_cfg</span></code>), zoning
+helpers and stats walkers, replacing the per-test boilerplate.</p></li>
+<li><p>Performance harness (<code class="docutils literal notranslate"><span class="pre">tests/pressure/test_perf.py</span></code>) synthesises
+body + probe data in-fixture (no dependency on root files) and
+drives the full Cp / Cf / Cm chain at two scales: medium
+(~30k triangles x 2k timesteps) and extreme (~150k triangles x
+10k timesteps, 1/5x of the worst real-world case).</p></li>
+<li><p>Per-run perf report: tracemalloc-tracked Python heap peak +
+<code class="docutils literal notranslate"><span class="pre">getrusage</span></code> RSS for each scale, written to
+<code class="docutils literal notranslate"><span class="pre">output/perf/perf_report.md</span></code> and <code class="docutils literal notranslate"><span class="pre">perf_report.json</span></code> for tracking
+regressions across releases.</p></li>
+</ul>
+</section>
+<section id="dependencies-packaging">
+<h3>Dependencies / packaging<a class="headerlink" href="#dependencies-packaging" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Runtime deps slimmed: <code class="docutils literal notranslate"><span class="pre">tables</span></code> and <code class="docutils literal notranslate"><span class="pre">filelock</span></code> removed from the
+base install. <code class="docutils literal notranslate"><span class="pre">tables</span></code> is still needed for the legacy
+pandas-HDFStore compat readers in <code class="docutils literal notranslate"><span class="pre">cfdmod.inflow</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cfdmod.hfpi.static</span></code>, and <code class="docutils literal notranslate"><span class="pre">cfdmod.pressure.migrate</span></code>; install via
+the new <code class="docutils literal notranslate"><span class="pre">legacy</span></code> extras (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">aerosim-cfdmod[legacy]</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">geometry</span></code> extras now ships only <code class="docutils literal notranslate"><span class="pre">trimesh</span></code>. <code class="docutils literal notranslate"><span class="pre">pymeshlab</span></code> was
+removed entirely – it is GPL-licensed and would force GPL on any
+downstream code linking it. Code paths that genuinely need
+pymeshlab are documented and the user installs it explicitly at
+their own license risk.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code> extras switched from <code class="docutils literal notranslate"><span class="pre">sphinx-book-theme</span></code> to <code class="docutils literal notranslate"><span class="pre">shibuya</span></code>
+(modern theme, active upstream).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.io</span></code> now lazy-loads its vtk-backed helpers via PEP 562
+<code class="docutils literal notranslate"><span class="pre">__getattr__</span></code>. <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">cfdmod</span></code> no longer pulls VTK at load time;
+accessing a vtk-backed name without the <code class="docutils literal notranslate"><span class="pre">vtk</span></code> extras raises a
+clear <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> pointing at <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">aerosim-cfdmod[vtk]</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cfdmod.io.vtk.*</span></code> imports VTK classes via <code class="docutils literal notranslate"><span class="pre">vtkmodules.*</span></code>
+submodules (e.g. <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">vtkmodules.vtkIOXML</span> <span class="pre">import</span> <span class="pre">vtkXMLPolyDataWriter</span></code>) instead of the catch-all <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">vtk</span></code>,
+avoiding an unnecessary load of the full VTK universe on first
+use.</p></li>
+<li><p>Runtime dep floors bumped to the modern stack: <code class="docutils literal notranslate"><span class="pre">numpy&gt;=2.0</span></code>,
+<code class="docutils literal notranslate"><span class="pre">scipy&gt;=1.13</span></code>, <code class="docutils literal notranslate"><span class="pre">pandas&gt;=2.2</span></code>, <code class="docutils literal notranslate"><span class="pre">pydantic&gt;=2.10</span></code>, <code class="docutils literal notranslate"><span class="pre">matplotlib&gt;=3.9</span></code>.
+Out-of-cap upper bounds relaxed to allow the current latest:
+<code class="docutils literal notranslate"><span class="pre">ruamel-yaml&lt;0.20</span></code>, <code class="docutils literal notranslate"><span class="pre">pyarrow&lt;25</span></code>, <code class="docutils literal notranslate"><span class="pre">myst-parser&lt;6</span></code>, <code class="docutils literal notranslate"><span class="pre">ipython&lt;10</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ipykernel&lt;8</span></code>, <code class="docutils literal notranslate"><span class="pre">pyvista&lt;0.50</span></code>. Dev tooling brought to current
+majors: <code class="docutils literal notranslate"><span class="pre">pytest&gt;=9</span></code>, <code class="docutils literal notranslate"><span class="pre">black&gt;=26</span></code>, <code class="docutils literal notranslate"><span class="pre">isort&gt;=8</span></code>, <code class="docutils literal notranslate"><span class="pre">ruff&gt;=0.15</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tox&gt;=4.53</span></code>. <code class="docutils literal notranslate"><span class="pre">requires-python</span></code> stays at <code class="docutils literal notranslate"><span class="pre">&gt;=3.10</span></code>; bump it (and
+<code class="docutils literal notranslate"><span class="pre">tables</span></code>) when 3.10 support is dropped.</p></li>
+</ul>
+</section>
+</section>
+<section id="v1-1-2">
+<h2>v1.1.2<a class="headerlink" href="#v1-1-2" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Automated CI/CD workflow</p></li>
+</ul>
+</section>
+<section id="v1-1-1">
+<h2>v1.1.1<a class="headerlink" href="#v1-1-1" title="Link to this heading">#</a></h2>
+<p>Coefficient time series are now in normalized time scales.
+Time values from the solver are normalized by the CST value in the solver time scale.</p>
+<ul class="simple">
+<li><p>Input body pressure data is normalized by the CST value</p></li>
+<li><p>Derived coefficients also use a normalized time scale</p></li>
+<li><p>Parameters for statistical model are in full scale and need to be normalized using full scale CST.</p></li>
+</ul>
+</section>
+<section id="v1-1-0">
+<h2>v1.1.0<a class="headerlink" href="#v1-1-0" title="Link to this heading">#</a></h2>
+<p>It features the refactor for pressure use case module.</p>
+<ul class="simple">
+<li><p>Updated time series format to matrix form</p></li>
+<li><p>Changed how direction logic is applied for Cf and Cm</p></li>
+<li><p>Updated statistics functions and models</p></li>
+</ul>
+</section>
+<section id="v1-0-0">
+<h2>v1.0.0<a class="headerlink" href="#v1-0-0" title="Link to this heading">#</a></h2>
+<p>First production stable release.
+It features all consulting use cases:</p>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="analysis/climate/index.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Climate and Wind Statistics</div></div>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/shibuya.js?v=50760d75"></script></body>
+</html>

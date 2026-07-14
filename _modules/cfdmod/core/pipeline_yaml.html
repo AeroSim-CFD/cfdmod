@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cfdmod.core.pipeline_yaml - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="cfdmod.core.pipeline_yaml"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Module code</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">cfdmod.core.pipeline_yaml</strong>
+        <meta itemprop="position" content="3" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <h1>Source code for cfdmod.core.pipeline_yaml</h1><div class="highlight"><pre>
+<span></span><span data-line="1"><span class="sd">&quot;&quot;&quot;YAML-as-Pipeline: load a v3 processing template and run it.</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="sd">The schema is a flat list of *steps*. Each step has:</span>
+</span><span data-line="4">
+</span><span data-line="5"><span class="sd">- ``id`` (optional): name by which downstream steps reference this</span>
+</span><span data-line="6"><span class="sd">  step&#39;s output. Defaults to the step index as a string.</span>
+</span><span data-line="7"><span class="sd">- ``kind``: the op kind (``sub``, ``moving_average``, ``statistics``,</span>
+</span><span data-line="8"><span class="sd">  ...). Matches the registry in :data:`OP_REGISTRY`.</span>
+</span><span data-line="9"><span class="sd">- ``source``: id of the data source the op consumes. May be an</span>
+</span><span data-line="10"><span class="sd">  ``inputs:`` key on the first reference; thereafter it is the id of a</span>
+</span><span data-line="11"><span class="sd">  previous step.</span>
+</span><span data-line="12"><span class="sd">- ``rhs`` (binary ops only): id of the right-hand-side source.</span>
+</span><span data-line="13"><span class="sd">- op-specific fields (``field``, ``out``, ``factor``, ``window``, ...)</span>
+</span><span data-line="14"><span class="sd">  passed straight into the params model.</span>
+</span><span data-line="15">
+</span><span data-line="16"><span class="sd">The runner is a small interpreter: it walks ``inputs`` -&gt; loads via</span>
+</span><span data-line="17"><span class="sd">the supplied :class:`Storage` -&gt; walks ``pipeline`` -&gt; dispatches each</span>
+</span><span data-line="18"><span class="sd">step to the registered op -&gt; records the output under the step id -&gt;</span>
+</span><span data-line="19"><span class="sd">walks ``outputs`` -&gt; writes each named result via the same storage.</span>
+</span><span data-line="20">
+</span><span data-line="21"><span class="sd">:func:`load_template` validates the whole template up front:</span>
+</span><span data-line="22"><span class="sd">unknown op kinds, dangling ``source`` / ``rhs`` references, duplicate</span>
+</span><span data-line="23"><span class="sd">step ids, ``rhs`` on a unary op, and per-step params (missing required</span>
+</span><span data-line="24"><span class="sd">fields, typo&#39;d fields) are all rejected before any input is read.</span>
+</span><span data-line="25">
+</span><span data-line="26"><span class="sd">Example YAML::</span>
+</span><span data-line="27">
+</span><span data-line="28"><span class="sd">    name: cp_default</span>
+</span><span data-line="29"><span class="sd">    inputs:</span>
+</span><span data-line="30"><span class="sd">      body:</span>
+</span><span data-line="31"><span class="sd">        kind: surface</span>
+</span><span data-line="32"><span class="sd">        path: body.h5</span>
+</span><span data-line="33"><span class="sd">        field: pressure</span>
+</span><span data-line="34"><span class="sd">      p_ref:</span>
+</span><span data-line="35"><span class="sd">        kind: points</span>
+</span><span data-line="36"><span class="sd">        path: probe.h5</span>
+</span><span data-line="37"><span class="sd">        field: pressure</span>
+</span><span data-line="38"><span class="sd">    pipeline:</span>
+</span><span data-line="39"><span class="sd">      - id: cp_raw</span>
+</span><span data-line="40"><span class="sd">        kind: sub</span>
+</span><span data-line="41"><span class="sd">        source: body</span>
+</span><span data-line="42"><span class="sd">        rhs: p_ref</span>
+</span><span data-line="43"><span class="sd">        field: pressure</span>
+</span><span data-line="44"><span class="sd">        out: cp</span>
+</span><span data-line="45"><span class="sd">      - id: cp</span>
+</span><span data-line="46"><span class="sd">        kind: scale</span>
+</span><span data-line="47"><span class="sd">        source: cp_raw</span>
+</span><span data-line="48"><span class="sd">        field: cp</span>
+</span><span data-line="49"><span class="sd">        factor: 800.0</span>
+</span><span data-line="50"><span class="sd">      - id: cp_stats</span>
+</span><span data-line="51"><span class="sd">        kind: statistics</span>
+</span><span data-line="52"><span class="sd">        source: cp</span>
+</span><span data-line="53"><span class="sd">        field: cp</span>
+</span><span data-line="54"><span class="sd">        kinds: [mean, rms, min, max]</span>
+</span><span data-line="55"><span class="sd">    outputs:</span>
+</span><span data-line="56"><span class="sd">      cp_timeseries:</span>
+</span><span data-line="57"><span class="sd">        source: cp</span>
+</span><span data-line="58"><span class="sd">        path: cp.time_series.h5</span>
+</span><span data-line="59"><span class="sd">      cp_stats:</span>
+</span><span data-line="60"><span class="sd">        source: cp_stats</span>
+</span><span data-line="61"><span class="sd">        path: cp.stats.h5</span>
+</span><span data-line="62"><span class="sd">&quot;&quot;&quot;</span>
+</span><span data-line="63">
+</span><span data-line="64"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span data-line="65">
+</span><span data-line="66"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+</span><span data-line="67">    <span class="s2">&quot;InputSpec&quot;</span><span class="p">,</span>
+</span><span data-line="68">    <span class="s2">&quot;OutputSpec&quot;</span><span class="p">,</span>
+</span><span data-line="69">    <span class="s2">&quot;PipelineTemplate&quot;</span><span class="p">,</span>
+</span><span data-line="70">    <span class="s2">&quot;OP_REGISTRY&quot;</span><span class="p">,</span>
+</span><span data-line="71">    <span class="s2">&quot;register_op&quot;</span><span class="p">,</span>
+</span><span data-line="72">    <span class="s2">&quot;OpSpec&quot;</span><span class="p">,</span>
+</span><span data-line="73">    <span class="s2">&quot;BinaryOpSpec&quot;</span><span class="p">,</span>
+</span><span data-line="74">    <span class="s2">&quot;run_template&quot;</span><span class="p">,</span>
+</span><span data-line="75">    <span class="s2">&quot;load_template&quot;</span><span class="p">,</span>
+</span><span data-line="76">    <span class="s2">&quot;validate_template&quot;</span><span class="p">,</span>
+</span><span data-line="77">    <span class="s2">&quot;OpInfo&quot;</span><span class="p">,</span>
+</span><span data-line="78">    <span class="s2">&quot;list_ops&quot;</span><span class="p">,</span>
+</span><span data-line="79">    <span class="s2">&quot;op_info&quot;</span><span class="p">,</span>
+</span><span data-line="80">    <span class="s2">&quot;DigestStrategy&quot;</span><span class="p">,</span>
+</span><span data-line="81">    <span class="s2">&quot;FreshnessConfig&quot;</span><span class="p">,</span>
+</span><span data-line="82"><span class="p">]</span>
+</span><span data-line="83">
+</span><span data-line="84"><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+</span><span data-line="85"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span>
+</span><span data-line="86">
+</span><span data-line="87"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">Field</span>
+</span><span data-line="88"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic.json_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerateJsonSchema</span>
+</span><span data-line="89">
+</span><span data-line="90"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.data_source</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataSource</span>
+</span><span data-line="91"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="92">    <span class="n">CfdmodError</span><span class="p">,</span>
+</span><span data-line="93">    <span class="n">OpError</span><span class="p">,</span>
+</span><span data-line="94">    <span class="n">TemplateError</span><span class="p">,</span>
+</span><span data-line="95">    <span class="n">TemplateReferenceError</span><span class="p">,</span>
+</span><span data-line="96"><span class="p">)</span>
+</span><span data-line="97"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Storage</span>
+</span><span data-line="98"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_yaml</span>
+</span><span data-line="99">
+</span><span data-line="100"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="101"><span class="c1"># Op registry</span>
+</span><span data-line="102"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="103">
+</span><span data-line="104"><span class="c1"># An op entry is one of:</span>
+</span><span data-line="105"><span class="c1"># - unary:  fn(ds, params) -&gt; ds</span>
+</span><span data-line="106"><span class="c1"># - binary: fn(ds, rhs, params) -&gt; ds</span>
+</span><span data-line="107"><span class="c1">#</span>
+</span><span data-line="108"><span class="c1"># We tag each entry with its arity so the runner knows whether to read</span>
+</span><span data-line="109"><span class="c1"># a ``rhs`` source. Params are constructed by Pydantic from the</span>
+</span><span data-line="110"><span class="c1"># remaining step fields (everything except id/kind/source/rhs).</span>
+</span><span data-line="111">
+</span><span data-line="112"><span class="n">OpEntry</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;unary&quot;</span><span class="p">,</span> <span class="s2">&quot;binary&quot;</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">DataSource</span><span class="p">],</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">]]</span>
+</span><span data-line="113">
+</span><span data-line="114"><span class="n">OP_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OpEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="115">
+</span><span data-line="116">
+<div class="viewcode-block" id="register_op">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.register_op">[docs]</a>
+</span><span data-line="117"><span class="k">def</span><span class="w"> </span><span class="nf">register_op</span><span class="p">(</span>
+</span><span data-line="118">    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span data-line="119">    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">DataSource</span><span class="p">],</span>
+</span><span data-line="120">    <span class="n">params_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
+</span><span data-line="121">    <span class="o">*</span><span class="p">,</span>
+</span><span data-line="122">    <span class="n">arity</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;unary&quot;</span><span class="p">,</span> <span class="s2">&quot;binary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;unary&quot;</span><span class="p">,</span>
+</span><span data-line="123"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="124"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Register an op under ``kind`` -- the public extension point.</span>
+</span><span data-line="125">
+</span><span data-line="126"><span class="sd">    A consumer adds a custom op by writing a function</span>
+</span><span data-line="127"><span class="sd">    ``fn(ds, params) -&gt; DataSource`` (or ``fn(ds, rhs, params)`` for a</span>
+</span><span data-line="128"><span class="sd">    binary op) and a ``params_cls``, then calling this. The op is then a</span>
+</span><span data-line="129"><span class="sd">    first-class citizen: it is usable in YAML/dict templates under its</span>
+</span><span data-line="130"><span class="sd">    ``kind``, validated by :func:`validate_template`, and listed by</span>
+</span><span data-line="131"><span class="sd">    :func:`list_ops`.</span>
+</span><span data-line="132">
+</span><span data-line="133"><span class="sd">    For the op&#39;s data-source contract (``consumes`` / ``produces`` /</span>
+</span><span data-line="134"><span class="sd">    ``requires_element_meta`` / ...) to be picked up by the catalog and</span>
+</span><span data-line="135"><span class="sd">    the template linter, ``params_cls`` should subclass</span>
+</span><span data-line="136"><span class="sd">    :class:`cfdmod.core.ops.OpParams` and set those class attributes; a</span>
+</span><span data-line="137"><span class="sd">    plain ``BaseModel`` still registers but is treated as unconstrained.</span>
+</span><span data-line="138">
+</span><span data-line="139"><span class="sd">    Idempotent: re-registering the same kind replaces the entry, so a</span>
+</span><span data-line="140"><span class="sd">    consumer can also override a built-in.</span>
+</span><span data-line="141"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="142">    <span class="n">OP_REGISTRY</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">arity</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">params_cls</span><span class="p">)</span></div>
+
+</span><span data-line="143">
+</span><span data-line="144">
+</span><span data-line="145"><span class="k">def</span><span class="w"> </span><span class="nf">_populate_default_registry</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="146"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wire every built-in op into the registry.</span>
+</span><span data-line="147">
+</span><span data-line="148"><span class="sd">    Kept as a function so the registry is populated lazily on first</span>
+</span><span data-line="149"><span class="sd">    use; this avoids import cycles with the recipe layer.</span>
+</span><span data-line="150"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="151">    <span class="k">if</span> <span class="n">OP_REGISTRY</span><span class="p">:</span>
+</span><span data-line="152">        <span class="k">return</span>
+</span><span data-line="153">
+</span><span data-line="154">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.data_source_create</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="155">        <span class="n">ExtremeValueParams</span><span class="p">,</span>
+</span><span data-line="156">        <span class="n">FaceCutParams</span><span class="p">,</span>
+</span><span data-line="157">        <span class="n">FieldSeriesForGroupsParams</span><span class="p">,</span>
+</span><span data-line="158">        <span class="n">FilterByGroupingParams</span><span class="p">,</span>
+</span><span data-line="159">        <span class="n">ProbeExtractionParams</span><span class="p">,</span>
+</span><span data-line="160">        <span class="n">ProfileInterpolationParams</span><span class="p">,</span>
+</span><span data-line="161">        <span class="n">StatisticsParams</span><span class="p">,</span>
+</span><span data-line="162">        <span class="n">compute_statistics</span><span class="p">,</span>
+</span><span data-line="163">        <span class="n">extreme_value</span><span class="p">,</span>
+</span><span data-line="164">        <span class="n">face_cut</span><span class="p">,</span>
+</span><span data-line="165">        <span class="n">field_series_for_groups</span><span class="p">,</span>
+</span><span data-line="166">        <span class="n">filter_by_grouping</span><span class="p">,</span>
+</span><span data-line="167">        <span class="n">probe_extraction</span><span class="p">,</span>
+</span><span data-line="168">        <span class="n">profile_interpolation</span><span class="p">,</span>
+</span><span data-line="169">    <span class="p">)</span>
+</span><span data-line="170">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.data_source_create.modal_projection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="171">        <span class="n">ModalProjectionParams</span><span class="p">,</span>
+</span><span data-line="172">        <span class="n">modal_projection</span><span class="p">,</span>
+</span><span data-line="173">    <span class="p">)</span>
+</span><span data-line="174">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.data_source_create.modal_recomposition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="175">        <span class="n">ModalRecompositionParams</span><span class="p">,</span>
+</span><span data-line="176">        <span class="n">modal_recomposition</span><span class="p">,</span>
+</span><span data-line="177">    <span class="p">)</span>
+</span><span data-line="178">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.field</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="179">        <span class="n">AddParams</span><span class="p">,</span>
+</span><span data-line="180">        <span class="n">DerivativeParams</span><span class="p">,</span>
+</span><span data-line="181">        <span class="n">DivParams</span><span class="p">,</span>
+</span><span data-line="182">        <span class="n">ForceContributionParams</span><span class="p">,</span>
+</span><span data-line="183">        <span class="n">FrequencyFilterParams</span><span class="p">,</span>
+</span><span data-line="184">        <span class="n">MomentContributionParams</span><span class="p">,</span>
+</span><span data-line="185">        <span class="n">MovingAverageParams</span><span class="p">,</span>
+</span><span data-line="186">        <span class="n">MulParams</span><span class="p">,</span>
+</span><span data-line="187">        <span class="n">ScaleParams</span><span class="p">,</span>
+</span><span data-line="188">        <span class="n">SubParams</span><span class="p">,</span>
+</span><span data-line="189">        <span class="n">add</span><span class="p">,</span>
+</span><span data-line="190">        <span class="n">derivative</span><span class="p">,</span>
+</span><span data-line="191">        <span class="n">div</span><span class="p">,</span>
+</span><span data-line="192">        <span class="n">force_contribution</span><span class="p">,</span>
+</span><span data-line="193">        <span class="n">frequency_filter</span><span class="p">,</span>
+</span><span data-line="194">        <span class="n">moment_contribution</span><span class="p">,</span>
+</span><span data-line="195">        <span class="n">moving_average</span><span class="p">,</span>
+</span><span data-line="196">        <span class="n">mul</span><span class="p">,</span>
+</span><span data-line="197">        <span class="n">scale</span><span class="p">,</span>
+</span><span data-line="198">        <span class="n">sub</span><span class="p">,</span>
+</span><span data-line="199">    <span class="p">)</span>
+</span><span data-line="200">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.geometric</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="201">        <span class="n">AttachGroupingParams</span><span class="p">,</span>
+</span><span data-line="202">        <span class="n">BodyGroupingParams</span><span class="p">,</span>
+</span><span data-line="203">        <span class="n">ConnectivityGroupingParams</span><span class="p">,</span>
+</span><span data-line="204">        <span class="n">MeshAttachParams</span><span class="p">,</span>
+</span><span data-line="205">        <span class="n">RegroupTopologyParams</span><span class="p">,</span>
+</span><span data-line="206">        <span class="n">ZoningGroupingParams</span><span class="p">,</span>
+</span><span data-line="207">        <span class="n">attach_grouping</span><span class="p">,</span>
+</span><span data-line="208">        <span class="n">body_grouping</span><span class="p">,</span>
+</span><span data-line="209">        <span class="n">connectivity_grouping</span><span class="p">,</span>
+</span><span data-line="210">        <span class="n">mesh_attach</span><span class="p">,</span>
+</span><span data-line="211">        <span class="n">regroup_topology</span><span class="p">,</span>
+</span><span data-line="212">        <span class="n">zoning_grouping</span><span class="p">,</span>
+</span><span data-line="213">    <span class="p">)</span>
+</span><span data-line="214">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops.time</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="215">        <span class="n">RescaleTimeParams</span><span class="p">,</span>
+</span><span data-line="216">        <span class="n">TranslateParams</span><span class="p">,</span>
+</span><span data-line="217">        <span class="n">WindowSelectionParams</span><span class="p">,</span>
+</span><span data-line="218">        <span class="n">rescale</span><span class="p">,</span>
+</span><span data-line="219">        <span class="n">translate</span><span class="p">,</span>
+</span><span data-line="220">        <span class="n">window_selection</span><span class="p">,</span>
+</span><span data-line="221">    <span class="p">)</span>
+</span><span data-line="222">
+</span><span data-line="223">    <span class="c1"># Unary ops.</span>
+</span><span data-line="224">    <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="p">[</span>
+</span><span data-line="225">        <span class="p">(</span><span class="s2">&quot;time_window&quot;</span><span class="p">,</span> <span class="n">window_selection</span><span class="p">,</span> <span class="n">WindowSelectionParams</span><span class="p">),</span>
+</span><span data-line="226">        <span class="p">(</span><span class="s2">&quot;time_translate&quot;</span><span class="p">,</span> <span class="n">translate</span><span class="p">,</span> <span class="n">TranslateParams</span><span class="p">),</span>
+</span><span data-line="227">        <span class="p">(</span><span class="s2">&quot;time_rescale&quot;</span><span class="p">,</span> <span class="n">rescale</span><span class="p">,</span> <span class="n">RescaleTimeParams</span><span class="p">),</span>
+</span><span data-line="228">        <span class="p">(</span><span class="s2">&quot;moving_average&quot;</span><span class="p">,</span> <span class="n">moving_average</span><span class="p">,</span> <span class="n">MovingAverageParams</span><span class="p">),</span>
+</span><span data-line="229">        <span class="p">(</span><span class="s2">&quot;derivative&quot;</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span> <span class="n">DerivativeParams</span><span class="p">),</span>
+</span><span data-line="230">        <span class="p">(</span><span class="s2">&quot;frequency_filter&quot;</span><span class="p">,</span> <span class="n">frequency_filter</span><span class="p">,</span> <span class="n">FrequencyFilterParams</span><span class="p">),</span>
+</span><span data-line="231">        <span class="p">(</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">ScaleParams</span><span class="p">),</span>
+</span><span data-line="232">        <span class="p">(</span><span class="s2">&quot;attach_grouping&quot;</span><span class="p">,</span> <span class="n">attach_grouping</span><span class="p">,</span> <span class="n">AttachGroupingParams</span><span class="p">),</span>
+</span><span data-line="233">        <span class="p">(</span><span class="s2">&quot;mesh_attach&quot;</span><span class="p">,</span> <span class="n">mesh_attach</span><span class="p">,</span> <span class="n">MeshAttachParams</span><span class="p">),</span>
+</span><span data-line="234">        <span class="p">(</span><span class="s2">&quot;body_grouping&quot;</span><span class="p">,</span> <span class="n">body_grouping</span><span class="p">,</span> <span class="n">BodyGroupingParams</span><span class="p">),</span>
+</span><span data-line="235">        <span class="p">(</span><span class="s2">&quot;zoning_grouping&quot;</span><span class="p">,</span> <span class="n">zoning_grouping</span><span class="p">,</span> <span class="n">ZoningGroupingParams</span><span class="p">),</span>
+</span><span data-line="236">        <span class="p">(</span><span class="s2">&quot;connectivity_grouping&quot;</span><span class="p">,</span> <span class="n">connectivity_grouping</span><span class="p">,</span> <span class="n">ConnectivityGroupingParams</span><span class="p">),</span>
+</span><span data-line="237">        <span class="p">(</span><span class="s2">&quot;regroup_topology&quot;</span><span class="p">,</span> <span class="n">regroup_topology</span><span class="p">,</span> <span class="n">RegroupTopologyParams</span><span class="p">),</span>
+</span><span data-line="238">        <span class="p">(</span><span class="s2">&quot;force_contribution&quot;</span><span class="p">,</span> <span class="n">force_contribution</span><span class="p">,</span> <span class="n">ForceContributionParams</span><span class="p">),</span>
+</span><span data-line="239">        <span class="p">(</span><span class="s2">&quot;moment_contribution&quot;</span><span class="p">,</span> <span class="n">moment_contribution</span><span class="p">,</span> <span class="n">MomentContributionParams</span><span class="p">),</span>
+</span><span data-line="240">        <span class="p">(</span><span class="s2">&quot;filter_by_grouping&quot;</span><span class="p">,</span> <span class="n">filter_by_grouping</span><span class="p">,</span> <span class="n">FilterByGroupingParams</span><span class="p">),</span>
+</span><span data-line="241">        <span class="p">(</span><span class="s2">&quot;face_cut&quot;</span><span class="p">,</span> <span class="n">face_cut</span><span class="p">,</span> <span class="n">FaceCutParams</span><span class="p">),</span>
+</span><span data-line="242">        <span class="p">(</span><span class="s2">&quot;field_series_for_groups&quot;</span><span class="p">,</span> <span class="n">field_series_for_groups</span><span class="p">,</span> <span class="n">FieldSeriesForGroupsParams</span><span class="p">),</span>
+</span><span data-line="243">        <span class="p">(</span><span class="s2">&quot;statistics&quot;</span><span class="p">,</span> <span class="n">compute_statistics</span><span class="p">,</span> <span class="n">StatisticsParams</span><span class="p">),</span>
+</span><span data-line="244">        <span class="p">(</span><span class="s2">&quot;extreme_value&quot;</span><span class="p">,</span> <span class="n">extreme_value</span><span class="p">,</span> <span class="n">ExtremeValueParams</span><span class="p">),</span>
+</span><span data-line="245">        <span class="p">(</span><span class="s2">&quot;modal_projection&quot;</span><span class="p">,</span> <span class="n">modal_projection</span><span class="p">,</span> <span class="n">ModalProjectionParams</span><span class="p">),</span>
+</span><span data-line="246">        <span class="p">(</span><span class="s2">&quot;modal_recomposition&quot;</span><span class="p">,</span> <span class="n">modal_recomposition</span><span class="p">,</span> <span class="n">ModalRecompositionParams</span><span class="p">),</span>
+</span><span data-line="247">        <span class="p">(</span><span class="s2">&quot;probe_extraction&quot;</span><span class="p">,</span> <span class="n">probe_extraction</span><span class="p">,</span> <span class="n">ProbeExtractionParams</span><span class="p">),</span>
+</span><span data-line="248">        <span class="p">(</span><span class="s2">&quot;profile_interpolation&quot;</span><span class="p">,</span> <span class="n">profile_interpolation</span><span class="p">,</span> <span class="n">ProfileInterpolationParams</span><span class="p">),</span>
+</span><span data-line="249">    <span class="p">]:</span>
+</span><span data-line="250">        <span class="n">register_op</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">arity</span><span class="o">=</span><span class="s2">&quot;unary&quot;</span><span class="p">)</span>
+</span><span data-line="251">
+</span><span data-line="252">    <span class="c1"># Binary ops. The runner reads ``rhs`` from the step and passes the</span>
+</span><span data-line="253">    <span class="c1"># resolved DataSource as the second positional argument.</span>
+</span><span data-line="254">    <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="p">[</span>
+</span><span data-line="255">        <span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="n">add</span><span class="p">,</span> <span class="n">AddParams</span><span class="p">),</span>
+</span><span data-line="256">        <span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">,</span> <span class="n">sub</span><span class="p">,</span> <span class="n">SubParams</span><span class="p">),</span>
+</span><span data-line="257">        <span class="p">(</span><span class="s2">&quot;mul&quot;</span><span class="p">,</span> <span class="n">mul</span><span class="p">,</span> <span class="n">MulParams</span><span class="p">),</span>
+</span><span data-line="258">        <span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">DivParams</span><span class="p">),</span>
+</span><span data-line="259">    <span class="p">]:</span>
+</span><span data-line="260">        <span class="n">register_op</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">arity</span><span class="o">=</span><span class="s2">&quot;binary&quot;</span><span class="p">)</span>
+</span><span data-line="261">
+</span><span data-line="262">
+</span><span data-line="263"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="264"><span class="c1"># Public op catalog (issue #147)</span>
+</span><span data-line="265"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="266">
+</span><span data-line="267"><span class="c1"># The op registry is populated eagerly at import (bottom of this module), so a</span>
+</span><span data-line="268"><span class="c1"># consumer can enumerate the op set without first running a template. The</span>
+</span><span data-line="269"><span class="c1"># catalog below turns the registry into a stable, dependency-light description</span>
+</span><span data-line="270"><span class="c1"># a node-based pipeline editor can consume: op kinds, arities, data-source</span>
+</span><span data-line="271"><span class="c1"># contracts, and per-op parameter JSON Schemas.</span>
+</span><span data-line="272">
+</span><span data-line="273">
+</span><span data-line="274"><span class="k">class</span><span class="w"> </span><span class="nc">_LenientJsonSchema</span><span class="p">(</span><span class="n">GenerateJsonSchema</span><span class="p">):</span>
+</span><span data-line="275"><span class="w">    </span><span class="sd">&quot;&quot;&quot;JSON-schema generator that degrades gracefully on opaque types.</span>
+</span><span data-line="276">
+</span><span data-line="277"><span class="sd">    Some op params carry numpy arrays or whole value objects (e.g.</span>
+</span><span data-line="278"><span class="sd">    :class:`~cfdmod.core.grouping.Grouping`) that have no JSON-schema</span>
+</span><span data-line="279"><span class="sd">    representation. Rather than fail the whole catalog, emit an empty</span>
+</span><span data-line="280"><span class="sd">    (``{}`` = &quot;any&quot;) schema for those fields; every scalar / string /</span>
+</span><span data-line="281"><span class="sd">    enum field still renders normally for a form-building consumer.</span>
+</span><span data-line="282"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="283">
+</span><span data-line="284">    <span class="k">def</span><span class="w"> </span><span class="nf">handle_invalid_for_json_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">error_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="285">        <span class="k">return</span> <span class="p">{}</span>
+</span><span data-line="286">
+</span><span data-line="287">
+</span><span data-line="288"><span class="k">def</span><span class="w"> </span><span class="nf">_op_family</span><span class="p">(</span><span class="n">params_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="289"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve the op family for a params class.</span>
+</span><span data-line="290">
+</span><span data-line="291"><span class="sd">    An explicit ``op_family`` class attribute wins (custom ops set it);</span>
+</span><span data-line="292"><span class="sd">    otherwise the family is inferred from the subpackage the op lives in,</span>
+</span><span data-line="293"><span class="sd">    so built-in ops need no per-op bookkeeping. Families mirror</span>
+</span><span data-line="294"><span class="sd">    :data:`cfdmod.core.ops.OpKind`.</span>
+</span><span data-line="295"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="296">    <span class="n">declared</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;op_family&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="297">    <span class="k">if</span> <span class="n">declared</span><span class="p">:</span>
+</span><span data-line="298">        <span class="k">return</span> <span class="n">declared</span>
+</span><span data-line="299">    <span class="n">mod</span> <span class="o">=</span> <span class="n">params_cls</span><span class="o">.</span><span class="vm">__module__</span>
+</span><span data-line="300">    <span class="k">if</span> <span class="s2">&quot;.ops.time.&quot;</span> <span class="ow">in</span> <span class="n">mod</span><span class="p">:</span>
+</span><span data-line="301">        <span class="k">return</span> <span class="s2">&quot;time&quot;</span>
+</span><span data-line="302">    <span class="k">if</span> <span class="s2">&quot;.ops.geometric.&quot;</span> <span class="ow">in</span> <span class="n">mod</span><span class="p">:</span>
+</span><span data-line="303">        <span class="k">return</span> <span class="s2">&quot;geometric&quot;</span>
+</span><span data-line="304">    <span class="k">if</span> <span class="s2">&quot;.ops.data_source_create.&quot;</span> <span class="ow">in</span> <span class="n">mod</span><span class="p">:</span>
+</span><span data-line="305">        <span class="k">return</span> <span class="s2">&quot;source_create&quot;</span>
+</span><span data-line="306">    <span class="k">return</span> <span class="s2">&quot;field&quot;</span>
+</span><span data-line="307">
+</span><span data-line="308">
+</span><span data-line="309"><span class="k">class</span><span class="w"> </span><span class="nc">OpInfo</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="310"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Machine-readable description of one registered op.</span>
+</span><span data-line="311">
+</span><span data-line="312"><span class="sd">    This is the unit returned by :func:`list_ops` / :func:`op_info`. It</span>
+</span><span data-line="313"><span class="sd">    carries everything a consumer needs to render an op and validate a</span>
+</span><span data-line="314"><span class="sd">    graph statically: the op ``kind`` (the string written under a step&#39;s</span>
+</span><span data-line="315"><span class="sd">    ``kind:`` in a template), its ``arity``, its data-source contract, and</span>
+</span><span data-line="316"><span class="sd">    the JSON Schema of its parameters.</span>
+</span><span data-line="317"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="318">
+</span><span data-line="319">    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="320">    <span class="n">family</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="321">    <span class="n">arity</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;unary&quot;</span><span class="p">,</span> <span class="s2">&quot;binary&quot;</span><span class="p">]</span>
+</span><span data-line="322">    <span class="n">consumes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+</span><span data-line="323">    <span class="n">produces</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="324">    <span class="n">requires_element_meta</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span data-line="325">    <span class="n">produces_element_meta</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span data-line="326">    <span class="n">replaces_fields</span><span class="p">:</span> <span class="nb">bool</span>
+</span><span data-line="327">    <span class="n">params_schema</span><span class="p">:</span> <span class="nb">dict</span>
+</span><span data-line="328">
+</span><span data-line="329">
+</span><span data-line="330"><span class="k">def</span><span class="w"> </span><span class="nf">_op_info</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">OpEntry</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OpInfo</span><span class="p">:</span>
+</span><span data-line="331">    <span class="n">arity</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">params_cls</span> <span class="o">=</span> <span class="n">entry</span>
+</span><span data-line="332">    <span class="n">consumes</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;consumes&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="333">    <span class="k">return</span> <span class="n">OpInfo</span><span class="p">(</span>
+</span><span data-line="334">        <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span>
+</span><span data-line="335">        <span class="n">family</span><span class="o">=</span><span class="n">_op_family</span><span class="p">(</span><span class="n">params_cls</span><span class="p">),</span>
+</span><span data-line="336">        <span class="n">arity</span><span class="o">=</span><span class="n">arity</span><span class="p">,</span>
+</span><span data-line="337">        <span class="n">consumes</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">consumes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">consumes</span><span class="p">),</span>
+</span><span data-line="338">        <span class="n">produces</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;produces&quot;</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">),</span>
+</span><span data-line="339">        <span class="n">requires_element_meta</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;requires_element_meta&quot;</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">())),</span>
+</span><span data-line="340">        <span class="n">produces_element_meta</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;produces_element_meta&quot;</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">())),</span>
+</span><span data-line="341">        <span class="n">replaces_fields</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;replaces_fields&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+</span><span data-line="342">        <span class="n">params_schema</span><span class="o">=</span><span class="n">params_cls</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">(</span><span class="n">schema_generator</span><span class="o">=</span><span class="n">_LenientJsonSchema</span><span class="p">),</span>
+</span><span data-line="343">    <span class="p">)</span>
+</span><span data-line="344">
+</span><span data-line="345">
+</span><span data-line="346"><span class="k">def</span><span class="w"> </span><span class="nf">list_ops</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">OpInfo</span><span class="p">]:</span>
+</span><span data-line="347"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the full op catalog, sorted by kind.</span>
+</span><span data-line="348">
+</span><span data-line="349"><span class="sd">    Enumerates every registered op (built-ins plus any registered via</span>
+</span><span data-line="350"><span class="sd">    :func:`register_op`) with its contract and parameter schema. Populates</span>
+</span><span data-line="351"><span class="sd">    the registry on first call if it has not been already.</span>
+</span><span data-line="352"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="353">    <span class="n">_populate_default_registry</span><span class="p">()</span>
+</span><span data-line="354">    <span class="k">return</span> <span class="p">[</span><span class="n">_op_info</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">OP_REGISTRY</span><span class="p">[</span><span class="n">kind</span><span class="p">])</span> <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">OP_REGISTRY</span><span class="p">)]</span>
+</span><span data-line="355">
+</span><span data-line="356">
+</span><span data-line="357"><span class="k">def</span><span class="w"> </span><span class="nf">op_info</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OpInfo</span><span class="p">:</span>
+</span><span data-line="358"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the :class:`OpInfo` for a single op kind.</span>
+</span><span data-line="359">
+</span><span data-line="360"><span class="sd">    Raises ``KeyError`` if the kind is not registered.</span>
+</span><span data-line="361"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="362">    <span class="n">_populate_default_registry</span><span class="p">()</span>
+</span><span data-line="363">    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">OP_REGISTRY</span><span class="p">:</span>
+</span><span data-line="364">        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown op kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; registered kinds: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">OP_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span data-line="365">    <span class="k">return</span> <span class="n">_op_info</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">OP_REGISTRY</span><span class="p">[</span><span class="n">kind</span><span class="p">])</span>
+</span><span data-line="366">
+</span><span data-line="367">
+</span><span data-line="368"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="369"><span class="c1"># Schema models</span>
+</span><span data-line="370"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="371">
+</span><span data-line="372">
+</span><span data-line="373"><span class="n">InputKind</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;surface&quot;</span><span class="p">,</span> <span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="s2">&quot;points&quot;</span><span class="p">,</span> <span class="s2">&quot;groups&quot;</span><span class="p">,</span> <span class="s2">&quot;modes&quot;</span><span class="p">]</span>
+</span><span data-line="374">
+</span><span data-line="375"><span class="n">DigestStrategy</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;size_mtime&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;backend&quot;</span><span class="p">]</span>
+</span><span data-line="376"><span class="sd">&quot;&quot;&quot;How an input&#39;s change-detection token is derived. See :meth:`Storage.digest`.&quot;&quot;&quot;</span>
+</span><span data-line="377">
+</span><span data-line="378">
+</span><span data-line="379"><span class="k">class</span><span class="w"> </span><span class="nc">FreshnessConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="380"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output-staleness settings for a template.</span>
+</span><span data-line="381">
+</span><span data-line="382"><span class="sd">    Attributes:</span>
+</span><span data-line="383"><span class="sd">        digest: Default strategy used to digest input dependencies when</span>
+</span><span data-line="384"><span class="sd">            computing an output&#39;s signature. ``size_mtime`` (the default)</span>
+</span><span data-line="385"><span class="sd">            reads no bytes.</span>
+</span><span data-line="386"><span class="sd">        per_input: Optional per-input override, mapping an ``inputs:`` name</span>
+</span><span data-line="387"><span class="sd">            to a strategy that wins over ``digest`` for that input only.</span>
+</span><span data-line="388"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="389">
+</span><span data-line="390">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;forbid&quot;</span><span class="p">)</span>
+</span><span data-line="391">
+</span><span data-line="392">    <span class="n">digest</span><span class="p">:</span> <span class="n">DigestStrategy</span> <span class="o">=</span> <span class="s2">&quot;size_mtime&quot;</span>
+</span><span data-line="393">    <span class="n">per_input</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DigestStrategy</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</span><span data-line="394">
+</span><span data-line="395">
+</span><span data-line="396"><span class="k">class</span><span class="w"> </span><span class="nc">InputSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="397"><span class="w">    </span><span class="sd">&quot;&quot;&quot;One entry under ``inputs:``.</span>
+</span><span data-line="398">
+</span><span data-line="399"><span class="sd">    Attributes:</span>
+</span><span data-line="400"><span class="sd">        kind: The :class:`~cfdmod.core.data_source.DataSource` kind this</span>
+</span><span data-line="401"><span class="sd">            input is expected to be. ``run_template`` reads the source</span>
+</span><span data-line="402"><span class="sd">            and asserts the loaded kind matches, so a mismatch (e.g. a</span>
+</span><span data-line="403"><span class="sd">            probe file not named ``points.*``, which the H5 adapter would</span>
+</span><span data-line="404"><span class="sd">            otherwise read as a surface) is caught rather than silently</span>
+</span><span data-line="405"><span class="sd">            wrong.</span>
+</span><span data-line="406"><span class="sd">        path: Absolute or repo-relative path to the input. Resolved</span>
+</span><span data-line="407"><span class="sd">            against the template&#39;s ``root`` (see :func:`load_template`).</span>
+</span><span data-line="408"><span class="sd">        field: For inputs that bundle a single field (probe / inflow),</span>
+</span><span data-line="409"><span class="sd">            the field name on disk. Optional for multi-field inputs.</span>
+</span><span data-line="410"><span class="sd">        extras: Free-form fields forwarded to the storage adapter</span>
+</span><span data-line="411"><span class="sd">            (e.g. ``group`` selector for h5 timeseries).</span>
+</span><span data-line="412"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="413">
+</span><span data-line="414">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+</span><span data-line="415">
+</span><span data-line="416">    <span class="n">kind</span><span class="p">:</span> <span class="n">InputKind</span>
+</span><span data-line="417">    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="418">    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="419">
+</span><span data-line="420">
+</span><span data-line="421"><span class="k">class</span><span class="w"> </span><span class="nc">OutputSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="422"><span class="w">    </span><span class="sd">&quot;&quot;&quot;One entry under ``outputs:``.</span>
+</span><span data-line="423">
+</span><span data-line="424"><span class="sd">    Attributes:</span>
+</span><span data-line="425"><span class="sd">        source: id of the step (or input) whose output is written.</span>
+</span><span data-line="426"><span class="sd">        path: Destination path, resolved against the template root.</span>
+</span><span data-line="427"><span class="sd">        format: Storage format tag. Only ``xdmf_h5`` is currently</span>
+</span><span data-line="428"><span class="sd">            supported (the sole built-in :class:`Storage`).</span>
+</span><span data-line="429"><span class="sd">        extras: Free-form fields forwarded to the storage adapter</span>
+</span><span data-line="430"><span class="sd">            (e.g. ``group`` name for the H5 timeseries layout).</span>
+</span><span data-line="431"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="432">
+</span><span data-line="433">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+</span><span data-line="434">
+</span><span data-line="435">    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="436">    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="437">    <span class="nb">format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;xdmf_h5&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;xdmf_h5&quot;</span>
+</span><span data-line="438">
+</span><span data-line="439">
+</span><span data-line="440"><span class="k">class</span><span class="w"> </span><span class="nc">OpSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="441"><span class="w">    </span><span class="sd">&quot;&quot;&quot;One pipeline step. Accepts arbitrary op-specific fields.&quot;&quot;&quot;</span>
+</span><span data-line="442">
+</span><span data-line="443">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+</span><span data-line="444">
+</span><span data-line="445">    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="446">    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="447">    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+</span><span data-line="448">    <span class="n">rhs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="449">
+</span><span data-line="450">
+<div class="viewcode-block" id="PipelineTemplate">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.PipelineTemplate">[docs]</a>
+</span><span data-line="451"><span class="k">class</span><span class="w"> </span><span class="nc">PipelineTemplate</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span data-line="452"><span class="w">    </span><span class="sd">&quot;&quot;&quot;A complete YAML template.&quot;&quot;&quot;</span>
+</span><span data-line="453">
+</span><span data-line="454">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;forbid&quot;</span><span class="p">)</span>
+</span><span data-line="455">
+</span><span data-line="456">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pipeline&quot;</span>
+</span><span data-line="457">    <span class="n">root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="458">    <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">InputSpec</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</span><span data-line="459">    <span class="n">pipeline</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OpSpec</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span data-line="460">    <span class="n">outputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OutputSpec</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</span><span data-line="461">    <span class="n">freshness</span><span class="p">:</span> <span class="n">FreshnessConfig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">FreshnessConfig</span><span class="p">)</span></div>
+
+</span><span data-line="462">
+</span><span data-line="463">
+</span><span data-line="464"><span class="c1"># Backwards-compat alias for symmetry with OpSpec.</span>
+</span><span data-line="465"><span class="n">BinaryOpSpec</span> <span class="o">=</span> <span class="n">OpSpec</span>
+</span><span data-line="466">
+</span><span data-line="467">
+</span><span data-line="468"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="469"><span class="c1"># Loader / runner</span>
+</span><span data-line="470"><span class="c1"># ---------------------------------------------------------------------------</span>
+</span><span data-line="471">
+</span><span data-line="472">
+<div class="viewcode-block" id="load_template">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.load_template">[docs]</a>
+</span><span data-line="473"><span class="k">def</span><span class="w"> </span><span class="nf">load_template</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineTemplate</span><span class="p">:</span>
+</span><span data-line="474"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a YAML template from disk.</span>
+</span><span data-line="475">
+</span><span data-line="476"><span class="sd">    ``root`` defaults to the directory containing the YAML file so</span>
+</span><span data-line="477"><span class="sd">    relative ``path:`` entries inside ``inputs:`` / ``outputs:`` are</span>
+</span><span data-line="478"><span class="sd">    resolved against the template&#39;s own location, not the caller&#39;s</span>
+</span><span data-line="479"><span class="sd">    cwd.</span>
+</span><span data-line="480"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="481">    <span class="n">p</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span><span data-line="482">    <span class="n">data</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</span><span data-line="483">    <span class="k">if</span> <span class="s2">&quot;root&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+</span><span data-line="484">        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+</span><span data-line="485">    <span class="n">template</span> <span class="o">=</span> <span class="n">PipelineTemplate</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span data-line="486">    <span class="n">validate_template</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+</span><span data-line="487">    <span class="k">return</span> <span class="n">template</span></div>
+
+</span><span data-line="488">
+</span><span data-line="489">
+</span><span data-line="490"><span class="c1"># Points sources carry coordinates intrinsically, so ``position`` element</span>
+</span><span data-line="491"><span class="c1"># metadata is treated as available on any points binding even before an op</span>
+</span><span data-line="492"><span class="c1"># populates ElementMeta.position explicitly.</span>
+</span><span data-line="493"><span class="n">_INTRINSIC_META</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;position&quot;</span><span class="p">})}</span>
+</span><span data-line="494">
+</span><span data-line="495">
+</span><span data-line="496"><span class="k">class</span><span class="w"> </span><span class="nc">_BindingState</span><span class="p">:</span>
+</span><span data-line="497"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Symbolic description of a binding tracked during static validation.</span>
+</span><span data-line="498">
+</span><span data-line="499"><span class="sd">    Carries the data-source ``kind``, the set of available field names</span>
+</span><span data-line="500"><span class="sd">    (``None`` = &quot;unknown&quot;, i.e. not declared -&gt; field checks are skipped</span>
+</span><span data-line="501"><span class="sd">    to avoid false positives), and the set of available element-metadata</span>
+</span><span data-line="502"><span class="sd">    keys.</span>
+</span><span data-line="503"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="504">
+</span><span data-line="505">    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">,</span> <span class="s2">&quot;fields&quot;</span><span class="p">,</span> <span class="s2">&quot;meta&quot;</span><span class="p">)</span>
+</span><span data-line="506">
+</span><span data-line="507">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="508">        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+</span><span data-line="509">        <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="n">fields</span>
+</span><span data-line="510">        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
+</span><span data-line="511">
+</span><span data-line="512">
+</span><span data-line="513"><span class="k">def</span><span class="w"> </span><span class="nf">_seed_meta</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span data-line="514">    <span class="k">return</span> <span class="n">_INTRINSIC_META</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">())</span>
+</span><span data-line="515">
+</span><span data-line="516">
+</span><span data-line="517"><span class="k">def</span><span class="w"> </span><span class="nf">_input_state</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="s2">&quot;InputSpec&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_BindingState</span><span class="p">:</span>
+</span><span data-line="518">    <span class="n">fields</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">spec</span><span class="o">.</span><span class="n">field</span><span class="p">})</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">field</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span data-line="519">    <span class="k">return</span> <span class="n">_BindingState</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">_seed_meta</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">kind</span><span class="p">))</span>
+</span><span data-line="520">
+</span><span data-line="521">
+</span><span data-line="522"><span class="k">def</span><span class="w"> </span><span class="nf">_consumed_fields</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span data-line="523">    <span class="n">fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;consumed_fields&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="524">    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">fn</span><span class="p">())</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">()</span>
+</span><span data-line="525">
+</span><span data-line="526">
+</span><span data-line="527"><span class="k">def</span><span class="w"> </span><span class="nf">_produced_fields</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span data-line="528">    <span class="n">fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;produced_fields&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="529">    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">fn</span><span class="p">())</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">()</span>
+</span><span data-line="530">
+</span><span data-line="531">
+</span><span data-line="532"><span class="k">def</span><span class="w"> </span><span class="nf">_next_state</span><span class="p">(</span>
+</span><span data-line="533">    <span class="n">params_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">_BindingState</span>
+</span><span data-line="534"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_BindingState</span><span class="p">:</span>
+</span><span data-line="535"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the output binding state of an op applied to ``src``.&quot;&quot;&quot;</span>
+</span><span data-line="536">    <span class="n">produces</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;produces&quot;</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">)</span>
+</span><span data-line="537">    <span class="n">produces_meta</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;produces_element_meta&quot;</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">()))</span>
+</span><span data-line="538">    <span class="n">replaces</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;replaces_fields&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+</span><span data-line="539">
+</span><span data-line="540">    <span class="n">kind</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">kind</span> <span class="k">if</span> <span class="n">produces</span> <span class="o">==</span> <span class="s2">&quot;same&quot;</span> <span class="k">else</span> <span class="n">produces</span>
+</span><span data-line="541">    <span class="k">if</span> <span class="n">produces</span> <span class="o">==</span> <span class="s2">&quot;same&quot;</span><span class="p">:</span>
+</span><span data-line="542">        <span class="n">meta</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">meta</span> <span class="o">|</span> <span class="n">produces_meta</span>
+</span><span data-line="543">    <span class="k">else</span><span class="p">:</span>
+</span><span data-line="544">        <span class="c1"># Fresh source: only the metadata the op sets, plus the new kind&#39;s</span>
+</span><span data-line="545">        <span class="c1"># intrinsic metadata.</span>
+</span><span data-line="546">        <span class="n">meta</span> <span class="o">=</span> <span class="n">produces_meta</span> <span class="o">|</span> <span class="n">_seed_meta</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
+</span><span data-line="547">
+</span><span data-line="548">    <span class="k">if</span> <span class="n">replaces</span><span class="p">:</span>
+</span><span data-line="549">        <span class="n">fields</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_produced_fields</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span data-line="550">    <span class="k">elif</span> <span class="n">src</span><span class="o">.</span><span class="n">fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="551">        <span class="n">fields</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="552">    <span class="k">else</span><span class="p">:</span>
+</span><span data-line="553">        <span class="n">fields</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">fields</span> <span class="o">|</span> <span class="n">_produced_fields</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span data-line="554">    <span class="k">return</span> <span class="n">_BindingState</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">meta</span><span class="p">)</span>
+</span><span data-line="555">
+</span><span data-line="556">
+</span><span data-line="557"><span class="k">def</span><span class="w"> </span><span class="nf">_check_contract</span><span class="p">(</span>
+</span><span data-line="558">    <span class="n">step_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span data-line="559">    <span class="n">step_kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span data-line="560">    <span class="n">params_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
+</span><span data-line="561">    <span class="n">params</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span>
+</span><span data-line="562">    <span class="n">src</span><span class="p">:</span> <span class="n">_BindingState</span><span class="p">,</span>
+</span><span data-line="563"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="564"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate one op against its source binding&#39;s kind / meta / fields.</span>
+</span><span data-line="565">
+</span><span data-line="566"><span class="sd">    Strict on kind and element metadata (both deterministic); permissive</span>
+</span><span data-line="567"><span class="sd">    on fields when the source&#39;s field set is unknown (undeclared input),</span>
+</span><span data-line="568"><span class="sd">    so a valid template is never rejected for a field the linter merely</span>
+</span><span data-line="569"><span class="sd">    could not see.</span>
+</span><span data-line="570"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="571">    <span class="n">consumes</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;consumes&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="572">    <span class="k">if</span> <span class="n">consumes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">src</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">consumes</span><span class="p">:</span>
+</span><span data-line="573">        <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="574">            <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">step_kind</span><span class="si">!r}</span><span class="s2">) consumes a </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">consumes</span><span class="p">)</span><span class="si">}</span><span class="s2"> data source &quot;</span>
+</span><span data-line="575">            <span class="sa">f</span><span class="s2">&quot;but its source is kind </span><span class="si">{</span><span class="n">src</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">&quot;</span>
+</span><span data-line="576">        <span class="p">)</span>
+</span><span data-line="577">
+</span><span data-line="578">    <span class="n">missing_meta</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="s2">&quot;requires_element_meta&quot;</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">()))</span> <span class="o">-</span> <span class="n">src</span><span class="o">.</span><span class="n">meta</span>
+</span><span data-line="579">    <span class="k">if</span> <span class="n">missing_meta</span><span class="p">:</span>
+</span><span data-line="580">        <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="581">            <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">step_kind</span><span class="si">!r}</span><span class="s2">) requires element metadata </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_meta</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+</span><span data-line="582">            <span class="sa">f</span><span class="s2">&quot;not present on its source; attach it upstream (e.g. mesh_attach)&quot;</span>
+</span><span data-line="583">        <span class="p">)</span>
+</span><span data-line="584">
+</span><span data-line="585">    <span class="k">if</span> <span class="n">src</span><span class="o">.</span><span class="n">fields</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="586">        <span class="n">missing_fields</span> <span class="o">=</span> <span class="n">_consumed_fields</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="n">src</span><span class="o">.</span><span class="n">fields</span>
+</span><span data-line="587">        <span class="k">if</span> <span class="n">missing_fields</span><span class="p">:</span>
+</span><span data-line="588">            <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="589">                <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">step_kind</span><span class="si">!r}</span><span class="s2">) reads field(s) </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_fields</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+</span><span data-line="590">                <span class="sa">f</span><span class="s2">&quot;not present on its source; available: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="591">            <span class="p">)</span>
+</span><span data-line="592">
+</span><span data-line="593">
+</span><span data-line="594"><span class="k">def</span><span class="w"> </span><span class="nf">validate_template</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n">PipelineTemplate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="595"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Statically validate a template before any I/O.</span>
+</span><span data-line="596">
+</span><span data-line="597"><span class="sd">    Walks the step DAG and raises on the errors a user is most likely to</span>
+</span><span data-line="598"><span class="sd">    hit: unknown op kinds, dangling ``source`` / ``rhs`` references,</span>
+</span><span data-line="599"><span class="sd">    duplicate step ids (or an id colliding with an input name), a ``rhs``</span>
+</span><span data-line="600"><span class="sd">    on a unary op, and per-step params errors (missing required fields,</span>
+</span><span data-line="601"><span class="sd">    typo&#39;d fields caught by ``extra=&quot;forbid&quot;``).</span>
+</span><span data-line="602">
+</span><span data-line="603"><span class="sd">    It also runs a symbolic contract pass over the op catalog (issue</span>
+</span><span data-line="604"><span class="sd">    #147): each step&#39;s declared ``consumes`` kind and ``requires_element_meta``</span>
+</span><span data-line="605"><span class="sd">    are checked against the source binding, and field reads are checked when</span>
+</span><span data-line="606"><span class="sd">    the field set is known. This catches graph-wiring mistakes -- e.g. a</span>
+</span><span data-line="607"><span class="sd">    ``force_contribution`` before ``mesh_attach``, or a surface-only op on a</span>
+</span><span data-line="608"><span class="sd">    points binding -- that a visual pipeline editor produces. The pass is</span>
+</span><span data-line="609"><span class="sd">    strict on kind / metadata (deterministic) and permissive on fields when</span>
+</span><span data-line="610"><span class="sd">    the source&#39;s fields were not declared. Called by :func:`load_template`;</span>
+</span><span data-line="611"><span class="sd">    also usable standalone on a programmatically built template.</span>
+</span><span data-line="612"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="613">    <span class="n">_populate_default_registry</span><span class="p">()</span>
+</span><span data-line="614">
+</span><span data-line="615">    <span class="n">known</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+</span><span data-line="616">    <span class="n">states</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_BindingState</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span data-line="617">        <span class="n">name</span><span class="p">:</span> <span class="n">_input_state</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span data-line="618">    <span class="p">}</span>
+</span><span data-line="619">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">pipeline</span><span class="p">):</span>
+</span><span data-line="620">        <span class="n">step_id</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;step_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="621">        <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">OP_REGISTRY</span><span class="p">:</span>
+</span><span data-line="622">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="623">                <span class="sa">f</span><span class="s2">&quot;unknown op kind </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2"> at step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+</span><span data-line="624">                <span class="sa">f</span><span class="s2">&quot;registered kinds: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">OP_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="625">            <span class="p">)</span>
+</span><span data-line="626">        <span class="n">arity</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">params_cls</span> <span class="o">=</span> <span class="n">OP_REGISTRY</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="p">]</span>
+</span><span data-line="627">        <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+</span><span data-line="628">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="629">                <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> references unknown source </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+</span><span data-line="630">                <span class="sa">f</span><span class="s2">&quot;known so far: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">known</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="631">            <span class="p">)</span>
+</span><span data-line="632">        <span class="k">if</span> <span class="n">arity</span> <span class="o">==</span> <span class="s2">&quot;binary&quot;</span><span class="p">:</span>
+</span><span data-line="633">            <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">rhs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="634">                <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> is binary (</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">) but has no rhs&quot;</span><span class="p">)</span>
+</span><span data-line="635">            <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">rhs</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+</span><span data-line="636">                <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="637">                    <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> references unknown rhs </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">rhs</span><span class="si">!r}</span><span class="s2">&quot;</span>
+</span><span data-line="638">                <span class="p">)</span>
+</span><span data-line="639">        <span class="k">elif</span> <span class="n">step</span><span class="o">.</span><span class="n">rhs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="640">            <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="641">                <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> is unary (</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">) but has a rhs </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">rhs</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+</span><span data-line="642">                <span class="s2">&quot;rhs is only valid on binary ops (add/sub/mul/div)&quot;</span>
+</span><span data-line="643">            <span class="p">)</span>
+</span><span data-line="644">        <span class="c1"># Build the params model so missing/typo&#39;d fields fail here, not</span>
+</span><span data-line="645">        <span class="c1"># after every input has already been read from disk.</span>
+</span><span data-line="646">        <span class="n">params</span> <span class="o">=</span> <span class="n">_step_params</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">params_cls</span><span class="p">,</span> <span class="n">template</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+</span><span data-line="647">        <span class="c1"># Symbolic contract check + state propagation.</span>
+</span><span data-line="648">        <span class="n">src_state</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">source</span><span class="p">]</span>
+</span><span data-line="649">        <span class="n">_check_contract</span><span class="p">(</span><span class="n">step_id</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">params_cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">src_state</span><span class="p">)</span>
+</span><span data-line="650">        <span class="c1"># Register the id last so a step cannot reference itself, and so a</span>
+</span><span data-line="651">        <span class="c1"># duplicate id (or a clash with an input name) is caught.</span>
+</span><span data-line="652">        <span class="k">if</span> <span class="n">step_id</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+</span><span data-line="653">            <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="654">                <span class="sa">f</span><span class="s2">&quot;duplicate step id </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2">; ids must be unique and must &quot;</span>
+</span><span data-line="655">                <span class="s2">&quot;not collide with an input name&quot;</span>
+</span><span data-line="656">            <span class="p">)</span>
+</span><span data-line="657">        <span class="n">known</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">step_id</span><span class="p">)</span>
+</span><span data-line="658">        <span class="n">states</span><span class="p">[</span><span class="n">step_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">_next_state</span><span class="p">(</span><span class="n">params_cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">src_state</span><span class="p">)</span>
+</span><span data-line="659">
+</span><span data-line="660">    <span class="k">for</span> <span class="n">out_name</span><span class="p">,</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="661">        <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+</span><span data-line="662">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="663">                <span class="sa">f</span><span class="s2">&quot;output </span><span class="si">{</span><span class="n">out_name</span><span class="si">!r}</span><span class="s2"> references unknown source </span><span class="si">{</span><span class="n">out</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+</span><span data-line="664">                <span class="sa">f</span><span class="s2">&quot;known: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">known</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="665">            <span class="p">)</span>
+</span><span data-line="666">
+</span><span data-line="667">
+</span><span data-line="668"><span class="k">def</span><span class="w"> </span><span class="nf">_resolve_key</span><span class="p">(</span><span class="n">template_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="669"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a template ``path:`` to the storage key.</span>
+</span><span data-line="670">
+</span><span data-line="671"><span class="sd">    Storage adapters are keyed by stem (no extension): the H5 adapter</span>
+</span><span data-line="672"><span class="sd">    resolves ``foo`` to ``&lt;root&gt;/foo.h5``. YAML templates may write</span>
+</span><span data-line="673"><span class="sd">    ``path: foo``, ``path: foo.h5``, or an absolute path; we strip the</span>
+</span><span data-line="674"><span class="sd">    ``.h5`` / ``.xdmf`` suffix uniformly so the storage sees a stem.</span>
+</span><span data-line="675">
+</span><span data-line="676"><span class="sd">    The resolved key is anchored on the template&#39;s ``root:`` when the</span>
+</span><span data-line="677"><span class="sd">    YAML path is relative; absolute paths and ``MemoryStorage`` keys</span>
+</span><span data-line="678"><span class="sd">    (any string) pass through unchanged.</span>
+</span><span data-line="679"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="680">    <span class="n">pp</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</span><span data-line="681">    <span class="k">if</span> <span class="n">pp</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;.xdmf&quot;</span><span class="p">}:</span>
+</span><span data-line="682">        <span class="n">pp</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span data-line="683">    <span class="k">if</span> <span class="n">pp</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span> <span class="ow">or</span> <span class="n">template_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="684">        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span>
+</span><span data-line="685">    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">template_root</span><span class="p">)</span> <span class="o">/</span> <span class="n">pp</span><span class="p">)</span>
+</span><span data-line="686">
+</span><span data-line="687">
+</span><span data-line="688"><span class="c1"># Step-level fields whose values are paths the user wrote relative to</span>
+</span><span data-line="689"><span class="c1"># the template&#39;s root. The runner resolves them to absolute paths before</span>
+</span><span data-line="690"><span class="c1"># building the op&#39;s params model so ops never need to know about the</span>
+</span><span data-line="691"><span class="c1"># YAML&#39;s location.</span>
+</span><span data-line="692"><span class="n">_PATHLIKE_FIELDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;mesh&quot;</span><span class="p">,</span> <span class="s2">&quot;mesh_path&quot;</span><span class="p">,</span> <span class="s2">&quot;lnas&quot;</span><span class="p">,</span> <span class="s2">&quot;csv&quot;</span><span class="p">})</span>
+</span><span data-line="693">
+</span><span data-line="694">
+</span><span data-line="695"><span class="k">def</span><span class="w"> </span><span class="nf">_resolve_pathlike</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">template_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+</span><span data-line="696">    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">template_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="697">        <span class="k">return</span> <span class="n">value</span>
+</span><span data-line="698">    <span class="n">pp</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span><span data-line="699">    <span class="k">if</span> <span class="n">pp</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+</span><span data-line="700">        <span class="k">return</span> <span class="n">value</span>
+</span><span data-line="701">    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">template_root</span><span class="p">)</span> <span class="o">/</span> <span class="n">pp</span><span class="p">)</span>
+</span><span data-line="702">
+</span><span data-line="703">
+</span><span data-line="704"><span class="k">def</span><span class="w"> </span><span class="nf">_step_params</span><span class="p">(</span>
+</span><span data-line="705">    <span class="n">step</span><span class="p">:</span> <span class="n">OpSpec</span><span class="p">,</span>
+</span><span data-line="706">    <span class="n">params_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">],</span>
+</span><span data-line="707">    <span class="n">template_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+</span><span data-line="708"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModel</span><span class="p">:</span>
+</span><span data-line="709"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the params model from the step&#39;s extras.</span>
+</span><span data-line="710">
+</span><span data-line="711"><span class="sd">    String fields whose name is in :data:`_PATHLIKE_FIELDS` are</span>
+</span><span data-line="712"><span class="sd">    resolved against ``template_root`` so users can write relative</span>
+</span><span data-line="713"><span class="sd">    paths in YAML.</span>
+</span><span data-line="714"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="715">    <span class="n">raw</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+</span><span data-line="716">    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;kind&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;rhs&quot;</span><span class="p">):</span>
+</span><span data-line="717">        <span class="n">raw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span data-line="718">    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+</span><span data-line="719">        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_PATHLIKE_FIELDS</span><span class="p">:</span>
+</span><span data-line="720">            <span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_resolve_pathlike</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">template_root</span><span class="p">)</span>
+</span><span data-line="721">    <span class="k">return</span> <span class="n">params_cls</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+</span><span data-line="722">
+</span><span data-line="723">
+<div class="viewcode-block" id="run_template">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.run_template">[docs]</a>
+</span><span data-line="724"><span class="k">def</span><span class="w"> </span><span class="nf">run_template</span><span class="p">(</span>
+</span><span data-line="725">    <span class="n">template</span><span class="p">:</span> <span class="n">PipelineTemplate</span><span class="p">,</span>
+</span><span data-line="726">    <span class="o">*</span><span class="p">,</span>
+</span><span data-line="727">    <span class="n">storage</span><span class="p">:</span> <span class="n">Storage</span><span class="p">,</span>
+</span><span data-line="728">    <span class="n">skip_fresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span data-line="729"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataSource</span><span class="p">]:</span>
+</span><span data-line="730"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a parsed template against a :class:`Storage`.</span>
+</span><span data-line="731">
+</span><span data-line="732"><span class="sd">    Returns the dict of all named values (inputs + step outputs) so</span>
+</span><span data-line="733"><span class="sd">    callers can inspect intermediates. The ``outputs:`` block is</span>
+</span><span data-line="734"><span class="sd">    written through ``storage.write_data_source`` as a side effect.</span>
+</span><span data-line="735">
+</span><span data-line="736"><span class="sd">    Each written output is stamped with a freshness signature (via</span>
+</span><span data-line="737"><span class="sd">    ``storage.write_signature``) when the backend supports it, so a later</span>
+</span><span data-line="738"><span class="sd">    :func:`~cfdmod.core.freshness.output_status` / ``skip_fresh`` run can</span>
+</span><span data-line="739"><span class="sd">    tell fresh outputs from stale ones.</span>
+</span><span data-line="740">
+</span><span data-line="741"><span class="sd">    With ``skip_fresh=True`` the runner first asks which outputs are stale</span>
+</span><span data-line="742"><span class="sd">    (``freshness.output_status``), then runs only the steps and loads only</span>
+</span><span data-line="743"><span class="sd">    the inputs those stale outputs depend on -- fresh outputs are neither</span>
+</span><span data-line="744"><span class="sd">    recomputed nor rewritten. If every declared output is already fresh the</span>
+</span><span data-line="745"><span class="sd">    run is a no-op and returns an empty binding dict.</span>
+</span><span data-line="746"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="747">    <span class="n">_populate_default_registry</span><span class="p">()</span>
+</span><span data-line="748">    <span class="c1"># Static validation first: fail on typos/dangling refs before any I/O.</span>
+</span><span data-line="749">    <span class="n">validate_template</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+</span><span data-line="750">
+</span><span data-line="751">    <span class="n">strategy</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">freshness</span><span class="o">.</span><span class="n">digest</span>
+</span><span data-line="752">    <span class="n">supports_freshness</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="s2">&quot;write_signature&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="s2">&quot;digest&quot;</span><span class="p">)</span>
+</span><span data-line="753">
+</span><span data-line="754">    <span class="n">stale_outputs</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="755">    <span class="n">needed_steps</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="756">    <span class="n">needed_inputs</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="757">    <span class="k">if</span> <span class="n">skip_fresh</span><span class="p">:</span>
+</span><span data-line="758">        <span class="k">if</span> <span class="ow">not</span> <span class="n">supports_freshness</span><span class="p">:</span>
+</span><span data-line="759">            <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="760">                <span class="s2">&quot;skip_fresh=True requires a storage backend with digest/read_signature/&quot;</span>
+</span><span data-line="761">                <span class="s2">&quot;write_signature; this backend has none&quot;</span>
+</span><span data-line="762">            <span class="p">)</span>
+</span><span data-line="763">        <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.freshness</span><span class="w"> </span><span class="kn">import</span> <span class="n">closure_for_outputs</span><span class="p">,</span> <span class="n">output_status</span>
+</span><span data-line="764">
+</span><span data-line="765">        <span class="n">statuses</span> <span class="o">=</span> <span class="n">output_status</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">storage</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span>
+</span><span data-line="766">        <span class="n">stale_outputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">statuses</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">is_fresh</span><span class="p">}</span>
+</span><span data-line="767">        <span class="k">if</span> <span class="n">template</span><span class="o">.</span><span class="n">outputs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">stale_outputs</span><span class="p">:</span>
+</span><span data-line="768">            <span class="c1"># Everything is up to date -- nothing to load, run, or write.</span>
+</span><span data-line="769">            <span class="k">return</span> <span class="p">{}</span>
+</span><span data-line="770">        <span class="n">needed_steps</span><span class="p">,</span> <span class="n">needed_inputs</span> <span class="o">=</span> <span class="n">closure_for_outputs</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">stale_outputs</span><span class="p">)</span>
+</span><span data-line="771">
+</span><span data-line="772">    <span class="c1"># 1. Load inputs (all, or -- under skip_fresh -- only those the stale</span>
+</span><span data-line="773">    <span class="c1">#    outputs depend on).</span>
+</span><span data-line="774">    <span class="n">bindings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataSource</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="775">    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="776">        <span class="k">if</span> <span class="n">needed_inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">needed_inputs</span><span class="p">:</span>
+</span><span data-line="777">            <span class="k">continue</span>
+</span><span data-line="778">        <span class="c1"># Storage keys are logical names. We treat the resolved path as</span>
+</span><span data-line="779">        <span class="c1"># the storage key so the adapter can map it to its on-disk</span>
+</span><span data-line="780">        <span class="c1"># layout.</span>
+</span><span data-line="781">        <span class="n">key</span> <span class="o">=</span> <span class="n">_resolve_key</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+</span><span data-line="782">        <span class="n">ds</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="n">read_data_source</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="783">        <span class="c1"># Honor the declared kind: the H5 adapter infers surface-vs-points</span>
+</span><span data-line="784">        <span class="c1"># from the filename, so a misnamed/misdeclared input would flow in</span>
+</span><span data-line="785">        <span class="c1"># as the wrong kind silently. Assert the loaded kind matches.</span>
+</span><span data-line="786">        <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="n">spec</span><span class="o">.</span><span class="n">kind</span><span class="p">:</span>
+</span><span data-line="787">            <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span>
+</span><span data-line="788">                <span class="sa">f</span><span class="s2">&quot;input </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> declares kind </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2"> but the source at &quot;</span>
+</span><span data-line="789">                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">path</span><span class="si">!r}</span><span class="s2"> loaded as kind </span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">&quot;</span>
+</span><span data-line="790">            <span class="p">)</span>
+</span><span data-line="791">        <span class="n">bindings</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span>
+</span><span data-line="792">
+</span><span data-line="793">    <span class="c1"># 2. Walk pipeline.</span>
+</span><span data-line="794">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">pipeline</span><span class="p">):</span>
+</span><span data-line="795">        <span class="n">step_id</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;step_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="796">        <span class="k">if</span> <span class="n">needed_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">step_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">needed_steps</span><span class="p">:</span>
+</span><span data-line="797">            <span class="k">continue</span>
+</span><span data-line="798">        <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">OP_REGISTRY</span><span class="p">:</span>
+</span><span data-line="799">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="800">                <span class="sa">f</span><span class="s2">&quot;unknown op kind </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2"> at step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+</span><span data-line="801">                <span class="sa">f</span><span class="s2">&quot;registered kinds: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">OP_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="802">            <span class="p">)</span>
+</span><span data-line="803">        <span class="n">arity</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">params_cls</span> <span class="o">=</span> <span class="n">OP_REGISTRY</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="p">]</span>
+</span><span data-line="804">
+</span><span data-line="805">        <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">:</span>
+</span><span data-line="806">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="807">                <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> references unknown source </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">&quot;</span>
+</span><span data-line="808">            <span class="p">)</span>
+</span><span data-line="809">        <span class="n">ds</span> <span class="o">=</span> <span class="n">bindings</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">source</span><span class="p">]</span>
+</span><span data-line="810">        <span class="n">params</span> <span class="o">=</span> <span class="n">_step_params</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">params_cls</span><span class="p">,</span> <span class="n">template</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+</span><span data-line="811">
+</span><span data-line="812">        <span class="k">if</span> <span class="n">arity</span> <span class="o">==</span> <span class="s2">&quot;binary&quot;</span><span class="p">:</span>
+</span><span data-line="813">            <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">rhs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="814">                <span class="k">raise</span> <span class="n">TemplateError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> is binary but has no rhs&quot;</span><span class="p">)</span>
+</span><span data-line="815">            <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">rhs</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">:</span>
+</span><span data-line="816">                <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span>
+</span><span data-line="817">                    <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> references unknown rhs </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">rhs</span><span class="si">!r}</span><span class="s2">&quot;</span>
+</span><span data-line="818">                <span class="p">)</span>
+</span><span data-line="819">
+</span><span data-line="820">        <span class="c1"># Execute the op. A failure inside the op is wrapped as OpError with</span>
+</span><span data-line="821">        <span class="c1"># the failing step id / kind, so a consumer can map it precisely</span>
+</span><span data-line="822">        <span class="c1"># (rather than string-matching a bare exception) -- but cfdmod&#39;s own</span>
+</span><span data-line="823">        <span class="c1"># TemplateError / TemplateReferenceError pass through untouched.</span>
+</span><span data-line="824">        <span class="k">try</span><span class="p">:</span>
+</span><span data-line="825">            <span class="k">if</span> <span class="n">arity</span> <span class="o">==</span> <span class="s2">&quot;binary&quot;</span><span class="p">:</span>
+</span><span data-line="826">                <span class="n">result</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">bindings</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">rhs</span><span class="p">],</span> <span class="n">params</span><span class="p">)</span>
+</span><span data-line="827">            <span class="k">else</span><span class="p">:</span>
+</span><span data-line="828">                <span class="n">result</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span><span data-line="829">        <span class="k">except</span> <span class="n">CfdmodError</span><span class="p">:</span>
+</span><span data-line="830">            <span class="k">raise</span>
+</span><span data-line="831">        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+</span><span data-line="832">            <span class="k">raise</span> <span class="n">OpError</span><span class="p">(</span>
+</span><span data-line="833">                <span class="sa">f</span><span class="s2">&quot;step </span><span class="si">{</span><span class="n">step_id</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">) raised while executing: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span data-line="834">                <span class="n">step_id</span><span class="o">=</span><span class="n">step_id</span><span class="p">,</span>
+</span><span data-line="835">                <span class="n">op_kind</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+</span><span data-line="836">            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+</span><span data-line="837">
+</span><span data-line="838">        <span class="n">bindings</span><span class="p">[</span><span class="n">step_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+</span><span data-line="839">
+</span><span data-line="840">    <span class="c1"># 3. Write outputs (skipping fresh ones under skip_fresh) and stamp each</span>
+</span><span data-line="841">    <span class="c1">#    with its freshness signature when the backend supports it.</span>
+</span><span data-line="842">    <span class="n">sign</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="843">    <span class="k">if</span> <span class="n">supports_freshness</span> <span class="ow">and</span> <span class="n">template</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+</span><span data-line="844">        <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.freshness</span><span class="w"> </span><span class="kn">import</span> <span class="n">signature</span> <span class="k">as</span> <span class="n">sign</span>
+</span><span data-line="845">
+</span><span data-line="846">    <span class="k">for</span> <span class="n">out_name</span><span class="p">,</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="847">        <span class="k">if</span> <span class="n">stale_outputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">out_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stale_outputs</span><span class="p">:</span>
+</span><span data-line="848">            <span class="k">continue</span>
+</span><span data-line="849">        <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">:</span>
+</span><span data-line="850">            <span class="k">raise</span> <span class="n">TemplateReferenceError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;output references unknown source </span><span class="si">{</span><span class="n">out</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span data-line="851">        <span class="n">key</span> <span class="o">=</span> <span class="n">_resolve_key</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+</span><span data-line="852">        <span class="n">storage</span><span class="o">.</span><span class="n">write_data_source</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">bindings</span><span class="p">[</span><span class="n">out</span><span class="o">.</span><span class="n">source</span><span class="p">])</span>
+</span><span data-line="853">        <span class="k">if</span> <span class="n">sign</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="854">            <span class="n">storage</span><span class="o">.</span><span class="n">write_signature</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">sign</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">out_name</span><span class="p">,</span> <span class="n">storage</span><span class="p">,</span> <span class="n">strategy</span><span class="p">))</span>
+</span><span data-line="855">
+</span><span data-line="856">    <span class="k">return</span> <span class="n">bindings</span></div>
+
+</span><span data-line="857">
+</span><span data-line="858">
+</span><span data-line="859"><span class="c1"># Populate the op registry at import so consumers can enumerate ops (via</span>
+</span><span data-line="860"><span class="c1"># list_ops / op_info / OP_REGISTRY) without first running a template. Safe:</span>
+</span><span data-line="861"><span class="c1"># no op module imports this module, so there is no cycle.</span>
+</span><span data-line="862"><span class="n">_populate_default_registry</span><span class="p">()</span>
+</span></pre></div>
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/shibuya.js?v=50760d75"></script></body>
+</html>

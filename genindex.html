@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Index - AeroSim CFDmod</title><link rel="shortcut icon" href="_static/favicon.svg"/><link rel="index" title="Index" href="#" /><link rel="search" title="Search" href="search.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  
+  
+    <!-- Plausible -->
+    <script defer data-domain="aerosim.io" src="https://plausible.io/js/script.file-downloads.hash.outbound-links.pageview-props.tagged-events.js"></script>
+    <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+    </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div><div class="sy-container mx-auto body">
+    <main class="sy-content mx-auto pt-12 px-6 xl:px-12 break-words">
+      <article class="yue" role="main">
+        
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ | <a href="#X"><strong>X</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.dynamics.imports.aggregate_to_building">aggregate_to_building() (in module cfdmod.dynamics.imports)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.apply_groupings">apply_groupings() (in module cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.apply_regroup_to_timeseries">apply_regroup_to_timeseries() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.attrs">attrs (cfdmod.DataSource attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.build_regroup_mapping">build_regroup_mapping() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.build_regrouped_mesh">build_regrouped_mesh() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase">BuildingCase (class in cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData">BuildingStructuralData (class in cfdmod.dynamics.structural)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByConnectivityGrouping">ByConnectivityGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByCylindricalGrouping">ByCylindricalGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByDivisionsGrouping">ByDivisionsGrouping (class in cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.ByNormalGrouping">ByNormalGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByPercentileGrouping">ByPercentileGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByPlaneGrouping">ByPlaneGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.BySizeGrouping">BySizeGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.BySizeRoundedPerComponent">BySizeRoundedPerComponent (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.BySurfaceGrouping">BySurfaceGrouping (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.ByZoningGrouping">ByZoningGrouping (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Topology.cell_type">cell_type (cfdmod.Topology attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CeRecipeConfig">CeRecipeConfig (class in cfdmod.recipes)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.cf_per_floor">cf_per_floor() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.cfdmod_version">cfdmod_version (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CfRecipeConfig">CfRecipeConfig (class in cfdmod.recipes)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.cm_per_floor">cm_per_floor() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CmRecipeConfig">CmRecipeConfig (class in cfdmod.recipes)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.comfort_limit">comfort_limit() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.compose">compose() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.config_yaml">config_yaml (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Topology.connectivity">connectivity (cfdmod.Topology attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Container">Container (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.cp_from_pressure">cp_from_pressure() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig">CpRecipeConfig (class in cfdmod.recipes)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.CustomGrouping">CustomGrouping (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.DataSource">DataSource (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.decimate_qem">decimate_qem() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.MemoryStorage.digest">digest() (cfdmod.MemoryStorage method)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.XdmfH5Storage.digest">(cfdmod.XdmfH5Storage method)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.building.FanoutPlan.directions">directions (cfdmod.building.FanoutPlan property)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CfRecipeConfig.directions">(cfdmod.recipes.CfRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CmRecipeConfig.directions">(cfdmod.recipes.CmRecipeConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.dump_groupings">dump_groupings() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase.dynamic_pressure">dynamic_pressure (cfdmod.building.BuildingCase property)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.dynamic_pressure">(cfdmod.recipes.CpRecipeConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig">DynamicAnalysisConfig (class in cfdmod.recipes)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.dynamics.imports.EberickUnits">EberickUnits (class in cfdmod.dynamics.imports)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.elements">elements (cfdmod.DataSource attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.expand_regroup_chain">expand_regroup_chain() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.export_stl">export_stl() (in module cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.FanoutPlan">FanoutPlan (class in cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CeRecipeConfig.field">field (cfdmod.recipes.CeRecipeConfig attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.field">(cfdmod.recipes.CpRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.PedestrianComfortConfig.field">(cfdmod.recipes.PedestrianComfortConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.S1RecipeConfig.field">(cfdmod.recipes.S1RecipeConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.DataSource.field_meta">field_meta (cfdmod.DataSource attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.FieldMeta">FieldMeta (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.fields">fields (cfdmod.DataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Container.filter_by">filter_by() (cfdmod.Container method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.floor_accelerations">floor_accelerations() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase.from_case_data">from_case_data() (cfdmod.building.BuildingCase class method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData.from_csvs">from_csvs() (cfdmod.dynamics.structural.BuildingStructuralData class method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.FanoutPlan.from_global_data">from_global_data() (cfdmod.building.FanoutPlan class method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.generate_load_cases">generate_load_cases() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CeRecipeConfig.grouping">grouping (cfdmod.recipes.CeRecipeConfig attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CfRecipeConfig.grouping">(cfdmod.recipes.CfRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CmRecipeConfig.grouping">(cfdmod.recipes.CmRecipeConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.Grouping">Grouping (class in cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.GroupingResult">GroupingResult (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.groupings">groupings (cfdmod.DataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupingResult.groups">groups (cfdmod.GroupingResult attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupsDataSource">GroupsDataSource (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.gust_peak_factor">gust_peak_factor() (in module cfdmod.building)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Grouping.id_to_label">id_to_label (cfdmod.Grouping attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.index_for_time">index_for_time() (cfdmod.TimeAxis method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Grouping.indices">indices (cfdmod.Grouping attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.initial_time">initial_time (cfdmod.TimeAxis attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.is_time_aggregated">is_time_aggregated (cfdmod.TimeAxis property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Container.join_by">join_by() (cfdmod.Container method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.DataSource.kind">kind (cfdmod.DataSource attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Grouping.label">label() (cfdmod.Grouping method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.load_field">load_field (cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.load_groupings">load_groupings() (in module cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.load_lnas">load_lnas() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.load_mesh">load_mesh() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.load_template">load_template() (in module cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Container.map_values">map_values() (cfdmod.Container method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.melbourne1992_acceleration_limit">melbourne1992_acceleration_limit() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupingResult.membership_long">membership_long() (cfdmod.GroupingResult method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.MemoryStorage">MemoryStorage (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.merge_coplanar">merge_coplanar() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.mesh_from_h5">mesh_from_h5() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.mesh_summary">mesh_summary() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.mode_shapes">mode_shapes (cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase.model_config">model_config (cfdmod.building.BuildingCase attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.building.FanoutPlan.model_config">(cfdmod.building.FanoutPlan attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByConnectivityGrouping.model_config">(cfdmod.ByConnectivityGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByCylindricalGrouping.model_config">(cfdmod.ByCylindricalGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByDivisionsGrouping.model_config">(cfdmod.ByDivisionsGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByNormalGrouping.model_config">(cfdmod.ByNormalGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByPercentileGrouping.model_config">(cfdmod.ByPercentileGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByPlaneGrouping.model_config">(cfdmod.ByPlaneGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.BySizeGrouping.model_config">(cfdmod.BySizeGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.BySizeRoundedPerComponent.model_config">(cfdmod.BySizeRoundedPerComponent attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.BySurfaceGrouping.model_config">(cfdmod.BySurfaceGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.ByZoningGrouping.model_config">(cfdmod.ByZoningGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.Container.model_config">(cfdmod.Container attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.CustomGrouping.model_config">(cfdmod.CustomGrouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.DataSource.model_config">(cfdmod.DataSource attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.dynamics.imports.EberickUnits.model_config">(cfdmod.dynamics.imports.EberickUnits attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData.model_config">(cfdmod.dynamics.structural.BuildingStructuralData attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.FieldMeta.model_config">(cfdmod.FieldMeta attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.Grouping.model_config">(cfdmod.Grouping attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.PipelineTemplate.model_config">(cfdmod.PipelineTemplate attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CeRecipeConfig.model_config">(cfdmod.recipes.CeRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CfRecipeConfig.model_config">(cfdmod.recipes.CfRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CmRecipeConfig.model_config">(cfdmod.recipes.CmRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.model_config">(cfdmod.recipes.CpRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.model_config">(cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.PedestrianComfortConfig.model_config">(cfdmod.recipes.PedestrianComfortConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.S1RecipeConfig.model_config">(cfdmod.recipes.S1RecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.RegroupConfig.model_config">(cfdmod.RegroupConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.TimeAxis.model_config">(cfdmod.TimeAxis attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.Topology.model_config">(cfdmod.Topology attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.WindProfile_EU.model_config">(cfdmod.WindProfile_EU attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.WindProfile_NBR.model_config">(cfdmod.WindProfile_NBR attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.ModesDataSource">ModesDataSource (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.DataSource.n_elements">n_elements (cfdmod.DataSource property)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.Topology.n_elements">(cfdmod.Topology property)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.n_timesteps">n_timesteps (cfdmod.TimeAxis attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.FieldMeta.name">name (cfdmod.FieldMeta attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.Grouping.name">(cfdmod.Grouping attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.nbcc_acceleration_limit">nbcc_acceleration_limit() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.nbr6123_acceleration_limit">nbr6123_acceleration_limit() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.normalization_offset">normalization_offset (cfdmod.TimeAxis property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.recipes.CeRecipeConfig.out">out (cfdmod.recipes.CeRecipeConfig attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.out">(cfdmod.recipes.CpRecipeConfig attribute)</a>
+</li>
+        <li><a href="api_reference.html#cfdmod.recipes.S1RecipeConfig.out">(cfdmod.recipes.S1RecipeConfig attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.GroupsDataSource.parent_grouping">parent_grouping (cfdmod.GroupsDataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupingResult.parent_n_triangles">parent_n_triangles (cfdmod.GroupingResult attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupsDataSource.parent_topology">parent_topology (cfdmod.GroupsDataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.peak_response_table">peak_response_table() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.peak_value">peak_value() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.PedestrianComfortConfig">PedestrianComfortConfig (class in cfdmod.recipes)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Pipeline">Pipeline (in module cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.PipelineTemplate">PipelineTemplate (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.plot_timeseries">plot_timeseries() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Topology.points">points() (cfdmod.Topology class method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.PointsDataSource">PointsDataSource (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CfRecipeConfig.prefix">prefix (cfdmod.recipes.CfRecipeConfig attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.CmRecipeConfig.prefix">(cfdmod.recipes.CmRecipeConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.recipes.PedestrianComfortConfig.probes">probes (cfdmod.recipes.PedestrianComfortConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.produced_at">produced_at (in module cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.dynamics.read_eberick">read_eberick() (in module cfdmod.dynamics)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.read_processing_metadata">read_processing_metadata() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.read_stl">read_stl() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.read_timeseries_df">read_timeseries_df() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.read_tqs_portels">read_tqs_portels() (in module cfdmod.dynamics)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.read_tqs_portico">read_tqs_portico() (in module cfdmod.dynamics)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.recomposition_mode_shapes">recomposition_mode_shapes (cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.register_op">register_op() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.RegroupConfig">RegroupConfig (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.remesh_per_group">remesh_per_group() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.rescale">rescale() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.response_field">response_field (cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.run_fanout">run_fanout() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.run_regroup">run_regroup() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.run_template">run_template() (in module cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.recipes.S1RecipeConfig">S1RecipeConfig (class in cfdmod.recipes)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.save_load_case_tables">save_load_case_tables() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.FieldMeta.scale">scale (cfdmod.FieldMeta attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.show_config">show_config() (in module cfdmod)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.solve_building_response">solve_building_response() (in module cfdmod.building)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.statistics">statistics (cfdmod.recipes.CpRecipeConfig attribute)</a>
+
+      <ul>
+        <li><a href="api_reference.html#cfdmod.recipes.PedestrianComfortConfig.statistics">(cfdmod.recipes.PedestrianComfortConfig attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api_reference.html#cfdmod.SurfaceDataSource">SurfaceDataSource (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.recipes.DynamicAnalysisConfig.target_points">target_points (cfdmod.recipes.DynamicAnalysisConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.time">time (cfdmod.DataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.time_at">time_at() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.time_normalized_offset">time_normalized_offset (cfdmod.TimeAxis attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.recipes.CpRecipeConfig.time_rescale_factor">time_rescale_factor (cfdmod.recipes.CpRecipeConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis">TimeAxis (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.times">times() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.times_normalized">times_normalized() (cfdmod.TimeAxis method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.timestep_size">timestep_size (cfdmod.TimeAxis attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData.to_config">to_config() (cfdmod.dynamics.structural.BuildingStructuralData method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.to_csv">to_csv() (in module cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.GroupingResult.to_region_idx">to_region_idx() (cfdmod.GroupingResult method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.topology">topology (cfdmod.DataSource attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Topology">Topology (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.translate">translate() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.Topology.triangles">triangles() (cfdmod.Topology class method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase.u_h">u_h (cfdmod.building.BuildingCase property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.FieldMeta.unit">unit (cfdmod.FieldMeta attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.Topology.vertices">vertices (cfdmod.Topology attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.VolumeDataSource">VolumeDataSource (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.recipes.S1RecipeConfig.wall_threshold">wall_threshold (cfdmod.recipes.S1RecipeConfig attribute)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.window">window() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.WindProfile_EU">WindProfile_EU (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.WindProfile_NBR">WindProfile_NBR (class in cfdmod)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.with_field">with_field() (cfdmod.DataSource method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.DataSource.with_grouping">with_grouping() (cfdmod.DataSource method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData.with_multipliers">with_multipliers() (cfdmod.dynamics.structural.BuildingStructuralData method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.TimeAxis.with_normalization_offset">with_normalization_offset() (cfdmod.TimeAxis method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.building.BuildingCase.with_reference_velocity">with_reference_velocity() (cfdmod.building.BuildingCase method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.DataSource.with_time">with_time() (cfdmod.DataSource method)</a>
+</li>
+      <li><a href="api_reference.html#cfdmod.write_processing_metadata">write_processing_metadata() (in module cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="X">X</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_reference.html#cfdmod.XdmfH5Storage">XdmfH5Storage (class in cfdmod)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+      </article>
+      
+    </main>
+  </div><footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/shibuya.js?v=50760d75"></script></body>
+</html>

@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cfdmod.remesh.functions - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="cfdmod.remesh.functions"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Module code</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">cfdmod.remesh.functions</strong>
+        <meta itemprop="position" content="3" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <h1>Source code for cfdmod.remesh.functions</h1><div class="highlight"><pre>
+<span></span><span data-line="1"><span class="sd">&quot;&quot;&quot;Core algorithms for the remesh module.</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="sd">Two operations, both per-sub-mesh (one named surface == one sub-mesh):</span>
+</span><span data-line="4">
+</span><span data-line="5"><span class="sd">- :func:`merge_coplanar`: connected coplanar fans are collapsed to the minimum</span>
+</span><span data-line="6"><span class="sd">  triangulation of their boundary polygon. Exact (every output vertex either</span>
+</span><span data-line="7"><span class="sd">  was an input vertex or lies on the original surface). The typical post-</span>
+</span><span data-line="8"><span class="sd">  ``regroup`` ``sliced`` group -- a flat rectangle subdivided into many</span>
+</span><span data-line="9"><span class="sd">  fragments -- comes out as 2 triangles.</span>
+</span><span data-line="10"><span class="sd">- :func:`decimate_qem`: thin wrapper around ``fast_simplification.simplify``.</span>
+</span><span data-line="11"><span class="sd">  Lossy in general; intended for curved groups where the coplanar pass has</span>
+</span><span data-line="12"><span class="sd">  nothing to collapse. Mesh boundaries (which, for a per-group sub-mesh, are</span>
+</span><span data-line="13"><span class="sd">  the group boundary) are preserved implicitly by the underlying algorithm.</span>
+</span><span data-line="14">
+</span><span data-line="15"><span class="sd">:func:`remesh_per_group` dispatches both over the surfaces of an</span>
+</span><span data-line="16"><span class="sd">``LnasFormat`` and restitches the per-group outputs into a fresh</span>
+</span><span data-line="17"><span class="sd">``LnasFormat`` whose surfaces map one-to-one to the input&#39;s.</span>
+</span><span data-line="18">
+</span><span data-line="19"><span class="sd">API convention:</span>
+</span><span data-line="20">
+</span><span data-line="21"><span class="sd">- :func:`merge_coplanar` and :func:`decimate_qem` take **raw**</span>
+</span><span data-line="22"><span class="sd">  ``(vertices, triangles)`` arrays -- they operate on a single sub-mesh and</span>
+</span><span data-line="23"><span class="sd">  know nothing about surfaces. Use them when you have one extracted region</span>
+</span><span data-line="24"><span class="sd">  in hand and want to coarsen it.</span>
+</span><span data-line="25"><span class="sd">- :func:`remesh_per_group` takes a full :class:`lnas.LnasFormat` with named</span>
+</span><span data-line="26"><span class="sd">  surfaces, dispatches the two array-level operations over each surface, and</span>
+</span><span data-line="27"><span class="sd">  restitches the per-surface outputs back into a fresh ``LnasFormat``.</span>
+</span><span data-line="28">
+</span><span data-line="29"><span class="sd">All three functions are exported from ``cfdmod.remesh`` and re-exported at</span>
+</span><span data-line="30"><span class="sd">the top-level ``cfdmod`` package.</span>
+</span><span data-line="31"><span class="sd">&quot;&quot;&quot;</span>
+</span><span data-line="32">
+</span><span data-line="33"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span data-line="34">
+</span><span data-line="35"><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span data-line="36"><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+</span><span data-line="37"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+</span><span data-line="38">
+</span><span data-line="39"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span data-line="40"><span class="kn">from</span><span class="w"> </span><span class="nn">lnas</span><span class="w"> </span><span class="kn">import</span> <span class="n">LnasFormat</span><span class="p">,</span> <span class="n">LnasGeometry</span>
+</span><span data-line="41">
+</span><span data-line="42"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+</span><span data-line="43">
+</span><span data-line="44"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+</span><span data-line="45">    <span class="s2">&quot;merge_coplanar&quot;</span><span class="p">,</span>
+</span><span data-line="46">    <span class="s2">&quot;decimate_qem&quot;</span><span class="p">,</span>
+</span><span data-line="47">    <span class="s2">&quot;remesh_per_group&quot;</span><span class="p">,</span>
+</span><span data-line="48"><span class="p">]</span>
+</span><span data-line="49">
+</span><span data-line="50">
+</span><span data-line="51"><span class="k">def</span><span class="w"> </span><span class="nf">_triangle_planes</span><span class="p">(</span>
+</span><span data-line="52">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="53">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="54"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="55"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return per-triangle (unit normal, plane offset n.v0, valid mask).</span>
+</span><span data-line="56">
+</span><span data-line="57"><span class="sd">    Degenerate triangles (zero-area) get a zero normal and are marked invalid.</span>
+</span><span data-line="58"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="59">    <span class="n">v0</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span>
+</span><span data-line="60">    <span class="n">v1</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">triangles</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
+</span><span data-line="61">    <span class="n">v2</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">triangles</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]]</span>
+</span><span data-line="62">    <span class="n">cross</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">v1</span> <span class="o">-</span> <span class="n">v0</span><span class="p">,</span> <span class="n">v2</span> <span class="o">-</span> <span class="n">v0</span><span class="p">)</span>
+</span><span data-line="63">    <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cross</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span data-line="64">    <span class="n">valid</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+</span><span data-line="65">    <span class="n">normals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cross</span><span class="p">)</span>
+</span><span data-line="66">    <span class="n">normals</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span> <span class="o">=</span> <span class="n">cross</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span><span class="p">[</span><span class="n">valid</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</span><span data-line="67">    <span class="n">plane_d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,ij-&gt;i&quot;</span><span class="p">,</span> <span class="n">normals</span><span class="p">,</span> <span class="n">v0</span><span class="p">)</span>
+</span><span data-line="68">    <span class="k">return</span> <span class="n">normals</span><span class="p">,</span> <span class="n">plane_d</span><span class="p">,</span> <span class="n">valid</span>
+</span><span data-line="69">
+</span><span data-line="70">
+</span><span data-line="71"><span class="k">def</span><span class="w"> </span><span class="nf">_coplanar_components</span><span class="p">(</span>
+</span><span data-line="72">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="73">    <span class="n">normals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="74">    <span class="n">plane_d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="75">    <span class="n">valid</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="76">    <span class="n">normal_tol</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span data-line="77">    <span class="n">plane_tol</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span data-line="78"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+</span><span data-line="79"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Union-find over edge-adjacent triangles that share a plane.</span>
+</span><span data-line="80">
+</span><span data-line="81"><span class="sd">    Triangles are merged if they share an edge AND their normals are</span>
+</span><span data-line="82"><span class="sd">    parallel within ``normal_tol`` (cosine, allowing anti-parallel) AND</span>
+</span><span data-line="83"><span class="sd">    their plane offsets match within ``plane_tol`` (with the offset sign</span>
+</span><span data-line="84"><span class="sd">    flipped when the two normals are anti-parallel, so a flipped triangle</span>
+</span><span data-line="85"><span class="sd">    on the same physical plane is still recognised).</span>
+</span><span data-line="86"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="87">    <span class="n">n</span> <span class="o">=</span> <span class="n">triangles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span data-line="88">    <span class="n">parent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="89">
+</span><span data-line="90">    <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span data-line="91">        <span class="k">while</span> <span class="n">parent</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">!=</span> <span class="n">x</span><span class="p">:</span>
+</span><span data-line="92">            <span class="n">parent</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent</span><span class="p">[</span><span class="n">parent</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span>
+</span><span data-line="93">            <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parent</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+</span><span data-line="94">        <span class="k">return</span> <span class="n">x</span>
+</span><span data-line="95">
+</span><span data-line="96">    <span class="k">def</span><span class="w"> </span><span class="nf">union</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="97">        <span class="n">ra</span><span class="p">,</span> <span class="n">rb</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">find</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+</span><span data-line="98">        <span class="k">if</span> <span class="n">ra</span> <span class="o">!=</span> <span class="n">rb</span><span class="p">:</span>
+</span><span data-line="99">            <span class="n">parent</span><span class="p">[</span><span class="n">ra</span><span class="p">]</span> <span class="o">=</span> <span class="n">rb</span>
+</span><span data-line="100">
+</span><span data-line="101">    <span class="n">edge_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+</span><span data-line="102">    <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span><span data-line="103">        <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="104">        <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+</span><span data-line="105">            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+</span><span data-line="106">            <span class="n">edge_map</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ti</span><span class="p">)</span>
+</span><span data-line="107">
+</span><span data-line="108">    <span class="n">cos_threshold</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">normal_tol</span>
+</span><span data-line="109">    <span class="k">for</span> <span class="n">tris</span> <span class="ow">in</span> <span class="n">edge_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span data-line="110">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tris</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+</span><span data-line="111">            <span class="k">continue</span>
+</span><span data-line="112">        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tris</span><span class="p">)):</span>
+</span><span data-line="113">            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tris</span><span class="p">)):</span>
+</span><span data-line="114">                <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">tris</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tris</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+</span><span data-line="115">                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="n">t1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">valid</span><span class="p">[</span><span class="n">t2</span><span class="p">]):</span>
+</span><span data-line="116">                    <span class="k">continue</span>
+</span><span data-line="117">                <span class="n">cos</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">normals</span><span class="p">[</span><span class="n">t1</span><span class="p">],</span> <span class="n">normals</span><span class="p">[</span><span class="n">t2</span><span class="p">]))</span>
+</span><span data-line="118">                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">cos</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">cos_threshold</span><span class="p">:</span>
+</span><span data-line="119">                    <span class="k">continue</span>
+</span><span data-line="120">                <span class="c1"># Anti-parallel normals describe the same physical plane</span>
+</span><span data-line="121">                <span class="c1"># when d1 + d2 ~= 0 (d2 is computed against -n1). Same-</span>
+</span><span data-line="122">                <span class="c1"># direction normals require d1 - d2 ~= 0.</span>
+</span><span data-line="123">                <span class="k">if</span> <span class="n">cos</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="124">                    <span class="n">plane_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">plane_d</span><span class="p">[</span><span class="n">t1</span><span class="p">]</span> <span class="o">-</span> <span class="n">plane_d</span><span class="p">[</span><span class="n">t2</span><span class="p">]))</span>
+</span><span data-line="125">                <span class="k">else</span><span class="p">:</span>
+</span><span data-line="126">                    <span class="n">plane_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">plane_d</span><span class="p">[</span><span class="n">t1</span><span class="p">]</span> <span class="o">+</span> <span class="n">plane_d</span><span class="p">[</span><span class="n">t2</span><span class="p">]))</span>
+</span><span data-line="127">                <span class="k">if</span> <span class="n">plane_diff</span> <span class="o">&gt;</span> <span class="n">plane_tol</span><span class="p">:</span>
+</span><span data-line="128">                    <span class="k">continue</span>
+</span><span data-line="129">                <span class="n">union</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span>
+</span><span data-line="130">
+</span><span data-line="131">    <span class="n">groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+</span><span data-line="132">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span><span data-line="133">        <span class="n">groups</span><span class="p">[</span><span class="n">find</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</span><span data-line="134">    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span><span data-line="135">
+</span><span data-line="136">
+</span><span data-line="137"><span class="k">def</span><span class="w"> </span><span class="nf">_extract_boundary_loops</span><span class="p">(</span>
+</span><span data-line="138">    <span class="n">component</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+</span><span data-line="139">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="140"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="141"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Walk the boundary of a coplanar component into closed vertex loops.</span>
+</span><span data-line="142">
+</span><span data-line="143"><span class="sd">    Uses undirected edge counts to identify boundary edges, so inconsistent</span>
+</span><span data-line="144"><span class="sd">    triangle winding across the component does not poison the boundary set.</span>
+</span><span data-line="145"><span class="sd">    Returns ``None`` for closed components (no boundary edges) or for</span>
+</span><span data-line="146"><span class="sd">    boundaries whose vertices have anything other than exactly two boundary</span>
+</span><span data-line="147"><span class="sd">    neighbours (branching / pinched topology).</span>
+</span><span data-line="148"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="149">    <span class="n">undirected</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</span><span data-line="150">    <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">component</span><span class="p">:</span>
+</span><span data-line="151">        <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="152">        <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+</span><span data-line="153">            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+</span><span data-line="154">            <span class="n">undirected</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span data-line="155">
+</span><span data-line="156">    <span class="n">boundary_edges</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">undirected</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="mi">1</span><span class="p">}</span>
+</span><span data-line="157">    <span class="k">if</span> <span class="ow">not</span> <span class="n">boundary_edges</span><span class="p">:</span>
+</span><span data-line="158">        <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="159">
+</span><span data-line="160">    <span class="n">neighbours</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+</span><span data-line="161">    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">boundary_edges</span><span class="p">:</span>
+</span><span data-line="162">        <span class="n">neighbours</span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+</span><span data-line="163">        <span class="n">neighbours</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+</span><span data-line="164">    <span class="c1"># A simple loop visits every boundary vertex with exactly two neighbours.</span>
+</span><span data-line="165">    <span class="k">for</span> <span class="n">nbrs</span> <span class="ow">in</span> <span class="n">neighbours</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span data-line="166">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nbrs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+</span><span data-line="167">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="168">
+</span><span data-line="169">    <span class="k">def</span><span class="w"> </span><span class="nf">edge_key</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+</span><span data-line="170">        <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+</span><span data-line="171">
+</span><span data-line="172">    <span class="n">visited_edges</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span data-line="173">    <span class="n">loops</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="174">    <span class="n">edges_in_order</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">boundary_edges</span><span class="p">)</span>
+</span><span data-line="175">    <span class="k">for</span> <span class="n">start_edge</span> <span class="ow">in</span> <span class="n">edges_in_order</span><span class="p">:</span>
+</span><span data-line="176">        <span class="k">if</span> <span class="n">start_edge</span> <span class="ow">in</span> <span class="n">visited_edges</span><span class="p">:</span>
+</span><span data-line="177">            <span class="k">continue</span>
+</span><span data-line="178">        <span class="n">start_a</span><span class="p">,</span> <span class="n">start_b</span> <span class="o">=</span> <span class="n">start_edge</span>
+</span><span data-line="179">        <span class="n">loop</span> <span class="o">=</span> <span class="p">[</span><span class="n">start_a</span><span class="p">]</span>
+</span><span data-line="180">        <span class="n">prev</span> <span class="o">=</span> <span class="n">start_a</span>
+</span><span data-line="181">        <span class="n">curr</span> <span class="o">=</span> <span class="n">start_b</span>
+</span><span data-line="182">        <span class="n">visited_edges</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">start_edge</span><span class="p">)</span>
+</span><span data-line="183">        <span class="k">while</span> <span class="n">curr</span> <span class="o">!=</span> <span class="n">start_a</span><span class="p">:</span>
+</span><span data-line="184">            <span class="n">loop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr</span><span class="p">)</span>
+</span><span data-line="185">            <span class="n">next_candidates</span> <span class="o">=</span> <span class="p">[</span>
+</span><span data-line="186">                <span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbours</span><span class="p">[</span><span class="n">curr</span><span class="p">]</span> <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="n">prev</span> <span class="ow">and</span> <span class="n">edge_key</span><span class="p">(</span><span class="n">curr</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">visited_edges</span>
+</span><span data-line="187">            <span class="p">]</span>
+</span><span data-line="188">            <span class="k">if</span> <span class="ow">not</span> <span class="n">next_candidates</span><span class="p">:</span>
+</span><span data-line="189">                <span class="c1"># Should never happen given the 2-neighbour invariant; defensive.</span>
+</span><span data-line="190">                <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="191">            <span class="n">nxt</span> <span class="o">=</span> <span class="n">next_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span data-line="192">            <span class="n">visited_edges</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">edge_key</span><span class="p">(</span><span class="n">curr</span><span class="p">,</span> <span class="n">nxt</span><span class="p">))</span>
+</span><span data-line="193">            <span class="n">prev</span> <span class="o">=</span> <span class="n">curr</span>
+</span><span data-line="194">            <span class="n">curr</span> <span class="o">=</span> <span class="n">nxt</span>
+</span><span data-line="195">        <span class="n">loops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loop</span><span class="p">)</span>
+</span><span data-line="196">    <span class="k">return</span> <span class="n">loops</span>
+</span><span data-line="197">
+</span><span data-line="198">
+</span><span data-line="199"><span class="k">def</span><span class="w"> </span><span class="nf">_project_to_plane_2d</span><span class="p">(</span><span class="n">points_3d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">normal</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+</span><span data-line="200"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Project 3D points onto a 2D orthonormal frame on the plane perpendicular to ``normal``.&quot;&quot;&quot;</span>
+</span><span data-line="201">    <span class="n">n</span> <span class="o">=</span> <span class="n">normal</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span>
+</span><span data-line="202">    <span class="n">ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span> <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.9</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+</span><span data-line="203">    <span class="n">u</span> <span class="o">=</span> <span class="n">ref</span> <span class="o">-</span> <span class="n">n</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+</span><span data-line="204">    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+</span><span data-line="205">    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+</span><span data-line="206">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">points_3d</span> <span class="o">@</span> <span class="n">u</span><span class="p">,</span> <span class="n">points_3d</span> <span class="o">@</span> <span class="n">v</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span data-line="207">
+</span><span data-line="208">
+</span><span data-line="209"><span class="k">def</span><span class="w"> </span><span class="nf">_point_in_triangle_2d</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="210"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Strict-interior barycentric test in 2D; vertex hits count as inside.&quot;&quot;&quot;</span>
+</span><span data-line="211">    <span class="n">v0</span> <span class="o">=</span> <span class="n">c</span> <span class="o">-</span> <span class="n">a</span>
+</span><span data-line="212">    <span class="n">v1</span> <span class="o">=</span> <span class="n">b</span> <span class="o">-</span> <span class="n">a</span>
+</span><span data-line="213">    <span class="n">v2</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="n">a</span>
+</span><span data-line="214">    <span class="n">d00</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v0</span><span class="p">))</span>
+</span><span data-line="215">    <span class="n">d01</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v1</span><span class="p">))</span>
+</span><span data-line="216">    <span class="n">d11</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v1</span><span class="p">))</span>
+</span><span data-line="217">    <span class="n">d02</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v2</span><span class="p">))</span>
+</span><span data-line="218">    <span class="n">d12</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">))</span>
+</span><span data-line="219">    <span class="n">denom</span> <span class="o">=</span> <span class="n">d00</span> <span class="o">*</span> <span class="n">d11</span> <span class="o">-</span> <span class="n">d01</span> <span class="o">*</span> <span class="n">d01</span>
+</span><span data-line="220">    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-20</span><span class="p">:</span>
+</span><span data-line="221">        <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="222">    <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">d11</span> <span class="o">*</span> <span class="n">d02</span> <span class="o">-</span> <span class="n">d01</span> <span class="o">*</span> <span class="n">d12</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>
+</span><span data-line="223">    <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">d00</span> <span class="o">*</span> <span class="n">d12</span> <span class="o">-</span> <span class="n">d01</span> <span class="o">*</span> <span class="n">d02</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>
+</span><span data-line="224">    <span class="k">return</span> <span class="n">s</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">+</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="mf">1.0</span>
+</span><span data-line="225">
+</span><span data-line="226">
+</span><span data-line="227"><span class="k">def</span><span class="w"> </span><span class="nf">_drop_collinear_loop_vertices</span><span class="p">(</span>
+</span><span data-line="228">    <span class="n">loop_indices</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+</span><span data-line="229">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="230">    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span data-line="231"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+</span><span data-line="232"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Drop polygon vertices that sit on the straight edge between their two</span>
+</span><span data-line="233"><span class="sd">    neighbours. The boundary walk of a coplanar fan inevitably picks up</span>
+</span><span data-line="234"><span class="sd">    interior-of-original-edge vertices (e.g., the mid-edge vertices of a</span>
+</span><span data-line="235"><span class="sd">    subdivided square); they make the polygon look as if it has many corners</span>
+</span><span data-line="236"><span class="sd">    when the minimum triangulation only needs the true corners.</span>
+</span><span data-line="237">
+</span><span data-line="238"><span class="sd">    ``tol`` is an absolute length threshold on the cross-product magnitude</span>
+</span><span data-line="239"><span class="sd">    ``|(b - a) x (c - b)|`` (so it has units of [length]^2). Callers should</span>
+</span><span data-line="240"><span class="sd">    scale it by the mesh&#39;s bbox diagonal so it stays meaningful in any unit</span>
+</span><span data-line="241"><span class="sd">    system.</span>
+</span><span data-line="242"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="243">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop_indices</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+</span><span data-line="244">        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">loop_indices</span><span class="p">)</span>
+</span><span data-line="245">    <span class="n">loop</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">loop_indices</span><span class="p">)</span>
+</span><span data-line="246">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span data-line="247">        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop</span><span class="p">)</span>
+</span><span data-line="248">        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+</span><span data-line="249">            <span class="k">return</span> <span class="n">loop</span>
+</span><span data-line="250">        <span class="n">drop_at</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="251">        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span><span data-line="252">            <span class="n">a</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">loop</span><span class="p">[(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">n</span><span class="p">]]</span>
+</span><span data-line="253">            <span class="n">b</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">loop</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+</span><span data-line="254">            <span class="n">c</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">loop</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">n</span><span class="p">]]</span>
+</span><span data-line="255">            <span class="n">cross</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span> <span class="o">-</span> <span class="n">b</span><span class="p">))</span>
+</span><span data-line="256">            <span class="k">if</span> <span class="n">cross</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+</span><span data-line="257">                <span class="n">drop_at</span> <span class="o">=</span> <span class="n">i</span>
+</span><span data-line="258">                <span class="k">break</span>
+</span><span data-line="259">        <span class="k">if</span> <span class="n">drop_at</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="260">            <span class="k">return</span> <span class="n">loop</span>
+</span><span data-line="261">        <span class="n">loop</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">drop_at</span><span class="p">)</span>
+</span><span data-line="262">
+</span><span data-line="263">
+</span><span data-line="264"><span class="k">def</span><span class="w"> </span><span class="nf">_earclip_loop</span><span class="p">(</span>
+</span><span data-line="265">    <span class="n">loop_indices</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+</span><span data-line="266">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="267">    <span class="n">normal</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="268"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="269"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ear-clip a single simple polygon loop. Output triangles are CCW in</span>
+</span><span data-line="270"><span class="sd">    ``normal``&#39;s frame, matching the input orientation when the loop was the</span>
+</span><span data-line="271"><span class="sd">    natural boundary of a CCW-oriented coplanar component.</span>
+</span><span data-line="272">
+</span><span data-line="273"><span class="sd">    Returns ``None`` if the algorithm cannot make progress (non-simple polygon).</span>
+</span><span data-line="274"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="275">    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop_indices</span><span class="p">)</span>
+</span><span data-line="276">    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+</span><span data-line="277">        <span class="k">return</span> <span class="p">[]</span>
+</span><span data-line="278">    <span class="n">points_2d</span> <span class="o">=</span> <span class="n">_project_to_plane_2d</span><span class="p">(</span><span class="n">vertices</span><span class="p">[</span><span class="n">loop_indices</span><span class="p">],</span> <span class="n">normal</span><span class="p">)</span>
+</span><span data-line="279">
+</span><span data-line="280">    <span class="n">signed_area</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span data-line="281">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span><span data-line="282">        <span class="n">j</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">n</span>
+</span><span data-line="283">        <span class="n">signed_area</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">points_2d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+</span><span data-line="284">    <span class="n">signed_area</span> <span class="o">*=</span> <span class="mf">0.5</span>
+</span><span data-line="285">    <span class="k">if</span> <span class="n">signed_area</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="286">        <span class="n">loop_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">loop_indices</span><span class="p">))</span>
+</span><span data-line="287">        <span class="n">points_2d</span> <span class="o">=</span> <span class="n">points_2d</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span data-line="288">
+</span><span data-line="289">    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+</span><span data-line="290">        <span class="k">return</span> <span class="p">[(</span><span class="n">loop_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="mi">2</span><span class="p">])]</span>
+</span><span data-line="291">
+</span><span data-line="292">    <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+</span><span data-line="293">    <span class="n">triangles_out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="294">    <span class="n">guard</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span data-line="295">    <span class="n">max_iter</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span data-line="296">
+</span><span data-line="297">    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">guard</span> <span class="o">&lt;</span> <span class="n">max_iter</span><span class="p">:</span>
+</span><span data-line="298">        <span class="n">ear_found</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span data-line="299">        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)):</span>
+</span><span data-line="300">            <span class="n">prev_pos</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)]</span>
+</span><span data-line="301">            <span class="n">curr_pos</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</span><span data-line="302">            <span class="n">next_pos</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)]</span>
+</span><span data-line="303">            <span class="n">a</span> <span class="o">=</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">prev_pos</span><span class="p">]</span>
+</span><span data-line="304">            <span class="n">b</span> <span class="o">=</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">curr_pos</span><span class="p">]</span>
+</span><span data-line="305">            <span class="n">c</span> <span class="o">=</span> <span class="n">points_2d</span><span class="p">[</span><span class="n">next_pos</span><span class="p">]</span>
+</span><span data-line="306">            <span class="n">cross</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span data-line="307">            <span class="k">if</span> <span class="n">cross</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+</span><span data-line="308">                <span class="k">continue</span>
+</span><span data-line="309">            <span class="n">blocked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span data-line="310">            <span class="k">for</span> <span class="n">jpos</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+</span><span data-line="311">                <span class="k">if</span> <span class="n">jpos</span> <span class="ow">in</span> <span class="p">(</span><span class="n">prev_pos</span><span class="p">,</span> <span class="n">curr_pos</span><span class="p">,</span> <span class="n">next_pos</span><span class="p">):</span>
+</span><span data-line="312">                    <span class="k">continue</span>
+</span><span data-line="313">                <span class="k">if</span> <span class="n">_point_in_triangle_2d</span><span class="p">(</span><span class="n">points_2d</span><span class="p">[</span><span class="n">jpos</span><span class="p">],</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+</span><span data-line="314">                    <span class="n">blocked</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span data-line="315">                    <span class="k">break</span>
+</span><span data-line="316">            <span class="k">if</span> <span class="n">blocked</span><span class="p">:</span>
+</span><span data-line="317">                <span class="k">continue</span>
+</span><span data-line="318">            <span class="n">triangles_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span data-line="319">                <span class="p">(</span><span class="n">loop_indices</span><span class="p">[</span><span class="n">prev_pos</span><span class="p">],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="n">curr_pos</span><span class="p">],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="n">next_pos</span><span class="p">])</span>
+</span><span data-line="320">            <span class="p">)</span>
+</span><span data-line="321">            <span class="n">indices</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</span><span data-line="322">            <span class="n">ear_found</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span data-line="323">            <span class="k">break</span>
+</span><span data-line="324">        <span class="k">if</span> <span class="ow">not</span> <span class="n">ear_found</span><span class="p">:</span>
+</span><span data-line="325">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="326">        <span class="n">guard</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span data-line="327">
+</span><span data-line="328">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+</span><span data-line="329">        <span class="n">triangles_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span data-line="330">            <span class="p">(</span><span class="n">loop_indices</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">loop_indices</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+</span><span data-line="331">        <span class="p">)</span>
+</span><span data-line="332">    <span class="k">return</span> <span class="n">triangles_out</span>
+</span><span data-line="333">
+</span><span data-line="334">
+</span><span data-line="335"><span class="k">def</span><span class="w"> </span><span class="nf">_bbox_diagonal</span><span class="p">(</span><span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span data-line="336">    <span class="k">if</span> <span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="337">        <span class="k">return</span> <span class="mf">0.0</span>
+</span><span data-line="338">    <span class="n">diag</span> <span class="o">=</span> <span class="n">vertices</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">vertices</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span data-line="339">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">diag</span><span class="p">))</span>
+</span><span data-line="340">
+</span><span data-line="341">
+<div class="viewcode-block" id="merge_coplanar">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.merge_coplanar">[docs]</a>
+</span><span data-line="342"><span class="k">def</span><span class="w"> </span><span class="nf">merge_coplanar</span><span class="p">(</span>
+</span><span data-line="343">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="344">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="345">    <span class="n">normal_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+</span><span data-line="346">    <span class="n">plane_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+</span><span data-line="347">    <span class="n">collinear_rel_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+</span><span data-line="348"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="349"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collapse coplanar adjacent triangles into the minimum triangulation of their region.</span>
+</span><span data-line="350">
+</span><span data-line="351"><span class="sd">    Within each connected component of edge-adjacent triangles that share a</span>
+</span><span data-line="352"><span class="sd">    plane (within ``normal_tol`` on the unit normal and ``plane_tol`` on the</span>
+</span><span data-line="353"><span class="sd">    plane offset, with anti-parallel normals treated as the same plane), the</span>
+</span><span data-line="354"><span class="sd">    interior triangulation is replaced by a fresh ear-clipped triangulation</span>
+</span><span data-line="355"><span class="sd">    of the component&#39;s boundary loop. Components with multiple boundary loops</span>
+</span><span data-line="356"><span class="sd">    (annular topology) or for which ear-clipping fails to make progress are</span>
+</span><span data-line="357"><span class="sd">    kept as-is, and a ``logger.debug`` message is emitted so callers can see</span>
+</span><span data-line="358"><span class="sd">    when fallback triggers.</span>
+</span><span data-line="359">
+</span><span data-line="360"><span class="sd">    Args:</span>
+</span><span data-line="361"><span class="sd">        vertices: ``(V, 3)`` input vertex array.</span>
+</span><span data-line="362"><span class="sd">        triangles: ``(T, 3)`` input triangle array of vertex indices.</span>
+</span><span data-line="363"><span class="sd">        normal_tol: Max angular deviation (as ``1 - |cos(theta)|``) for two</span>
+</span><span data-line="364"><span class="sd">            adjacent triangles to be considered coplanar. Uses the absolute</span>
+</span><span data-line="365"><span class="sd">            cosine so flipped (anti-parallel) triangles on the same physical</span>
+</span><span data-line="366"><span class="sd">            plane are also merged.</span>
+</span><span data-line="367"><span class="sd">        plane_tol: Max absolute deviation of plane offsets (``n . v0``) for</span>
+</span><span data-line="368"><span class="sd">            two adjacent triangles to be considered coplanar.</span>
+</span><span data-line="369"><span class="sd">        collinear_rel_tol: Relative tolerance for the collinear-vertex drop</span>
+</span><span data-line="370"><span class="sd">            pass on the boundary loop. The absolute threshold is</span>
+</span><span data-line="371"><span class="sd">            ``collinear_rel_tol * bbox_diagonal^2`` so the behaviour is</span>
+</span><span data-line="372"><span class="sd">            independent of mesh units.</span>
+</span><span data-line="373">
+</span><span data-line="374"><span class="sd">    Returns:</span>
+</span><span data-line="375"><span class="sd">        ``(new_vertices, new_triangles)``. Unused vertices are dropped; the</span>
+</span><span data-line="376"><span class="sd">        remaining vertex order matches the surviving input vertex order.</span>
+</span><span data-line="377"><span class="sd">        ``new_triangles`` has dtype ``int32``.</span>
+</span><span data-line="378"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="379">    <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="380">    <span class="n">triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="381">
+</span><span data-line="382">    <span class="k">if</span> <span class="n">triangles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="383">        <span class="k">return</span> <span class="n">vertices</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">triangles</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="384">
+</span><span data-line="385">    <span class="n">normals</span><span class="p">,</span> <span class="n">plane_d</span><span class="p">,</span> <span class="n">valid</span> <span class="o">=</span> <span class="n">_triangle_planes</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="p">)</span>
+</span><span data-line="386">    <span class="n">components</span> <span class="o">=</span> <span class="n">_coplanar_components</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">normals</span><span class="p">,</span> <span class="n">plane_d</span><span class="p">,</span> <span class="n">valid</span><span class="p">,</span> <span class="n">normal_tol</span><span class="p">,</span> <span class="n">plane_tol</span><span class="p">)</span>
+</span><span data-line="387">
+</span><span data-line="388">    <span class="c1"># Scale the collinear tolerance by the mesh size so the threshold is</span>
+</span><span data-line="389">    <span class="c1"># meaningful in any unit system. The cross product compared against this</span>
+</span><span data-line="390">    <span class="c1"># threshold has units of [length]^2.</span>
+</span><span data-line="391">    <span class="n">bbox_diag</span> <span class="o">=</span> <span class="n">_bbox_diagonal</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span>
+</span><span data-line="392">    <span class="n">collinear_tol</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">collinear_rel_tol</span> <span class="o">*</span> <span class="n">bbox_diag</span> <span class="o">*</span> <span class="n">bbox_diag</span><span class="p">,</span> <span class="mf">1e-18</span><span class="p">)</span>
+</span><span data-line="393">
+</span><span data-line="394">    <span class="n">out_triangles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="395">    <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+</span><span data-line="396">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span data-line="397">            <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">comp</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</span><span data-line="398">            <span class="n">out_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+</span><span data-line="399">            <span class="k">continue</span>
+</span><span data-line="400">
+</span><span data-line="401">        <span class="n">ref_normal</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span data-line="402">        <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+</span><span data-line="403">            <span class="k">if</span> <span class="n">valid</span><span class="p">[</span><span class="n">ti</span><span class="p">]:</span>
+</span><span data-line="404">                <span class="n">ref_normal</span> <span class="o">=</span> <span class="n">normals</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="405">                <span class="k">break</span>
+</span><span data-line="406">        <span class="k">if</span> <span class="n">ref_normal</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="407">            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+</span><span data-line="408">                <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="409">                <span class="n">out_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+</span><span data-line="410">            <span class="k">continue</span>
+</span><span data-line="411">
+</span><span data-line="412">        <span class="n">loops</span> <span class="o">=</span> <span class="n">_extract_boundary_loops</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">triangles</span><span class="p">)</span>
+</span><span data-line="413">        <span class="k">if</span> <span class="n">loops</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="414">            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+</span><span data-line="415">                <span class="s2">&quot;merge_coplanar: malformed or closed boundary for coplanar component &quot;</span>
+</span><span data-line="416">                <span class="s2">&quot;of </span><span class="si">%d</span><span class="s2"> triangle(s); keeping originals&quot;</span><span class="p">,</span>
+</span><span data-line="417">                <span class="nb">len</span><span class="p">(</span><span class="n">comp</span><span class="p">),</span>
+</span><span data-line="418">            <span class="p">)</span>
+</span><span data-line="419">            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+</span><span data-line="420">                <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="421">                <span class="n">out_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+</span><span data-line="422">            <span class="k">continue</span>
+</span><span data-line="423">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">loops</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+</span><span data-line="424">            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+</span><span data-line="425">                <span class="s2">&quot;merge_coplanar: coplanar component of </span><span class="si">%d</span><span class="s2"> triangle(s) has </span><span class="si">%d</span><span class="s2"> &quot;</span>
+</span><span data-line="426">                <span class="s2">&quot;boundary loops (annular topology not yet supported); keeping originals&quot;</span><span class="p">,</span>
+</span><span data-line="427">                <span class="nb">len</span><span class="p">(</span><span class="n">comp</span><span class="p">),</span>
+</span><span data-line="428">                <span class="nb">len</span><span class="p">(</span><span class="n">loops</span><span class="p">),</span>
+</span><span data-line="429">            <span class="p">)</span>
+</span><span data-line="430">            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+</span><span data-line="431">                <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="432">                <span class="n">out_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+</span><span data-line="433">            <span class="k">continue</span>
+</span><span data-line="434">
+</span><span data-line="435">        <span class="n">loop</span> <span class="o">=</span> <span class="n">_drop_collinear_loop_vertices</span><span class="p">(</span><span class="n">loops</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">collinear_tol</span><span class="p">)</span>
+</span><span data-line="436">        <span class="n">retri</span> <span class="o">=</span> <span class="n">_earclip_loop</span><span class="p">(</span><span class="n">loop</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">ref_normal</span><span class="p">)</span>
+</span><span data-line="437">        <span class="k">if</span> <span class="n">retri</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="438">            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+</span><span data-line="439">                <span class="s2">&quot;merge_coplanar: ear-clipping failed for coplanar component of &quot;</span>
+</span><span data-line="440">                <span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> triangle(s) with </span><span class="si">%d</span><span class="s2"> boundary vertices; keeping originals&quot;</span><span class="p">,</span>
+</span><span data-line="441">                <span class="nb">len</span><span class="p">(</span><span class="n">comp</span><span class="p">),</span>
+</span><span data-line="442">                <span class="nb">len</span><span class="p">(</span><span class="n">loop</span><span class="p">),</span>
+</span><span data-line="443">            <span class="p">)</span>
+</span><span data-line="444">            <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+</span><span data-line="445">                <span class="n">t</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+</span><span data-line="446">                <span class="n">out_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+</span><span data-line="447">            <span class="k">continue</span>
+</span><span data-line="448">        <span class="n">out_triangles</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">retri</span><span class="p">)</span>
+</span><span data-line="449">
+</span><span data-line="450">    <span class="n">new_tris</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">out_triangles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="451">    <span class="k">if</span> <span class="n">new_tris</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="452">        <span class="k">return</span> <span class="p">(</span>
+</span><span data-line="453">            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+</span><span data-line="454">            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span>
+</span><span data-line="455">        <span class="p">)</span>
+</span><span data-line="456">
+</span><span data-line="457">    <span class="n">used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">new_tris</span><span class="p">)</span>
+</span><span data-line="458">    <span class="n">remap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="459">    <span class="n">remap</span><span class="p">[</span><span class="n">used</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">used</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="460">    <span class="n">new_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">used</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span data-line="461">    <span class="n">new_tris</span> <span class="o">=</span> <span class="n">remap</span><span class="p">[</span><span class="n">new_tris</span><span class="p">]</span>
+</span><span data-line="462">    <span class="k">return</span> <span class="n">new_vertices</span><span class="p">,</span> <span class="n">new_tris</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span></div>
+
+</span><span data-line="463">
+</span><span data-line="464">
+</span><span data-line="465"><span class="k">def</span><span class="w"> </span><span class="nf">_has_open_boundary</span><span class="p">(</span><span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="466"><span class="w">    </span><span class="sd">&quot;&quot;&quot;True if at least one undirected edge is incident to exactly one triangle.&quot;&quot;&quot;</span>
+</span><span data-line="467">    <span class="n">counts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</span><span data-line="468">    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">:</span>
+</span><span data-line="469">        <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])),</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+</span><span data-line="470">            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+</span><span data-line="471">            <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span data-line="472">    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span><span data-line="473">
+</span><span data-line="474">
+<div class="viewcode-block" id="decimate_qem">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.decimate_qem">[docs]</a>
+</span><span data-line="475"><span class="k">def</span><span class="w"> </span><span class="nf">decimate_qem</span><span class="p">(</span>
+</span><span data-line="476">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="477">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="478">    <span class="n">target_reduction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span data-line="479">    <span class="n">aggressiveness</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">7.0</span><span class="p">,</span>
+</span><span data-line="480"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="481"><span class="w">    </span><span class="sd">&quot;&quot;&quot;QEM decimation via ``fast-simplification``.</span>
+</span><span data-line="482">
+</span><span data-line="483"><span class="sd">    Mesh boundaries (vertices and edges on the boundary of the input</span>
+</span><span data-line="484"><span class="sd">    sub-mesh) are preserved implicitly by the underlying algorithm and are</span>
+</span><span data-line="485"><span class="sd">    never collapsed; a per-surface call therefore leaves the group boundary</span>
+</span><span data-line="486"><span class="sd">    intact and adjacent groups still match exactly at their shared edges</span>
+</span><span data-line="487"><span class="sd">    after each is decimated independently.</span>
+</span><span data-line="488">
+</span><span data-line="489"><span class="sd">    **Closed surfaces** (sub-meshes with no boundary edges, e.g. a watertight</span>
+</span><span data-line="490"><span class="sd">    sphere) have no boundary for the algorithm to protect, so a high</span>
+</span><span data-line="491"><span class="sd">    ``target_reduction`` can collapse them aggressively. A ``RuntimeWarning``</span>
+</span><span data-line="492"><span class="sd">    is emitted in that case; consider running ``fast_simplification.simplify``</span>
+</span><span data-line="493"><span class="sd">    directly with ``lossless=True`` if you need a bounded-error path.</span>
+</span><span data-line="494">
+</span><span data-line="495"><span class="sd">    Args:</span>
+</span><span data-line="496"><span class="sd">        vertices: ``(V, 3)`` input vertex array.</span>
+</span><span data-line="497"><span class="sd">        triangles: ``(T, 3)`` input triangle array of vertex indices.</span>
+</span><span data-line="498"><span class="sd">        target_reduction: Fraction of triangles to remove (``0.9`` keeps 10%).</span>
+</span><span data-line="499"><span class="sd">            ``&lt;= 0`` returns the input unchanged.</span>
+</span><span data-line="500"><span class="sd">        aggressiveness: ``agg`` parameter passed through to</span>
+</span><span data-line="501"><span class="sd">            ``fast_simplification.simplify`` (default 7 matches the library).</span>
+</span><span data-line="502">
+</span><span data-line="503"><span class="sd">    Returns:</span>
+</span><span data-line="504"><span class="sd">        ``(new_vertices, new_triangles)``. ``new_triangles`` has dtype</span>
+</span><span data-line="505"><span class="sd">        ``int32``.</span>
+</span><span data-line="506">
+</span><span data-line="507"><span class="sd">    Raises:</span>
+</span><span data-line="508"><span class="sd">        ImportError: if ``fast-simplification`` is not installed. Install it</span>
+</span><span data-line="509"><span class="sd">            via ``pip install &#39;aerosim-cfdmod[remesh]&#39;``.</span>
+</span><span data-line="510"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="511">    <span class="k">try</span><span class="p">:</span>
+</span><span data-line="512">        <span class="kn">import</span><span class="w"> </span><span class="nn">fast_simplification</span>
+</span><span data-line="513">    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+</span><span data-line="514">        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+</span><span data-line="515">            <span class="s2">&quot;decimate_qem requires the &#39;fast-simplification&#39; package. &quot;</span>
+</span><span data-line="516">            <span class="s2">&quot;Install the optional extra: pip install &#39;aerosim-cfdmod[remesh]&#39;.&quot;</span>
+</span><span data-line="517">        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+</span><span data-line="518">
+</span><span data-line="519">    <span class="n">vertices_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
+</span><span data-line="520">    <span class="n">triangles_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+</span><span data-line="521">
+</span><span data-line="522">    <span class="k">if</span> <span class="n">target_reduction</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">triangles_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+</span><span data-line="523">        <span class="k">return</span> <span class="n">vertices_arr</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">triangles_arr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span data-line="524">
+</span><span data-line="525">    <span class="k">if</span> <span class="ow">not</span> <span class="n">_has_open_boundary</span><span class="p">(</span><span class="n">triangles_arr</span><span class="p">):</span>
+</span><span data-line="526">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span data-line="527">            <span class="s2">&quot;decimate_qem: input sub-mesh has no boundary edges (closed surface); &quot;</span>
+</span><span data-line="528">            <span class="s2">&quot;QEM has nothing to protect and may collapse it aggressively at high &quot;</span>
+</span><span data-line="529">            <span class="s2">&quot;target_reduction. Consider fast_simplification.simplify(lossless=True) &quot;</span>
+</span><span data-line="530">            <span class="s2">&quot;directly, or feed a sub-mesh with an open boundary.&quot;</span><span class="p">,</span>
+</span><span data-line="531">            <span class="ne">RuntimeWarning</span><span class="p">,</span>
+</span><span data-line="532">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</span><span data-line="533">        <span class="p">)</span>
+</span><span data-line="534">
+</span><span data-line="535">    <span class="n">new_v</span><span class="p">,</span> <span class="n">new_t</span> <span class="o">=</span> <span class="n">fast_simplification</span><span class="o">.</span><span class="n">simplify</span><span class="p">(</span>
+</span><span data-line="536">        <span class="n">vertices_arr</span><span class="p">,</span>
+</span><span data-line="537">        <span class="n">triangles_arr</span><span class="p">,</span>
+</span><span data-line="538">        <span class="n">target_reduction</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">target_reduction</span><span class="p">),</span>
+</span><span data-line="539">        <span class="n">agg</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">aggressiveness</span><span class="p">),</span>
+</span><span data-line="540">    <span class="p">)</span>
+</span><span data-line="541">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">new_v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">new_t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span></div>
+
+</span><span data-line="542">
+</span><span data-line="543">
+</span><span data-line="544"><span class="k">def</span><span class="w"> </span><span class="nf">_extract_subgroup</span><span class="p">(</span>
+</span><span data-line="545">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="546">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="547">    <span class="n">tri_indices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="548"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="549"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract a sub-mesh for a contiguous block of triangles.</span>
+</span><span data-line="550">
+</span><span data-line="551"><span class="sd">    Returns ``(sub_vertices, sub_triangles, vertex_remap_inverse)`` where</span>
+</span><span data-line="552"><span class="sd">    ``vertex_remap_inverse[i]`` is the index in the parent ``vertices`` array</span>
+</span><span data-line="553"><span class="sd">    of ``sub_vertices[i]`` -- used at restitching time to keep the original</span>
+</span><span data-line="554"><span class="sd">    vertex when no decimation changed it.</span>
+</span><span data-line="555"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="556">    <span class="n">sub_tris_parent</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">tri_indices</span><span class="p">]</span>
+</span><span data-line="557">    <span class="n">used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">sub_tris_parent</span><span class="p">)</span>
+</span><span data-line="558">    <span class="n">remap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="559">    <span class="n">remap</span><span class="p">[</span><span class="n">used</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">used</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="560">    <span class="n">sub_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">used</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span data-line="561">    <span class="n">sub_triangles</span> <span class="o">=</span> <span class="n">remap</span><span class="p">[</span><span class="n">sub_tris_parent</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="562">    <span class="k">return</span> <span class="n">sub_vertices</span><span class="p">,</span> <span class="n">sub_triangles</span><span class="p">,</span> <span class="n">used</span>
+</span><span data-line="563">
+</span><span data-line="564">
+<div class="viewcode-block" id="remesh_per_group">
+<a class="viewcode-back" href="../../../api_reference.html#cfdmod.remesh_per_group">[docs]</a>
+</span><span data-line="565"><span class="k">def</span><span class="w"> </span><span class="nf">remesh_per_group</span><span class="p">(</span>
+</span><span data-line="566">    <span class="n">mesh</span><span class="p">:</span> <span class="n">LnasFormat</span><span class="p">,</span>
+</span><span data-line="567">    <span class="n">coplanar_merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span data-line="568">    <span class="n">target_reduction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+</span><span data-line="569">    <span class="n">aggressiveness</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">7.0</span><span class="p">,</span>
+</span><span data-line="570">    <span class="n">normal_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+</span><span data-line="571">    <span class="n">plane_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+</span><span data-line="572">    <span class="n">seam_rel_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+</span><span data-line="573"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LnasFormat</span><span class="p">:</span>
+</span><span data-line="574"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-surface remesh of an ``LnasFormat``.</span>
+</span><span data-line="575">
+</span><span data-line="576"><span class="sd">    For each surface in ``mesh.surfaces``, extract its triangles into a</span>
+</span><span data-line="577"><span class="sd">    sub-mesh, run :func:`merge_coplanar` (if ``coplanar_merge``) and then</span>
+</span><span data-line="578"><span class="sd">    :func:`decimate_qem` (if ``target_reduction &gt; 0``), and restitch the</span>
+</span><span data-line="579"><span class="sd">    per-surface outputs into a fresh ``LnasFormat`` with the same surface</span>
+</span><span data-line="580"><span class="sd">    names.</span>
+</span><span data-line="581">
+</span><span data-line="582"><span class="sd">    With the defaults (``coplanar_merge=True``, ``target_reduction=0.0``) the</span>
+</span><span data-line="583"><span class="sd">    operation is geometrically lossless: every output vertex is either an</span>
+</span><span data-line="584"><span class="sd">    input vertex or lies exactly on the input surface. A flat ``NxN``-</span>
+</span><span data-line="585"><span class="sd">    subdivided square inside one surface comes out as 2 triangles; a curved</span>
+</span><span data-line="586"><span class="sd">    patch comes out unchanged.</span>
+</span><span data-line="587">
+</span><span data-line="588"><span class="sd">    Args:</span>
+</span><span data-line="589"><span class="sd">        mesh: Input ``LnasFormat`` whose ``surfaces`` map names to triangle</span>
+</span><span data-line="590"><span class="sd">            index arrays.</span>
+</span><span data-line="591"><span class="sd">        coplanar_merge: Run :func:`merge_coplanar` per surface. Default True.</span>
+</span><span data-line="592"><span class="sd">        target_reduction: If ``&gt; 0``, run :func:`decimate_qem` per surface</span>
+</span><span data-line="593"><span class="sd">            after the coplanar pass with this reduction fraction.</span>
+</span><span data-line="594"><span class="sd">        aggressiveness: Forwarded to ``decimate_qem``.</span>
+</span><span data-line="595"><span class="sd">        normal_tol, plane_tol: Forwarded to ``merge_coplanar``.</span>
+</span><span data-line="596"><span class="sd">        seam_rel_tol: Relative tolerance for merging shared boundary vertices</span>
+</span><span data-line="597"><span class="sd">            between adjacent surfaces in the restitched output. The absolute</span>
+</span><span data-line="598"><span class="sd">            threshold is ``seam_rel_tol * bbox_diagonal``. ``0`` disables and</span>
+</span><span data-line="599"><span class="sd">            falls back to exact-equality dedup. Tolerance-based dedup matters</span>
+</span><span data-line="600"><span class="sd">            once :func:`decimate_qem` is enabled because QEM can synthesise</span>
+</span><span data-line="601"><span class="sd">            new vertex positions that drift below float-equality.</span>
+</span><span data-line="602">
+</span><span data-line="603"><span class="sd">    Returns:</span>
+</span><span data-line="604"><span class="sd">        A fresh ``LnasFormat`` with one named surface per input surface</span>
+</span><span data-line="605"><span class="sd">        (insertion order preserved). Empty surfaces (no triangles) and</span>
+</span><span data-line="606"><span class="sd">        surfaces that fully collapse during merge are kept as empty</span>
+</span><span data-line="607"><span class="sd">        ``surfaces`` entries to preserve the name mapping.</span>
+</span><span data-line="608"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="609">    <span class="n">parent_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="610">    <span class="n">parent_triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">triangles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="611">
+</span><span data-line="612">    <span class="n">out_vertices_chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="613">    <span class="n">out_triangles_chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="614">    <span class="n">out_surfaces</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="615">    <span class="n">vertex_cursor</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span data-line="616">    <span class="n">triangle_cursor</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span data-line="617">
+</span><span data-line="618">    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tri_idx_arr</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">surfaces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span data-line="619">        <span class="n">tri_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">tri_idx_arr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+</span><span data-line="620">        <span class="k">if</span> <span class="n">tri_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="621">            <span class="n">out_surfaces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="622">            <span class="k">continue</span>
+</span><span data-line="623">
+</span><span data-line="624">        <span class="n">sub_v</span><span class="p">,</span> <span class="n">sub_t</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_extract_subgroup</span><span class="p">(</span><span class="n">parent_vertices</span><span class="p">,</span> <span class="n">parent_triangles</span><span class="p">,</span> <span class="n">tri_idx</span><span class="p">)</span>
+</span><span data-line="625">
+</span><span data-line="626">        <span class="k">if</span> <span class="n">coplanar_merge</span><span class="p">:</span>
+</span><span data-line="627">            <span class="n">sub_v</span><span class="p">,</span> <span class="n">sub_t</span> <span class="o">=</span> <span class="n">merge_coplanar</span><span class="p">(</span><span class="n">sub_v</span><span class="p">,</span> <span class="n">sub_t</span><span class="p">,</span> <span class="n">normal_tol</span><span class="o">=</span><span class="n">normal_tol</span><span class="p">,</span> <span class="n">plane_tol</span><span class="o">=</span><span class="n">plane_tol</span><span class="p">)</span>
+</span><span data-line="628">        <span class="k">if</span> <span class="n">target_reduction</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">sub_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+</span><span data-line="629">            <span class="n">sub_v</span><span class="p">,</span> <span class="n">sub_t</span> <span class="o">=</span> <span class="n">decimate_qem</span><span class="p">(</span>
+</span><span data-line="630">                <span class="n">sub_v</span><span class="p">,</span> <span class="n">sub_t</span><span class="p">,</span> <span class="n">target_reduction</span><span class="o">=</span><span class="n">target_reduction</span><span class="p">,</span> <span class="n">aggressiveness</span><span class="o">=</span><span class="n">aggressiveness</span>
+</span><span data-line="631">            <span class="p">)</span>
+</span><span data-line="632">
+</span><span data-line="633">        <span class="k">if</span> <span class="n">sub_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="634">            <span class="n">out_surfaces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="635">            <span class="k">continue</span>
+</span><span data-line="636">
+</span><span data-line="637">        <span class="n">n_v_sub</span> <span class="o">=</span> <span class="n">sub_v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span data-line="638">        <span class="n">n_t_sub</span> <span class="o">=</span> <span class="n">sub_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span data-line="639">        <span class="n">out_vertices_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_v</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
+</span><span data-line="640">        <span class="n">out_triangles_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_t</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="o">+</span> <span class="n">vertex_cursor</span><span class="p">)</span>
+</span><span data-line="641">        <span class="n">out_surfaces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">triangle_cursor</span><span class="p">,</span> <span class="n">triangle_cursor</span> <span class="o">+</span> <span class="n">n_t_sub</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="642">        <span class="n">vertex_cursor</span> <span class="o">+=</span> <span class="n">n_v_sub</span>
+</span><span data-line="643">        <span class="n">triangle_cursor</span> <span class="o">+=</span> <span class="n">n_t_sub</span>
+</span><span data-line="644">
+</span><span data-line="645">    <span class="k">if</span> <span class="n">out_vertices_chunks</span><span class="p">:</span>
+</span><span data-line="646">        <span class="n">new_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">out_vertices_chunks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span data-line="647">        <span class="n">new_triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">out_triangles_chunks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="648">    <span class="k">else</span><span class="p">:</span>
+</span><span data-line="649">        <span class="n">new_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="650">        <span class="n">new_triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="651">
+</span><span data-line="652">    <span class="c1"># Scale the seam-dedup tolerance by the parent mesh&#39;s bbox so neighbouring</span>
+</span><span data-line="653">    <span class="c1"># surfaces that share a boundary vertex still share it in the output even</span>
+</span><span data-line="654">    <span class="c1"># after the per-surface processing (especially decimate_qem) perturbs the</span>
+</span><span data-line="655">    <span class="c1"># exact coords slightly.</span>
+</span><span data-line="656">    <span class="n">dedup_tol</span> <span class="o">=</span> <span class="n">seam_rel_tol</span> <span class="o">*</span> <span class="n">_bbox_diagonal</span><span class="p">(</span><span class="n">parent_vertices</span><span class="p">)</span> <span class="k">if</span> <span class="n">seam_rel_tol</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span data-line="657">    <span class="n">new_vertices</span><span class="p">,</span> <span class="n">new_triangles</span> <span class="o">=</span> <span class="n">_dedupe_vertices</span><span class="p">(</span><span class="n">new_vertices</span><span class="p">,</span> <span class="n">new_triangles</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">dedup_tol</span><span class="p">)</span>
+</span><span data-line="658">
+</span><span data-line="659">    <span class="n">new_geom</span> <span class="o">=</span> <span class="n">LnasGeometry</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="n">new_vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="o">=</span><span class="n">new_triangles</span><span class="p">)</span>
+</span><span data-line="660">    <span class="k">return</span> <span class="n">LnasFormat</span><span class="p">(</span>
+</span><span data-line="661">        <span class="n">version</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+</span><span data-line="662">        <span class="n">geometry</span><span class="o">=</span><span class="n">new_geom</span><span class="p">,</span>
+</span><span data-line="663">        <span class="n">surfaces</span><span class="o">=</span><span class="n">out_surfaces</span><span class="p">,</span>
+</span><span data-line="664">    <span class="p">)</span></div>
+
+</span><span data-line="665">
+</span><span data-line="666">
+</span><span data-line="667"><span class="k">def</span><span class="w"> </span><span class="nf">_dedupe_vertices</span><span class="p">(</span>
+</span><span data-line="668">    <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="669">    <span class="n">triangles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span data-line="670">    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+</span><span data-line="671"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span data-line="672"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge identical vertices across the stitched-together per-surface chunks.</span>
+</span><span data-line="673">
+</span><span data-line="674"><span class="sd">    Each surface&#39;s sub-mesh keeps its own copy of any shared boundary vertex;</span>
+</span><span data-line="675"><span class="sd">    deduplicating here lets neighbouring surfaces share those vertices in the</span>
+</span><span data-line="676"><span class="sd">    output. When ``tol &gt; 0`` vertices are quantised to a grid of that size</span>
+</span><span data-line="677"><span class="sd">    before the unique-merge -- enough to absorb the sub-float-precision drift</span>
+</span><span data-line="678"><span class="sd">    that :func:`decimate_qem` can introduce on a shared boundary. The</span>
+</span><span data-line="679"><span class="sd">    quantisation has the standard grid-cell limitation: in the worst case</span>
+</span><span data-line="680"><span class="sd">    two vertices straddling a grid boundary can stay distinct even when they</span>
+</span><span data-line="681"><span class="sd">    are separated by less than ``tol``, but any pair separated by more than</span>
+</span><span data-line="682"><span class="sd">    ``sqrt(3) * tol`` is guaranteed to remain distinct. For the documented</span>
+</span><span data-line="683"><span class="sd">    use case (absorbing sub-1e-9 drift on a metre-scale mesh) the worst-case</span>
+</span><span data-line="684"><span class="sd">    miss is well below any meaningful feature. When ``tol == 0`` an</span>
+</span><span data-line="685"><span class="sd">    exact-equality unique is used (the coplanar-merge-only path always</span>
+</span><span data-line="686"><span class="sd">    produces bit-identical seam coords, so this is the cheaper default).</span>
+</span><span data-line="687"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="688">    <span class="k">if</span> <span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="689">        <span class="k">return</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span>
+</span><span data-line="690">    <span class="k">if</span> <span class="n">tol</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+</span><span data-line="691">        <span class="c1"># Quantise to the nearest multiple of `tol`, then unique on the</span>
+</span><span data-line="692">        <span class="c1"># quantised values. ``return_index`` gives the first-occurrence index</span>
+</span><span data-line="693">        <span class="c1"># of each unique row in one shot -- preserves the caller&#39;s precision</span>
+</span><span data-line="694">        <span class="c1"># by reusing the original (un-quantised) coords for the survivors.</span>
+</span><span data-line="695">        <span class="n">quantised</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">vertices</span> <span class="o">/</span> <span class="n">tol</span><span class="p">)</span>
+</span><span data-line="696">        <span class="n">_</span><span class="p">,</span> <span class="n">first_idx</span><span class="p">,</span> <span class="n">inverse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+</span><span data-line="697">            <span class="n">quantised</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span>
+</span><span data-line="698">        <span class="p">)</span>
+</span><span data-line="699">        <span class="n">new_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">first_idx</span><span class="p">]</span>
+</span><span data-line="700">        <span class="n">new_triangles</span> <span class="o">=</span> <span class="n">inverse</span><span class="p">[</span><span class="n">triangles</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="701">        <span class="k">return</span> <span class="n">new_vertices</span><span class="p">,</span> <span class="n">new_triangles</span>
+</span><span data-line="702">    <span class="n">unique</span><span class="p">,</span> <span class="n">inverse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span data-line="703">    <span class="n">new_triangles</span> <span class="o">=</span> <span class="n">inverse</span><span class="p">[</span><span class="n">triangles</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="704">    <span class="k">return</span> <span class="n">unique</span><span class="p">,</span> <span class="n">new_triangles</span>
+</span></pre></div>
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/shibuya.js?v=50760d75"></script></body>
+</html>

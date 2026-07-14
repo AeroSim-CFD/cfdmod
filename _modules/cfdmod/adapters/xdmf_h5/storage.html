@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>cfdmod.adapters.xdmf_h5.storage - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../../genindex.html" /><link rel="search" title="Search" href="../../../../search.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="cfdmod.adapters.xdmf_h5.storage"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../index.html"><span itemprop="name">Module code</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">cfdmod.adapters.xdmf_h5.storage</strong>
+        <meta itemprop="position" content="3" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <h1>Source code for cfdmod.adapters.xdmf_h5.storage</h1><div class="highlight"><pre>
+<span></span><span data-line="1"><span class="sd">&quot;&quot;&quot;XDMF + H5 :class:`Storage`.</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="sd">Reads and writes :class:`DataSource` objects to disk in the same byte</span>
+</span><span data-line="4"><span class="sd">layout the v2 pressure pipeline produces today. Round-trip is the</span>
+</span><span data-line="5"><span class="sd">contract: read a fixture, write it under a new key, the bytes match.</span>
+</span><span data-line="6">
+</span><span data-line="7"><span class="sd">Layouts handled:</span>
+</span><span data-line="8">
+</span><span data-line="9"><span class="sd">- *Timeseries* (the common case)::</span>
+</span><span data-line="10">
+</span><span data-line="11"><span class="sd">      /Triangles                int32   (n_triangles, 3)</span>
+</span><span data-line="12"><span class="sd">      /Geometry                 float64 (n_vertices, 3)</span>
+</span><span data-line="13"><span class="sd">      /meta/time_steps          float64 (n_timesteps,)</span>
+</span><span data-line="14"><span class="sd">      /meta/time_normalized     float64 (n_timesteps,)</span>
+</span><span data-line="15"><span class="sd">      /{field}/t{T}             float64 (n_elements,)        per timestep</span>
+</span><span data-line="16">
+</span><span data-line="17"><span class="sd">- *Time-aggregated* (stats)::</span>
+</span><span data-line="18">
+</span><span data-line="19"><span class="sd">      /Triangles, /Geometry as above</span>
+</span><span data-line="20"><span class="sd">      /{group}/{stat_name}      float64 (n_elements,)</span>
+</span><span data-line="21">
+</span><span data-line="22"><span class="sd">The file at ``&lt;root&gt;/&lt;key&gt;.h5`` together with the optional sidecar</span>
+</span><span data-line="23"><span class="sd">``&lt;root&gt;/&lt;key&gt;.xdmf`` is the storage unit. ``read_data_source`` returns</span>
+</span><span data-line="24"><span class="sd">a :class:`SurfaceDataSource` or :class:`PointsDataSource`; the kind is</span>
+</span><span data-line="25"><span class="sd">inferred from the ``key`` filename prefix (``bodies.``/``cp_t.``/...</span>
+</span><span data-line="26"><span class="sd">-&gt; surface, ``points.`` -&gt; points). ``write_data_source`` rewrites the</span>
+</span><span data-line="27"><span class="sd">file from scratch using the existing ``cfdmod.io.xdmf`` helpers, so the</span>
+</span><span data-line="28"><span class="sd">output format is exactly what the v2 pipeline produces.</span>
+</span><span data-line="29"><span class="sd">&quot;&quot;&quot;</span>
+</span><span data-line="30">
+</span><span data-line="31"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span data-line="32">
+</span><span data-line="33"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;XdmfH5Storage&quot;</span><span class="p">]</span>
+</span><span data-line="34">
+</span><span data-line="35"><span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+</span><span data-line="36"><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+</span><span data-line="37"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+</span><span data-line="38">
+</span><span data-line="39"><span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+</span><span data-line="40"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span data-line="41">
+</span><span data-line="42"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.adapters.xdmf_h5.field_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">H5FieldStore</span>
+</span><span data-line="43"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.data_source</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span data-line="44">    <span class="n">DataSource</span><span class="p">,</span>
+</span><span data-line="45">    <span class="n">GroupsDataSource</span><span class="p">,</span>
+</span><span data-line="46">    <span class="n">PointsDataSource</span><span class="p">,</span>
+</span><span data-line="47">    <span class="n">SurfaceDataSource</span><span class="p">,</span>
+</span><span data-line="48"><span class="p">)</span>
+</span><span data-line="49"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">StorageKeyError</span>
+</span><span data-line="50"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.field_meta</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldMeta</span>
+</span><span data-line="51"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.time_axis</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeAxis</span>
+</span><span data-line="52"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.topology</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElementMeta</span><span class="p">,</span> <span class="n">Topology</span>
+</span><span data-line="53"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">xdmf</span> <span class="k">as</span> <span class="n">_xdmf</span>
+</span><span data-line="54">
+</span><span data-line="55"><span class="c1"># Root-level h5 attribute the freshness layer stamps an output&#39;s signature</span>
+</span><span data-line="56"><span class="c1"># under. It lives in ``.attrs`` (not a dataset), so ``read_data_source``</span>
+</span><span data-line="57"><span class="c1"># ignores it and the round-trip byte layout is unchanged.</span>
+</span><span data-line="58"><span class="n">_SIGNATURE_ATTR</span> <span class="o">=</span> <span class="s2">&quot;cfdmod_signature&quot;</span>
+</span><span data-line="59">
+</span><span data-line="60"><span class="n">_RESERVED_ROOT_KEYS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;Triangles&quot;</span><span class="p">,</span> <span class="s2">&quot;Geometry&quot;</span><span class="p">,</span> <span class="s2">&quot;Connectivity&quot;</span><span class="p">,</span> <span class="s2">&quot;meta&quot;</span><span class="p">})</span>
+</span><span data-line="61"><span class="c1"># Geometry datasets embedded inside a stats group (so write_stats_xdmf can</span>
+</span><span data-line="62"><span class="c1"># emit one Grid per group). They are topology, not stat fields, and must be</span>
+</span><span data-line="63"><span class="c1"># skipped when reconstructing the field list on read.</span>
+</span><span data-line="64"><span class="n">_RESERVED_GROUP_DATASETS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;Triangles&quot;</span><span class="p">,</span> <span class="s2">&quot;Geometry&quot;</span><span class="p">,</span> <span class="s2">&quot;Connectivity&quot;</span><span class="p">})</span>
+</span><span data-line="65"><span class="c1"># Synthetic h5 group holding stats that had no group prefix on the source</span>
+</span><span data-line="66"><span class="c1"># (e.g. a Cp stats source with bare fields mean/rms/...). Stripped on read so</span>
+</span><span data-line="67"><span class="c1"># the round-trip restores the original bare field names.</span>
+</span><span data-line="68"><span class="n">_BARE_STATS_GROUP</span> <span class="o">=</span> <span class="s2">&quot;stats&quot;</span>
+</span><span data-line="69">
+</span><span data-line="70">
+</span><span data-line="71"><span class="k">def</span><span class="w"> </span><span class="nf">_kind_from_key</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="72"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Infer DataSource kind from the filename stem.</span>
+</span><span data-line="73">
+</span><span data-line="74"><span class="sd">    A ``points.*`` stem is read as a points (probe) source; every other</span>
+</span><span data-line="75"><span class="sd">    stem defaults to surface, which is the most common case (``bodies.*``,</span>
+</span><span data-line="76"><span class="sd">    ``cp_t.*``, ``stats.*``, ...). The prefix is the only signal -- a probe</span>
+</span><span data-line="77"><span class="sd">    file must therefore be named ``points.*`` to be read back as points.</span>
+</span><span data-line="78"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="79">    <span class="n">stem</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+</span><span data-line="80">    <span class="k">if</span> <span class="n">stem</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;points.&quot;</span><span class="p">):</span>
+</span><span data-line="81">        <span class="k">return</span> <span class="s2">&quot;points&quot;</span>
+</span><span data-line="82">    <span class="k">return</span> <span class="s2">&quot;surface&quot;</span>
+</span><span data-line="83">
+</span><span data-line="84">
+</span><span data-line="85"><span class="k">def</span><span class="w"> </span><span class="nf">_derive_time_axis</span><span class="p">(</span><span class="n">time_steps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">time_normalized</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeAxis</span><span class="p">:</span>
+</span><span data-line="86"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct an affine :class:`TimeAxis` from the stored arrays.</span>
+</span><span data-line="87">
+</span><span data-line="88"><span class="sd">    The on-disk arrays are kept as-is; we only read them to pull the</span>
+</span><span data-line="89"><span class="sd">    three numbers (initial_time, timestep_size, n_timesteps) plus the</span>
+</span><span data-line="90"><span class="sd">    normalization offset. If the on-disk arrays are not strictly</span>
+</span><span data-line="91"><span class="sd">    uniform, we still take ``timestep_size`` from the first delta --</span>
+</span><span data-line="92"><span class="sd">    this matches what the v2 pipeline produces (regular sampling) and</span>
+</span><span data-line="93"><span class="sd">    avoids the cost of resampling on read.</span>
+</span><span data-line="94"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="95">    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time_steps</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span data-line="96">    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span data-line="97">        <span class="k">return</span> <span class="n">TimeAxis</span><span class="p">(</span><span class="n">initial_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">timestep_size</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span data-line="98">    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span data-line="99">        <span class="k">return</span> <span class="n">TimeAxis</span><span class="p">(</span>
+</span><span data-line="100">            <span class="n">initial_time</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+</span><span data-line="101">            <span class="n">timestep_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+</span><span data-line="102">            <span class="n">n_timesteps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span><span data-line="103">            <span class="n">time_normalized_offset</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">time_normalized</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+</span><span data-line="104">        <span class="p">)</span>
+</span><span data-line="105">    <span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time_steps</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span data-line="106">    <span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">time_normalized</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span data-line="107">    <span class="k">return</span> <span class="n">TimeAxis</span><span class="p">(</span>
+</span><span data-line="108">        <span class="n">initial_time</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+</span><span data-line="109">        <span class="n">timestep_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span>
+</span><span data-line="110">        <span class="n">n_timesteps</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+</span><span data-line="111">        <span class="n">time_normalized_offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+</span><span data-line="112">    <span class="p">)</span>
+</span><span data-line="113">
+</span><span data-line="114">
+<div class="viewcode-block" id="XdmfH5Storage">
+<a class="viewcode-back" href="../../../../api_reference.html#cfdmod.XdmfH5Storage">[docs]</a>
+</span><span data-line="115"><span class="k">class</span><span class="w"> </span><span class="nc">XdmfH5Storage</span><span class="p">:</span>
+</span><span data-line="116"><span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`Storage` for the XDMF + H5 byte layout.</span>
+</span><span data-line="117">
+</span><span data-line="118"><span class="sd">    Args:</span>
+</span><span data-line="119"><span class="sd">        root: Directory under which keys resolve. ``read_data_source(&quot;bodies.foo&quot;)``</span>
+</span><span data-line="120"><span class="sd">            opens ``&lt;root&gt;/bodies.foo.h5``.</span>
+</span><span data-line="121"><span class="sd">        write_xdmf: When True, ``write_data_source`` also (re)generates</span>
+</span><span data-line="122"><span class="sd">            ``&lt;key&gt;.xdmf`` next to the h5. Default True.</span>
+</span><span data-line="123"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="124">
+</span><span data-line="125">    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_root&quot;</span><span class="p">,</span> <span class="s2">&quot;_write_xdmf&quot;</span><span class="p">)</span>
+</span><span data-line="126">
+</span><span data-line="127">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">write_xdmf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="128">        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+</span><span data-line="129">        <span class="bp">self</span><span class="o">.</span><span class="n">_write_xdmf</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">write_xdmf</span><span class="p">)</span>
+</span><span data-line="130">
+</span><span data-line="131">    <span class="c1"># --- Path helpers ------------------------------------------------------</span>
+</span><span data-line="132">
+</span><span data-line="133">    <span class="nd">@property</span>
+</span><span data-line="134">    <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+</span><span data-line="135">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span>
+</span><span data-line="136">
+</span><span data-line="137">    <span class="k">def</span><span class="w"> </span><span class="nf">h5_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+</span><span data-line="138">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">.h5&quot;</span>
+</span><span data-line="139">
+</span><span data-line="140">    <span class="k">def</span><span class="w"> </span><span class="nf">xdmf_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+</span><span data-line="141">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">.xdmf&quot;</span>
+</span><span data-line="142">
+</span><span data-line="143">    <span class="k">def</span><span class="w"> </span><span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span data-line="144">        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="145">            <span class="k">return</span> <span class="p">[]</span>
+</span><span data-line="146">        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">stem</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.h5&quot;</span><span class="p">))</span>
+</span><span data-line="147">
+</span><span data-line="148">    <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="149">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+</span><span data-line="150">
+</span><span data-line="151">    <span class="c1"># --- Read --------------------------------------------------------------</span>
+</span><span data-line="152">
+</span><span data-line="153">    <span class="k">def</span><span class="w"> </span><span class="nf">read_data_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataSource</span><span class="p">:</span>
+</span><span data-line="154">        <span class="n">h5_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="155">        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="156">            <span class="k">raise</span> <span class="n">StorageKeyError</span><span class="p">(</span>
+</span><span data-line="157">                <span class="sa">f</span><span class="s2">&quot;XdmfH5Storage has no data source under key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">h5_path</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span><span data-line="158">            <span class="p">)</span>
+</span><span data-line="159">
+</span><span data-line="160">        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span data-line="161">            <span class="k">if</span> <span class="s2">&quot;Triangles&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">or</span> <span class="s2">&quot;Geometry&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+</span><span data-line="162">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span data-line="163">                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h5_path</span><span class="si">}</span><span class="s2"> is missing the standard /Triangles and /Geometry datasets; &quot;</span>
+</span><span data-line="164">                    <span class="s2">&quot;this adapter only handles the cfdmod v2 layout.&quot;</span>
+</span><span data-line="165">                <span class="p">)</span>
+</span><span data-line="166">            <span class="n">triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;Triangles&quot;</span><span class="p">][:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="167">            <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;Geometry&quot;</span><span class="p">][:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="168">            <span class="n">has_meta</span> <span class="o">=</span> <span class="s2">&quot;meta&quot;</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">and</span> <span class="s2">&quot;time_steps&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta&quot;</span><span class="p">]</span>
+</span><span data-line="169">            <span class="n">time_steps</span> <span class="o">=</span> <span class="p">(</span>
+</span><span data-line="170">                <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta&quot;</span><span class="p">][</span><span class="s2">&quot;time_steps&quot;</span><span class="p">][:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="k">if</span> <span class="n">has_meta</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span data-line="171">            <span class="p">)</span>
+</span><span data-line="172">            <span class="n">time_normalized</span> <span class="o">=</span> <span class="p">(</span>
+</span><span data-line="173">                <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta&quot;</span><span class="p">][</span><span class="s2">&quot;time_normalized&quot;</span><span class="p">][:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="k">if</span> <span class="n">has_meta</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span data-line="174">            <span class="p">)</span>
+</span><span data-line="175">
+</span><span data-line="176">            <span class="n">field_groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="177">            <span class="n">time_keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="178">            <span class="n">time_aggregated</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span data-line="179">
+</span><span data-line="180">            <span class="c1"># Field groups are top-level groups other than &#39;meta&#39;. Detect</span>
+</span><span data-line="181">            <span class="c1"># timeseries vs stats by inspecting one group&#39;s children.</span>
+</span><span data-line="182">            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span><span data-line="183">                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_RESERVED_ROOT_KEYS</span><span class="p">:</span>
+</span><span data-line="184">                    <span class="k">continue</span>
+</span><span data-line="185">                <span class="n">obj</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+</span><span data-line="186">                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+</span><span data-line="187">                    <span class="k">continue</span>
+</span><span data-line="188">                <span class="n">children</span> <span class="o">=</span> <span class="p">[</span>
+</span><span data-line="189">                    <span class="n">k</span>
+</span><span data-line="190">                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</span><span data-line="191">                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_RESERVED_GROUP_DATASETS</span>
+</span><span data-line="192">                <span class="p">]</span>
+</span><span data-line="193">                <span class="k">if</span> <span class="ow">not</span> <span class="n">children</span><span class="p">:</span>
+</span><span data-line="194">                    <span class="k">continue</span>
+</span><span data-line="195">                <span class="c1"># Stats layout: per-stat datasets directly under the group, no t-prefix.</span>
+</span><span data-line="196">                <span class="c1"># Timeseries layout: every dataset is t{float}.</span>
+</span><span data-line="197">                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_is_floatish</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">children</span><span class="p">):</span>
+</span><span data-line="198">                    <span class="n">field_groups</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+</span><span data-line="199">                    <span class="k">if</span> <span class="ow">not</span> <span class="n">time_keys</span><span class="p">:</span>
+</span><span data-line="200">                        <span class="n">time_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+</span><span data-line="201">                <span class="k">else</span><span class="p">:</span>
+</span><span data-line="202">                    <span class="n">time_aggregated</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span data-line="203">                    <span class="k">for</span> <span class="n">stat_name</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+</span><span data-line="204">                        <span class="c1"># Bare-stat sources are written under the synthetic</span>
+</span><span data-line="205">                        <span class="c1"># &quot;stats&quot; group; strip it so the field name round-trips.</span>
+</span><span data-line="206">                        <span class="n">field_name</span> <span class="o">=</span> <span class="p">(</span>
+</span><span data-line="207">                            <span class="n">stat_name</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">_BARE_STATS_GROUP</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">stat_name</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="208">                        <span class="p">)</span>
+</span><span data-line="209">                        <span class="n">field_groups</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">stat_name</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="210">
+</span><span data-line="211">        <span class="c1"># Topology + ElementMeta</span>
+</span><span data-line="212">        <span class="n">kind</span> <span class="o">=</span> <span class="n">_kind_from_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="213">        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;points&quot;</span><span class="p">:</span>
+</span><span data-line="214">            <span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span>
+</span><span data-line="215">        <span class="k">else</span><span class="p">:</span>
+</span><span data-line="216">            <span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="o">.</span><span class="n">triangles</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">vertices</span><span class="p">)</span>
+</span><span data-line="217">        <span class="n">elements</span> <span class="o">=</span> <span class="n">ElementMeta</span><span class="p">()</span>
+</span><span data-line="218">
+</span><span data-line="219">        <span class="c1"># Time axis</span>
+</span><span data-line="220">        <span class="k">if</span> <span class="n">time_aggregated</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">time_keys</span><span class="p">:</span>
+</span><span data-line="221">            <span class="k">if</span> <span class="n">has_meta</span> <span class="ow">and</span> <span class="n">time_steps</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">time_aggregated</span><span class="p">:</span>
+</span><span data-line="222">                <span class="n">time</span> <span class="o">=</span> <span class="n">_derive_time_axis</span><span class="p">(</span><span class="n">time_steps</span><span class="p">,</span> <span class="n">time_normalized</span><span class="p">)</span>
+</span><span data-line="223">            <span class="k">else</span><span class="p">:</span>
+</span><span data-line="224">                <span class="n">time</span> <span class="o">=</span> <span class="n">TimeAxis</span><span class="p">(</span><span class="n">initial_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">timestep_size</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span data-line="225">        <span class="k">else</span><span class="p">:</span>
+</span><span data-line="226">            <span class="k">if</span> <span class="n">has_meta</span><span class="p">:</span>
+</span><span data-line="227">                <span class="n">time</span> <span class="o">=</span> <span class="n">_derive_time_axis</span><span class="p">(</span><span class="n">time_steps</span><span class="p">,</span> <span class="n">time_normalized</span><span class="p">)</span>
+</span><span data-line="228">            <span class="k">else</span><span class="p">:</span>
+</span><span data-line="229">                <span class="c1"># Reconstruct from the keys themselves.</span>
+</span><span data-line="230">                <span class="n">ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">time_keys</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="231">                <span class="n">time</span> <span class="o">=</span> <span class="n">_derive_time_axis</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+</span><span data-line="232">
+</span><span data-line="233">        <span class="n">store</span> <span class="o">=</span> <span class="n">H5FieldStore</span><span class="p">(</span>
+</span><span data-line="234">            <span class="n">h5_path</span><span class="o">=</span><span class="n">h5_path</span><span class="p">,</span>
+</span><span data-line="235">            <span class="n">field_groups</span><span class="o">=</span><span class="n">field_groups</span><span class="p">,</span>
+</span><span data-line="236">            <span class="n">time_keys</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">time_aggregated</span> <span class="k">else</span> <span class="n">time_keys</span><span class="p">,</span>
+</span><span data-line="237">            <span class="n">n_elements</span><span class="o">=</span><span class="n">topology</span><span class="o">.</span><span class="n">n_elements</span><span class="p">,</span>
+</span><span data-line="238">            <span class="n">time_aggregated</span><span class="o">=</span><span class="n">time_aggregated</span><span class="p">,</span>
+</span><span data-line="239">        <span class="p">)</span>
+</span><span data-line="240">        <span class="n">field_meta</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">FieldMeta</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">field_groups</span><span class="p">}</span>
+</span><span data-line="241">
+</span><span data-line="242">        <span class="n">common</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+</span><span data-line="243">            <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+</span><span data-line="244">            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span>
+</span><span data-line="245">            <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
+</span><span data-line="246">            <span class="n">fields</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+</span><span data-line="247">            <span class="n">field_meta</span><span class="o">=</span><span class="n">field_meta</span><span class="p">,</span>
+</span><span data-line="248">            <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;source_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">h5_path</span><span class="p">)},</span>
+</span><span data-line="249">        <span class="p">)</span>
+</span><span data-line="250">        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;points&quot;</span><span class="p">:</span>
+</span><span data-line="251">            <span class="k">return</span> <span class="n">PointsDataSource</span><span class="p">(</span><span class="o">**</span><span class="n">common</span><span class="p">)</span>
+</span><span data-line="252">        <span class="k">return</span> <span class="n">SurfaceDataSource</span><span class="p">(</span><span class="o">**</span><span class="n">common</span><span class="p">)</span>
+</span><span data-line="253">
+</span><span data-line="254">    <span class="c1"># --- Write -------------------------------------------------------------</span>
+</span><span data-line="255">
+</span><span data-line="256">    <span class="k">def</span><span class="w"> </span><span class="nf">write_data_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">DataSource</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="257">        <span class="c1"># GroupsDataSource is special: it has no topology of its own,</span>
+</span><span data-line="258">        <span class="c1"># but it does carry parent_topology + parent_grouping. We</span>
+</span><span data-line="259">        <span class="c1"># broadcast per-group values back to the parent&#39;s triangles so</span>
+</span><span data-line="260">        <span class="c1"># the on-disk h5 is a regular surface timeseries that ParaView</span>
+</span><span data-line="261">        <span class="c1"># can render. The result matches the legacy run_cf output.</span>
+</span><span data-line="262">        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">GroupsDataSource</span><span class="p">):</span>
+</span><span data-line="263">            <span class="n">ds</span> <span class="o">=</span> <span class="n">_groups_to_parent_surface</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+</span><span data-line="264">
+</span><span data-line="265">        <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">topology</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="266">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span data-line="267">                <span class="sa">f</span><span class="s2">&quot;XdmfH5Storage cannot write a DataSource with no topology (kind=</span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">).&quot;</span>
+</span><span data-line="268">            <span class="p">)</span>
+</span><span data-line="269">        <span class="n">h5_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="270">        <span class="n">h5_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span data-line="271">        <span class="k">if</span> <span class="n">h5_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="272">            <span class="n">h5_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+</span><span data-line="273">
+</span><span data-line="274">        <span class="n">triangles</span> <span class="o">=</span> <span class="n">_connectivity_for_write</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">topology</span><span class="p">)</span>
+</span><span data-line="275">        <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="276">        <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_timeseries_geometry</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span> <span class="n">vertices</span><span class="p">)</span>
+</span><span data-line="277">
+</span><span data-line="278">        <span class="n">time_aggregated</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">is_time_aggregated</span>
+</span><span data-line="279">        <span class="k">if</span> <span class="ow">not</span> <span class="n">time_aggregated</span><span class="p">:</span>
+</span><span data-line="280">            <span class="n">time_steps</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">times</span><span class="p">()</span>
+</span><span data-line="281">            <span class="n">time_normalized</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">times_normalized</span><span class="p">()</span>
+</span><span data-line="282">            <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_timeseries_meta</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="n">time_steps</span><span class="p">,</span> <span class="n">time_normalized</span><span class="p">)</span>
+</span><span data-line="283">
+</span><span data-line="284">        <span class="c1"># Resolve every field by reading via the source&#39;s own FieldStore.</span>
+</span><span data-line="285">        <span class="c1"># That makes the writeback work uniformly for MemoryFieldStore,</span>
+</span><span data-line="286">        <span class="c1"># H5FieldStore (with overlay), and any future store.</span>
+</span><span data-line="287">        <span class="n">groups_for_xdmf</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="288">        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+</span><span data-line="289">            <span class="n">arr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+</span><span data-line="290">            <span class="k">if</span> <span class="n">time_aggregated</span><span class="p">:</span>
+</span><span data-line="291">                <span class="c1"># Single dataset path: support &#39;group/stat&#39; or bare &#39;stat&#39;.</span>
+</span><span data-line="292">                <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="n">fname</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+</span><span data-line="293">                <span class="k">if</span> <span class="ow">not</span> <span class="n">stat</span><span class="p">:</span>
+</span><span data-line="294">                    <span class="n">stat</span> <span class="o">=</span> <span class="n">group</span>
+</span><span data-line="295">                    <span class="n">group</span> <span class="o">=</span> <span class="n">_BARE_STATS_GROUP</span>
+</span><span data-line="296">                <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_stats_field</span><span class="p">(</span>
+</span><span data-line="297">                    <span class="n">h5_path</span><span class="p">,</span>
+</span><span data-line="298">                    <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+</span><span data-line="299">                    <span class="n">stat_name</span><span class="o">=</span><span class="n">stat</span><span class="p">,</span>
+</span><span data-line="300">                    <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+</span><span data-line="301">                    <span class="n">triangles</span><span class="o">=</span><span class="n">triangles</span><span class="p">,</span>
+</span><span data-line="302">                    <span class="n">vertices</span><span class="o">=</span><span class="n">vertices</span><span class="p">,</span>
+</span><span data-line="303">                <span class="p">)</span>
+</span><span data-line="304">            <span class="k">else</span><span class="p">:</span>
+</span><span data-line="305">                <span class="c1"># Timeseries: arr is (n_elements, n_timesteps).</span>
+</span><span data-line="306">                <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+</span><span data-line="307">                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span data-line="308">                        <span class="sa">f</span><span class="s2">&quot;field </span><span class="si">{</span><span class="n">fname</span><span class="si">!r}</span><span class="s2"> must be 2-D for a non-aggregated DataSource; &quot;</span>
+</span><span data-line="309">                        <span class="sa">f</span><span class="s2">&quot;got shape </span><span class="si">{</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="310">                    <span class="p">)</span>
+</span><span data-line="311">                <span class="n">ts</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">times</span><span class="p">()</span>
+</span><span data-line="312">                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ts</span><span class="p">):</span>
+</span><span data-line="313">                    <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_timeseries_step</span><span class="p">(</span>
+</span><span data-line="314">                        <span class="n">h5_path</span><span class="p">,</span>
+</span><span data-line="315">                        <span class="n">group</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span>
+</span><span data-line="316">                        <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;t</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span data-line="317">                        <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+</span><span data-line="318">                    <span class="p">)</span>
+</span><span data-line="319">                <span class="n">groups_for_xdmf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+</span><span data-line="320">
+</span><span data-line="321">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_xdmf</span><span class="p">:</span>
+</span><span data-line="322">            <span class="n">xdmf_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdmf_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="323">            <span class="k">if</span> <span class="n">time_aggregated</span><span class="p">:</span>
+</span><span data-line="324">                <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_stats_xdmf</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="n">xdmf_path</span><span class="p">)</span>
+</span><span data-line="325">            <span class="k">elif</span> <span class="n">groups_for_xdmf</span><span class="p">:</span>
+</span><span data-line="326">                <span class="n">_xdmf</span><span class="o">.</span><span class="n">write_temporal_xdmf</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="n">xdmf_path</span><span class="p">,</span> <span class="n">groups_for_xdmf</span><span class="p">)</span>
+</span><span data-line="327">
+</span><span data-line="328">    <span class="c1"># --- Freshness ---------------------------------------------------------</span>
+</span><span data-line="329">
+<div class="viewcode-block" id="XdmfH5Storage.digest">
+<a class="viewcode-back" href="../../../../api_reference.html#cfdmod.XdmfH5Storage.digest">[docs]</a>
+</span><span data-line="330">    <span class="k">def</span><span class="w"> </span><span class="nf">digest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;size_mtime&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="331"><span class="w">        </span><span class="sd">&quot;&quot;&quot;Change-detecting token for the ``&lt;key&gt;.h5`` (+ ``.xdmf``) pair.</span>
+</span><span data-line="332">
+</span><span data-line="333"><span class="sd">        - ``size_mtime`` (default): size + mtime of the file(s); no reads.</span>
+</span><span data-line="334"><span class="sd">        - ``content``: a blake2b hash of the file bytes, streamed.</span>
+</span><span data-line="335"><span class="sd">        - ``backend``: the local filesystem has no native token, so this</span>
+</span><span data-line="336"><span class="sd">          falls back to ``size_mtime`` (tagged so the fallback is visible).</span>
+</span><span data-line="337"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span data-line="338">        <span class="n">h5_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="339">        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="340">            <span class="k">raise</span> <span class="n">StorageKeyError</span><span class="p">(</span>
+</span><span data-line="341">                <span class="sa">f</span><span class="s2">&quot;XdmfH5Storage has no data source under key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">h5_path</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span><span data-line="342">            <span class="p">)</span>
+</span><span data-line="343">        <span class="n">paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">h5_path</span><span class="p">]</span>
+</span><span data-line="344">        <span class="n">xdmf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdmf_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="345">        <span class="k">if</span> <span class="n">xdmf</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="346">            <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xdmf</span><span class="p">)</span>
+</span><span data-line="347">
+</span><span data-line="348">        <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span>
+</span><span data-line="349">            <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">blake2b</span><span class="p">(</span><span class="n">digest_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+</span><span data-line="350">            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+</span><span data-line="351">                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span data-line="352">                    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span><span class="p">),</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+</span><span data-line="353">                        <span class="n">h</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+</span><span data-line="354">            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;content:</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span data-line="355">
+</span><span data-line="356">        <span class="c1"># size_mtime and backend (backend has no FS-native token -&gt; fall back)</span>
+</span><span data-line="357">        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;size_mtime&quot;</span> <span class="k">if</span> <span class="n">strategy</span> <span class="o">!=</span> <span class="s2">&quot;backend&quot;</span> <span class="k">else</span> <span class="s2">&quot;backend_fs&quot;</span>
+</span><span data-line="358">        <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime_ns</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
+</span><span data-line="359">        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">:&quot;</span> <span class="o">+</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span></div>
+
+</span><span data-line="360">
+</span><span data-line="361">    <span class="k">def</span><span class="w"> </span><span class="nf">read_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="362">        <span class="n">h5_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="363">        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="364">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="365">        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span data-line="366">            <span class="n">raw</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_SIGNATURE_ATTR</span><span class="p">)</span>
+</span><span data-line="367">        <span class="k">if</span> <span class="n">raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="368">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="369">        <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+</span><span data-line="370">
+</span><span data-line="371">    <span class="k">def</span><span class="w"> </span><span class="nf">write_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">signature</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="372">        <span class="n">h5_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span data-line="373">        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span data-line="374">            <span class="k">raise</span> <span class="n">StorageKeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cannot stamp signature: no h5 under key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">h5_path</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</span><span data-line="375">        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span data-line="376">            <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">_SIGNATURE_ATTR</span><span class="p">]</span> <span class="o">=</span> <span class="n">signature</span></div>
+
+</span><span data-line="377">
+</span><span data-line="378">
+</span><span data-line="379"><span class="k">def</span><span class="w"> </span><span class="nf">_groups_to_parent_surface</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">GroupsDataSource</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SurfaceDataSource</span><span class="p">:</span>
+</span><span data-line="380"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Broadcast a GroupsDataSource back onto its parent surface.</span>
+</span><span data-line="381">
+</span><span data-line="382"><span class="sd">    Returns a :class:`SurfaceDataSource` over the parent&#39;s triangles</span>
+</span><span data-line="383"><span class="sd">    with each parent triangle taking the value of the group it belongs</span>
+</span><span data-line="384"><span class="sd">    to. Triangles in ungrouped territory (``-1``) get NaN.</span>
+</span><span data-line="385"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="386">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.adapters.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryFieldStore</span>
+</span><span data-line="387">    <span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.field_meta</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldMeta</span>
+</span><span data-line="388">
+</span><span data-line="389">    <span class="n">parent_indices</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">parent_grouping</span><span class="o">.</span><span class="n">indices</span>
+</span><span data-line="390">    <span class="n">group_ids</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">parent_grouping</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">indices</span>  <span class="c1"># row index -&gt; group id</span>
+</span><span data-line="391">    <span class="c1"># Map group id -&gt; row index in the groups source.</span>
+</span><span data-line="392">    <span class="n">row_for_gid</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="n">gid</span><span class="p">):</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">gid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">group_ids</span><span class="p">)}</span>
+</span><span data-line="393">    <span class="n">n_parent</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">parent_topology</span><span class="o">.</span><span class="n">n_elements</span>
+</span><span data-line="394">
+</span><span data-line="395">    <span class="n">out_arrays</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="396">    <span class="n">out_meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span data-line="397">    <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span><span data-line="398">        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fname</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="399">        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+</span><span data-line="400">            <span class="n">broadcast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_parent</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="401">        <span class="k">else</span><span class="p">:</span>
+</span><span data-line="402">            <span class="n">broadcast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_parent</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span data-line="403">        <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_parent</span><span class="p">):</span>
+</span><span data-line="404">            <span class="n">gid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parent_indices</span><span class="p">[</span><span class="n">tri</span><span class="p">])</span>
+</span><span data-line="405">            <span class="k">if</span> <span class="n">gid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">row_for_gid</span><span class="p">:</span>
+</span><span data-line="406">                <span class="k">continue</span>
+</span><span data-line="407">            <span class="n">broadcast</span><span class="p">[</span><span class="n">tri</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">row_for_gid</span><span class="p">[</span><span class="n">gid</span><span class="p">]]</span>
+</span><span data-line="408">        <span class="n">out_arrays</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">=</span> <span class="n">broadcast</span>
+</span><span data-line="409">        <span class="n">out_meta</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">field_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">FieldMeta</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">fname</span><span class="p">))</span>
+</span><span data-line="410">
+</span><span data-line="411">    <span class="k">return</span> <span class="n">SurfaceDataSource</span><span class="p">(</span>
+</span><span data-line="412">        <span class="n">time</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+</span><span data-line="413">        <span class="n">topology</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">parent_topology</span><span class="p">,</span>
+</span><span data-line="414">        <span class="n">elements</span><span class="o">=</span><span class="n">ElementMeta</span><span class="p">(),</span>
+</span><span data-line="415">        <span class="n">fields</span><span class="o">=</span><span class="n">MemoryFieldStore</span><span class="p">(</span><span class="n">out_arrays</span><span class="p">),</span>
+</span><span data-line="416">        <span class="n">field_meta</span><span class="o">=</span><span class="n">out_meta</span><span class="p">,</span>
+</span><span data-line="417">    <span class="p">)</span>
+</span><span data-line="418">
+</span><span data-line="419">
+</span><span data-line="420"><span class="k">def</span><span class="w"> </span><span class="nf">_connectivity_for_write</span><span class="p">(</span><span class="n">topology</span><span class="p">:</span> <span class="n">Topology</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+</span><span data-line="421"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Connectivity array as written under ``/Triangles``.</span>
+</span><span data-line="422">
+</span><span data-line="423"><span class="sd">    Triangle topologies write their connectivity directly. Point</span>
+</span><span data-line="424"><span class="sd">    topologies write a degenerate ``(n_points, 3)`` block of point</span>
+</span><span data-line="425"><span class="sd">    indices so the on-disk layout still has a ``/Triangles`` dataset --</span>
+</span><span data-line="426"><span class="sd">    this matches the v2 ``points.*.h5`` files in the fixtures.</span>
+</span><span data-line="427"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span data-line="428">    <span class="k">if</span> <span class="n">topology</span><span class="o">.</span><span class="n">cell_type</span> <span class="o">==</span> <span class="s2">&quot;triangle&quot;</span><span class="p">:</span>
+</span><span data-line="429">        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">topology</span><span class="o">.</span><span class="n">connectivity</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="430">    <span class="k">if</span> <span class="n">topology</span><span class="o">.</span><span class="n">cell_type</span> <span class="o">==</span> <span class="s2">&quot;point&quot;</span><span class="p">:</span>
+</span><span data-line="431">        <span class="n">n</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">n_elements</span>
+</span><span data-line="432">        <span class="n">col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span data-line="433">        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">col</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">col</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span data-line="434">    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;XdmfH5Storage cannot write topology with cell_type=</span><span class="si">{</span><span class="n">topology</span><span class="o">.</span><span class="n">cell_type</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span data-line="435">
+</span><span data-line="436">
+</span><span data-line="437"><span class="k">def</span><span class="w"> </span><span class="nf">_is_floatish</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="438">    <span class="k">try</span><span class="p">:</span>
+</span><span data-line="439">        <span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span data-line="440">    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span data-line="441">        <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="442">    <span class="k">return</span> <span class="kc">True</span>
+</span></pre></div>
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/shibuya.js?v=50760d75"></script></body>
+</html>

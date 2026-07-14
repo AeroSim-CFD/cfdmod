@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Building Wind-Load Post-Processing - AeroSim CFDmod</title><link rel="shortcut icon" href="../../_static/favicon.svg"/><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Structural Model Import (Dynamics)" href="../dynamics/index.html" /><link rel="prev" title="Triangle Grouping and Regrouping" href="../geometry_prep/index.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="Building Wind-Load Post-Processing"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#the-pipeline">The pipeline</a></li>
+<li><a class="reference internal" href="#per-floor-coefficients">Per-floor coefficients</a></li>
+<li><a class="reference internal" href="#peak-estimation">Peak estimation</a></li>
+<li><a class="reference internal" href="#dynamic-response">Dynamic response</a></li>
+<li><a class="reference internal" href="#occupant-comfort">Occupant comfort</a></li>
+<li><a class="reference internal" href="#design-load-cases">Design load cases</a></li>
+<li><a class="reference internal" href="#multi-direction-fan-out">Multi-direction fan-out</a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Building Wind-Load Post-Processing</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section class="tex2jax_ignore mathjax_ignore" id="building-wind-load-post-processing">
+<h1>Building Wind-Load Post-Processing<a class="headerlink" href="#building-wind-load-post-processing" title="Link to this heading">#</a></h1>
+<p>The <strong>building</strong> use case turns a pressure time series on a building surface
+into the engineering deliverables of a wind study: per-floor force and moment
+coefficients, the modal <strong>dynamic response</strong>, occupant-comfort accelerations,
+design load cases, and a multi-direction fan-out over a parametric study.</p>
+<p>It composes the v3 recipes and ops (see <a class="reference internal" href="../../architecture/data_sources.html"><span class="doc">Data sources, ops, and pipelines (v3 paradigm)</span></a>);
+nothing here is high-rise-specific – the same helpers serve low-rise studies.
+The Python surface lives under <code class="xref py py-mod docutils literal notranslate"><span class="pre">cfdmod.building</span></code>; the modal model it
+consumes is produced by the importers in <a class="reference internal" href="../dynamics/index.html"><span class="doc">Structural Model Import (Dynamics)</span></a>.</p>
+<section id="the-pipeline">
+<h2>The pipeline<a class="headerlink" href="#the-pipeline" title="Link to this heading">#</a></h2>
+<p>A case runs through a fixed sequence of stages, each a thin composition of
+library recipes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span data-line="1">pressure time series (surface)
+</span><span data-line="2">  -&gt; Cp                              (cp_from_pressure)
+</span><span data-line="3">  -&gt; per-floor Cf / Cm               (cf_per_floor, cm_per_floor)
+</span><span data-line="4">  -&gt; floor-load points               (floor_load_source)
+</span><span data-line="5">  -&gt; modal dynamic response          (solve_building_response)
+</span><span data-line="6">  -&gt; floor accelerations + comfort   (floor_accelerations, comfort_limit)
+</span><span data-line="7">  -&gt; load-case tables                (generate_load_cases)
+</span></pre></div>
+</div>
+<p>A single case is aggregated into a <a class="reference internal" href="../../api_reference.html#cfdmod.building.BuildingCase" title="cfdmod.building.BuildingCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuildingCase</span></code></a>,
+which carries the pressure time series, the dynamic pressure and the geometry
+so the downstream stages read a single value object rather than a pile of
+loose arrays.</p>
+</section>
+<section id="per-floor-coefficients">
+<h2>Per-floor coefficients<a class="headerlink" href="#per-floor-coefficients" title="Link to this heading">#</a></h2>
+<p>The building surface is partitioned into floors (a height binning of the
+triangles), and the pressure coefficient time series is integrated over each
+floor’s triangles into a per-floor force and moment coefficient. The floor
+force coefficient is</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+C_{f,i} = \frac{1}{A_{ref}} \sum_{t \in \text{floor } i} C_{p,t}\, \hat{n}_t\, A_t
+\]</div>
+</div>
+<p>with the outward normal <span class="math notranslate nohighlight">\(\hat{n}_t\)</span> and triangle area <span class="math notranslate nohighlight">\(A_t\)</span>, and
+the moment coefficient likewise about the floor reference point. Normalisation
+uses an <strong>explicit reference area / volume</strong> (<code class="docutils literal notranslate"><span class="pre">nominal_area</span></code> /
+<code class="docutils literal notranslate"><span class="pre">nominal_volume</span></code>), not a per-region bounding-box area, so the coefficients
+convert back to real-scale forces unambiguously.</p>
+</section>
+<section id="peak-estimation">
+<h2>Peak estimation<a class="headerlink" href="#peak-estimation" title="Link to this heading">#</a></h2>
+<p>Each deliverable reduces a fluctuating response (acceleration, floor force,
+displacement) to a single design peak. Three methods are selectable per
+deliverable (<a class="reference internal" href="../../api_reference.html#cfdmod.building.peak_value" title="cfdmod.building.peak_value"><code class="xref py py-func docutils literal notranslate"><span class="pre">peak_value()</span></code></a>):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code> – the observed extreme (optionally of the absolute value).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;peak-factor&quot;</span></code> – Davenport Davenport<a class="footnote-reference brackets" href="#footcite-davenport1964gust" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>:
+<span class="math notranslate nohighlight">\(\hat{x} = \bar{x} + g\,\sigma_x\)</span>, with the <strong>gust peak factor</strong></p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+  g = \sqrt{2 \ln(\nu T)} + \frac{0.5772}{\sqrt{2 \ln(\nu T)}}
+  \]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\nu\)</span> is the mean up-crossing rate (taken as the response
+frequency <span class="math notranslate nohighlight">\(f_0\)</span>, in Hz) and <span class="math notranslate nohighlight">\(T\)</span> the averaging duration
+(default 600 s). The constant 0.5772 is the Euler-Mascheroni constant.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;gumbel&quot;</span></code> – fit a Gumbel distribution to block maxima and read the design
+fractile off it (more stable than the raw max for short records). See the
+extreme-value discussion in <a class="reference internal" href="../pressure/statistics.html"><span class="doc">Statistics</span></a>.</p></li>
+</ul>
+</section>
+<section id="dynamic-response">
+<h2>Dynamic response<a class="headerlink" href="#dynamic-response" title="Link to this heading">#</a></h2>
+<p>Tall, flexible buildings resonate with the fluctuating wind load, so the
+response is not simply the static application of the peak load. The building
+is solved as a <strong>modal single-degree-of-freedom (SDOF) system</strong> per mode
+(<a class="reference internal" href="../../api_reference.html#cfdmod.building.solve_building_response" title="cfdmod.building.solve_building_response"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_building_response()</span></code></a>):</p>
+<ol class="arabic">
+<li><p>The per-floor load coefficients are dimensionalised into a floor-load
+<code class="docutils literal notranslate"><span class="pre">PointsDataSource</span></code> (per-floor <span class="math notranslate nohighlight">\(f_x\)</span>, <span class="math notranslate nohighlight">\(f_y\)</span>, <span class="math notranslate nohighlight">\(m_z\)</span>) by
+the case dynamic pressure and reference area
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">floor_load_source()</span></code>).</p></li>
+<li><p>Each mode shape is <strong>mass-normalized to unit generalized mass</strong>,
+<span class="math notranslate nohighlight">\(\sum_i M_i\,(\phi_{x,i}^2 + \phi_{y,i}^2 + (R_i\,\phi_{rz,i})^2) = 1\)</span>,
+the precondition the modal solver assumes.</p></li>
+<li><p>The floor loads are projected onto each mode to a generalized modal load,
+the modal SDOF equation</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+   \ddot{q}_j + 2\,\xi_j\,\omega_j\,\dot{q}_j + \omega_j^2\,q_j = p_j(t)
+   \]</div>
+</div>
+<p>is integrated in time (RK45) with damping ratio <span class="math notranslate nohighlight">\(\xi_j\)</span> and natural
+frequency <span class="math notranslate nohighlight">\(\omega_j\)</span>, and the modal coordinates are recomposed into
+per-floor displacements (<span class="math notranslate nohighlight">\(d_x\)</span>, <span class="math notranslate nohighlight">\(d_y\)</span>) and torsional rotation
+(<span class="math notranslate nohighlight">\(r_z\)</span>).</p>
+</li>
+<li><p>The response is reported as per-floor displacements plus
+<strong>static-equivalent</strong> floor forces / moments (<span class="math notranslate nohighlight">\(f_{eq,x}\)</span>,
+<span class="math notranslate nohighlight">\(f_{eq,y}\)</span>, <span class="math notranslate nohighlight">\(m_{eq,z}\)</span>) that the structural engineer applies
+statically, and as per-floor horizontal <strong>accelerations</strong> at an off-centre
+occupant point (<a class="reference internal" href="../../api_reference.html#cfdmod.building.floor_accelerations" title="cfdmod.building.floor_accelerations"><code class="xref py py-func docutils literal notranslate"><span class="pre">floor_accelerations()</span></code></a>).</p></li>
+</ol>
+<p>The natural periods, per-floor mass, radius of gyration, centre of mass and
+mode shapes come from the structural model
+(<a class="reference internal" href="../../api_reference.html#cfdmod.dynamics.structural.BuildingStructuralData" title="cfdmod.dynamics.structural.BuildingStructuralData"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuildingStructuralData</span></code></a>); see
+<a class="reference internal" href="../dynamics/index.html"><span class="doc">Structural Model Import (Dynamics)</span></a> for how that model is imported from TQS or
+Eberick.</p>
+</section>
+<section id="occupant-comfort">
+<h2>Occupant comfort<a class="headerlink" href="#occupant-comfort" title="Link to this heading">#</a></h2>
+<p>Occupant comfort is judged by comparing the <strong>peak horizontal acceleration</strong>
+at the top floor against a standard’s acceptance limit. Three criteria are
+supported (<a class="reference internal" href="../../api_reference.html#cfdmod.building.comfort_limit" title="cfdmod.building.comfort_limit"><code class="xref py py-func docutils literal notranslate"><span class="pre">comfort_limit()</span></code></a>); all return the limit in
+SI <span class="math notranslate nohighlight">\(m/s^2\)</span> (convert to milli-g with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mps2_to_milli_g()</span></code>).</p>
+<p><strong>NBR 6123</strong> (serviceability limit, sec. 9.6.2), a decreasing power law in the
+fundamental sway frequency <span class="math notranslate nohighlight">\(f_0\)</span> Nbr<a class="footnote-reference brackets" href="#footcite-nbr19886123" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+a_{lim} = 0.01\, k_c\, f_0^{-0.445} \quad [m/s^2]
+\]</div>
+</div>
+<p>with <span class="math notranslate nohighlight">\(k_c = 4.08\)</span> (residential) or <span class="math notranslate nohighlight">\(6.12\)</span> (commercial / office),
+valid over <span class="math notranslate nohighlight">\(0.06 \le f_0 \le 1.00\)</span> Hz at a 1-year return period.</p>
+<p><strong>Melbourne and Palmer (1992)</strong> serviceable-acceleration curve, a function of
+<span class="math notranslate nohighlight">\(f_0\)</span> and the return period <span class="math notranslate nohighlight">\(R\)</span> in years
+Melbourne and Palmer<a class="footnote-reference brackets" href="#footcite-melbourne1992accelerations" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+a = \sqrt{2 \ln(f_0 T)}\,\left(0.68 + \frac{\ln R}{5}\right)\,
+    e^{-3.65 - 0.41 \ln f_0} \quad [m/s^2]
+\]</div>
+</div>
+<p>with <span class="math notranslate nohighlight">\(T = 600\)</span> s, valid over <span class="math notranslate nohighlight">\(0.06 &lt; f_0 &lt; 1.0\)</span> Hz and
+<span class="math notranslate nohighlight">\(0.5 &lt; R &lt; 10\)</span> years.</p>
+<p><strong>NBCC</strong> occupant-comfort criterion, a flat (frequency-independent) limit at a
+10-year return period: <strong>15 milli-g</strong> residential, <strong>25 milli-g</strong> office /
+commercial.</p>
+</section>
+<section id="design-load-cases">
+<h2>Design load cases<a class="headerlink" href="#design-load-cases" title="Link to this heading">#</a></h2>
+<p>For the structural hand-off, the multi-direction response is reduced to
+per-floor load-case tables (<a class="reference internal" href="../../api_reference.html#cfdmod.building.generate_load_cases" title="cfdmod.building.generate_load_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_load_cases()</span></code></a>,
+written with <a class="reference internal" href="../../api_reference.html#cfdmod.building.save_load_case_tables" title="cfdmod.building.save_load_case_tables"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_load_case_tables()</span></code></a>):</p>
+<ul class="simple">
+<li><p><strong>Effective-load envelopes</strong> – per-floor <span class="math notranslate nohighlight">\(F_x\)</span> / <span class="math notranslate nohighlight">\(F_y\)</span> /
+<span class="math notranslate nohighlight">\(M_z\)</span>, one column per wind direction, for <code class="docutils literal notranslate"><span class="pre">min</span></code> / <code class="docutils literal notranslate"><span class="pre">max</span></code> (the signed
+per-floor envelopes) and <code class="docutils literal notranslate"><span class="pre">peak</span></code> (the governing envelope, whichever of
+min / max has the larger mean magnitude per direction and axis).</p></li>
+<li><p><strong>Companion load cases</strong> – for each principal axis the critical direction is
+selected and the accompanying loads on the other axes are carried along, in
+the form the structural software (e.g. Eberick) ingests.</p></li>
+</ul>
+</section>
+<section id="multi-direction-fan-out">
+<h2>Multi-direction fan-out<a class="headerlink" href="#multi-direction-fan-out" title="Link to this heading">#</a></h2>
+<p>Real consulting cases process many wind directions (and bodies, and Cp
+configurations). The v3 building path solves one case at a time; the fan-out
+driver (<a class="reference internal" href="../../api_reference.html#cfdmod.building.run_fanout" title="cfdmod.building.run_fanout"><code class="xref py py-func docutils literal notranslate"><span class="pre">run_fanout()</span></code></a> with a
+<a class="reference internal" href="../../api_reference.html#cfdmod.building.FanoutPlan" title="cfdmod.building.FanoutPlan"><code class="xref py py-class docutils literal notranslate"><span class="pre">FanoutPlan</span></code></a>) maps every <code class="docutils literal notranslate"><span class="pre">(direction,</span> <span class="pre">body,</span> <span class="pre">config)</span></code>
+key through the whole Cp -&gt; per-floor Cf/Cm -&gt; dynamic-response chain and
+collects the results in a <a class="reference internal" href="../../api_reference.html#cfdmod.Container" title="cfdmod.Container"><code class="xref py py-class docutils literal notranslate"><span class="pre">Container</span></code></a> – the exact shape the
+multi-direction reducers (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cfdmod.dynamics.cases</span></code>) and the load-case
+tables above consume.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">examples/high_rise/</span></code> suite in the repository is the reference
+layout: thin notebooks, one per stage, orchestrating the
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">cfdmod.building</span></code> helpers end-to-end and writing versioned debug /
+deliverable output roots.</p>
+</div>
+<div class="docutils container" id="id4">
+</div>
+</section>
+</section>
+<hr class="footnotes docutils" />
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="footcite-davenport1964gust" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Alan Garnett Davenport. Note on the distribution of the largest value of a random function with application to gust loading. <em>Proceedings of the Institution of Civil Engineers</em>, 28(2):187–196, 1964.</p>
+</aside>
+<aside class="footnote brackets" id="footcite-nbr19886123" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>ABNT Nbr. 6123: forças devidas ao vento em edificações. <em>ABNT Editora, Rio de Janeiro, Brasil</em>, 1988.</p>
+</aside>
+<aside class="footnote brackets" id="footcite-melbourne1992accelerations" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p>William H Melbourne and Trevor R Palmer. Accelerations and comfort criteria for buildings undergoing complex motions. <em>Journal of Wind Engineering and Industrial Aerodynamics</em>, 41(1-3):105–116, 1992.</p>
+</aside>
+</aside>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="../geometry_prep/index.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Triangle Grouping and Regrouping</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="../dynamics/index.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Structural Model Import (Dynamics)</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/shibuya.js?v=50760d75"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script></body>
+</html>

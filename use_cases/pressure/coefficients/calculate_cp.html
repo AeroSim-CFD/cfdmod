@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Generate the pressure coefficient (Cp) - AeroSim CFDmod</title><link rel="shortcut icon" href="../../../_static/favicon.svg"/><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" /><link rel="next" title="Shape Coefficient" href="shape_coefficient.html" /><link rel="prev" title="Pressure Coefficient" href="pressure_coefficient.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="Generate the pressure coefficient (Cp)"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../../../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../../../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/data_sources.html">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Pressure</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../statistics.html">Statistics</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Coefficients</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="pressure_coefficient.html">Pressure Coefficient</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#Set-up-a-working-directory">Set up a working directory</a></li>
+<li><a class="reference internal" href="#The-Cp-pipeline-template">The Cp pipeline template</a></li>
+<li><a class="reference internal" href="#Run-the-pipeline">Run the pipeline</a></li>
+<li><a class="reference internal" href="#Inspect-the-time-resolved-Cp">Inspect the time-resolved Cp</a></li>
+<li><a class="reference internal" href="#Per-element-statistics">Per-element statistics</a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">Pressure</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="index.html"><span itemprop="name">Pressure Coefficients</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="pressure_coefficient.html"><span itemprop="name">Pressure Coefficient</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="4" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Generate the pressure coefficient (Cp)</strong>
+        <meta itemprop="position" content="5" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <style>
+    /* Estilos base para notebooks */
+    div.nbinput, div.nboutput {
+        margin: 1em 0;
+        border-radius: 4px;
+    }
+
+    div.nbinput .prompt, div.nboutput .prompt {
+        min-width: 11ex;
+        padding: 0.4em;
+        font-family: monospace;
+    }
+
+    /* Dark mode support for notebooks */
+    html[data-theme="dark"] div.nbinput,
+    html[data-theme="dark"] div.nboutput {
+        border: 1px solid #333;
+    }
+
+    html[data-theme="dark"] .nbinput .highlight,
+    html[data-theme="dark"] .nboutput .highlight {
+        background-color: #1e1e1e !important;
+    }
+    html[data-theme="dark"] .highlight pre {
+        color: #d4d4d4 !important;
+    }
+    /* Light mode support for notebooks */
+    html[data-theme="light"] .nbinput .highlight,
+    html[data-theme="light"] .nboutput .highlight {
+        background-color: #f5f5f5 !important;
+    }
+    html[data-theme="light"] .highlight pre {
+        color: #24292e !important;
+    }
+</style><section id="Generate-the-pressure-coefficient-(Cp)">
+<h1>Generate the pressure coefficient (Cp)<a class="headerlink" href="#Generate-the-pressure-coefficient-(Cp)" title="Link to this heading">#</a></h1>
+<p>The pressure coefficient normalizes the surface pressure by the free-stream dynamic pressure:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[C_p(t) = \frac{p(t) - p_{\infty}(t)}{q}, \qquad q = \tfrac{1}{2}\, \bar{\rho}_{\infty}\, U_H^2 .\]</div>
+</div>
+<p>In cfdmod v3 this is expressed as a <strong>pipeline template</strong>: a small YAML document listing the inputs (body pressure, static-pressure probe), a sequence of composable ops, and the outputs. This notebook runs the shipped <code class="docutils literal notranslate"><span class="pre">cp.yaml</span></code> template against the <code class="docutils literal notranslate"><span class="pre">galpao</span></code> wind-tunnel fixture.</p>
+<section id="Set-up-a-working-directory">
+<h2>Set up a working directory<a class="headerlink" href="#Set-up-a-working-directory" title="Link to this heading">#</a></h2>
+<p>A pipeline template declares its inputs, ops and outputs with paths that are resolved <em>relative to the template file</em>. The shipped example templates live under <code class="docutils literal notranslate"><span class="pre">fixtures/tests/pressure/templates/</span></code> and reference sibling <code class="docutils literal notranslate"><span class="pre">../data/</span></code> and <code class="docutils literal notranslate"><span class="pre">../galpao/</span></code> folders, so we copy the templates and the fixture data into a single scratch directory and run from there. In a real project you would instead point the template at your own data and run <code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">&lt;template&gt;.yaml</span></code> directly.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[1]:
+</span></pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span data-line="1">%matplotlib inline
+</span><span data-line="2">import pathlib
+</span><span data-line="3">import shutil
+</span><span data-line="4">import tempfile
+</span><span data-line="5">
+</span><span data-line="6">
+</span><span data-line="7">def find_fixtures() -&gt; pathlib.Path:
+</span><span data-line="8">    &quot;&quot;&quot;Walk up from the current directory to locate the repo fixtures.&quot;&quot;&quot;
+</span><span data-line="9">    for base in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+</span><span data-line="10">        candidate = base / &quot;fixtures&quot; / &quot;tests&quot; / &quot;pressure&quot;
+</span><span data-line="11">        if candidate.is_dir():
+</span><span data-line="12">            return candidate
+</span><span data-line="13">    raise FileNotFoundError(&quot;could not locate fixtures/tests/pressure&quot;)
+</span><span data-line="14">
+</span><span data-line="15">
+</span><span data-line="16">fixtures = find_fixtures()
+</span><span data-line="17">workdir = pathlib.Path(tempfile.mkdtemp(prefix=&quot;cfdmod_pressure_&quot;))
+</span><span data-line="18">for name in (&quot;data&quot;, &quot;galpao&quot;, &quot;templates&quot;):
+</span><span data-line="19">    shutil.copytree(fixtures / name, workdir / name)
+</span><span data-line="20">(workdir / &quot;out&quot;).mkdir(exist_ok=True)
+</span><span data-line="21">
+</span><span data-line="22">print(&quot;working directory:&quot;, workdir)
+</span></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+working directory: /tmp/cfdmod_pressure_u6sirp_9
+</pre></div></div>
+</div>
+</section>
+<section id="The-Cp-pipeline-template">
+<h2>The Cp pipeline template<a class="headerlink" href="#The-Cp-pipeline-template" title="Link to this heading">#</a></h2>
+<p>The template subtracts the static reference pressure per timestep (<code class="docutils literal notranslate"><span class="pre">sub</span></code>), divides by the dynamic pressure via a constant <code class="docutils literal notranslate"><span class="pre">scale</span></code> factor (<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">q</span></code>), and finally reduces the time axis to per-element <code class="docutils literal notranslate"><span class="pre">statistics</span></code> (mean / rms / min / max).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[2]:
+</span></pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span data-line="1">print((workdir / &quot;templates&quot; / &quot;cp.yaml&quot;).read_text())
+</span></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+# Cp pipeline template (v3 schema).
+#
+# Reads body pressure and a static-pressure probe from disk, computes
+# Cp = (p - p_ref) / dyn_pressure, optionally rescales time, and writes
+# the time-resolved Cp series plus mean/rms/peak statistics.
+#
+# Anything you&#39;d previously have configured under
+# pressure_coefficient.default.statistics in cp_params.yaml now lives
+# under the `statistics` step. Everything else is pipeline composition.
+name: cp_default
+
+inputs:
+  body:
+    kind: surface
+    path: ../data/bodies.galpao
+  p_ref:
+    kind: points
+    path: ../data/points.static_pressure
+
+pipeline:
+  # 1. Subtract the static reference per timestep (column-wise broadcast,
+  #    rule 2). The result lives on a new &#34;cp&#34; field on the body source.
+  - id: cp_unscaled
+    kind: sub
+    source: body
+    rhs: p_ref
+    field: pressure
+    out: cp
+
+  # 2. Divide by dynamic pressure. q_inf = 0.5 * rho * U_H^2
+  #    Here U_H = 0.05, rho = 1.0 -&gt; q = 0.00125. Scale = 1 / q.
+  - id: cp_t
+    kind: scale
+    source: cp_unscaled
+    field: cp
+    factor: 800.0
+
+  # 3. Per-element statistics over the full time axis.
+  - id: cp_stats
+    kind: statistics
+    source: cp_t
+    field: cp
+    kinds: [mean, rms, min, max]
+
+outputs:
+  cp_timeseries:
+    source: cp_t
+    path: ./out/cp.time_series
+  cp_stats:
+    source: cp_stats
+    path: ./out/cp.stats
+
+</pre></div></div>
+</div>
+</section>
+<section id="Run-the-pipeline">
+<h2>Run the pipeline<a class="headerlink" href="#Run-the-pipeline" title="Link to this heading">#</a></h2>
+<p>The runner is backend-agnostic. Here we use <code class="docutils literal notranslate"><span class="pre">XdmfH5Storage</span></code>, which reads and writes the on-disk XDMF+H5 layout; notebooks and tests can instead use the in-memory <code class="docutils literal notranslate"><span class="pre">MemoryStorage</span></code> with the exact same recipe code. <code class="docutils literal notranslate"><span class="pre">run_template</span></code> returns a dict mapping every step id (and input) to its <code class="docutils literal notranslate"><span class="pre">DataSource</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[3]:
+</span></pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span data-line="1">from cfdmod import load_template, run_template
+</span><span data-line="2">from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
+</span><span data-line="3">
+</span><span data-line="4">storage = XdmfH5Storage(pathlib.Path(&quot;/&quot;))
+</span><span data-line="5">bindings = run_template(load_template(workdir / &quot;templates&quot; / &quot;cp.yaml&quot;), storage=storage)
+</span><span data-line="6">sorted(bindings)
+</span></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[3]:
+</span></pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;body&#39;, &#39;cp_stats&#39;, &#39;cp_t&#39;, &#39;cp_unscaled&#39;, &#39;p_ref&#39;]
+</pre></div></div>
+</div>
+</section>
+<section id="Inspect-the-time-resolved-Cp">
+<h2>Inspect the time-resolved Cp<a class="headerlink" href="#Inspect-the-time-resolved-Cp" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">cp_t</span></code> is a <code class="docutils literal notranslate"><span class="pre">SurfaceDataSource</span></code> with one row per mesh triangle and one column per timestep. We plot the Cp history of a handful of triangles.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[4]:
+</span></pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span data-line="1">import matplotlib.pyplot as plt
+</span><span data-line="2">import numpy as np
+</span><span data-line="3">
+</span><span data-line="4">cp_t = bindings[&quot;cp_t&quot;]
+</span><span data-line="5">times = cp_t.time.times()
+</span><span data-line="6">cp = cp_t.fields.read(&quot;cp&quot;)
+</span><span data-line="7">print(&quot;elements x timesteps:&quot;, cp.shape)
+</span><span data-line="8">
+</span><span data-line="9">fig, ax = plt.subplots(figsize=(7, 3.5))
+</span><span data-line="10">for idx in np.linspace(0, cp.shape[0] - 1, 4, dtype=int):
+</span><span data-line="11">    ax.plot(times, cp[idx], label=f&quot;triangle {idx}&quot;)
+</span><span data-line="12">ax.set_xlabel(&quot;time&quot;)
+</span><span data-line="13">ax.set_ylabel(&quot;Cp&quot;)
+</span><span data-line="14">ax.set_title(&quot;Time-resolved Cp for sample triangles&quot;)
+</span><span data-line="15">ax.legend(loc=&quot;best&quot;, fontsize=8)
+</span><span data-line="16">plt.tight_layout()
+</span><span data-line="17">plt.show()
+</span></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+elements x timesteps: (2915, 101)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../../_images/use_cases_pressure_coefficients_calculate_cp_8_1.png" src="../../../_images/use_cases_pressure_coefficients_calculate_cp_8_1.png" />
+</div>
+</div>
+</section>
+<section id="Per-element-statistics">
+<h2>Per-element statistics<a class="headerlink" href="#Per-element-statistics" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">cp_stats</span></code> output collapses the time axis to one value per triangle for each requested statistic.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[5]:
+</span></pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span data-line="1">import pandas as pd
+</span><span data-line="2">
+</span><span data-line="3">stats = bindings[&quot;cp_stats&quot;]
+</span><span data-line="4">df = pd.DataFrame({name: stats.fields.read(name) for name in stats.field_names})
+</span><span data-line="5">df.describe()
+</span></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span><span data-line="1">[5]:
+</span></pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>rms</th>
+      <th>min</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>2915.000000</td>
+      <td>2915.000000</td>
+      <td>2915.000000</td>
+      <td>2915.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>-0.203118</td>
+      <td>0.153959</td>
+      <td>-0.396791</td>
+      <td>0.106785</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>0.273381</td>
+      <td>0.062831</td>
+      <td>0.294066</td>
+      <td>0.250219</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>-0.949901</td>
+      <td>0.002697</td>
+      <td>-1.173019</td>
+      <td>-0.664139</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>-0.390826</td>
+      <td>0.110966</td>
+      <td>-0.592470</td>
+      <td>-0.017977</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>-0.212155</td>
+      <td>0.167677</td>
+      <td>-0.408554</td>
+      <td>0.130272</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>-0.005807</td>
+      <td>0.203829</td>
+      <td>-0.187683</td>
+      <td>0.280762</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>0.455437</td>
+      <td>0.307976</td>
+      <td>0.339985</td>
+      <td>0.757790</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="pressure_coefficient.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Pressure Coefficient</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="shape_coefficient.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Shape Coefficient</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/shibuya.js?v=50760d75"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script></body>
+</html>

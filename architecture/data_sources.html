@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Data sources, ops, and pipelines (v3 paradigm) - AeroSim CFDmod</title><link rel="shortcut icon" href="../_static/favicon.svg"/><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Migrating to the v3 paradigm" href="v3_migration.html" /><link rel="prev" title="Reading Outputs" href="../getting_started/reading_outputs.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../_static/shibuya.css?v=2ceb65ce" />
+    <link media="print" rel="stylesheet" type="text/css" href="../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/><meta property="og:title" content="Data sources, ops, and pipelines (v3 paradigm)"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="https://aerosim.io">
+      <img class="light-logo" src="../_static/img/logo_display.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <img class="dark-logo" src="../_static/img/white_logo.png" alt="AeroSim Docs" height="28" loading="lazy" />
+      <strong>AeroSim Docs</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links" data-align=center><ul><li class="link">
+          <a href="https://docs.aerosim.io/">
+            <span>User Guide</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/nassu/index.html">
+            <span>Nassu</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/cfdmod/index.html">
+            <span>CFDMod</span></a>
+        </li><li class="link">
+          <a href="https://docs.aerosim.io/validation/index.html">
+            <span>Validation</span></a>
+        </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/reading_outputs.html">Reading outputs</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Architecture</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data sources &amp; pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="v3_migration.html">v3 migration guide</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Library API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api_reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Use Cases</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/altimetry/index.html">Altimetry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/altimetry/altimetry_from_probes.html">Altimetry from probes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/altimetry/altimetry_from_coordinates.html">Generic use of altimetry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/loft/index.html">Loft</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/loft/generate_loft.html">Loft use case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/s1/index.html">S1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/s1/profiles_from_csv.html">Profiles from csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/s1/profiles_from_vtm.html">Profiles from vtm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/roughness_gen/index.html">Roughness Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/roughness_gen/gen_roughness_elements.html">Generating roughness elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/roughness_gen/position_roughness_elements.html">Positioning elements in terrain</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/pressure/index.html">Pressure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/pressure/concepts.html">Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/pressure/statistics.html">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/pressure/coefficients/index.html">Coefficients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../use_cases/pressure/coefficients/pressure_coefficient.html">Pressure Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../use_cases/pressure/coefficients/calculate_cp.html">Transform cp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../use_cases/pressure/coefficients/shape_coefficient.html">Shape Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../use_cases/pressure/coefficients/calculate_Ce.html">Calculate Ce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../use_cases/pressure/coefficients/force_coefficient.html">Force Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../use_cases/pressure/coefficients/calculate_Cf.html">Calculate Cf</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../use_cases/pressure/coefficients/moment_coefficient.html">Moment Coefficient</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../use_cases/pressure/coefficients/calculate_Cm.html">Calculate Cm</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../use_cases/pressure/coefficients/time_normalization.html">Time Normalization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/snapshot/index.html">Snapshot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use_cases/snapshot/take_snapshot.html">Snapshot from .vtp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/geometry_prep/index.html">Grouping &amp; Regroup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/building/index.html">Building wind loads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../use_cases/dynamics/index.html">Structural Import</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Analysis</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../analysis/inflow/index.html">Inflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../analysis/inflow/mean_velocity.html">Mean Velocity Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis/inflow/turbulence_intensity.html">Turbulence Intensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis/inflow/spectral_density.html">Spectral Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis/inflow/length_scale.html">Length Scale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis/inflow/inflow_analysis.html">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../analysis/climate/index.html">Climate</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Others</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#goal">1. Goal</a></li>
+<li><a class="reference internal" href="#data-source">2. Data source</a></li>
+<li><a class="reference internal" href="#time-axis-is-affine-not-stored">3. Time axis is affine, not stored</a></li>
+<li><a class="reference internal" href="#algebra-four-broadcasting-rules">4. Algebra: four broadcasting rules</a></li>
+<li><a class="reference internal" href="#functional-core-imperative-shell">5. Functional core, imperative shell</a></li>
+<li><a class="reference internal" href="#the-injection-seam-fieldstore-and-storage">6. The injection seam: <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code> and <code class="docutils literal notranslate"><span class="pre">Storage</span></code></a></li>
+<li><a class="reference internal" href="#containers">7. Containers</a></li>
+<li><a class="reference internal" href="#inside-vs-outside-the-paradigm">8. Inside vs outside the paradigm</a></li>
+<li><a class="reference internal" href="#migration-outcome">9. Migration outcome</a></li>
+<li><a class="reference internal" href="#what-is-not-in-scope">10. What is NOT in scope</a></li>
+<li><a class="reference internal" href="#consuming-cfdmod-as-a-service">11. Consuming cfdmod as a service</a><ul>
+<li><a class="reference internal" href="#dependency-light-import">Dependency-light import</a></li>
+<li><a class="reference internal" href="#op-catalog-introspection">Op catalog (introspection)</a></li>
+<li><a class="reference internal" href="#custom-ops">Custom ops</a></li>
+<li><a class="reference internal" href="#static-graph-validation">Static graph validation</a></li>
+<li><a class="reference internal" href="#typed-errors-and-object-storage">Typed errors and object storage</a></li>
+</ul>
+</li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">AeroSim Docs</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Data sources, ops, and pipelines (v3 paradigm)</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section class="tex2jax_ignore mathjax_ignore" id="data-sources-ops-and-pipelines-v3-paradigm">
+<h1>Data sources, ops, and pipelines (v3 paradigm)<a class="headerlink" href="#data-sources-ops-and-pipelines-v3-paradigm" title="Link to this heading">#</a></h1>
+<p>Status: design doc for the v3 paradigm.</p>
+<p>This document captures the locked decisions for the new abstraction layer
+shipped under <code class="docutils literal notranslate"><span class="pre">cfdmod/core/</span></code> and <code class="docutils literal notranslate"><span class="pre">cfdmod/adapters/</span></code>. It is the durable
+reference for “what shape is the new layer, and why”. Implementation
+details (file paths, signatures) live in the docstrings of those modules;
+this doc is for the contract.</p>
+<section id="goal">
+<h2>1. Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
+<p>Replace the ad-hoc per-recipe orchestration in <code class="docutils literal notranslate"><span class="pre">cfdmod/pressure/</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cfdmod/inflow.py</span></code>, <code class="docutils literal notranslate"><span class="pre">cfdmod/s1/</span></code>, and the former HFPI dynamic pipeline
+with a single composable paradigm: a small frozen value object
+(<code class="docutils literal notranslate"><span class="pre">DataSource</span></code>) plus a library of pure transformations on it.</p>
+<p>Phases 0-2 of the plan land the abstractions and prove on-disk parity
+with every existing fixture. Phases 3-8 rewrite recipe internals on top
+of the new core. The v2 pressure entry points have been removed in v3;
+post-processing runs through the v3 recipes and the
+<code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">&lt;template.yaml&gt;</span></code> CLI. Geometry, S1, inflow, climate,
+analytical, and IO helpers remain exported unchanged.</p>
+</section>
+<section id="data-source">
+<h2>2. Data source<a class="headerlink" href="#data-source" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">DataSource</span></code> is a frozen Pydantic value object. It holds everything
+needed to describe one slab of simulation output:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kind</span></code>: one of <code class="docutils literal notranslate"><span class="pre">surface</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">points</span></code>, <code class="docutils literal notranslate"><span class="pre">groups</span></code>, <code class="docutils literal notranslate"><span class="pre">modes</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span></code>: an affine <code class="docutils literal notranslate"><span class="pre">TimeAxis(initial_time,</span> <span class="pre">timestep_size,</span> <span class="pre">n_timesteps)</span></code>.
+The full time array is <em>never</em> stored; it is reconstructed on demand
+from the three numbers. Time-aggregated outputs use <code class="docutils literal notranslate"><span class="pre">n_timesteps</span> <span class="pre">==</span> <span class="pre">0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">topology</span></code>: <code class="docutils literal notranslate"><span class="pre">Topology(cell_type,</span> <span class="pre">connectivity,</span> <span class="pre">vertices)</span></code> for surfaces
+and (later) volumes. <code class="docutils literal notranslate"><span class="pre">cell_type</span></code> is a discriminator (<code class="docutils literal notranslate"><span class="pre">triangle</span></code>,
+<code class="docutils literal notranslate"><span class="pre">point</span></code>, <code class="docutils literal notranslate"><span class="pre">cell</span></code>) so volume export is additive, not a rewrite. Points
+data sources use <code class="docutils literal notranslate"><span class="pre">cell_type=&quot;point&quot;</span></code> and an empty connectivity array.
+<code class="docutils literal notranslate"><span class="pre">GroupsDataSource</span></code> does not own its own topology; it carries a
+<em>reference</em> to a parent surface’s topology plus a per-element group
+index, so it cannot diverge from the parent mesh.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elements</span></code>: <code class="docutils literal notranslate"><span class="pre">ElementMeta</span></code> with positions, areas, volumes, normals as
+applicable. Optional per-element free-form metadata (e.g. station
+name) lives here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">groupings</span></code>: <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">np.ndarray]</span></code> of int arrays of length
+<code class="docutils literal notranslate"><span class="pre">n_elements</span></code>. Each array assigns each element to exactly one group of
+the named grouping (surface name, planar/volumetric selection, S1
+separation, …).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: a <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code>. The <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code> exposes per-field arrays of
+shape <code class="docutils literal notranslate"><span class="pre">(n_elements,</span> <span class="pre">n_timesteps)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n_elements,)</span></code> for time-aggregated
+outputs. Whether the arrays live in RAM or in an h5 file is opaque to
+the rest of the core.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">field_meta</span></code>: <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">FieldMeta]</span></code> with name, scale, units.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attrs</span></code>: source-level metadata (free-form, validated at construction).</p></li>
+</ul>
+<p>The five subclasses are thin wrappers that lock the <code class="docutils literal notranslate"><span class="pre">kind</span></code> discriminator
+and constrain which <code class="docutils literal notranslate"><span class="pre">ElementMeta</span></code> columns are required. They share the
+same fields and methods.</p>
+</section>
+<section id="time-axis-is-affine-not-stored">
+<h2>3. Time axis is affine, not stored<a class="headerlink" href="#time-axis-is-affine-not-stored" title="Link to this heading">#</a></h2>
+<p>The proposal is explicit about this: the time axis is reconstructable
+from <code class="docutils literal notranslate"><span class="pre">(initial_time,</span> <span class="pre">timestep_size,</span> <span class="pre">n_timesteps)</span></code>. Time ops (window
+selection, translation, rescale) mutate these three numbers. They never
+resample. Resampling is a <em>field op</em> and goes through <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code>.</p>
+</section>
+<section id="algebra-four-broadcasting-rules">
+<h2>4. Algebra: four broadcasting rules<a class="headerlink" href="#algebra-four-broadcasting-rules" title="Link to this heading">#</a></h2>
+<p>All field algebra (Cp = <code class="docutils literal notranslate"><span class="pre">(p</span> <span class="pre">-</span> <span class="pre">p_ref)</span> <span class="pre">*</span> <span class="pre">scaling</span></code>, S1 = <code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">/</span> <span class="pre">ref</span></code>,
+etc.) goes through one module, <code class="docutils literal notranslate"><span class="pre">cfdmod/core/algebra.py</span></code>, with four
+broadcasting rules dispatched on the shape pattern:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[multi</span> <span class="pre">or</span> <span class="pre">single]</span> <span class="pre">*</span> <span class="pre">constant</span></code> -&gt; uniform scaling.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[multi]</span> <span class="pre">*</span> <span class="pre">[single]</span></code> with the same time axis -&gt; column-wise (e.g.
+<code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">-</span> <span class="pre">p_ref</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[multi]</span> <span class="pre">*</span> <span class="pre">[multi]</span></code> with the same shape but only one carries
+timesteps -&gt; row-wise (e.g. S1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[multi]</span> <span class="pre">*</span> <span class="pre">[multi]</span></code> with the same shape -&gt; element-wise.</p></li>
+</ol>
+<p>Recipes never reimplement broadcasting. Any new recipe (Cf, S1,
+pedestrian comfort) is a <code class="docutils literal notranslate"><span class="pre">compose(...)</span></code> of existing ops + algebra calls.</p>
+</section>
+<section id="functional-core-imperative-shell">
+<h2>5. Functional core, imperative shell<a class="headerlink" href="#functional-core-imperative-shell" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Ops are pure functions: <code class="docutils literal notranslate"><span class="pre">op(ds,</span> <span class="pre">params)</span> <span class="pre">-&gt;</span> <span class="pre">DataSource</span></code>. No methods on
+<code class="docutils literal notranslate"><span class="pre">DataSource</span></code> mutate state or do I/O.</p></li>
+<li><p>The shell (CLI, recipe runners) wires concrete adapters in via a
+frozen <code class="docutils literal notranslate"><span class="pre">Context</span></code>.</p></li>
+<li><p>Pipelines are <code class="docutils literal notranslate"><span class="pre">compose(*ops)</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Callable[[DataSource],</span> <span class="pre">DataSource]</span></code>,
+built once at recipe-construction time, applied at run time.</p></li>
+</ul>
+</section>
+<section id="the-injection-seam-fieldstore-and-storage">
+<h2>6. The injection seam: <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code> and <code class="docutils literal notranslate"><span class="pre">Storage</span></code><a class="headerlink" href="#the-injection-seam-fieldstore-and-storage" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">FieldStore</span></code> is the only place the small-data (numpy in RAM) vs
+large-data (XDMF + h5, 10+ GB) distinction lives. Every op calls
+<code class="docutils literal notranslate"><span class="pre">fields.read(name,</span> <span class="pre">time_slice=...,</span> <span class="pre">element_slice=...)</span></code> and trusts the
+adapter.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Storage</span></code> handles whole <code class="docutils literal notranslate"><span class="pre">DataSource</span></code> round-trips: topology, time axis,
+elements, groupings, plus the <code class="docutils literal notranslate"><span class="pre">FieldStore</span></code> for the data.</p>
+<p>Two adapters land in Phase 1:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MemoryFieldStore</span></code> / <code class="docutils literal notranslate"><span class="pre">MemoryStorage</span></code> (in-process, dict-keyed). Used by
+every test and by notebooks. ~50 lines each.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">H5FieldStore</span></code> / <code class="docutils literal notranslate"><span class="pre">XdmfH5Storage</span></code>. Wraps the existing
+<code class="docutils literal notranslate"><span class="pre">cfdmod.io.xdmf</span></code> writers. Preserves the on-disk layout exactly:
+<code class="docutils literal notranslate"><span class="pre">/Triangles</span></code>, <code class="docutils literal notranslate"><span class="pre">/Geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">/meta/{time_steps,time_normalized,</span> <span class="pre">region_labels}</span></code>, <code class="docutils literal notranslate"><span class="pre">/{group}/t{T}</span></code>. No format change.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">core</span></code> package depends on <code class="docutils literal notranslate"><span class="pre">numpy</span></code> and <code class="docutils literal notranslate"><span class="pre">pydantic</span></code> only; <code class="docutils literal notranslate"><span class="pre">h5py</span></code> lives
+exclusively under <code class="docutils literal notranslate"><span class="pre">adapters/xdmf_h5/</span></code>.</p>
+</section>
+<section id="containers">
+<h2>7. Containers<a class="headerlink" href="#containers" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Container[K,</span> <span class="pre">V]</span></code> is a directional / parametric multi-case map (hashable
+Pydantic key, <code class="docutils literal notranslate"><span class="pre">join_by(callback)</span></code>, <code class="docutils literal notranslate"><span class="pre">filter_by</span></code>, <code class="docutils literal notranslate"><span class="pre">map_values</span></code>). The
+building dynamic-response cases (<code class="docutils literal notranslate"><span class="pre">cfdmod.dynamics.cases</span></code>, keyed by
+<code class="docutils literal notranslate"><span class="pre">BuildingCaseParameters</span></code>) group and filter directional results through it
+with no bespoke machinery.</p>
+<p>Parallelism is <em>injected</em>, not built in: <code class="docutils literal notranslate"><span class="pre">Container.map_values(p,</span> <span class="pre">pool=ctx.pool)</span></code> runs the pipeline over the container in parallel only
+if a pool is supplied. Sequential is the default.</p>
+</section>
+<section id="inside-vs-outside-the-paradigm">
+<h2>8. Inside vs outside the paradigm<a class="headerlink" href="#inside-vs-outside-the-paradigm" title="Link to this heading">#</a></h2>
+<p>Inside (becomes data sources + ops): <code class="docutils literal notranslate"><span class="pre">pressure/</span></code> (Cp, Cf, Cm, Ce),
+<code class="docutils literal notranslate"><span class="pre">pressure/filters.py</span></code>, <code class="docutils literal notranslate"><span class="pre">inflow.py</span></code>, <code class="docutils literal notranslate"><span class="pre">s1/profile.py</span></code>, the former HFPI
+dynamic pipeline (now <code class="docutils literal notranslate"><span class="pre">core/recipes/dynamic.py</span></code> + <code class="docutils literal notranslate"><span class="pre">cfdmod/dynamics/</span></code>),
+the existing <code class="docutils literal notranslate"><span class="pre">analysis/inflow/</span></code>, <code class="docutils literal notranslate"><span class="pre">io/xdmf.py</span></code>, <code class="docutils literal notranslate"><span class="pre">io/timeseries.py</span></code>.
+Pedestrian comfort joins later (it composes existing primitives + a
+climate-data input).</p>
+<p>Outside (stay standalone): <code class="docutils literal notranslate"><span class="pre">loft/</span></code>, <code class="docutils literal notranslate"><span class="pre">roughness/</span></code>, <code class="docutils literal notranslate"><span class="pre">snapshot/</span></code>,
+<code class="docutils literal notranslate"><span class="pre">altimetry/</span></code>, <code class="docutils literal notranslate"><span class="pre">analytical/</span></code>, <code class="docutils literal notranslate"><span class="pre">climate/</span></code>, plotting helpers,
+<code class="docutils literal notranslate"><span class="pre">io/geometry/</span></code>, <code class="docutils literal notranslate"><span class="pre">io/vtk/</span></code>. They produce inputs to or consume outputs
+from data sources but never participate as filters in a pipeline.</p>
+</section>
+<section id="migration-outcome">
+<h2>9. Migration outcome<a class="headerlink" href="#migration-outcome" title="Link to this heading">#</a></h2>
+<p>The pressure post-processing surface was cut over to the new core rather
+than kept as parallel wrappers. The <code class="docutils literal notranslate"><span class="pre">cfdmod.pressure</span></code> package and its
+disk-first entry points (<code class="docutils literal notranslate"><span class="pre">run_cp</span></code> / <code class="docutils literal notranslate"><span class="pre">run_cf</span></code> / <code class="docutils literal notranslate"><span class="pre">run_cm</span></code> / <code class="docutils literal notranslate"><span class="pre">run_ce</span></code> /
+<code class="docutils literal notranslate"><span class="pre">apply_filters</span></code> / <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code>) were removed. The supported
+access paths are the v3 recipes (<code class="docutils literal notranslate"><span class="pre">cfdmod.recipes</span></code>), the op catalog
+(<code class="docutils literal notranslate"><span class="pre">cfdmod.core_ops</span></code>), and version-3 YAML templates executed with
+<code class="docutils literal notranslate"><span class="pre">cfdmod</span> <span class="pre">run</span> <span class="pre">&lt;template.yaml&gt;</span></code>. Non-pressure public helpers (geometry, S1,
+inflow, climate, analytical, IO) remain exported from <code class="docutils literal notranslate"><span class="pre">cfdmod</span></code>.</p>
+</section>
+<section id="what-is-not-in-scope">
+<h2>10. What is NOT in scope<a class="headerlink" href="#what-is-not-in-scope" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>CPU vs GPU: out of scope. If it ever matters, it is another adapter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ArrayLike</span></code> protocol over <code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>: not the kind of swap we
+need; numpy is a hard dependency of the core.</p></li>
+<li><p>Abstract <code class="docutils literal notranslate"><span class="pre">BaseFilter</span></code> / <code class="docutils literal notranslate"><span class="pre">BaseRecipe</span></code> classes: composition over
+inheritance. Recipes are concrete <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>s.</p></li>
+<li><p>Climate, altimetry, snapshot, loft, roughness as pipeline stages:
+per the odt, these stay outside the paradigm. Pedestrian comfort
+takes climate data as a non-pipeline input.</p></li>
+</ul>
+</section>
+<section id="consuming-cfdmod-as-a-service">
+<h2>11. Consuming cfdmod as a service<a class="headerlink" href="#consuming-cfdmod-as-a-service" title="Link to this heading">#</a></h2>
+<p>The v3 core is usable not just as a library you call but as a contract a
+service can reflect on and drive from a UI (e.g. a node-based pipeline
+editor). Four capabilities support that:</p>
+<section id="dependency-light-import">
+<h3>Dependency-light import<a class="headerlink" href="#dependency-light-import" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">cfdmod</span></code> – and importing the template schema / op catalog under
+<code class="docutils literal notranslate"><span class="pre">cfdmod.core</span></code> – pulls none of the heavy scientific stack (h5py,
+matplotlib, pandas, pyarrow, vtk, trimesh). Those load lazily, only when
+a symbol that needs them is first accessed. A web/API layer can validate
+and build templates without the numeric stack installed. The stable,
+dependency-light surface is <code class="docutils literal notranslate"><span class="pre">cfdmod.core.pipeline_yaml</span></code>
+(<code class="docutils literal notranslate"><span class="pre">PipelineTemplate</span></code>, <code class="docutils literal notranslate"><span class="pre">validate_template</span></code>, <code class="docutils literal notranslate"><span class="pre">list_ops</span></code>, <code class="docutils literal notranslate"><span class="pre">op_info</span></code>).</p>
+</section>
+<section id="op-catalog-introspection">
+<h3>Op catalog (introspection)<a class="headerlink" href="#op-catalog-introspection" title="Link to this heading">#</a></h3>
+<p>The op registry is populated at import, so a consumer can enumerate the
+op set without first running a template:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_ops</span><span class="p">,</span> <span class="n">op_info</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">list_ops</span><span class="p">():</span>
+</span><span data-line="4">    <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">family</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">arity</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">consumes</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">produces</span><span class="p">)</span>
+</span><span data-line="5">    <span class="c1"># info.params_schema is the op&#39;s parameter JSON Schema (render a form)</span>
+</span><span data-line="6">
+</span><span data-line="7"><span class="n">op_info</span><span class="p">(</span><span class="s2">&quot;statistics&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">params_schema</span>   <span class="c1"># single op</span>
+</span></pre></div>
+</div>
+</section>
+<section id="custom-ops">
+<h3>Custom ops<a class="headerlink" href="#custom-ops" title="Link to this heading">#</a></h3>
+<p>A consumer registers its own op with <code class="docutils literal notranslate"><span class="pre">register_op</span></code>; it becomes a
+first-class citizen – usable in templates under its <code class="docutils literal notranslate"><span class="pre">kind</span></code>, validated,
+and listed by <code class="docutils literal notranslate"><span class="pre">list_ops</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Literal</span>
+</span><span data-line="2"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataSource</span><span class="p">,</span> <span class="n">register_op</span>
+</span><span data-line="3"><span class="kn">from</span><span class="w"> </span><span class="nn">cfdmod.core.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpParams</span>
+</span><span data-line="4">
+</span><span data-line="5"><span class="k">class</span><span class="w"> </span><span class="nc">ClipParams</span><span class="p">(</span><span class="n">OpParams</span><span class="p">):</span>
+</span><span data-line="6">    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;clip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;clip&quot;</span>
+</span><span data-line="7">    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cp&quot;</span>
+</span><span data-line="8">    <span class="n">lo</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span data-line="9">    <span class="n">hi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span data-line="10">    <span class="n">op_family</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;field&quot;</span>   <span class="c1"># or inferred from the module path</span>
+</span><span data-line="11">
+</span><span data-line="12"><span class="k">def</span><span class="w"> </span><span class="nf">clip</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">DataSource</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">ClipParams</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataSource</span><span class="p">:</span> <span class="o">...</span>
+</span><span data-line="13">
+</span><span data-line="14"><span class="n">register_op</span><span class="p">(</span><span class="s2">&quot;clip&quot;</span><span class="p">,</span> <span class="n">clip</span><span class="p">,</span> <span class="n">ClipParams</span><span class="p">,</span> <span class="n">arity</span><span class="o">=</span><span class="s2">&quot;unary&quot;</span><span class="p">)</span>
+</span></pre></div>
+</div>
+</section>
+<section id="static-graph-validation">
+<h3>Static graph validation<a class="headerlink" href="#static-graph-validation" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">validate_template</span></code> runs a symbolic contract pass over the catalog:
+each op declares <code class="docutils literal notranslate"><span class="pre">consumes</span></code> / <code class="docutils literal notranslate"><span class="pre">produces</span></code> kinds and
+<code class="docutils literal notranslate"><span class="pre">requires_element_meta</span></code>, and <code class="docutils literal notranslate"><span class="pre">validate_template</span></code> checks the wiring
+without running anything – catching e.g. a <code class="docutils literal notranslate"><span class="pre">force_contribution</span></code> before
+<code class="docutils literal notranslate"><span class="pre">mesh_attach</span></code>, or a surface-only op fed a points binding. It is strict on
+kinds and metadata (deterministic) and permissive on fields when the
+input’s fields were not declared.</p>
+</section>
+<section id="typed-errors-and-object-storage">
+<h3>Typed errors and object storage<a class="headerlink" href="#typed-errors-and-object-storage" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">run_template</span></code> raises a typed hierarchy under <code class="docutils literal notranslate"><span class="pre">CfdmodError</span></code>
+(<code class="docutils literal notranslate"><span class="pre">TemplateError</span></code>, <code class="docutils literal notranslate"><span class="pre">TemplateReferenceError</span></code>, <code class="docutils literal notranslate"><span class="pre">OpError</span></code> with <code class="docutils literal notranslate"><span class="pre">step_id</span></code> /
+<code class="docutils literal notranslate"><span class="pre">op_kind</span></code>, <code class="docutils literal notranslate"><span class="pre">StorageKeyError</span></code>); each also subclasses the builtin it
+replaced, so existing <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">(KeyError,</span> <span class="pre">ValueError)</span></code> handlers keep
+working. For non-filesystem output, <code class="docutils literal notranslate"><span class="pre">XdmfH5BlobStorage</span></code> runs the same
+pipeline against any <code class="docutils literal notranslate"><span class="pre">BlobStore</span></code> (an object store such as S3, a DB blob
+column) – cfdmod stays free of a cloud SDK.</p>
+</section>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="../getting_started/reading_outputs.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Reading Outputs</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="v3_migration.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Migrating to the v3 paradigm</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2021-2026, AeroSim</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-copyright">
+  <a href="https://aerosim.io/privacy_policy.html" aria-label="Privacy Policy">
+    <p>Privacy Policy</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+  </a>
+    <a href="mailto:aerosim@aerosim.com" aria-label="Support">
+    <p>Support</p>
+  </a>
+</div>
+<div class="sy-foot-copyright">
+ </div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+<div class="sy-foot-copyright">
+</div>
+      <div class="sy-foot-socials"><a href="https://www.instagram.com/aerosim_tech/" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224.3 141a115 115 0 1 0 -.6 230 115 115 0 1 0 .6-230zm-.6 40.4a74.6 74.6 0 1 1 .6 149.2 74.6 74.6 0 1 1 -.6-149.2zm93.4-45.1a26.8 26.8 0 1 1 53.6 0 26.8 26.8 0 1 1 -53.6 0zm129.7 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM399 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
+  </a>
+</div>
+    </div>
+  </div>
+</footer>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/shibuya.js?v=50760d75"></script></body>
+</html>
