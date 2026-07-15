@@ -3,7 +3,7 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cfdmod.plot_config import plot_style
+from cfdmod.plot_config import plot_style, set_style_tech
 from cfdmod.s1 import profile
 
 Languages = Literal["pt-br", "en"]
@@ -44,21 +44,6 @@ class SectionColors:
             return self.colors[section_label]
         else:
             return "#000000"
-
-
-def set_style_tech():
-    plt.style.use("seaborn-whitegrid")
-    plt.rcParams["font.family"] = "sans serif"  # "Calibri"
-    plt.rcParams["font.size"] = 10
-    plt.rcParams["mathtext.fontset"] = "custom"
-    plt.rcParams["legend.facecolor"] = "white"
-    plt.rcParams["legend.edgecolor"] = "none"
-    plt.rcParams["lines.linestyle"] = ""
-    plt.rcParams["lines.linewidth"] = 2
-    plt.rcParams["lines.markersize"] = 6
-    plt.rcParams["lines.markeredgecolor"] = "none"
-    plt.rcParams["axes.edgecolor"] = "black"
-    plt.rcParams["figure.edgecolor"] = "red"
 
 
 def plot_s1(
