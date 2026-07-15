@@ -21,6 +21,7 @@ __all__ = [
     "plot_global_stats_results",
     "plot_global_stats_per_direction",
     "get_xlims",
+    "floor_load_xlims",
     "plot_floor_by_floor_mean_peaks",
     "export_global_stats_per_direction_csv",
     "plot_max_acceleration",
@@ -195,9 +196,18 @@ def plot_global_stats_per_direction(
     variable_types: list[Literal["static", "hfpi"]] = ["static", "hfpi"],
     xticks: float = 30,
     language: Languages = "pt-br",
+    share_y: bool = True,
 ):
-    """Grid of global force / moment stats vs wind direction, per damping ratio."""
-    fig, axs = plt.subplots(3, 2, figsize=(10, 12))
+    """Grid of global force / moment stats vs wind direction, per damping ratio.
+
+    With ``share_y`` (default) the two force panels (Fx, Fy) share one
+    symmetric-about-zero y-axis and the two overturning-moment panels (Mx, My)
+    share another, so magnitudes are directly comparable across components and
+    the zero line sits at mid-height. The torsion panel (Mz) is scaled on its
+    own symmetric axis. Uses the constrained layout engine so axis labels never
+    overlap neighbouring panels.
+    """
+    fig, axs = plt.subplots(3, 2, figsize=(10, 12), layout="constrained")
     axs[2, 1].set_visible(False)
 
     stats_ex = next(iter(stats_xis.values()))
@@ -254,13 +264,23 @@ def plot_global_stats_per_direction(
             for i, stats in enumerate(stats_xis.values()):
                 plot_global_stats_results(axs[ij], stats[f"{k}_eq"], d, **kwargs_dyn[i])
 
-    axs[2, 0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
+    if share_y:
+        # forces (Fx, Fy) share one symmetric axis; overturning moments (Mx, My)
+        # share another; torsion (Mz) gets its own symmetric axis.
+        _apply_symmetric_shared_ylim([axs[0, 0], axs[0, 1]])
+        _apply_symmetric_shared_ylim([axs[1, 0], axs[1, 1]])
+        _apply_symmetric_shared_ylim([axs[2, 0]])
+
+    # legend in the empty bottom-right quadrant, so it never overlaps a panel
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[2, 1].set_visible(True)
+    axs[2, 1].axis("off")
+    axs[2, 1].legend(handles, labels, loc="center", frameon=False)
     return fig, axs
 
 
-def get_xlims(min_vals, max_vals) -> list[float]:
-    """Symmetric, sieve-rounded x-limits enclosing the data."""
-    extreme_val = max(abs(min(min_vals)), max(max_vals)) * 1.5
+def _sieve_round(extreme_val: float) -> float:
+    """Round up to a clean tick multiple (1 / 5 / 10 / 50 by magnitude)."""
     if extreme_val < 1:
         sieve_size = 1
     elif extreme_val < 50:
@@ -269,8 +289,54 @@ def get_xlims(min_vals, max_vals) -> list[float]:
         sieve_size = 10
     else:
         sieve_size = 50
-    x_lim = math.ceil(extreme_val / sieve_size) * sieve_size
+    return math.ceil(extreme_val / sieve_size) * sieve_size
+
+
+def get_xlims(min_vals, max_vals) -> list[float]:
+    """Symmetric, sieve-rounded x-limits enclosing the data (50% headroom)."""
+    x_lim = _sieve_round(max(abs(min(min_vals)), max(max_vals)) * 1.5)
     return [-x_lim, x_lim]
+
+
+def _apply_symmetric_shared_ylim(axes, headroom: float = 1.08) -> None:
+    """Set one symmetric-about-zero y-limit, shared across ``axes``.
+
+    The limit is the sieve-rounded largest absolute plotted value over all the
+    axes, so paired panels (e.g. Fx / Fy) end up on the same scale with the
+    zero line centred.
+    """
+    peak = 0.0
+    for ax in axes:
+        for line in ax.get_lines():
+            ydata = np.asarray(line.get_ydata(), dtype=np.float64)
+            if ydata.size:
+                m = np.nanmax(np.abs(ydata))
+                if np.isfinite(m):
+                    peak = max(peak, float(m))
+    if peak <= 0:
+        return
+    lim = _sieve_round(peak * headroom)
+    for ax in axes:
+        ax.set_ylim(-lim, lim)
+
+
+def floor_load_xlims(vals_by_direction, *, unit_conversion: float = 1 / 1e6):
+    """Shared symmetric x-limits across directions for the floor-by-floor plot.
+
+    ``vals_by_direction`` is an iterable of ``vals_plot`` dicts (one per
+    direction), each ``{"min"|"max"|"mean": {"x"|"y"|"z": array}}``. Returns
+    ``[(lo, hi), (lo, hi), (lo, hi)]`` for the x/y/z panels, enclosing every
+    direction, ready to hand to :func:`plot_floor_by_floor_mean_peaks` as
+    ``x_lims`` so all figures share one comparable scale.
+    """
+    vals_by_direction = list(vals_by_direction)
+    lims: list[tuple[float, float]] = []
+    for comp in ("x", "y", "z"):
+        mins = [float(np.min(vp["min"][comp])) * unit_conversion for vp in vals_by_direction]
+        maxs = [float(np.max(vp["max"][comp])) * unit_conversion for vp in vals_by_direction]
+        lo, hi = get_xlims(mins, maxs)
+        lims.append((lo, hi))
+    return lims
 
 
 def plot_floor_by_floor_mean_peaks(
@@ -281,9 +347,17 @@ def plot_floor_by_floor_mean_peaks(
     unit_conversion: float = 1 / 1e6,
     unit_name: str = "MN",
     y_abs: tuple[float, float] | None = None,
+    x_lims: list[tuple[float, float]] | None = None,
     **plot_kwargs,
 ):
-    """Per-floor profiles of mean + peak min/max for the three load components."""
+    """Per-floor profiles of mean + peak min/max for the three load components.
+
+    ``x_lims`` fixes the x-axis limits for the three panels ``(x, y, z)`` as
+    ``[(lo, hi), (lo, hi), (lo, hi)]``. Pass the same value to every direction
+    (e.g. computed once across all directions) so the profiles are drawn on one
+    shared, comparable scale. When ``None`` each panel is auto-scaled to its own
+    data via :func:`get_xlims` (symmetric about zero).
+    """
     min_vals, max_vals, mean_vals = vals_plot["min"], vals_plot["max"], vals_plot["mean"]
     color_use = "#DB9B10"
 
@@ -291,11 +365,14 @@ def plot_floor_by_floor_mean_peaks(
     markers = ["o", "^", "v"]
     labels = [" (mean)", " (3s max)", " (3s min)"]
 
-    for ax, component in zip(axs.flat, ("x", "y", "z")):
+    for idx, (ax, component) in enumerate(zip(axs.flat, ("x", "y", "z"))):
         ax.axvline(x=0, color="gray", linewidth=1.5, alpha=0.7)
-        x_lim = get_xlims(
-            min_vals[component] * unit_conversion, max_vals[component] * unit_conversion
-        )
+        if x_lims is not None:
+            x_lim = x_lims[idx]
+        else:
+            x_lim = get_xlims(
+                min_vals[component] * unit_conversion, max_vals[component] * unit_conversion
+            )
         ax.set_xlim(x_lim[0], x_lim[1])
         for dct_data, mark, label_n in zip((mean_vals, max_vals, min_vals), markers, labels):
             ax.plot(
