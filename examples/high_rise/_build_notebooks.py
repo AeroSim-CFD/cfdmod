@@ -541,7 +541,7 @@ FACADE_CELLS = [
         "# --- deliverable ----------------------------------------------------------\n"
         'dbg = DebugWriter(OUTPUT_BASE, stage="facade", version=VERSION)\n'
         "summary = pd.DataFrame(\n"
-        '    {stat: [float(np.nanmin(vals)), float(np.nanmean(vals)), float(np.nanmax(vals))]\n'
+        "    {stat: [float(np.nanmin(vals)), float(np.nanmean(vals)), float(np.nanmax(vals))]\n"
         "     for stat, vals in cp_stats.items()},\n"
         '    index=["min", "mean", "max"],\n'
         ")\n"
@@ -550,7 +550,7 @@ FACADE_CELLS = [
         "# Optional high-quality PyVista render (only if the [vtk] extra is installed).\n"
         'vtp = dbg.debug_path("cp_body.vtp")\n'
         'if mesh_field.write_field_vtp(geom, {"Cp_mean": cp_stats["mean"]}, vtp):\n'
-        "    clim = (float(np.nanmin(cp_stats[\"min\"])), float(np.nanmax(cp_stats[\"max\"])))\n"
+        '    clim = (float(np.nanmin(cp_stats["min"])), float(np.nanmax(cp_stats["max"])))\n'
         "    ok = mesh_field.render_vtp_snapshot(\n"
         '        vtp, dbg.debug_path("cp_mean_pyvista.png"),\n'
         '        scalar="Cp_mean", label="mean Cp", clim=clim,\n'
