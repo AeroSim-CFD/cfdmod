@@ -25,10 +25,12 @@ notebook still runs standalone (it falls back to computing those values inline i
 ## Use it on a new case
 
 1. Copy this folder into the case, e.g. `<case>/post_processing_v3/`.
-2. In the first config cell of each notebook, set the case root:
+2. In the first config cell of each notebook, set the case root and the
+   results case-name prefix:
 
    ```python
    project = pathlib.Path("/data/eng/consulting/NNN_CaseName")
+   CASE = "CaseName"   # results/<batch>/<CASE>_<dir>/... and <CASE>_noBody_<dir>/...
    ```
 
 3. In `01_inflow`, set `REP` -- the representative ABL direction and the
@@ -39,7 +41,19 @@ notebook still runs standalone (it falls back to computing those values inline i
    ```
 
 4. Pick the `body` in `02` / `03` (defaults to the first body).
-5. Run all cells. Figures render inline; save/versioned output is up to you.
+5. Run all cells. Results render inline **and** are written to disk under
+   `deliverables/<version>/<stage>/` (and exploratory extras under
+   `debug/<version>/<stage>/`):
+
+   ```
+   deliverables/v3/inflow/    directional_U_H.png + .csv, profile_vs_code_cat*.png
+   deliverables/v3/static/<body>/  global_envelope.png, global_stats.csv,
+                                   floor_loads/wind_<dir>.png, peak_loads_{Fx,Fy,Mz}.csv,
+                                   eberick_loads.xlsx (when the storey table aligns)
+   deliverables/v3/facade/<body>/<dir>/  cp_mean_iso.png + cp_mean_<facade>.png
+   ```
+
+   Set `VERSION` to keep multiple runs side by side.
 
 ## Expected case layout
 
@@ -71,5 +85,7 @@ files are read directly with pandas.
 - The tiny glue kept visible in a cell (the reference-pressure point reader and
   the static-load dimensionalization) is a candidate to move into `cfdmod`; until
   then it stays in the notebook so it is easy to read and change.
-- Wind-direction labels from `cfdmod.dynamics.plotting` are reformatted to a
-  degree symbol in the notebook (the library default is being fixed upstream).
+- The per-direction floor plots are drawn on one shared, symmetric x-scale
+  (`floor_load_xlims`) so they are comparable across directions; the global
+  envelope shares symmetric axes per row. Both come straight from
+  `cfdmod.dynamics.plotting` -- no per-notebook axis tweaking.
