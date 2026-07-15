@@ -114,6 +114,35 @@ def test_plot_floor_by_floor_mean_peaks():
     plt.close(fig)
 
 
+def test_plot_floor_by_floor_honours_explicit_xlims():
+    vals = {
+        stat: {ax: np.linspace(-1, 1, N_FLOORS) * (1 + i) for ax in ("x", "y", "z")}
+        for i, stat in enumerate(("min", "max", "mean"))
+    }
+    x_lims = [(-100.0, 100.0), (-50.0, 50.0), (-25.0, 25.0)]
+    fig, axs = plotting.plot_floor_by_floor_mean_peaks(
+        vals_plot=vals, vals_labels=("Fx", "Fy", "Mz"), wind_dir=90.0, y_abs=None, x_lims=x_lims
+    )
+    for ax, lim in zip(axs, x_lims):
+        assert ax.get_xlim() == lim
+    plt.close(fig)
+
+
+def test_floor_load_xlims_encloses_all_directions():
+    vals_a = {
+        stat: {ax: np.array([-2.0, 2.0]) for ax in ("x", "y", "z")}
+        for stat in ("min", "max", "mean")
+    }
+    vals_b = {
+        stat: {ax: np.array([-9.0, 9.0]) for ax in ("x", "y", "z")}
+        for stat in ("min", "max", "mean")
+    }
+    lims = plotting.floor_load_xlims([vals_a, vals_b], unit_conversion=1.0)
+    for lo, hi in lims:
+        assert lo == -hi
+        assert hi >= 9.0  # must enclose the widest direction
+
+
 def _stats_df():
     directions = np.array([0.0, 30.0, 60.0])
     cols = {"direction": directions}
@@ -133,6 +162,10 @@ def test_plot_global_stats_per_direction_and_csv(tmp_path):
     }
     fig, axs = plotting.plot_global_stats_per_direction({0.01: stats})
     assert axs.shape == (3, 2)
+    # forces row shares one symmetric-about-zero y-axis
+    assert axs[0, 0].get_ylim() == axs[0, 1].get_ylim()
+    lo, hi = axs[0, 0].get_ylim()
+    assert lo == -hi and hi > 0
     plt.close(fig)
 
     csv_path = tmp_path / "stats.csv"
