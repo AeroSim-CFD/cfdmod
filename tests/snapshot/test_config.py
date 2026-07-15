@@ -61,3 +61,31 @@ def test_retarget_keeps_legend_fields_when_not_overridden():
     assert cfg.legend_config.n_divs == 5
     # projections still retargeted
     assert all(p.scalar == "s" for p in cfg.projections.values())
+
+
+building_facade_config = snapshot.building_facade_config
+
+
+def test_building_facade_config_four_walls_and_roof():
+    cfg = building_facade_config(
+        [-10, -5, 0], [10, 5, 100], legend_label="Cp", value_range=(-1.5, 1.0)
+    )
+    assert set(cfg.projections) == {"N", "E", "S", "W", "roof"}
+    # compass labels present as overlays (roof intentionally unlabeled)
+    assert {t.text for t in cfg.text_overlay} == {"N", "E", "S", "W"}
+    assert cfg.legend_config.range == (-1.5, 1.0)
+
+
+def test_building_facade_config_band_drops_roof_and_clips():
+    cfg = building_facade_config([-10, -5, 0], [10, 5, 100], z_band=(20.0, 40.0))
+    assert set(cfg.projections) == {"N", "E", "S", "W"}  # no roof in a band
+    for p in cfg.projections.values():
+        assert p.clip_box is not None
+        assert p.clip_box.scale[2] == 20.0  # band height
+
+
+def test_building_facade_config_retarget_points_all_walls():
+    cfg = building_facade_config([-10, -5, 0], [10, 5, 100]).retarget("case.vtp", "cp_mean")
+    for p in cfg.projections.values():
+        assert str(p.file_path) == "case.vtp"
+        assert p.scalar == "cp_mean"

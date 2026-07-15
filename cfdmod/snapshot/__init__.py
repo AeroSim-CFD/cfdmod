@@ -10,6 +10,7 @@ __all__ = [
     "ValueTagsConfig",
     "ProjectionConfig",
     "SnapshotConfig",
+    "building_facade_config",
     "take_snapshot",
     "add_mesh_projection_to_screenshot",
     "get_combined_bounding_box",
@@ -35,6 +36,7 @@ from cfdmod.snapshot.config import (
     ProjectionConfig,
     SnapshotConfig,
 )
+from cfdmod.snapshot.building_facade import building_facade_config
 from cfdmod.snapshot.snapshot import (
     take_snapshot,
     add_mesh_projection_to_screenshot,

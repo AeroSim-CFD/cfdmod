@@ -1,18 +1,20 @@
-"""Facade Cp snapshots via the config-driven cfdmod.snapshot (ParaView/VTK) path.
+"""Building facade Cp snapshots via config-driven cfdmod.snapshot (ParaView/VTK).
 
-This is the proper replacement for the removed 3-D matplotlib facade render: it
-drives ``cfdmod.snapshot.take_snapshot`` from a ``snapshot_params.yaml`` that
-fixes the per-face unfold layout, colormap, camera and compass overlays, and
-repoints every projection at the case's Cp stats polydata per statistic. Mirrors
-the consulting snapshot setup (068 CST) on the current ``cfdmod.snapshot`` API.
+The proper replacement for the removed 3-D matplotlib facade render: the four
+tower walls (N/E/S/W) are unfolded side by side as upright vertical strips with
+the roof on top, via `cfdmod.snapshot.building_facade_config`, and rendered with
+`take_snapshot`. Produces, per statistic, a full-height image AND one image per
+height band (walls clipped per band, so a tall tower reads at each level), with
+a color scale shared per statistic. Mirrors the consulting snapshot setup
+(068 CST) on the current cfdmod.snapshot API.
 
-Run headless on the in-repo galpao fixture (writes PNGs to ``_run/``):
+Run headless on the in-repo galpao fixture (writes PNGs to `_run/`):
 
     uv run --extra snapshot python examples/facade_snapshot/render_facade_snapshots.py
 
-Point at a real case (e.g. Secco 070) with environment variables -- see the
-README. Rendering is off-screen; on a box with no X server wrap the call in
-``xvfb-run`` (offscreen VTK segfaults without a virtual display on some hosts).
+Rendering is off-screen; on a host with no X server wrap it in `xvfb-run`
+(offscreen VTK falls back to software rendering, or needs a virtual display on
+some boxes). Point at a real case (e.g. Secco 070) with the env vars below.
 """
 
 from __future__ import annotations
@@ -23,24 +25,17 @@ import pathlib
 import numpy as np
 
 from cfdmod import mesh_field
-from cfdmod.snapshot import SnapshotConfig
+from cfdmod.snapshot import building_facade_config
 from cfdmod.snapshot.snapshot import take_snapshot
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 
-# Statistic -> (legend label, active scalar in the .vtp). The scalar names match
-# what mesh_field.write_field_vtp writes below; a real case's stats .vtp uses the
-# nested Cp names (e.g. "cp/base_cp/mean") -- override via CFDMOD_FS_SCALARS.
-STATS = {
-    "mean": ("Mean pressure coefficient", "cp_mean"),
-    "min": ("Minimum pressure coefficient", "cp_min"),
-    "max": ("Maximum pressure coefficient", "cp_max"),
-}
+STATS = {"mean": "Mean pressure coefficient", "max": "Peak (max) pressure coefficient"}
 
 
-def _galpao_cp_vtp(out_dir: pathlib.Path) -> tuple[pathlib.Path, dict[str, np.ndarray]]:
-    """Compute per-triangle Cp stats on the galpao fixture and write them to a .vtp."""
+def _galpao_cp_vtp(out_dir: pathlib.Path):
+    """Per-triangle Cp stats on the galpao fixture -> .vtp; returns (vtp, bbox, ranges)."""
     from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
     from cfdmod.building import cp_from_pressure, example_building_case
 
@@ -50,56 +45,60 @@ def _galpao_cp_vtp(out_dir: pathlib.Path) -> tuple[pathlib.Path, dict[str, np.nd
     body = storage.read_data_source(pathlib.Path("bodies.galpao"))
     p_ref = storage.read_data_source(pathlib.Path("points.static_pressure"))
     case = example_building_case(mesh, n_floors=3)
-    cp = cp_from_pressure(body, p_ref, case)
-    series = np.asarray(cp.fields.read("cp"))
-    fields = {
-        "cp_mean": np.nanmean(series, axis=1),
-        "cp_min": np.nanmin(series, axis=1),
-        "cp_max": np.nanmax(series, axis=1),
-    }
+    cp = cp_from_pressure(body, p_ref, case, statistics=list(STATS))
     geom = mesh_field.load_geometry(mesh)
+    fields, ranges = {}, {}
+    for k in STATS:
+        a = np.asarray(cp.fields.read(k), dtype=np.float64)
+        fields[f"cp_{k}"] = a
+        ranges[k] = (
+            float(np.floor(np.nanmin(a) * 10) / 10),
+            float(np.ceil(np.nanmax(a) * 10) / 10),
+        )
     vtp = out_dir / "galpao_cp.vtp"
     if not mesh_field.write_field_vtp(geom, fields, vtp):
-        raise SystemExit("the [vtk] extra (pyvista) is required to write the Cp polydata")
-    return vtp, fields
+        raise SystemExit("the [snapshot] extra (pyvista) is required to write the Cp polydata")
+    v = np.asarray(geom.vertices, dtype=np.float64)
+    return vtp, (v.min(0), v.max(0)), ranges
+
+
+def _bands(bbox_lo, bbox_hi, n=3):
+    """Simple equal-height bands over the mesh z-range (demo). Real towers pass floor edges."""
+    z0, z1 = float(bbox_lo[2]), float(bbox_hi[2])
+    edges = np.linspace(z0, z1, n + 1)
+    return [
+        (f"band{i}_{edges[i]:.0f}-{edges[i + 1]:.0f}", edges[i], edges[i + 1]) for i in range(n)
+    ]
 
 
 def main() -> None:
-    config_path = pathlib.Path(os.environ.get("CFDMOD_FS_CONFIG", HERE / "snapshot_params.yaml"))
     out_dir = pathlib.Path(os.environ.get("CFDMOD_FS_OUTPUT", HERE / "_run"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    base = SnapshotConfig.from_file(config_path)
+    vtp, (lo, hi), ranges = _galpao_cp_vtp(out_dir)
+    bands = _bands(lo, hi, n=int(os.environ.get("CFDMOD_FS_BANDS", "3")))
 
-    vtp_env = os.environ.get("CFDMOD_FS_VTP")
-    if vtp_env:
-        # Real case: point at an existing Cp stats .vtp; scalars via CFDMOD_FS_SCALARS
-        # ("mean=cp/base_cp/mean,max=cp/base_cp/max"), ranges auto from the config.
-        vtp = pathlib.Path(vtp_env)
-        pairs = os.environ.get("CFDMOD_FS_SCALARS", "mean=cp/base_cp/mean")
-        stats = {}
-        for pair in pairs.split(","):
-            key, _, scalar = pair.partition("=")
-            stats[key.strip()] = (f"{key.strip()} pressure coefficient", scalar.strip())
-        ranges = None
-    else:
-        vtp, fields = _galpao_cp_vtp(out_dir)
-        stats = STATS
-        ranges = {
-            k: (float(np.nanmin(fields[s])), float(np.nanmax(fields[s])))
-            for k, (_, s) in stats.items()
-        }
-
-    written = []
-    for key, (label, scalar) in stats.items():
-        value_range = ranges[key] if ranges else base.legend_config.range
-        cfg = base.retarget(vtp, scalar, label=label, value_range=value_range)
-        image_path = out_dir / f"facade_cp_{key}.png"
-        take_snapshot(image_path, cfg, off_screen=True)
-        written.append(image_path)
-        print(f"  [ok] {key}: {image_path} ({image_path.stat().st_size} bytes)")
-
-    print(f"wrote {len(written)} facade snapshot(s) to {out_dir}")
+    written = 0
+    for k, label in STATS.items():
+        vr = ranges[k]  # shared per statistic (one case here; loop directions for a real study)
+        # full height (walls + roof)
+        cfg = building_facade_config(lo, hi, legend_label=label, value_range=vr)
+        take_snapshot(
+            out_dir / f"facade_cp_{k}.png", cfg.retarget(vtp, f"cp_{k}"), off_screen=True
+        )
+        written += 1
+        # per-band (walls clipped to the band, shared scale, no roof)
+        for blabel, z_lo, z_hi in bands:
+            cfgb = building_facade_config(
+                lo, hi, legend_label=f"{label} | {blabel}", value_range=vr, z_band=(z_lo, z_hi)
+            )
+            take_snapshot(
+                out_dir / f"facade_cp_{k}_{blabel}.png",
+                cfgb.retarget(vtp, f"cp_{k}"),
+                off_screen=True,
+            )
+            written += 1
+    print(f"wrote {written} facade snapshot(s) to {out_dir}")
 
 
 if __name__ == "__main__":
