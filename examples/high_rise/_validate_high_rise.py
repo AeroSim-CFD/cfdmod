@@ -3,9 +3,8 @@
 Run: uv run python examples/high_rise/_validate_high_rise.py
 Exercises BuildingCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
 points at one, else a synthetic case), inflow profile detection + figures
-(pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, the
-dynamic-response recipe wiring, and the facade / structure mesh-field snapshots
-(galpao fixture + its lnas mesh).
+(pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, and the
+dynamic-response recipe wiring (galpao fixture + its lnas mesh).
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ matplotlib.use("Agg")  # headless: this script writes figures, it does not displ
 
 import numpy as np  # noqa: E402
 
-from cfdmod import building, mesh_field, plot_config, report  # noqa: E402
+from cfdmod import building, plot_config, report  # noqa: E402
 from cfdmod import inflow_report as ir  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -210,40 +209,6 @@ def section_dynamic(case: building.BuildingCase) -> None:
     )
 
 
-def section_snapshots(case: building.BuildingCase, base: pathlib.Path) -> None:
-    print("E. Facade / structure snapshots (galpao fixture)")
-    cp, floor_case, mesh_path = _galpao_cp(case)
-
-    geom = mesh_field.load_geometry(mesh_path)
-    n_tri = int(np.asarray(geom.triangle_vertices).shape[0])
-    groups = mesh_field.facade_groups(mesh_path)
-    check("facade groups found", len(groups) >= 1, str({k: len(v) for k, v in groups.items()}))
-
-    cp_mean = np.nanmean(np.asarray(cp.fields.read("cp")), axis=1)
-    check("cp_mean per triangle", cp_mean.shape == (n_tri,), str(cp_mean.shape))
-
-    dbg = report.DebugWriter(base, stage="facade", version="validate")
-    fig, _ = mesh_field.triangle_field_figure(
-        geom,
-        cp_mean,
-        view=mesh_field.STANDARD_VIEWS["iso"],
-        title="mean Cp",
-        cbar_label="Cp [-]",
-    )
-    path = dbg.savefig(fig, "cp_mean_iso.png", deliverable=True)
-    plot_config.close(fig)
-    check("facade figure written", path.exists() and path.stat().st_size > 0, str(path))
-
-    fac_idx = mesh_field.facade_index_per_triangle(groups, n_tri)
-    check("facade index per triangle", fac_idx.shape == (n_tri,) and np.isfinite(fac_idx).any())
-
-    first = sorted(groups)[0]
-    fig, _ = mesh_field.triangle_field_figure(geom, None, subset=groups[first], title=first)
-    p2 = dbg.savefig(fig, "one_facade_geometry.png")
-    plot_config.close(fig)
-    check("single-facade geometry render", p2.exists() and p2.stat().st_size > 0, str(p2))
-
-
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
@@ -251,7 +216,6 @@ def main() -> None:
         section_inflow(base)
         section_pressure(case)
         section_dynamic(case)
-        section_snapshots(case, base)
     print("\nAll building post-processing validations passed.")
 
 

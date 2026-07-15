@@ -1,13 +1,12 @@
 """Generate the high-rise stage notebooks (clean, no stored outputs).
 
 Run: uv run python examples/high_rise/_build_notebooks.py
-Writes 01_inflow, 02_cp, 03_cf, 04_dynamic, 05_facade, 06_structure next to
-this script.
+Writes 01_inflow, 02_cp, 03_cf, 04_dynamic next to this script.
 
 The notebooks are thin drivers: config is read from environment variables with
 in-repo fixture defaults, so they run headless (nbconvert / _validate_notebooks)
 without any external data, and point at a real case by setting the CFDMOD_HR_*
-variables. All reusable logic lives in the cfdmod library (cfdmod.building + cfdmod.inflow_report / mesh_field / report / plot_config helpers).
+variables. All reusable logic lives in the cfdmod library (cfdmod.building + cfdmod.inflow_report / report / plot_config helpers).
 """
 
 from __future__ import annotations
@@ -29,7 +28,7 @@ import matplotlib
 
 matplotlib.use("Agg")  # headless: notebooks write files, they do not display
 
-from cfdmod import inflow_report, mesh_field, plot_config  # noqa: E402
+from cfdmod import inflow_report, plot_config  # noqa: E402
 from cfdmod.building import (  # noqa: E402
     BuildingCase,
     cf_per_floor,
@@ -499,181 +498,12 @@ DYNAMIC_CELLS = [
 ]
 
 
-# --------------------------------------------------------------------------
-# 05 -- facade Cp snapshots
-# --------------------------------------------------------------------------
-
-FACADE_CELLS = [
-    new_markdown_cell(
-        "# High-rise 05 - Facade Cp snapshots\n"
-        "\n"
-        "Colour the body mesh by its per-triangle Cp statistics (mean / min / max\n"
-        "over the record) and render one image per facade. Facades are split by the\n"
-        "outward-normal direction of each triangle (`+x` / `-x` / `+y` / `-y` sides,\n"
-        "`+z` roof). Overview iso renders go to `deliverables/`; per-facade views go\n"
-        "to `debug/`.\n"
-        "\n"
-        "Rendering uses a pure-matplotlib 3-D renderer so it runs headless. If the\n"
-        "optional `[vtk]` extra (PyVista) is installed, a contoured, colour-barred\n"
-        "snapshot is also written."
-    ),
-    new_code_cell(SETUP),
-    new_code_cell(
-        "from cfdmod.adapters.xdmf_h5 import XdmfH5Storage\n"
-        "\n"
-        "# --- config -------------------------------------------------------------\n"
-        "MESH = pathlib.Path(\n"
-        '    os.environ.get("CFDMOD_HR_MESH", FIX / "pressure" / "galpao" / "galpao.normalized.lnas")\n'
-        ")\n"
-        'ARTIFACTS = OUTPUT_BASE / "artifacts" / VERSION\n'
-        'cp = XdmfH5Storage(ARTIFACTS).read_data_source(pathlib.Path("cp.time_series"))\n'
-        "\n"
-        "geom = mesh_field.load_geometry(MESH)\n"
-        "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
-        'cp_series = np.asarray(cp.fields.read("cp"))\n'
-        "cp_stats = {\n"
-        '    "mean": np.nanmean(cp_series, axis=1),\n'
-        '    "min": np.nanmin(cp_series, axis=1),\n'
-        '    "max": np.nanmax(cp_series, axis=1),\n'
-        "}\n"
-        "groups = mesh_field.facade_groups(MESH)\n"
-        'print("facades:", {k: len(v) for k, v in groups.items()})'
-    ),
-    new_code_cell(
-        "# --- render -------------------------------------------------------------\n"
-        'dbg = DebugWriter(OUTPUT_BASE, stage="facade", version=VERSION)\n'
-        'clim = (float(np.nanmin(cp_stats["min"])), float(np.nanmax(cp_stats["max"])))\n'
-        "\n"
-        "# Overview iso renders for each Cp statistic (engineer-facing).\n"
-        "for stat, vals in cp_stats.items():\n"
-        "    fig, _ = mesh_field.triangle_field_figure(\n"
-        '        geom, vals, view=mesh_field.STANDARD_VIEWS["iso"], clim=clim,\n'
-        '        title=f"{stat} Cp", cbar_label="Cp [-]",\n'
-        "    )\n"
-        '    dbg.savefig(fig, f"cp_{stat}_iso.png", deliverable=True)\n'
-        "    plot_config.close(fig)\n"
-        "\n"
-        "# Per-facade mean-Cp views (exploratory).\n"
-        'view_for = {"n_+x": "right", "n_-x": "left", "n_+y": "front", "n_-y": "back", "n_+z": "top"}\n'
-        "for name, idx in groups.items():\n"
-        "    fig, _ = mesh_field.triangle_field_figure(\n"
-        '        geom, cp_stats["mean"], subset=idx,\n'
-        '        view=mesh_field.STANDARD_VIEWS[view_for.get(name, "iso")], clim=clim,\n'
-        '        title=f"mean Cp - {mesh_field.FACADE_LABELS.get(name, name)}", cbar_label="Cp [-]",\n'
-        "    )\n"
-        '    dbg.savefig(fig, f"facade_{name}.png")\n'
-        "    plot_config.close(fig)\n"
-        "\n"
-        "# Optional high-quality PyVista render (only if the [vtk] extra is installed).\n"
-        'vtp = dbg.debug_path("cp_facades.vtp")\n'
-        'if mesh_field.write_field_vtp(geom, {"Cp_mean": cp_stats["mean"]}, vtp):\n'
-        "    ok = mesh_field.render_vtp_snapshot(\n"
-        '        vtp, dbg.deliverable_path("cp_mean_pyvista.png"),\n'
-        '        scalar="Cp_mean", label="mean Cp", clim=clim,\n'
-        "    )\n"
-        '    print("pyvista snapshot:", ok)\n'
-        "else:\n"
-        '    print("pyvista/[vtk] not installed - matplotlib facade images only")\n'
-        'print("facade images under", dbg.debug_dir)'
-    ),
-    new_code_cell(
-        "# --- facade pressure profile along a vertical line ----------------------\n"
-        "# Sample the mean-Cp field down a vertical line on the front (-y) facade.\n"
-        "verts = np.asarray(geom.vertices)\n"
-        "vmin = verts.min(axis=0)\n"
-        "vmax = verts.max(axis=0)\n"
-        "xc = float((vmin[0] + vmax[0]) / 2)\n"
-        "p1 = (xc, float(vmin[1]), float(vmin[2]))\n"
-        "p2 = (xc, float(vmin[1]), float(vmax[2]))\n"
-        'prof_df = mesh_field.sample_field_along_line(geom, cp_stats["mean"], p1, p2, n=40)\n'
-        "fig, ax = plot_config.new_axes(\n"
-        '    xlabel="mean Cp [-]", ylabel="z [m]", title="Front-facade mean Cp profile"\n'
-        ")\n"
-        'ax.plot(prof_df["value"], prof_df["z"], "-o", ms=3)\n'
-        'dbg.savefig(fig, "front_facade_cp_profile.png")\n'
-        "plot_config.close(fig)\n"
-        'dbg.save_csv(prof_df, "front_facade_cp_profile.csv")\n'
-        'print("facade profile sampled:", prof_df.shape)'
-    ),
-]
-
-
-# --------------------------------------------------------------------------
-# 06 -- structure prints
-# --------------------------------------------------------------------------
-
-STRUCTURE_CELLS = [
-    new_markdown_cell(
-        "# High-rise 06 - Structure prints\n"
-        "\n"
-        "Report-ready renders of the building model itself: plain geometry from the\n"
-        "standard views, the facade partition (by outward normal), and the floor\n"
-        "partition (by centroid height against the case floor edges). These document\n"
-        "the model that produced the coefficients and are written to `deliverables/`\n"
-        "(geometry) and `debug/` (partitions)."
-    ),
-    new_code_cell(SETUP),
-    new_code_cell(
-        "# --- config -------------------------------------------------------------\n"
-        "MESH = pathlib.Path(\n"
-        '    os.environ.get("CFDMOD_HR_MESH", FIX / "pressure" / "galpao" / "galpao.normalized.lnas")\n'
-        ")\n"
-        'CASE_DATA = os.environ.get("CFDMOD_HR_CASE_DATA")\n'
-        'PARAMS = os.environ.get("CFDMOD_HR_PARAMS", "params_cat3.yaml")\n'
-        "if CASE_DATA:\n"
-        "    case = BuildingCase.from_case_data(pathlib.Path(CASE_DATA), PARAMS)\n"
-        "else:\n"
-        "    case = example_building_case(MESH)\n"
-        "\n"
-        "geom = mesh_field.load_geometry(MESH)\n"
-        "n_tri = int(np.asarray(geom.triangle_vertices).shape[0])\n"
-        "\n"
-        "# Per-triangle floor index from centroid height vs the case z-edges.\n"
-        "tri = np.asarray(geom.triangle_vertices)\n"
-        "cz = tri[:, :, 2].mean(axis=1)\n"
-        "edges = np.asarray(case.floor_heights)\n"
-        "floor_id = np.clip(np.digitize(cz, edges[1:-1]), 0, len(edges) - 2).astype(float)\n"
-        "groups = mesh_field.facade_groups(MESH)\n"
-        "fac_idx = mesh_field.facade_index_per_triangle(groups, n_tri)\n"
-        'print(f"{n_tri} triangles | {case.n_floors} floors | {len(groups)} facade groups")'
-    ),
-    new_code_cell(
-        "# --- render -------------------------------------------------------------\n"
-        'dbg = DebugWriter(OUTPUT_BASE, stage="structure", version=VERSION)\n'
-        "\n"
-        'for v in ("iso", "front", "right", "top"):\n'
-        "    fig, _ = mesh_field.triangle_field_figure(\n"
-        '        geom, None, view=mesh_field.STANDARD_VIEWS[v], title=f"geometry - {v}"\n'
-        "    )\n"
-        '    dbg.savefig(fig, f"geometry_{v}.png", deliverable=True)\n'
-        "    plot_config.close(fig)\n"
-        "\n"
-        "fig, _ = mesh_field.triangle_field_figure(\n"
-        '    geom, fac_idx, cmap="tab10", view=mesh_field.STANDARD_VIEWS["iso"],\n'
-        '    title="facade partition", cbar_label="facade id",\n'
-        ")\n"
-        'dbg.savefig(fig, "facade_partition.png")\n'
-        "plot_config.close(fig)\n"
-        "\n"
-        "fig, _ = mesh_field.triangle_field_figure(\n"
-        '    geom, floor_id, cmap="viridis", view=mesh_field.STANDARD_VIEWS["iso"],\n'
-        '    title="floor partition", cbar_label="floor",\n'
-        ")\n"
-        'dbg.savefig(fig, "floor_partition.png")\n'
-        "plot_config.close(fig)\n"
-        'print("structure prints under", dbg.deliverables_dir)'
-    ),
-]
-
-
 def build() -> None:
     for fname, cells in [
         ("01_inflow.ipynb", INFLOW_CELLS),
         ("02_cp.ipynb", CP_CELLS),
         ("03_cf.ipynb", CF_CELLS),
         ("04_dynamic.ipynb", DYNAMIC_CELLS),
-        ("05_facade.ipynb", FACADE_CELLS),
-        ("06_structure.ipynb", STRUCTURE_CELLS),
     ]:
         nb = new_notebook(cells=cells)
         nb.metadata["kernelspec"] = {

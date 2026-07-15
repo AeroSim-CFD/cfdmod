@@ -1,5 +1,23 @@
 # Release Notes
 
+## Unreleased
+
+### Mesh-field rendering (`cfdmod.mesh_field`)
+
+- Removed the per-triangle 3-D matplotlib mesh-field renderer
+  (`triangle_field_figure`) and its facade-selection helpers (`facade_groups`,
+  `facade_index_per_triangle`). The 3-D triangle renders were illegible for
+  tall or slender buildings -- the equal-aspect box collapsed a slender tower
+  to a sliver, and a near-planar facade viewed face-on through a 3-D camera
+  collapsed to a thin line -- so they were not a usable deliverable.
+- The facade Cp-snapshot post-processing stage was dropped from the example
+  suites (high-rise + consulting template) pending a rebuild on the
+  `cfdmod.snapshot` (ParaView/VTK) tooling driven by a snapshot config. The
+  general mesh-field utilities are unchanged: line sampling
+  (`sample_field_along_line` / `moving_average_stats`), the PyVista plane-slice
+  render (`slice_field_on_plane` / `render_plane_slice`) and the whole-body
+  PyVista snapshot (`write_field_vtp` / `render_vtp_snapshot`).
+
 ## 3.2.0
 
 Additive feature work on top of v3.1.0: a building wind-load
