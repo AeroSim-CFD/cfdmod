@@ -417,3 +417,38 @@ class SnapshotConfig(BaseModel):
         cfg = cls(**yaml_vals)
 
         return cfg
+
+    def retarget(
+        self,
+        file_path: str | pathlib.Path,
+        scalar: str,
+        *,
+        label: str | None = None,
+        value_range: tuple[float, float] | None = None,
+        n_divs: int | None = None,
+    ) -> SnapshotConfig:
+        """Return a copy pointing every projection at ``(file_path, scalar)``.
+
+        A base ``SnapshotConfig`` (loaded from a ``snapshot_params.yaml``) fixes
+        the per-face layout: which projections exist (``top`` / ``front`` / ...)
+        and their transforms, plus the camera, text overlays and crop. Rendering
+        one field is then just repointing every projection at the same polydata
+        file and active ``scalar`` and setting the legend -- exactly the override
+        loop the consulting snapshot notebooks run per wind direction / statistic.
+
+        Returns a deep copy (the base is left untouched, so it can be retargeted
+        again for the next direction / statistic). ``label`` / ``value_range`` /
+        ``n_divs`` override the corresponding ``legend_config`` fields when given.
+        """
+        cfg = self.model_copy(deep=True)
+        target = pathlib.Path(file_path)
+        for projection in cfg.projections.values():
+            projection.file_path = target
+            projection.scalar = scalar
+        if label is not None:
+            cfg.legend_config.label = label
+        if value_range is not None:
+            cfg.legend_config.range = value_range
+        if n_divs is not None:
+            cfg.legend_config.n_divs = n_divs
+        return cfg
