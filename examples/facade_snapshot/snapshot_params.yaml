@@ -1,0 +1,79 @@
+# Facade Cp snapshot layout, driven by cfdmod.snapshot (ParaView/VTK).
+#
+# This is the per-CASE geometry config: it fixes which projections exist and how
+# each building face is unfolded into the image plane (translate/rotate/scale),
+# plus the colormap divisions, camera, and the compass text overlays. The Cp
+# polydata file and active scalar are NOT set here -- the driver repoints every
+# projection at the case's Cp stats .vtp per wind direction / statistic via
+# SnapshotConfig.retarget(). Mirrors the consulting snapshot setup (see the
+# 068 CST snapshot_params_ce.yaml).
+#
+# The translate offsets below unfold the box faces side by side; set them to
+# roughly half the building extent along each axis (as here, tuned to the
+# in-repo galpao fixture ~ 247 x 163 x 17). Copy + retune per building.
+projections:
+  top:
+    file_path: ""
+    scalar: ""
+    cell_data_to_point_data: false
+    transformation:
+      translate: [0, 0, 0]
+      rotate: [0, 0, 0]
+      scale: [1, 1, 1]
+  front:
+    file_path: ""
+    scalar: ""
+    cell_data_to_point_data: false
+    transformation:
+      translate: [0, 90, 0]
+      rotate: [90, 0, 0]
+      scale: [1, 1, 1]
+  back:
+    file_path: ""
+    scalar: ""
+    cell_data_to_point_data: false
+    transformation:
+      translate: [0, -90, 0]
+      rotate: [-90, 0, 0]
+      scale: [1, 1, 1]
+  left:
+    file_path: ""
+    scalar: ""
+    cell_data_to_point_data: false
+    transformation:
+      translate: [-130, 0, 0]
+      rotate: [0, 90, 0]
+      scale: [1, 1, 1]
+  right:
+    file_path: ""
+    scalar: ""
+    cell_data_to_point_data: false
+    transformation:
+      translate: [130, 0, 0]
+      rotate: [0, -90, 0]
+      scale: [1, 1, 1]
+legend_config:
+  label: "Mean pressure coefficient"
+  range: [-1.0, 1.0]
+  n_divs: 10
+camera:
+  zoom: 1.2
+  offset_position: [0, 30]
+  view_up: [0, 1, 0]
+  window_size: [1600, 1000]
+image_crop:
+  width_ratio: 1
+  height_ratio: 1
+text_overlay:
+  - text: North
+    position: [0, 120]
+    font_size: 10
+  - text: South
+    position: [0, -120]
+    font_size: 10
+  - text: East
+    position: [160, 0]
+    font_size: 10
+  - text: West
+    position: [-160, 0]
+    font_size: 10
