@@ -59,6 +59,14 @@ vtk = [
     "vtk>=9.2.6",
     "pyvista>=0.44",
 ]
+# Everything cfdmod.snapshot needs to render (ParaView/VTK snapshots + the
+# mesh_field PyVista paths). Same render stack as `vtk`, named for the feature.
+# On a headless host the render is off-screen and needs a virtual display
+# (xvfb) or an OSMesa/EGL VTK build; plain `vtk` wheels use OpenGL.
+snapshot = [
+    "vtk>=9.2.6",
+    "pyvista>=0.44",
+]
 # Required only for the legacy pandas-HDFStore compat readers in
 # cfdmod.inflow, cfdmod.hfpi.static, and cfdmod.pressure.migrate.
 # Modern XDMF+H5 inputs go through h5py and don't need this.

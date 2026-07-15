@@ -1,6 +1,5 @@
 import pathlib
 
-from IPython.display import display
 from PIL import Image
 
 from cfdmod.snapshot.config import CropConfig, OverlayImageConfig
@@ -96,5 +95,9 @@ def crop_image(
 
 
 def display_image(image_path: pathlib.Path):
+    # IPython is only needed for this in-notebook display helper; import lazily so
+    # the snapshot module imports (and renders headless) without the notebook dep.
+    from IPython.display import display
+
     img = Image.open(image_path)
     display(img)

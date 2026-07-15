@@ -8,7 +8,7 @@ the consulting snapshot setup (068 CST) on the current ``cfdmod.snapshot`` API.
 
 Run headless on the in-repo galpao fixture (writes PNGs to ``_run/``):
 
-    uv run python examples/facade_snapshot/render_facade_snapshots.py
+    uv run --extra snapshot python examples/facade_snapshot/render_facade_snapshots.py
 
 Point at a real case (e.g. Secco 070) with environment variables -- see the
 README. Rendering is off-screen; on a box with no X server wrap the call in

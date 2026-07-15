@@ -29,7 +29,7 @@ directions and statistics.
 ## Run (in-repo fixture, headless)
 
 ```bash
-uv run --extra vtk --extra notebook python examples/facade_snapshot/render_facade_snapshots.py
+uv run --extra snapshot python examples/facade_snapshot/render_facade_snapshots.py
 ```
 
 Writes `facade_cp_{mean,min,max}.png` to `examples/facade_snapshot/_run/`,
@@ -38,7 +38,7 @@ server, wrap it in `xvfb-run` (offscreen VTK segfaults without a virtual display
 on some boxes):
 
 ```bash
-xvfb-run -a uv run --extra vtk --extra notebook python examples/facade_snapshot/render_facade_snapshots.py
+xvfb-run -a uv run --extra snapshot python examples/facade_snapshot/render_facade_snapshots.py
 ```
 
 ## Point at a real case (e.g. Secco 070)
