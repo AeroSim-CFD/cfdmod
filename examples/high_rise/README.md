@@ -4,7 +4,7 @@ Thin, application-directed notebooks for high-rise wind-load post-processing,
 built on the cfdmod v3 recipes/ops. Each notebook is one stage of the sequence
 and holds no reusable logic -- the shared glue lives in the cfdmod library:
 `cfdmod.building` (case + per-floor Cf/Cm + dynamic response), plus
-`cfdmod.inflow_report`, `cfdmod.mesh_field`, `cfdmod.report`, `cfdmod.plot_config`.
+`cfdmod.inflow_report`, `cfdmod.report`, `cfdmod.plot_config`.
 
 ## Sequence
 
@@ -14,7 +14,6 @@ and holds no reusable logic -- the shared glue lives in the cfdmod library:
 | `02_cp.ipynb` | Pressure coefficient | body + reference pressure | `cp.time_series` to `artifacts/`; stats to `deliverables/` |
 | `03_cf.ipynb` | Per-floor Cf / Cm | `cp.time_series` + mesh | per-floor coefficient figs to `debug/`; load table to `deliverables/` |
 | `04_dynamic.ipynb` | Dynamic response (HFPI / SDOF) | `cp.time_series` + mesh + structural model | response figs to `debug/`; per-floor peak table to `deliverables/` |
-| `05_facade.ipynb` | Facade Cp profile | `cp.time_series` + mesh | Cp stats summary + vertical mean-Cp profile to `deliverables/` |
 
 ## Output layout
 
@@ -71,9 +70,6 @@ All reusable logic lives in the cfdmod library (nothing is high-rise-specific):
   `peak_response_table`).
 - `cfdmod.report.DebugWriter` -- versioned `debug/` + `deliverables/` paths.
 - `cfdmod.inflow_report` -- vertical-profile detection + validation figures.
-- `cfdmod.mesh_field` -- `sample_field_along_line` (field down a line) +
-  `moving_average_stats`, optional PyVista `write_field_vtp` /
-  `render_vtp_snapshot` / `slice_field_on_plane` / `render_plane_slice`.
 - `cfdmod.plot_config` -- shared figure style (`apply_style`, `new_axes`, `close`).
 
 The `_*.py` files are dev tooling (generate / validate the notebooks), not part
@@ -106,9 +102,8 @@ of the suite itself. Regenerate the notebooks after editing them with
   modes, Ellis `46/H` fundamental) on the fixtures; point it at a real modal
   model with the `CFDMOD_HR_MODES_CSV` / `_FLOORS_CSV` / `_MODE_SHAPE_CSVS`
   variables (columns per `cfdmod.dynamics.structural`).
-- Stage 05 delivers a Cp-stats summary and a height-resolved vertical Cp
-  profile (line sampling), which stay legible for any building shape. The
-  per-triangle 3-D mesh-field image renderer was removed because it produced
-  illegible output for tall/slender buildings; a proper flattened 2-D facade
-  projection is a follow-up. Installing the optional `[vtk]` extra (PyVista)
-  additionally writes a contoured, colour-barred whole-body snapshot.
+- A **facade Cp-snapshot stage** is intentionally not part of this suite yet.
+  The earlier per-triangle 3-D matplotlib render was illegible for
+  tall/slender buildings and was removed; the facade deliverable will be
+  rebuilt on the `cfdmod.snapshot` (ParaView/VTK) tooling driven by a snapshot
+  config, matching the established consulting snapshot setup.

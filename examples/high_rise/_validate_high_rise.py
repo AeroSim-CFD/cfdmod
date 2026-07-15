@@ -3,9 +3,8 @@
 Run: uv run python examples/high_rise/_validate_high_rise.py
 Exercises BuildingCase (against a real case_data dir if CFDMOD_HR_VALIDATE_CASE_DATA
 points at one, else a synthetic case), inflow profile detection + figures
-(pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, the
-dynamic-response recipe wiring, and the facade Cp profile (galpao fixture + its
-lnas mesh).
+(pitot_inlet fixture), the Cp -> per-floor Cf/Cm pressure wiring, and the
+dynamic-response recipe wiring (galpao fixture + its lnas mesh).
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ matplotlib.use("Agg")  # headless: this script writes figures, it does not displ
 
 import numpy as np  # noqa: E402
 
-from cfdmod import building, mesh_field, plot_config, report  # noqa: E402
+from cfdmod import building, plot_config, report  # noqa: E402
 from cfdmod import inflow_report as ir  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -210,40 +209,6 @@ def section_dynamic(case: building.BuildingCase) -> None:
     )
 
 
-def section_snapshots(case: building.BuildingCase, base: pathlib.Path) -> None:
-    print("E. Facade Cp profile (galpao fixture)")
-    cp, floor_case, mesh_path = _galpao_cp(case)
-
-    geom = mesh_field.load_geometry(mesh_path)
-    n_tri = int(np.asarray(geom.triangle_vertices).shape[0])
-
-    cp_mean = np.nanmean(np.asarray(cp.fields.read("cp")), axis=1)
-    check("cp_mean per triangle", cp_mean.shape == (n_tri,), str(cp_mean.shape))
-
-    dbg = report.DebugWriter(base, stage="facade", version="validate")
-
-    verts = np.asarray(geom.vertices)
-    vmin, vmax = verts.min(axis=0), verts.max(axis=0)
-    xc = float((vmin[0] + vmax[0]) / 2)
-    p1 = (xc, float(vmin[1]), float(vmin[2]))
-    p2 = (xc, float(vmin[1]), float(vmax[2]))
-    prof_df = mesh_field.sample_field_along_line(geom, cp_mean, p1, p2, n=40)
-    check(
-        "facade profile sampled along height",
-        len(prof_df) == 40 and np.isfinite(prof_df["value"]).any(),
-        f"rows={len(prof_df)}",
-    )
-
-    fig, ax = plot_config.new_axes(xlabel="mean Cp [-]", ylabel="z [m]", title="Facade Cp profile")
-    ax.plot(prof_df["value"], prof_df["z"], "-o", ms=3)
-    path = dbg.savefig(fig, "front_facade_cp_profile.png", deliverable=True)
-    plot_config.close(fig)
-    check("facade profile figure written", path.exists() and path.stat().st_size > 0, str(path))
-
-    csv_path = dbg.save_csv(prof_df, "front_facade_cp_profile.csv", deliverable=True)
-    check("facade profile csv written", csv_path.exists() and csv_path.stat().st_size > 0)
-
-
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
@@ -251,7 +216,6 @@ def main() -> None:
         section_inflow(base)
         section_pressure(case)
         section_dynamic(case)
-        section_snapshots(case, base)
     print("\nAll building post-processing validations passed.")
 
 
