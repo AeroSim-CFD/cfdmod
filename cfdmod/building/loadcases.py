@@ -18,9 +18,13 @@ consulting ``hfpi_analysis`` notebook:
 "Effective" loads combine the dynamic static-equivalent loads with the applied
 quasi-static loads (see :func:`cfdmod.dynamics.get_stats_forces_effective`); the
 fan-out driver attaches the applied loads (``fs_*`` / ``ms_z``) so the
-combination happens automatically. ``unit_conversion`` defaults to the exact
-tonne-force divisor ``1 / 9806.65`` (the notebook used a rounded ``9800`` /
-``9806`` -- a 0.07% difference); pass your own to byte-match an old deliverable.
+combination happens automatically. This is the fuller reducer;
+:func:`cfdmod.dynamics.plotting.effective_peak_loads_per_direction` is the
+presentation-layer sibling that reads ``feq_*`` alone (no applied-static
+combination) and is what the current consulting notebooks call. Both default to
+the same exact tonne-force divisor ``1 / 9806.65`` (1000 kgf * standard gravity
+9.80665 m/s^2); pass your own to byte-match an old deliverable that used a
+rounded ``9800`` / ``9806``.
 """
 
 from __future__ import annotations

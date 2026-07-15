@@ -56,6 +56,11 @@ Languages = Literal["pt-br", "en"]
 
 _COEF_STYLE = {"cf_x": ("FX", "blue"), "cf_y": ("FY", "red"), "cm_z": ("MZ", "grey")}
 
+# N -> tonne-force divisor (1 tf = 1000 kgf * standard gravity 9.80665 m/s^2).
+# Same exact value as cfdmod.building.loadcases._N_PER_TF, so the two modules'
+# tonne-force deliverables agree to the last digit.
+_N_PER_TF = 9806.65
+
 
 def plot_force_spectrum(
     load_source: PointsDataSource,
@@ -416,7 +421,14 @@ def plot_max_acceleration(
     unit_conversion: float = 1000 / 9.806,
     unit_name: str = "milli-g",
 ):
-    """Peak acceleration per wind recurrence period vs comfort criteria."""
+    """Peak acceleration per wind recurrence period vs comfort criteria.
+
+    Comfort limits come from :mod:`cfdmod.building.comfort` (the single,
+    source-verified home for NBR 6123 / NBCC / Melbourne acceleration limits);
+    they return m/s^2 and are scaled here by ``unit_conversion`` to ``unit_name``.
+    """
+    from cfdmod.building.comfort import nbcc_acceleration_limit, nbr6123_acceleration_limit
+
     color_eq = "#E69F00"
     color_nbcc = "#2F993A"
     color_nbr_res = "#A82D2D"
@@ -424,15 +436,14 @@ def plot_max_acceleration(
 
     freqs = np.atleast_1d(np.asarray(natural_frequencies_hz, dtype=np.float64))
     range_freq = [freqs.min(), min(freqs.max(), 1)]
-    range_nbr_res = [
-        0.01 * 4.08 * range_freq[1] ** -0.445 * unit_conversion,
-        0.01 * 4.08 * range_freq[0] ** -0.445 * unit_conversion,
+    # limit decreases with frequency, so [hi f, lo f] -> [smaller, larger] bracket
+    f_hi_lo = np.array([range_freq[1], range_freq[0]], dtype=np.float64)
+    range_nbr_res = list(nbr6123_acceleration_limit(f_hi_lo, "residential") * unit_conversion)
+    range_nbr_com = list(nbr6123_acceleration_limit(f_hi_lo, "commercial") * unit_conversion)
+    range_nbcc = [
+        nbcc_acceleration_limit("residential") * unit_conversion,
+        nbcc_acceleration_limit("commercial") * unit_conversion,
     ]
-    range_nbr_com = [
-        0.01 * 6.12 * range_freq[1] ** -0.445 * unit_conversion,
-        0.01 * 6.12 * range_freq[0] ** -0.445 * unit_conversion,
-    ]
-    range_nbcc = [15 * (9.806 / 1000) * unit_conversion, 25 * (9.806 / 1000) * unit_conversion]
 
     fig, ax = plt.subplots()
 
@@ -511,22 +522,25 @@ def plot_acceleration_floor_by_floor(
             linewidth=1,
         )
 
+    # Comfort limits from cfdmod.building.comfort (source-verified home); they
+    # return m/s^2 and are scaled here by unit_conversion to unit_name.
+    from cfdmod.building.comfort import (
+        melbourne1992_acceleration_limit,
+        nbcc_acceleration_limit,
+        nbr6123_acceleration_limit,
+    )
+
     def criterion(std: str) -> float:
         if std == "nbr_com":
-            return 0.01 * 6.12 * freq**-0.445 * unit_conversion
+            return float(nbr6123_acceleration_limit(freq, "commercial")) * unit_conversion
         if std == "nbr_res":
-            return 0.01 * 4.08 * freq**-0.445 * unit_conversion
+            return float(nbr6123_acceleration_limit(freq, "residential")) * unit_conversion
         if std == "nbcc_res":
-            return 15 * (9.806 / 1000) * unit_conversion
+            return nbcc_acceleration_limit("residential") * unit_conversion
         if std == "nbcc_com":
-            return 25 * (9.806 / 1000) * unit_conversion
+            return nbcc_acceleration_limit("commercial") * unit_conversion
         # melbourne
-        return (
-            unit_conversion
-            * np.sqrt(2 * np.log(600 * freq))
-            * (0.68 + np.log(rec_period) / 5)
-            * np.exp(-3.65 - 0.41 * np.log(freq))
-        )
+        return float(melbourne1992_acceleration_limit(freq, rec_period)) * unit_conversion
 
     for std in valid:
         ax.axvline(criterion(std), label=texts[std][language], color=colors[std], linewidth=2)
@@ -543,7 +557,7 @@ def effective_peak_loads_per_direction(
     container: Container,
     *,
     feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
-    unit_conversion: float = 1 / 9806,
+    unit_conversion: float = 1 / _N_PER_TF,
     get_primary_load: tuple[bool, bool, bool] | bool = True,
 ) -> dict[str, pd.DataFrame]:
     """Per-direction, per-floor peak static-equivalent loads for export.
@@ -552,6 +566,15 @@ def effective_peak_loads_per_direction(
     building-response data sources carrying the static-equivalent floor
     load fields. For each direction the dominant (larger-magnitude) peak is
     selected per axis; ``get_primary_load=False`` picks the opposite peak.
+
+    Reads the ``feq_*`` fields directly (the dynamic static-equivalent floor
+    loads), so this is the presentation-layer reducer the notebooks call for the
+    Eberick / per-direction peak tables. For the *effective* envelope that also
+    folds in the applied quasi-static loads (``fs_*`` / ``ms_z`` when attached by
+    the fan-out driver), and for the full companion-load case generation, use
+    :func:`cfdmod.building.loadcases.effective_load_stats` /
+    :func:`cfdmod.building.loadcases.generate_load_cases`, which build on
+    :func:`cfdmod.dynamics.cases.get_stats_forces_effective`.
 
     Exactly one case per direction is required: pre-filter the container
     (e.g. ``container.filter_by(lambda c: c.xi == xi)``) so each direction
