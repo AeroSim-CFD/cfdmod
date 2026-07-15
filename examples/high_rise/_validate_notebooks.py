@@ -1,7 +1,7 @@
 """Execute the high-rise stage notebooks headless, in order, on fixtures.
 
 Run: uv run python examples/high_rise/_validate_notebooks.py
-Runs 01 -> ... -> 06 sharing one temp OUTPUT_BASE, asserts each executes without
+Runs 01 -> ... -> 05 sharing one temp OUTPUT_BASE, asserts each executes without
 error and that the expected debug/deliverable/artifact files are produced. Does
 NOT write outputs back into the committed notebooks.
 """
@@ -39,7 +39,6 @@ def main() -> None:
             "03_cf.ipynb",
             "04_dynamic.ipynb",
             "05_facade.ipynb",
-            "06_structure.ipynb",
         ):
             run_notebook(HERE / name)
 
@@ -51,10 +50,8 @@ def main() -> None:
             base / "debug" / "smoke" / "cf" / "per_floor_coefficients.png",
             base / "deliverables" / "smoke" / "dynamic" / "dynamic_response.csv",
             base / "debug" / "smoke" / "dynamic" / "peak_acceleration.png",
-            base / "deliverables" / "smoke" / "facade" / "cp_mean_iso.png",
-            base / "debug" / "smoke" / "facade" / "facade_n_+z.png",
-            base / "deliverables" / "smoke" / "structure" / "geometry_iso.png",
-            base / "debug" / "smoke" / "structure" / "floor_partition.png",
+            base / "deliverables" / "smoke" / "facade" / "cp_stats_summary.csv",
+            base / "deliverables" / "smoke" / "facade" / "front_facade_cp_profile.png",
         ]
         missing = [p for p in expect if not (p.exists() and p.stat().st_size > 0)]
         debug_imgs = list((base / "debug" / "smoke").rglob("*.png"))
