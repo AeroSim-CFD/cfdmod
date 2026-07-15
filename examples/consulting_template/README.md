@@ -15,10 +15,9 @@ nothing to keep in sync across cases -- reusable logic lives in `cfdmod`.
 |---|---|
 | `01_inflow.ipynb` | Directional design speed (NBR 6123 / EN 1991-1-4); ABL mean/TI vs code, spectrum, integral length per terrain category. Writes `_shared.json`. |
 | `02_static_loads.ipynb` | Per-direction floor Fx/Fy/Mz profiles, directional global envelope, Eberick per-direction peak-load tables. |
-| `03_facade.ipynb` | Per-triangle mean-Cp renders per facade. |
 
 Run them in order: `01` writes a local `_shared.json` (reference/design speeds)
-that `02` and `03` read, so you never copy-paste numbers between notebooks. Each
+that `02` reads, so you never copy-paste numbers between notebooks. Each
 notebook still runs standalone (it falls back to computing those values inline if
 `_shared.json` is absent).
 
@@ -40,7 +39,7 @@ notebook still runs standalone (it falls back to computing those values inline i
    REP = {"0": ("000.0", "0", "I"), "3": ("022.5", "III", "III")}
    ```
 
-4. Pick the `body` in `02` / `03` (defaults to the first body).
+4. Pick the `body` in `02` (defaults to the first body).
 5. Run all cells. Results render inline **and** are written to disk under
    `deliverables/<version>/<stage>/` (and exploratory extras under
    `debug/<version>/<stage>/`):
@@ -50,7 +49,6 @@ notebook still runs standalone (it falls back to computing those values inline i
    deliverables/v3/static/<body>/  global_envelope.png, global_stats.csv,
                                    floor_loads/wind_<dir>.png, peak_loads_{Fx,Fy,Mz}.csv,
                                    eberick_loads.xlsx (when the storey table aligns)
-   deliverables/v3/facade/<body>/<dir>/  cp_mean_iso.png + cp_mean_<facade>.png
    ```
 
    Set `VERSION` to keep multiple runs side by side.
