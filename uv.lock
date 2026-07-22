@@ -50,6 +50,10 @@ notebook = [
 remesh = [
     { name = "fast-simplification" },
 ]
+snapshot = [
+    { name = "pyvista" },
+    { name = "vtk" },
+]
 vtk = [
     { name = "pyvista" },
     { name = "vtk" },
@@ -83,6 +87,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2" },
     { name = "pyarrow", specifier = ">=19.0.0" },
     { name = "pydantic", specifier = ">=2.10" },
+    { name = "pyvista", marker = "extra == 'snapshot'", specifier = ">=0.44" },
     { name = "pyvista", marker = "extra == 'vtk'", specifier = ">=0.44" },
     { name = "ruamel-yaml", specifier = ">=0.18.5" },
     { name = "scipy", specifier = ">=1.13" },
@@ -93,9 +98,10 @@ requires-dist = [
     { name = "tables", marker = "extra == 'legacy'", specifier = ">=3.9.1,<4" },
     { name = "trimesh", marker = "extra == 'geometry'", specifier = ">=4.0" },
     { name = "typer", specifier = ">=0.24.1" },
+    { name = "vtk", marker = "extra == 'snapshot'", specifier = ">=9.2.6" },
     { name = "vtk", marker = "extra == 'vtk'", specifier = ">=9.2.6" },
 ]
-provides-extras = ["geometry", "remesh", "docs", "notebook", "vtk", "legacy"]
+provides-extras = ["geometry", "remesh", "docs", "notebook", "vtk", "snapshot", "legacy"]
 
 [package.metadata.requires-dev]
 dev = [
