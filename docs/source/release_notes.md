@@ -1,6 +1,43 @@
 # Release Notes
 
-## Unreleased
+## 3.3.0
+
+Additive feature work on top of v3.2.0. Facade Cp snapshots return as a
+config-driven ParaView/VTK stage, snapshot dependencies become an opt-in
+extra, and a consulting post-processing template is added. No public v3
+symbol is removed or changed in signature; the only removal is the
+3-D matplotlib mesh-field renderer described below.
+
+### Facade Cp snapshots (`cfdmod.snapshot`)
+
+- New config-driven facade snapshot builder (`building_facade`) renders the
+  four walls side by side plus the roof, split into per-floor bands, from a
+  `building_facade_config`. This replaces the removed 3-D matplotlib
+  mesh-field renders as the facade Cp deliverable.
+- A standalone runner is provided under `examples/facade_snapshot/`.
+
+### Optional snapshot extra
+
+- Snapshot tooling no longer imports IPython at module load. The heavier
+  snapshot dependencies are now an opt-in `[snapshot]` extra
+  (`pip install aerosim-cfdmod[snapshot]`), so the base install stays lean
+  for consumers that do not render snapshots.
+
+### Consulting post-processing template
+
+- Added an `examples/consulting_template/` suite (inflow validation and
+  static wind-load stages) that writes engineer-facing deliverables and
+  uses shared, symmetric plot axes.
+- Static-load deliverables are now emitted in labelled SI units and in
+  tonne-force (tf) consistently, correcting the earlier dimensionalization.
+- The inflow stage falls back to an available inlet run when the preferred
+  run is absent.
+
+### Dynamics plotting (`cfdmod.dynamics`)
+
+- Floor-load plots use symmetric, shared axes with global per-floor
+  x-limits, and wind-direction labels use a degree symbol, for
+  directly comparable figures across floors and directions.
 
 ### Mesh-field rendering (`cfdmod.mesh_field`)
 
