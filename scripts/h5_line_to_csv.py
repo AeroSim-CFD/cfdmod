@@ -19,22 +19,36 @@ and equivalently for uy, uz and pressure. This script reproduces that CSV
 layout from the H5 file so the legacy CSV-based scripts keep working
 unchanged.
 
-Example
--------
-    python scripts/h5_line_to_csv.py \
-        --h5 "line.line_line_roof.h5" \
-        --out-dir ./csv_out \
-        --fields ux uy uz pressure
+HOW TO USE: edit the CONFIG block right below, then run the file:
+
+    python scripts/h5_line_to_csv.py
 """
 
 from __future__ import annotations
 
-import argparse
 import csv
 import os
 
 import h5py
 import numpy as np
+
+# =============================================================================
+# CONFIG -- edit these values, then just run the file.
+# =============================================================================
+
+# Input line-probe H5 file.
+H5_PATH = r"/home/waine/Downloads/line.line_line_roof.h5"
+
+# Directory to write the CSV files into.
+OUT_DIR = r"/home/waine/Downloads/h5_postpro_out"
+
+# Fields to export. A field that is absent from the H5 is skipped with a
+# warning (e.g. some line probes have no "pressure").
+FIELDS = ["ux", "uy", "uz", "pressure"]
+
+# =============================================================================
+# End of CONFIG. You normally do not need to edit below this line.
+# =============================================================================
 
 
 def _parse_time(key: str) -> float:
@@ -104,26 +118,8 @@ def convert(h5_path: str, out_dir: str, fields: list[str]) -> None:
             write_field_csv(group, n_points, os.path.join(out_dir, f"{base}.{field}.csv"))
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--h5", required=True, help="path to the line-probe H5 file")
-    parser.add_argument(
-        "--out-dir",
-        default=".",
-        help="directory to write the CSV files into (default: current dir)",
-    )
-    parser.add_argument(
-        "--fields",
-        nargs="+",
-        default=["ux", "uy", "uz", "pressure"],
-        help="fields to export (default: ux uy uz pressure)",
-    )
-    return parser
-
-
 def main() -> None:
-    args = build_parser().parse_args()
-    convert(args.h5, args.out_dir, args.fields)
+    convert(H5_PATH, OUT_DIR, FIELDS)
 
 
 if __name__ == "__main__":

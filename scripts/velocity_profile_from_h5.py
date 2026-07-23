@@ -9,25 +9,18 @@ tool. It does the same thing the old CSV script did:
   4. optionally overlay a scaled experimental velocity profile,
   5. save the comparison figure (and the modified experimental CSV).
 
-The only change is the input: instead of reading
+The only change from the original is the input: instead of reading
+<line>.points.csv and <line>.ux.csv, it reads the coordinates from the
+"Geometry" dataset and the velocity component from the matching field group
+("ux") of a single line H5 file.
 
-    <line>.points.csv   and   <line>.ux.csv
+HOW TO USE: edit the CONFIG block right below, then run the file:
 
-it reads the coordinates from the "Geometry" dataset and the velocity
-component from the matching field group ("ux") of a single line H5 file.
-
-Example (matches the original defaults: U_inf=3.5, B=40, ux)
-------------------------------------------------------------
-    python scripts/velocity_profile_from_h5.py \
-        --h5 "line.line_line_roof.h5" \
-        --u-infinity 3.5 --height-scale 40 \
-        --experimental velocity_profile_at_x_position_roof_AR1.csv \
-        --out-dir ./out
+    python scripts/velocity_profile_from_h5.py
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 
 import h5py
@@ -36,9 +29,40 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import FuncFormatter
 
+# =============================================================================
+# CONFIG -- edit these values, then just run the file.
+# =============================================================================
 
-def _parse_time(key: str) -> float:
-    return float(key.lstrip("t"))
+# Input line-probe H5 file.
+H5_PATH = r"/home/waine/Downloads/line.line_line_roof.h5"
+
+# Velocity component to average ("ux", "uy" or "uz").
+COMPONENT = "ux"
+
+# Reference velocity used to normalise the mean profile.
+U_INFINITY = 3.5
+
+# Length B used to normalise the height z.
+HEIGHT_SCALE = 40.0
+
+# Where to write the outputs (figure + modified experimental CSV).
+OUT_DIR = r"/home/waine/Downloads/h5_postpro_out"
+
+# Optional experimental profile CSV to overlay. Set to None to skip the
+# overlay and plot only the simulation curve.
+EXPERIMENTAL_CSV = None
+# EXPERIMENTAL_CSV = r"/home/waine/Downloads/velocity_profile_at_x_position_roof_AR1.csv"
+
+# Experimental scaling (only used when EXPERIMENTAL_CSV is set), matching the
+# original script: divide U by EXP_DIV_X, divide Y by EXP_DIV_Y, and keep only
+# points with Y <= EXP_Y_MAX (after dropping the first point).
+EXP_DIV_X = 1.3
+EXP_DIV_Y = 1.2
+EXP_Y_MAX = 6.0
+
+# =============================================================================
+# End of CONFIG. You normally do not need to edit below this line.
+# =============================================================================
 
 
 def mean_component_profile(h5_path: str, component: str) -> tuple[np.ndarray, np.ndarray]:
@@ -145,68 +169,29 @@ def make_plot(
     print(f"[INFO] plot saved: {out_png}")
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--h5", required=True, help="path to the line-probe H5 file")
-    parser.add_argument(
-        "--component",
-        default="ux",
-        help="velocity component field to average (default: ux)",
-    )
-    parser.add_argument(
-        "--u-infinity",
-        type=float,
-        default=3.5,
-        help="reference velocity used to normalise the mean profile (default: 3.5)",
-    )
-    parser.add_argument(
-        "--height-scale",
-        type=float,
-        default=40.0,
-        help="length B used to normalise the height z (default: 40)",
-    )
-    parser.add_argument(
-        "--experimental",
-        default=None,
-        help="optional experimental profile CSV to overlay",
-    )
-    parser.add_argument("--exp-div-x", type=float, default=1.3, help="experimental U scale divisor")
-    parser.add_argument("--exp-div-y", type=float, default=1.2, help="experimental Y scale divisor")
-    parser.add_argument("--exp-y-max", type=float, default=6.0, help="max experimental Y kept")
-    parser.add_argument(
-        "--out-dir",
-        default=".",
-        help="directory to write outputs into (default: current dir)",
-    )
-    return parser
-
-
 def main() -> None:
-    args = build_parser().parse_args()
-    os.makedirs(args.out_dir, exist_ok=True)
+    os.makedirs(OUT_DIR, exist_ok=True)
 
-    base = os.path.basename(args.h5)
+    base = os.path.basename(H5_PATH)
     if base.lower().endswith(".h5"):
         base = base[:-3]
 
-    z, mean_u = mean_component_profile(args.h5, args.component)
+    z, mean_u = mean_component_profile(H5_PATH, COMPONENT)
     print(
-        f"[INFO] {args.component}: {z.shape[0]} points, "
-        f"mean range [{(mean_u / args.u_infinity).min():.3f}, "
-        f"{(mean_u / args.u_infinity).max():.3f}] (normalised)"
+        f"[INFO] {COMPONENT}: {z.shape[0]} points, "
+        f"mean range [{(mean_u / U_INFINITY).min():.3f}, "
+        f"{(mean_u / U_INFINITY).max():.3f}] (normalised)"
     )
 
     experimental = None
-    if args.experimental:
-        experimental = load_experimental(
-            args.experimental, args.exp_div_x, args.exp_div_y, args.exp_y_max
-        )
-        exp_out = os.path.join(args.out_dir, f"modified_experimental_{base}.csv")
+    if EXPERIMENTAL_CSV:
+        experimental = load_experimental(EXPERIMENTAL_CSV, EXP_DIV_X, EXP_DIV_Y, EXP_Y_MAX)
+        exp_out = os.path.join(OUT_DIR, f"modified_experimental_{base}.csv")
         experimental.to_csv(exp_out, index=False)
         print(f"[INFO] modified experimental data saved: {exp_out}")
 
-    out_png = os.path.join(args.out_dir, f"velocity_profile_comparison_{base}.png")
-    make_plot(z, mean_u, args.u_infinity, args.height_scale, experimental, out_png)
+    out_png = os.path.join(OUT_DIR, f"velocity_profile_comparison_{base}.png")
+    make_plot(z, mean_u, U_INFINITY, HEIGHT_SCALE, experimental, out_png)
 
 
 if __name__ == "__main__":
