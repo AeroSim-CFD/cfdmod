@@ -1,5 +1,18 @@
 # CLAUDE.md - cfdmod project guide
 
+## Agents
+
+`.claude/agents/` splits the work by surface:
+
+| Agent | Owns |
+|---|---|
+| `cfdmod-core` | The v3 functional core: `core/` (DataSource, ops, recipes, pipeline), `adapters/`, config models, domain-module CLIs |
+| `cfdmod-postproc` | `examples/` suites, `notebooks/`, and the report/figure helpers (`building`, `report`, `inflow_report`, `mesh_field`, `plot_config`) |
+
+Rule of thumb: a new computation is `cfdmod-core` (an op, then a recipe that composes it); a new
+figure, deliverable or notebook stage is `cfdmod-postproc`. When a notebook needs a primitive
+that does not exist yet, that primitive is a core change, not a notebook cell.
+
 ## What this project is
 
 `aerosim-cfdmod` is a Python library for post-processing and geometry preparation of CFD wind tunnel simulations. It covers:
