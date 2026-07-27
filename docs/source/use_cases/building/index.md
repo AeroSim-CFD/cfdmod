@@ -19,11 +19,17 @@ library recipes:
 pressure time series (surface)
   -> Cp                              (cp_from_pressure)
   -> per-floor Cf / Cm               (cf_per_floor, cm_per_floor)
-  -> floor-load points               (floor_load_source)
+  -> static-equivalent floor loads   (static_floor_loads)          [static]
+  -> base loads per direction        (get_global_peaks_by_direction)
+  -> floor-load points               (floor_load_source)           [dynamic]
   -> modal dynamic response          (solve_building_response)
   -> floor accelerations + comfort   (floor_accelerations, comfort_limit)
   -> load-case tables                (generate_load_cases)
 ```
+
+The static and dynamic branches split after the per-floor coefficients and
+differ in one important respect: which speed the loads are referenced at. See
+[Reference speeds](#reference-speeds).
 
 A single case is aggregated into a {class}`~cfdmod.building.BuildingCase`,
 which carries the pressure time series, the dynamic pressure and the geometry
@@ -67,6 +73,50 @@ deliverable ({func}`~cfdmod.building.peak_value`):
 - `"gumbel"` -- fit a Gumbel distribution to block maxima and read the design
   fractile off it (more stable than the raw max for short records). See the
   extreme-value discussion in {doc}`/use_cases/pressure/statistics`.
+
+(reference-speeds)=
+## Reference speeds
+
+Two reference velocities appear in a building case and they are not
+interchangeable:
+
+- the **simulation** inlet $U_H$, which the pressure coefficient was
+  non-dimensionalised by. {class}`~cfdmod.building.BuildingCase` carries it as
+  `simul_reference_velocity`, and `dynamic_pressure` is built from it.
+- the **design** $U_H$ for the wind direction being processed (e.g. the
+  50-year NBR value), which the structural deliverable must be referenced at.
+
+They differ by $(U_\text{design}/U_\text{simul})^2$ in every load, and because
+the design speed varies with direction that ratio reshapes the directional
+envelope rather than merely scaling it.
+{func}`~cfdmod.building.static_floor_loads` therefore takes
+`reference_velocity` as a required keyword. The dynamic branch's
+{func}`~cfdmod.building.floor_load_source` keeps the case dynamic pressure as
+its default -- appropriate there, because the modal response is reported as a
+ratio -- and accepts the same `reference_velocity` override.
+
+## Base loads
+
+The base (global) reaction per wind direction comes from
+{func}`~cfdmod.dynamics.get_global_peaks_by_direction`, which reduces the
+per-floor loads with {func}`~cfdmod.dynamics.global_load_history`:
+
+$$
+F_x = \sum_i f_{x,i}, \quad
+F_y = \sum_i f_{y,i}, \quad
+M_x = -\sum_i f_{y,i}\,z_i, \quad
+M_y = +\sum_i f_{x,i}\,z_i, \quad
+M_z = \sum_i m_{z,i}
+$$
+
+The overturning moments carry the per-floor lever arm $z_i$ (the floor's slab
+level by default, see {func}`~cfdmod.building.floor_lever_heights`) and follow
+the right-hand rule: a horizontal force at height $z$ contributes
+$\mathbf{r} \times \mathbf{F} = (-z F_y,\; +z F_x,\; 0)$. A base moment
+computed without the lever arm is just a rescaled base force, which is hard to
+spot by eye in a directional envelope -- so the lever arms travel with the
+load source (in `elements.position`) and an all-zero ladder is an error rather
+than a silently zeroed moment.
 
 ## Dynamic response
 
