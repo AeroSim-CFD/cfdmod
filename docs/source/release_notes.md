@@ -1,5 +1,59 @@
 # Release Notes
 
+## 3.4.0
+
+Correctness work on the building static-load path, plus the two library
+primitives that were missing from it. The per-floor coefficient layer is
+unchanged and was verified against the previous-generation pipeline on a real
+case (16 wind directions, 39002 triangles, 14180 timesteps): per-floor
+`cf_x` / `cf_y` / `cm_z` agree to 3e-6 relative, i.e. float32 roundoff.
+
+### Static-equivalent floor loads (`cfdmod.building.static_floor_loads`)
+
+- New `static_floor_loads()` turns per-floor Cf / Cm into static-equivalent
+  floor loads (`feq_x` / `feq_y` / `meq_z`) at an explicit reference speed.
+  `reference_velocity` is a **required** keyword. A structural deliverable must
+  be referenced at the design `U_H` of the wind direction being processed,
+  which is not the simulation inlet speed the pressure coefficient was
+  non-dimensionalised by; the two differ by the square of their ratio in every
+  load, and since the design speed varies with direction, using the wrong one
+  reshapes the directional envelope rather than merely scaling it.
+- `floor_load_source()` (the dynamic-response sibling) gains an optional
+  `reference_velocity`. Its default remains the case dynamic pressure, which is
+  appropriate there because the modal response is reported as a ratio.
+- New `floor_lever_heights()` exposes the top / mid / bottom slab conventions
+  for per-floor lever arms and raises on a mismatched edge count instead of
+  falling back to an index ladder.
+- New `scatter_to_floor_bands()` and `floor_band_indices()` recover the
+  row-to-band mapping from the grouping labels, so a coefficient source that
+  covers only the populated bands is placed back on the full storey ladder by
+  index rather than by assuming the dropped bands are contiguous at the bottom.
+
+### Base loads with lever arms (`cfdmod.dynamics`)
+
+- New `global_load_history()` reduces per-floor loads to base (global) force
+  and moment histories: forces by summation, overturning moments with the
+  per-floor lever arms, following the right-hand rule
+  (`Mx = -sum(Fy*z)`, `My = +sum(Fx*z)`, `Mz = sum(meq_z)`). Missing or
+  all-zero lever arms raise rather than silently zeroing both overturning
+  moments.
+- `get_global_peaks_by_direction()` now emits all three components on both the
+  force and moment frames, and takes a `variable_type` argument selecting the
+  `forces_static` / `moments_static` or `forces_static_eq` /
+  `moments_static_eq` keys. Previously it produced only Fx / Fy / Mz, while
+  `plot_global_stats_per_direction()` in the same package renders five panels
+  including Mx and My, so the two did not compose.
+
+  **Breaking:** the moment frame gained `min_x` / `max_x` / `mean_x` and the
+  `_y` triplet, and the frame keys now depend on `variable_type` (the previous
+  behaviour is `variable_type="hfpi"`, the default).
+
+### Deliverable table ordering
+
+- `effective_peak_loads_per_direction()` and `effective_load_stats()` sort their
+  wind-direction columns ascending. Column order previously followed container
+  insertion order, so a per-category fan-out exported a scrambled table.
+
 ## 3.3.0
 
 Additive feature work on top of v3.2.0. Facade Cp snapshots return as a
