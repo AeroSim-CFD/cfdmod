@@ -211,3 +211,26 @@ def test_effective_loads_rejects_multiple_cases_per_direction():
     container = Container(items={c: resp for c in cases})
     with pytest.raises(ValueError, match="maps to 2 cases"):
         plotting.effective_peak_loads_per_direction(container)
+
+
+def test_effective_peak_loads_columns_are_sorted_by_direction():
+    """Deliverable tables must read left-to-right in wind-direction order.
+
+    Container iteration is insertion order, so a fan-out that solves the cat-0
+    directions before the cat-3 ones would otherwise export columns as
+    112.5, 135.0, ..., 0.0, 22.5, ... -- silently scrambling the CSV a
+    structural engineer reads by position.
+    """
+    resp = _response(_load_source())
+    # deliberately out of order, the way a per-category fan-out emits them
+    directions = [112.5, 135.0, 0.0, 22.5, 337.5, 90.0]
+    container = Container(
+        items={
+            BuildingCaseParameters(direction=d, xi=0.02, recurrence_period=50.0): resp
+            for d in directions
+        }
+    )
+    tables = plotting.effective_peak_loads_per_direction(container)
+    expected = [f"{d:.1f}" for d in sorted(directions)]
+    for name, df in tables.items():
+        assert list(df.columns) == expected, name
