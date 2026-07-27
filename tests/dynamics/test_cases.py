@@ -149,11 +149,19 @@ def test_multiplier_parity_with_legacy_case_build():
 # --- Multi-direction result queries (#177) ----------------------------------
 
 
-def _response(fields: dict[str, np.ndarray]) -> PointsDataSource:
-    """Build a floor-response PointsDataSource carrying the given fields."""
+def _response(fields: dict[str, np.ndarray], z: np.ndarray | None = None) -> PointsDataSource:
+    """Build a floor-response PointsDataSource carrying the given fields.
+
+    ``z`` sets the per-floor lever arms written into ``elements.position``;
+    it defaults to a unit ladder ``1 .. n_floors`` so base overturning moments
+    are well defined (an all-zero ladder is rejected by ``global_load_history``).
+    """
     n_t = next(iter(fields.values())).shape[1]
     n_floors = next(iter(fields.values())).shape[0]
     pts = np.zeros((n_floors, 3))
+    pts[:, 2] = (
+        np.arange(1, n_floors + 1, dtype=float) if z is None else np.asarray(z, dtype=float)
+    )
     return PointsDataSource(
         time=TimeAxis(initial_time=0.0, timestep_size=DT, n_timesteps=n_t),
         topology=Topology.points(pts),
@@ -271,22 +279,25 @@ def test_get_global_peaks_by_direction():
     moments = frames["moments_static_eq"]
 
     assert list(forces["direction"]) == [0.0, 90.0]  # sorted by direction
-    assert set(forces.columns) == {
-        "direction",
-        "min_x",
-        "max_x",
-        "mean_x",
-        "min_y",
-        "max_y",
-        "mean_y",
+    expected_columns = {"direction"} | {
+        f"{stat}_{axis}" for stat in ("min", "max", "mean") for axis in ("x", "y", "z")
     }
-    assert set(moments.columns) == {"direction", "min_z", "max_z", "mean_z"}
+    assert set(forces.columns) == expected_columns
+    # both frames carry all three components: the plotter draws Fx, Fy, Mx, My, Mz
+    assert set(moments.columns) == expected_columns
 
     row0 = forces.iloc[0]
     assert (row0["min_x"], row0["max_x"], row0["mean_x"]) == pytest.approx((5.0, 9.0, 7.0))
     assert moments.iloc[0]["min_z"] == pytest.approx(-2.0)
     # direction 90 is the x10 case
     assert forces.iloc[1]["max_x"] == pytest.approx(90.0)
+
+    # base overturning moments carry the floor lever arms (z = 1, 2 here):
+    # My = +sum(feq_x * z) -> [1*1 + 4*2, 2*1 + 5*2, 3*1 + 6*2] = [9, 12, 15]
+    # Mx = -sum(feq_y * z) -> [-(0*1 + 1*2)] * 3 = [-2, -2, -2]
+    m0 = moments.iloc[0]
+    assert (m0["min_y"], m0["max_y"], m0["mean_y"]) == pytest.approx((9.0, 15.0, 12.0))
+    assert (m0["min_x"], m0["max_x"]) == pytest.approx((-2.0, -2.0))
 
     # two cases at the same direction is ambiguous
     two_same_dir = Container(

@@ -27,6 +27,7 @@ __all__ = [
     "get_max_acceleration",
     "get_max_acceleration_by_recurrence_period",
     "get_stats_forces_effective",
+    "global_load_history",
     "get_global_peaks_by_direction",
 ]
 
@@ -264,26 +265,109 @@ def get_stats_forces_effective(
     return dyn
 
 
+def global_load_history(
+    response: PointsDataSource,
+    *,
+    feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
+    lever_heights: np.ndarray | None = None,
+) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
+    """Base (global) force and moment time histories from per-floor loads.
+
+    The base forces are the plain floor sums; the base **overturning** moments
+    need the lever arm of each floor above the base, which is the whole point of
+    this function -- summing ``feq_y`` and calling it ``Mx`` (no lever arm, wrong
+    units) is the classic failure this replaces::
+
+        Fx(t) =  sum_i  feq_x[i, t]
+        Fy(t) =  sum_i  feq_y[i, t]
+        Mx(t) = -sum_i  feq_y[i, t] * z[i]
+        My(t) = +sum_i  feq_x[i, t] * z[i]
+        Mz(t) =  sum_i  meq_z[i, t]
+
+    The ``Mx`` / ``My`` signs are the right-hand rule for a horizontal force at
+    height ``z``: ``m = r x F`` with ``r = (0, 0, z)`` and ``F = (Fx, Fy, 0)``
+    gives ``(-z*Fy, +z*Fx, 0)``. ``Fz`` is reported as zeros -- the per-floor
+    load set carries no vertical component.
+
+    Args:
+        response: Points source with the three per-floor load fields, each
+            ``(n_floors, n_t)``.
+        feq_fields: Field names for ``(Fx, Fy, Mz)`` per floor.
+        lever_heights: Per-floor lever arms [m]. Defaults to the Z of
+            ``response.elements.position`` (set by
+            :func:`cfdmod.building.static_floor_loads`).
+
+    Returns:
+        ``(forces, moments)``, each ``{"x": arr, "y": arr, "z": arr}`` of
+        ``(n_t,)`` histories.
+
+    Raises:
+        ValueError: If no lever arms are available, if their length does not
+            match the floor count, or if they are all zero -- an all-zero ladder
+            silently zeroes both overturning moments, so it is rejected rather
+            than propagated.
+    """
+    fx_name, fy_name, mz_name = feq_fields
+    fx = np.asarray(response.fields.read(fx_name), dtype=np.float64)
+    fy = np.asarray(response.fields.read(fy_name), dtype=np.float64)
+    mz = np.asarray(response.fields.read(mz_name), dtype=np.float64)
+    n_floors = fx.shape[0]
+
+    if lever_heights is None:
+        position = response.elements.position
+        if position is None:
+            raise ValueError(
+                "no lever arms: pass lever_heights, or build the response with "
+                "cfdmod.building.static_floor_loads so elements.position carries the "
+                "floor heights. Base overturning moments are meaningless without them."
+            )
+        z = np.asarray(position, dtype=np.float64)[:, 2]
+    else:
+        z = np.asarray(lever_heights, dtype=np.float64)
+
+    if z.shape != (n_floors,):
+        raise ValueError(f"lever_heights must have {n_floors} entries; got {z.shape}")
+    if not np.any(z):
+        raise ValueError(
+            "lever arms are all zero, which would zero Mx and My. Provide the floor "
+            "heights (e.g. cfdmod.building.floor_lever_heights)."
+        )
+
+    forces = {"x": fx.sum(axis=0), "y": fy.sum(axis=0), "z": np.zeros(fx.shape[1])}
+    moments = {
+        "x": -(fy * z[:, None]).sum(axis=0),
+        "y": (fx * z[:, None]).sum(axis=0),
+        "z": mz.sum(axis=0),
+    }
+    return forces, moments
+
+
 def get_global_peaks_by_direction(
     container: ResultContainer,
     *,
     feq_fields: tuple[str, str, str] = ("feq_x", "feq_y", "meq_z"),
+    lever_heights: np.ndarray | None = None,
+    variable_type: Literal["static", "hfpi"] = "hfpi",
 ) -> dict[str, pd.DataFrame]:
-    """Per-direction global (base) static-equivalent force / moment stats.
+    """Per-direction global (base) force / moment stats, including Mx / My.
 
-    For each wind direction the three static-equivalent load fields are summed
-    over floors into a global time history, then reduced to ``min`` / ``max`` /
-    ``mean``. Returns ``{"forces_static_eq": df, "moments_static_eq": df}`` where
-    each frame has a ``direction`` column plus ``min_{d}`` / ``max_{d}`` /
-    ``mean_{d}`` columns (``d in {x, y}`` for forces, ``z`` for moments), sorted
-    by direction -- the exact contract consumed by
-    :func:`cfdmod.dynamics.plotting.plot_global_stats_per_direction` and
-    :func:`export_global_stats_per_direction_csv`.
+    For each wind direction the per-floor loads are reduced to base histories by
+    :func:`global_load_history` (forces summed, overturning moments summed with
+    the floor lever arms) and then to ``min`` / ``max`` / ``mean``.
+
+    Returns two frames keyed by ``variable_type`` -- ``"forces_static"`` /
+    ``"moments_static"`` for the static loads and ``"forces_static_eq"`` /
+    ``"moments_static_eq"`` for the dynamic static-equivalent ones. Each frame
+    has a ``direction`` column plus ``min_{d}`` / ``max_{d}`` / ``mean_{d}`` for
+    all of ``d in {x, y, z}``, sorted by direction -- the exact contract
+    consumed by :func:`cfdmod.dynamics.plotting.plot_global_stats_per_direction`
+    (which plots Fx, Fy, Mx, My, Mz) and
+    :func:`cfdmod.dynamics.plotting.export_global_stats_per_direction_csv`.
 
     Exactly one case per direction is required; pre-filter the container (e.g.
     :func:`filter_by_xi`) so each direction maps to a single case.
     """
-    fx, fy, mz = feq_fields
+    suffix = "" if variable_type == "static" else "_eq"
     by_direction = join_by_direction(container)
     force_rows: list[dict[str, float]] = []
     moment_rows: list[dict[str, float]] = []
@@ -295,21 +379,18 @@ def get_global_peaks_by_direction(
                 "to a single case per direction (e.g. one xi / recurrence period)"
             )
         response = next(iter(sub.values()))
-        # global (base) history = sum of the floor loads at each timestep
-        global_hist = {
-            "x": np.sum(np.asarray(response.fields.read(fx), dtype=np.float64), axis=0),
-            "y": np.sum(np.asarray(response.fields.read(fy), dtype=np.float64), axis=0),
-            "z": np.sum(np.asarray(response.fields.read(mz), dtype=np.float64), axis=0),
-        }
+        forces, moments = global_load_history(
+            response, feq_fields=feq_fields, lever_heights=lever_heights
+        )
         f_row: dict[str, float] = {"direction": float(direction)}
         m_row: dict[str, float] = {"direction": float(direction)}
         for stat, np_reduce in (("min", np.min), ("max", np.max), ("mean", np.mean)):
-            f_row[f"{stat}_x"] = float(np_reduce(global_hist["x"]))
-            f_row[f"{stat}_y"] = float(np_reduce(global_hist["y"]))
-            m_row[f"{stat}_z"] = float(np_reduce(global_hist["z"]))
+            for axis in ("x", "y", "z"):
+                f_row[f"{stat}_{axis}"] = float(np_reduce(forces[axis]))
+                m_row[f"{stat}_{axis}"] = float(np_reduce(moments[axis]))
         force_rows.append(f_row)
         moment_rows.append(m_row)
     return {
-        "forces_static_eq": pd.DataFrame(force_rows),
-        "moments_static_eq": pd.DataFrame(moment_rows),
+        f"forces_static{suffix}": pd.DataFrame(force_rows),
+        f"moments_static{suffix}": pd.DataFrame(moment_rows),
     }

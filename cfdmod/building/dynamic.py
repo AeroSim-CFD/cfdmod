@@ -51,6 +51,7 @@ def floor_load_source(
     case: BuildingCase,
     *,
     dimensionalize: bool = True,
+    reference_velocity: float | None = None,
 ) -> PointsDataSource:
     """Merge per-floor Cf/Cm groups into one floor-load ``PointsDataSource``.
 
@@ -61,10 +62,19 @@ def floor_load_source(
     stacked along Z.
 
     With ``dimensionalize`` (default) the force coefficients are scaled back
-    to physical loads with the case dynamic pressure and reference area /
-    volume (``F = cf * q * A``, ``M = cm_z * q * V``) so the response comes
-    out in metres / newtons. Set it ``False`` to feed the raw coefficients
-    (the response is then linear in an arbitrary scale).
+    to physical loads with a dynamic pressure and the reference area / volume
+    (``F = cf * q * A``, ``M = cm_z * q * V``) so the response comes out in
+    metres / newtons. Set it ``False`` to feed the raw coefficients (the
+    response is then linear in an arbitrary scale).
+
+    ``reference_velocity`` is the speed the loads are referenced at [m/s].
+    Leaving it ``None`` falls back to ``case.dynamic_pressure``, i.e. the
+    **simulation inlet** speed -- correct for a relative dynamic-response study
+    (whose output is a load *ratio*), but not for a structural deliverable,
+    which must be referenced at the design ``U_H`` of the wind direction being
+    processed. For static deliverables use
+    :func:`cfdmod.building.static_floor_loads`, which requires the speed
+    explicitly.
     """
     cf_x = np.asarray(cf.fields.read("cf_x"), dtype=np.float64)
     cf_y = np.asarray(cf.fields.read("cf_y"), dtype=np.float64)
@@ -77,7 +87,14 @@ def floor_load_source(
         )
 
     if dimensionalize:
-        q = case.dynamic_pressure
+        if reference_velocity is None:
+            q = case.dynamic_pressure
+        else:
+            if not np.isfinite(reference_velocity) or reference_velocity <= 0:
+                raise ValueError(
+                    f"reference_velocity must be a positive speed; got {reference_velocity!r}"
+                )
+            q = 0.5 * float(case.fluid_density) * float(reference_velocity) ** 2
         cf_x = cf_x * q * case.nominal_area
         cf_y = cf_y * q * case.nominal_area
         cm_z = cm_z * q * case.nominal_volume

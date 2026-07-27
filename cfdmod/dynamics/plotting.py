@@ -603,7 +603,9 @@ def effective_peak_loads_per_direction(
                 selected = fe_max if primary[axis] else fe_min
             tables[load_name][f"{float(direction):.1f}"] = selected * unit_conversion
 
-    return {name: pd.DataFrame(cols) for name, cols in tables.items()}
+    # Columns ascending by wind direction: container iteration order is insertion
+    # order, which would otherwise scramble the exported deliverable tables.
+    return {name: pd.DataFrame(cols)[sorted(cols, key=float)] for name, cols in tables.items()}
 
 
 def add_eberick_floor_height_and_pavements(

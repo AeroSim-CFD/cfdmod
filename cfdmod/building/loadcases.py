@@ -124,8 +124,9 @@ def effective_load_stats(
             for stat in stats:
                 tables[stat][name][col] = per_stat[stat] * unit_conversion
 
+    # Columns ascending by wind direction (container order is insertion order).
     return {
-        stat: {name: pd.DataFrame(cols) for name, cols in loads.items()}
+        stat: {name: pd.DataFrame(cols)[sorted(cols, key=float)] for name, cols in loads.items()}
         for stat, loads in tables.items()
     }
 

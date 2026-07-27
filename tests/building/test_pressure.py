@@ -155,3 +155,48 @@ def test_face_cut_and_centroid_agree_on_body_total(cp_ds, galpao_case):
         rtol=1e-6,
         atol=1e-9,
     )
+
+
+def test_static_loads_to_base_moments_end_to_end(body_ref, galpao_case):
+    """per_floor_loads -> static_floor_loads -> base envelope, on real fixture data.
+
+    The chain a consulting notebook runs. Asserts the two properties the
+    downstream deliverable depends on: the loads scale with the *supplied*
+    design speed (not the case's simulation speed), and the base overturning
+    moments are real moments -- not a rescaled copy of the base forces.
+    """
+    from cfdmod.core.container import Container
+    from cfdmod.dynamics import BuildingCaseParameters, get_global_peaks_by_direction
+
+    body, p_ref = body_ref
+    cf, cm = building.per_floor_loads(body, p_ref, MESH, galpao_case, method="centroid")
+
+    design_u_h = 3.0 * galpao_case.simul_reference_velocity
+    loads = building.static_floor_loads(cf, cm, galpao_case, reference_velocity=design_u_h)
+
+    # loads referenced at the design speed, not the simulation one
+    at_simul = building.static_floor_loads(
+        cf, cm, galpao_case, reference_velocity=galpao_case.simul_reference_velocity
+    )
+    ratio = np.asarray(loads.fields.read("feq_x")) / np.asarray(at_simul.fields.read("feq_x"))
+    np.testing.assert_allclose(ratio, 9.0, rtol=1e-9)
+
+    # lever arms travel with the source, so the base moments are well-defined
+    z = np.asarray(loads.elements.position)[:, 2]
+    assert np.any(z)
+
+    container = Container(
+        items={BuildingCaseParameters(direction=0.0, xi=0.0, recurrence_period=50.0): loads}
+    )
+    frames = get_global_peaks_by_direction(container, variable_type="static")
+    forces, moments = frames["forces_static"], frames["moments_static"]
+    assert np.isfinite(forces.to_numpy().astype(float)).all()
+    assert np.isfinite(moments.to_numpy().astype(float)).all()
+
+    # Mx must not be Fy times a constant: rebuild it by hand from the arrays.
+    feq_y = np.asarray(loads.fields.read("feq_y"), dtype=np.float64)
+    np.testing.assert_allclose(
+        moments["mean_x"].to_numpy(), -(feq_y * z[:, None]).sum(axis=0).mean(), rtol=1e-9
+    )
+    # ... and the arm is genuinely non-uniform across floors
+    assert np.ptp(z) > 0
