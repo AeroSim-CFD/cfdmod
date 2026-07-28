@@ -259,3 +259,23 @@ def test_plot_global_stats_per_direction_reports_the_missing_frame():
     stats = {"forces_static_eq": _stats_df(), "moments_static_eq": _stats_df()}
     with pytest.raises(KeyError, match="forces_static"):
         plotting.plot_global_stats_per_direction({0.02: stats}, variable_types=["static", "hfpi"])
+
+
+def test_plot_force_spectrum_marks_the_shedding_frequency():
+    """The expected shedding line is what makes the spectrum figure a check."""
+    dt, n_t, n_floors = 0.07, 2048, 3
+    rng = np.random.default_rng(4)
+    pts = np.column_stack([np.zeros(n_floors), np.zeros(n_floors), np.linspace(10, 60, n_floors)])
+    fields = {k: rng.standard_normal((n_floors, n_t)) for k in ("cf_x", "cf_y", "cm_z")}
+    src = PointsDataSource(
+        time=TimeAxis(initial_time=0.0, timestep_size=dt, n_timesteps=n_t),
+        topology=Topology.points(pts),
+        elements=ElementMeta(position=pts),
+        fields=MemoryFieldStore(fields),
+    )
+
+    fig, ax = plotting.plot_force_spectrum(src, [0.21, 0.26], shedding_hz=0.076)
+
+    labels = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert any("0.076" in lab for lab in labels), labels
+    plt.close(fig)
