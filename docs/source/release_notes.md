@@ -1,8 +1,12 @@
 # Release Notes
 
-## Unreleased
+## 3.5.0
 
-Correctness and performance work on the building dynamic-response path.
+Correctness and performance work on the building dynamic-response path. The
+Cp -> HFPI time-axis round trip is closed (it could silently rescale a whole
+load record, and did on a real case), the modal solve is replaced by its closed
+form, and the directional base-load plot no longer requires frames the caller
+did not ask for. Per-floor Cf / Cm and the static path are untouched.
 
 ### Time-axis round trip (`cfdmod.dynamics.DimensionalData`)
 
@@ -37,6 +41,15 @@ Correctness and performance work on the building dynamic-response path.
   lightly-damped modal response, enough to move a design peak. An independent
   adaptive integration is kept in the test suite as a cross-check on the closed
   form, which is where it belongs.
+
+### Directional base-load plot
+
+- `plot_global_stats_per_direction()` reads its direction axis from whichever
+  frame set the caller supplied. `get_global_peaks_by_direction()` returns one
+  pair of frames per `variable_type`, so plotting only the dynamic curves
+  (`variable_types=["hfpi"]`) previously raised `KeyError` on the absent
+  `forces_static` frame. Asking for a `variable_type` whose frames are missing
+  now raises a message naming the frame and how to produce it.
 - New `check_modal_sampling` warns when the load's time axis cannot carry the
   modal response (fewer than eight samples per cycle of the highest mode, or a
   record shorter than ten fundamental cycles), which is what a mis-scaled time
