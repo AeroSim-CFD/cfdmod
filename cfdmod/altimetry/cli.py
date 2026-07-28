@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pathlib
 
-import trimesh
 import typer
 
 from cfdmod.altimetry import AltimetryProbe, AltimetrySection, Shed
@@ -14,6 +13,23 @@ from cfdmod.altimetry.plots import plot_altimetry_profiles
 app = typer.Typer(name="altimetry", help="Altimetry section profile commands")
 
 
+def _load_trimesh():
+    """Import trimesh on demand, naming the extra when it is absent.
+
+    Importing at module scope would make the whole `cfdmod` CLI -- including
+    `cfdmod run`, which has nothing to do with altimetry -- unusable on an
+    install that did not opt into the optional `geometry` extra.
+    """
+    try:
+        import trimesh
+    except ImportError as exc:
+        raise ImportError(
+            "cfdmod altimetry requires the optional 'geometry' extras. "
+            "Install with: pip install aerosim-cfdmod[geometry]"
+        ) from exc
+    return trimesh
+
+
 @app.command()
 def main(
     csv: pathlib.Path = typer.Option(..., "--csv", help="Probe CSV table"),
@@ -21,6 +37,7 @@ def main(
     output: pathlib.Path = typer.Option(..., "--output", help="Output directory"),
 ) -> None:
     """Build altimetry section figures from probe + surface inputs."""
+    trimesh = _load_trimesh()
     surface_mesh: trimesh.Trimesh = trimesh.load_mesh(surface.as_posix())
 
     probes = AltimetryProbe.from_csv(csv)

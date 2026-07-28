@@ -2,11 +2,16 @@ import pathlib
 
 import numpy as np
 import pytest
-import trimesh
 
-from cfdmod.altimetry import AltimetryProbe, AltimetrySection, Shed
-from cfdmod.altimetry.figure import savefig_to_file
-from cfdmod.altimetry.plots import plot_altimetry_profiles, plot_profiles, plot_surface
+trimesh = pytest.importorskip("trimesh")
+
+from cfdmod.altimetry import AltimetryProbe, AltimetrySection, Shed  # noqa: E402
+from cfdmod.altimetry.figure import savefig_to_file  # noqa: E402
+from cfdmod.altimetry.plots import (  # noqa: E402
+    plot_altimetry_profiles,
+    plot_profiles,
+    plot_surface,
+)
 
 pytestmark = pytest.mark.unit
 

@@ -23,6 +23,14 @@ __all__ = [
     "get_mesh_center",
 ]
 
+try:
+    import pyvista as _pyvista  # noqa: F401
+except ImportError as _exc:  # pragma: no cover - depends on the install
+    raise ImportError(
+        "cfdmod.snapshot requires the optional 'snapshot' extras. "
+        "Install with: pip install aerosim-cfdmod[snapshot]"
+    ) from _exc
+
 from cfdmod.snapshot.config import (
     ImageConfig,
     CropConfig,
