@@ -7,6 +7,7 @@ build a figure / write a file against the v3 data sources without error.
 from __future__ import annotations
 
 import matplotlib
+import pytest
 
 matplotlib.use("Agg")
 
@@ -236,3 +237,25 @@ def test_effective_peak_loads_columns_are_sorted_by_direction():
     expected = [f"{d:.1f}" for d in sorted(directions)]
     for name, df in tables.items():
         assert list(df.columns) == expected, name
+
+
+def test_plot_global_stats_per_direction_accepts_hfpi_only():
+    """Plotting only the dynamic curves must not require the static frames.
+
+    ``get_global_peaks_by_direction`` returns one pair of frames per
+    ``variable_type``; a caller asking for ``"hfpi"`` alone has no
+    ``forces_static`` key, and the direction axis has to come from what is
+    actually there.
+    """
+    stats = {"forces_static_eq": _stats_df(), "moments_static_eq": _stats_df()}
+    fig, axs = plotting.plot_global_stats_per_direction(
+        {0.02: stats}, unit_conversion=1.0, unit_name="tf", variable_types=["hfpi"]
+    )
+    assert axs.shape == (3, 2)
+    plt.close(fig)
+
+
+def test_plot_global_stats_per_direction_reports_the_missing_frame():
+    stats = {"forces_static_eq": _stats_df(), "moments_static_eq": _stats_df()}
+    with pytest.raises(KeyError, match="forces_static"):
+        plotting.plot_global_stats_per_direction({0.02: stats}, variable_types=["static", "hfpi"])

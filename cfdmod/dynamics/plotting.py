@@ -216,7 +216,23 @@ def plot_global_stats_per_direction(
     axs[2, 1].set_visible(False)
 
     stats_ex = next(iter(stats_xis.values()))
-    directions = stats_ex["forces_static"]["direction"].to_numpy()
+    # The frame set depends on what the caller asked get_global_peaks_by_direction
+    # for: variable_type="static" yields forces_static / moments_static,
+    # variable_type="hfpi" yields the _eq pair. Take the direction axis from
+    # whichever is present rather than assuming the static one -- a caller
+    # plotting only the dynamic curves has no forces_static frame at all.
+    missing = [
+        f"forces_static{'_eq' if v == 'hfpi' else ''}"
+        for v in variable_types
+        if f"forces_static{'_eq' if v == 'hfpi' else ''}" not in stats_ex
+    ]
+    if missing:
+        raise KeyError(
+            f"stats is missing {missing} for variable_types={variable_types}; "
+            "call get_global_peaks_by_direction once per variable_type and merge"
+        )
+    axis_key = "forces_static" if "forces_static" in stats_ex else "forces_static_eq"
+    directions = stats_ex[axis_key]["direction"].to_numpy()
     max_dir = directions.max()
 
     color_static = "#333333"
