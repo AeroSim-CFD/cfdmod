@@ -217,11 +217,8 @@ def solve_building_response(
     characteristic length, produces a fully-shaped but wrong answer; with
     ``check_sampling`` the obvious cases warn. See
     :class:`cfdmod.dynamics.DimensionalData` for the length round trip.
-
     """
-    cfg = structure.to_config(
-        damping_ratio=damping_ratio, check_sampling=check_sampling
-    )
+    cfg = structure.to_config(damping_ratio=damping_ratio, check_sampling=check_sampling)
     return build_building_dynamic_response(load_source, cfg)
 
 
