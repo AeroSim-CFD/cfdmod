@@ -4,9 +4,15 @@ import numpy as np
 import pandas as pd
 import pytest
 from lnas import LnasGeometry
-from vtkmodules.util.numpy_support import vtk_to_numpy  # type: ignore
 
-from cfdmod.io.vtk.write_vtk import create_polydata_for_cell_data, write_polydata
+pytest.importorskip("vtkmodules")
+
+from vtkmodules.util.numpy_support import vtk_to_numpy  # type: ignore  # noqa: E402
+
+from cfdmod.io.vtk.write_vtk import (  # noqa: E402
+    create_polydata_for_cell_data,
+    write_polydata,
+)
 
 pytestmark = pytest.mark.unit
 

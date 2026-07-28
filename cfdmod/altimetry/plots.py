@@ -1,9 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
-import trimesh
 from matplotlib.figure import Figure
 
 from cfdmod.altimetry import AltimetrySection
+
+if TYPE_CHECKING:
+    # Annotation only; see the note in cfdmod/altimetry/section.py.
+    import trimesh
 
 __all__ = [
     "plot_surface",

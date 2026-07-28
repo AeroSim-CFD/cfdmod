@@ -3,9 +3,16 @@ import pathlib
 import numpy as np
 import pytest
 
-from cfdmod.io.vtk.probe_vtm import create_line, get_array_from_filter, probe_over_line, read_vtm
-from cfdmod.s1.probe import S1Probe
-from cfdmod.s1.profile import Profile
+pytest.importorskip("vtkmodules")
+
+from cfdmod.io.vtk.probe_vtm import (  # noqa: E402
+    create_line,
+    get_array_from_filter,
+    probe_over_line,
+    read_vtm,
+)
+from cfdmod.s1.probe import S1Probe  # noqa: E402
+from cfdmod.s1.profile import Profile  # noqa: E402
 
 
 @pytest.mark.parametrize("numPoints", [2, 10, 100, 1000])

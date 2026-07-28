@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-import trimesh
 
 from cfdmod.altimetry import SectionVertices, Shed
+
+if TYPE_CHECKING:
+    # Annotation only: slice_surface calls .section() on whatever it is handed,
+    # so importing the optional `geometry` extra at runtime is not needed here.
+    import trimesh
 
 __all__ = ["AltimetrySection"]
 
