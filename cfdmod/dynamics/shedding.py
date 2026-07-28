@@ -33,6 +33,11 @@ __all__ = [
     "implied_strouhal",
     "spectral_peak",
     "check_vortex_shedding",
+    "wind_unit_vector",
+    "across_wind_width",
+    "across_wind_series",
+    "strouhal_by_direction",
+    "plot_strouhal_by_direction",
 ]
 
 import numpy as np
@@ -197,3 +202,174 @@ def check_vortex_shedding(
         passed=bool(physical_range[0] <= st <= physical_range[1]),
         physical_range=physical_range,
     )
+
+
+def wind_unit_vector(direction_deg: float) -> np.ndarray:
+    """Unit vector the wind blows *towards*, in the model frame.
+
+    ``0 deg`` blows along ``+x``, ``90 deg`` along ``+y`` -- the convention the
+    per-floor ``cf_x`` / ``cf_y`` fields are written in, verified on a real case
+    by watching the facade stagnation patch move face to face as the direction
+    rotates. Check it on any new case before trusting a directional sweep.
+    """
+    a = np.deg2rad(float(direction_deg))
+    return np.array([np.cos(a), np.sin(a)])
+
+
+def across_wind_width(footprint_xy, direction_deg: float) -> float:
+    """Frontal width [m] of a plan footprint for one wind direction.
+
+    The width the wake spans: the span of the footprint projected onto the axis
+    perpendicular to the wind. Exact for any plan shape, so it does not assume a
+    rectangle -- for a rectangle ``a`` x ``b`` it reduces to
+    ``a*|sin| + b*|cos|``.
+
+    Args:
+        footprint_xy: ``(n, 2)`` plan coordinates. Use the *tower* footprint; a
+            podium or skirt would inflate the width and deflate the Strouhal
+            number.
+        direction_deg: Wind direction, see :func:`wind_unit_vector`.
+    """
+    pts = np.asarray(footprint_xy, dtype=np.float64)
+    if pts.ndim != 2 or pts.shape[1] != 2:
+        raise ValueError(f"footprint_xy must be (n, 2); got {pts.shape}")
+    if pts.shape[0] == 0:
+        raise ValueError("footprint_xy is empty")
+    d = wind_unit_vector(direction_deg)
+    across = pts[:, 0] * -d[1] + pts[:, 1] * d[0]  # projection on the across-wind axis
+    return float(across.max() - across.min())
+
+
+def across_wind_series(
+    load_source: DataSource, direction_deg: float, *, field_x: str = "cf_x", field_y: str = "cf_y"
+) -> np.ndarray:
+    """Global across-wind force history for one direction [same units as input].
+
+    Rotates the model-frame floor loads into the wind frame and sums over
+    floors: ``F_across = -Fx*sin(theta) + Fy*cos(theta)``. This is the component
+    the wake drives, and the one whose spectrum carries the shedding peak; at an
+    oblique direction neither ``cf_x`` nor ``cf_y`` is it on its own.
+    """
+    d = wind_unit_vector(direction_deg)
+    fx = np.asarray(load_source.fields.read(field_x), dtype=np.float64)
+    fy = np.asarray(load_source.fields.read(field_y), dtype=np.float64)
+    total_x = fx.sum(axis=0) if fx.ndim == 2 else fx
+    total_y = fy.sum(axis=0) if fy.ndim == 2 else fy
+    return -total_x * d[1] + total_y * d[0]
+
+
+def strouhal_by_direction(
+    load_by_direction: dict[float, DataSource],
+    footprint_xy,
+    *,
+    u_h_by_direction: dict[float, float] | float,
+    strouhal: float = STROUHAL_RECTANGULAR,
+    physical_range: tuple[float, float] = STROUHAL_PHYSICAL_RANGE,
+    sigma: float = 2.0,
+    min_cycles: float = 5.0,
+):
+    """Sweep the vortex-shedding check over every wind direction.
+
+    One row per direction: the frontal width, the observed across-wind spectral
+    peak, the frequency Strouhal predicts, and the Strouhal number the record
+    implies. Read as a *case quality* indicator - the implied number should sit
+    in a tight band around the nominal across all directions. A flat offset
+    points at the time axis; scatter points at a short record or a plan whose
+    shedding is not well defined at oblique angles.
+
+    Args:
+        load_by_direction: ``{direction_deg: floor-load source}``, each on a
+            physical (seconds) time axis and carrying ``cf_x`` / ``cf_y``.
+        footprint_xy: ``(n, 2)`` tower plan coordinates.
+        u_h_by_direction: Reference speed per direction, or one speed for all.
+
+    Returns:
+        A ``pandas.DataFrame`` sorted by direction.
+    """
+    import pandas as pd
+
+    rows = []
+    for direction in sorted(load_by_direction):
+        source = load_by_direction[direction]
+        u_h = u_h_by_direction if np.isscalar(u_h_by_direction) else u_h_by_direction[direction]
+        width = across_wind_width(footprint_xy, direction)
+        series = across_wind_series(source, direction)
+        dt = float(source.time.timestep_size)
+        freq, reduced = _reduced_spectrum(series, dt, sigma)
+        mask = (freq >= min_cycles / (series.size * dt)) & (freq <= 0.5 / dt)
+        observed = float(freq[mask][np.argmax(reduced[mask])])
+        st = implied_strouhal(observed, u_h, width)
+        rows.append(
+            {
+                "direction_deg": float(direction),
+                "across_wind_width_m": round(width, 2),
+                "u_h_ms": round(float(u_h), 3),
+                "expected_hz": round(vortex_shedding_frequency(u_h, width, strouhal=strouhal), 4),
+                "observed_hz": round(observed, 4),
+                "implied_strouhal": round(st, 4),
+                "passed": bool(physical_range[0] <= st <= physical_range[1]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def plot_strouhal_by_direction(
+    table,
+    *,
+    strouhal: float = STROUHAL_RECTANGULAR,
+    physical_range: tuple[float, float] = STROUHAL_PHYSICAL_RANGE,
+    language: str = "en",
+    ax=None,
+):
+    """Implied Strouhal number against wind direction, with the physical band.
+
+    The figure is the case-quality read: points inside the shaded band and near
+    the nominal line mean the load record is dimensionally consistent for that
+    direction. A whole curve displaced from the band is the signature of a
+    mis-scaled time axis.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import FuncFormatter
+
+    if ax is None:
+        _fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
+    fig = ax.figure
+
+    txt = {
+        "en": (
+            "wind direction",
+            "implied Strouhal number",
+            "physical range",
+            f"nominal St = {strouhal:g}",
+            "measured",
+            "outside the range",
+        ),
+        "pt-br": (
+            "direcao do vento",
+            "numero de Strouhal implicito",
+            "faixa fisica",
+            f"St nominal = {strouhal:g}",
+            "medido",
+            "fora da faixa",
+        ),
+    }[language]
+
+    d = table["direction_deg"].to_numpy(float)
+    st = table["implied_strouhal"].to_numpy(float)
+    ok = table["passed"].to_numpy(bool)
+
+    ax.axhspan(physical_range[0], physical_range[1], color="#2F993A", alpha=0.12, label=txt[2])
+    ax.axhline(strouhal, color="#2F993A", linestyle="--", linewidth=1.5, label=txt[3])
+    ax.plot(d, st, "-", color="#E69F00", alpha=0.8, zorder=2)
+    ax.plot(d[ok], st[ok], "o", color="#E69F00", label=txt[4], zorder=3)
+    if (~ok).any():
+        ax.plot(d[~ok], st[~ok], "X", color="#A82D2D", markersize=10, label=txt[5], zorder=4)
+
+    ax.set_xlabel(txt[0])
+    ax.set_ylabel(txt[1])
+    ax.set_xticks(np.arange(0, d.max() + 1, 45))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: rf"${v:g}^\circ$"))
+    ax.set_ylim(0, max(float(st.max()) * 1.15, physical_range[1] * 1.15))
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", ncols=2, framealpha=0.9)
+    return fig, ax

@@ -148,3 +148,166 @@ def test_zero_variance_series_is_rejected():
     src = _load(np.ones(2000), dt)
     with pytest.raises(ValueError, match="zero variance"):
         spectral_peak(src)
+
+
+# --- Directional sweep -------------------------------------------------------
+
+RECT = np.array([[-10.735, -18.45], [10.735, -18.45], [10.735, 18.45], [-10.735, 18.45]])
+A_X, B_Y = 21.47, 36.9
+
+
+def _directional_load(
+    deg: float, f_peak: float, dt: float, n_t: int, *, dt_axis: float | None = None
+) -> PointsDataSource:
+    """Load source whose tone sits on the across-wind axis of `deg`.
+
+    ``dt_axis`` re-labels the time axis without touching the samples - the shape
+    of a mis-scaled record, where the physics is right and only the seconds
+    attached to it are wrong.
+    """
+    t = np.arange(n_t) * dt
+    a = np.deg2rad(deg)
+    across = np.sin(2 * np.pi * f_peak * t)
+    rng = np.random.default_rng(int(deg))
+    series_x = -across * np.sin(a) + rng.standard_normal(n_t).cumsum() * 0.001
+    series_y = across * np.cos(a) + rng.standard_normal(n_t).cumsum() * 0.001
+    pts = np.column_stack([np.zeros(N_FLOORS), np.zeros(N_FLOORS), np.linspace(20, 80, N_FLOORS)])
+    return PointsDataSource(
+        time=TimeAxis(
+            initial_time=0.0, timestep_size=dt if dt_axis is None else dt_axis, n_timesteps=n_t
+        ),
+        topology=Topology.points(pts),
+        elements=ElementMeta(position=pts),
+        fields=MemoryFieldStore(
+            {
+                "cf_x": np.tile(series_x / N_FLOORS, (N_FLOORS, 1)),
+                "cf_y": np.tile(series_y / N_FLOORS, (N_FLOORS, 1)),
+                "cm_z": np.zeros((N_FLOORS, n_t)),
+            }
+        ),
+    )
+
+
+@pytest.mark.unit
+def test_wind_vector_convention():
+    """0 deg blows along +x, 90 deg along +y - the frame cf_x / cf_y live in."""
+    from cfdmod.dynamics import wind_unit_vector
+
+    np.testing.assert_allclose(wind_unit_vector(0), [1.0, 0.0], atol=1e-12)
+    np.testing.assert_allclose(wind_unit_vector(90), [0.0, 1.0], atol=1e-12)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("deg", [0, 45, 90, 135, 180, 270])
+def test_across_wind_width_matches_the_rectangle_formula(deg):
+    """For a rectangle the projection reduces to a*|sin| + b*|cos|."""
+    from cfdmod.dynamics import across_wind_width
+
+    a = np.deg2rad(deg)
+    expected = A_X * abs(np.sin(a)) + B_Y * abs(np.cos(a))
+    assert across_wind_width(RECT, deg) == pytest.approx(expected, rel=1e-9)
+
+
+@pytest.mark.unit
+def test_across_wind_width_uses_the_wide_face_head_on():
+    from cfdmod.dynamics import across_wind_width
+
+    assert across_wind_width(RECT, 0) == pytest.approx(B_Y)
+    assert across_wind_width(RECT, 90) == pytest.approx(A_X)
+
+
+@pytest.mark.unit
+def test_across_wind_width_rejects_bad_footprints():
+    from cfdmod.dynamics import across_wind_width
+
+    with pytest.raises(ValueError, match=r"\(n, 2\)"):
+        across_wind_width(np.zeros((4, 3)), 0)
+    with pytest.raises(ValueError, match="empty"):
+        across_wind_width(np.zeros((0, 2)), 0)
+
+
+@pytest.mark.unit
+def test_across_wind_series_rotates_into_the_wind_frame():
+    """At 90 deg the across-wind component is -Fx, not Fy."""
+    from cfdmod.dynamics import across_wind_series
+
+    dt, n_t = 0.07, 512
+    fx = np.tile(np.linspace(1.0, 2.0, n_t), (N_FLOORS, 1))
+    fy = np.tile(np.linspace(-3.0, 3.0, n_t), (N_FLOORS, 1))
+    pts = np.column_stack([np.zeros(N_FLOORS), np.zeros(N_FLOORS), np.arange(N_FLOORS) * 10.0])
+    src = PointsDataSource(
+        time=TimeAxis(initial_time=0.0, timestep_size=dt, n_timesteps=n_t),
+        topology=Topology.points(pts),
+        elements=ElementMeta(position=pts),
+        fields=MemoryFieldStore({"cf_x": fx, "cf_y": fy, "cm_z": fx * 0}),
+    )
+
+    np.testing.assert_allclose(across_wind_series(src, 0), fy.sum(axis=0), atol=1e-9)
+    np.testing.assert_allclose(across_wind_series(src, 90), -fx.sum(axis=0), atol=1e-9)
+
+
+@pytest.mark.unit
+def test_strouhal_sweep_is_flat_for_a_dimensionally_consistent_case():
+    """A record that sheds at St*U/D in every direction reads back that St."""
+    from cfdmod.dynamics import across_wind_width, strouhal_by_direction
+
+    dt, n_t, st_true = 0.0705, 7955, 0.10
+    loads = {
+        float(deg): _directional_load(
+            deg,
+            vortex_shedding_frequency(U_H, across_wind_width(RECT, deg), strouhal=st_true),
+            dt,
+            n_t,
+        )
+        for deg in range(0, 360, 45)
+    }
+
+    table = strouhal_by_direction(loads, RECT, u_h_by_direction=U_H)
+
+    assert list(table["direction_deg"]) == sorted(table["direction_deg"])
+    assert table["passed"].all(), table
+    np.testing.assert_allclose(table["implied_strouhal"], st_true, rtol=0.12)
+    # the width really does vary with direction, so this was not trivially flat
+    assert table["across_wind_width_m"].max() / table["across_wind_width_m"].min() > 1.5
+
+
+@pytest.mark.unit
+def test_strouhal_sweep_flags_a_globally_compressed_record():
+    """A wrong time axis displaces the whole curve, not one point."""
+    from cfdmod.dynamics import across_wind_width, strouhal_by_direction
+
+    dt, n_t, st_true = 0.0705, 7955, 0.10
+    compression = 22.7 / 85.83
+    loads = {}
+    for deg in range(0, 360, 45):
+        f = vortex_shedding_frequency(U_H, across_wind_width(RECT, deg), strouhal=st_true)
+        # identical samples, only the seconds attached to them are wrong
+        loads[float(deg)] = _directional_load(deg, f, dt, n_t, dt_axis=dt * compression)
+
+    table = strouhal_by_direction(loads, RECT, u_h_by_direction=U_H)
+
+    assert not table["passed"].any(), table
+    np.testing.assert_allclose(table["implied_strouhal"], st_true / compression, rtol=0.12)
+
+
+@pytest.mark.unit
+def test_plot_strouhal_by_direction_marks_the_failures():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
+    from cfdmod.dynamics import plot_strouhal_by_direction
+
+    table = pd.DataFrame(
+        {
+            "direction_deg": [0.0, 90.0, 180.0],
+            "implied_strouhal": [0.10, 0.38, 0.11],
+            "passed": [True, False, True],
+        }
+    )
+    fig, ax = plot_strouhal_by_direction(table, language="pt-br")
+    labels = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert any("fora da faixa" in lab for lab in labels), labels
+    plt.close(fig)

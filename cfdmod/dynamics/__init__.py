@@ -44,6 +44,11 @@ __all__ = [
     "implied_strouhal",
     "spectral_peak",
     "check_vortex_shedding",
+    "wind_unit_vector",
+    "across_wind_width",
+    "across_wind_series",
+    "strouhal_by_direction",
+    "plot_strouhal_by_direction",
 ]
 
 from cfdmod.dynamics.cases import (
@@ -79,8 +84,13 @@ from cfdmod.dynamics.shedding import (
     STROUHAL_PHYSICAL_RANGE,
     STROUHAL_RECTANGULAR,
     SheddingCheck,
+    across_wind_series,
+    across_wind_width,
     check_vortex_shedding,
     implied_strouhal,
+    plot_strouhal_by_direction,
+    strouhal_by_direction,
+    wind_unit_vector,
     spectral_peak,
     vortex_shedding_frequency,
 )
