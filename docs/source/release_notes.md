@@ -1,5 +1,29 @@
 # Release Notes
 
+## 3.7.0
+
+Extends the vortex-shedding check into a directional sweep, so a case can be
+read for dimensional quality at a glance. Additive.
+
+### Strouhal by wind direction (`cfdmod.dynamics.strouhal_by_direction`)
+
+- `strouhal_by_direction()` runs the shedding check over every wind direction
+  and returns one row each: the frontal width, the observed across-wind spectral
+  peak, the frequency Strouhal predicts and the number the record implies.
+  `plot_strouhal_by_direction()` draws it against the physical band.
+- Read as a case-quality indicator: the implied number should sit in a tight
+  band around the nominal across all directions. A curve displaced as a whole
+  points at the time axis; scatter points at a short record or a plan whose
+  shedding is not well defined at oblique angles.
+- `across_wind_width()` gives the frontal width for any plan shape by projecting
+  the footprint onto the across-wind axis (for a rectangle it reduces to
+  `a*|sin| + b*|cos|`), and `across_wind_series()` rotates the model-frame floor
+  loads into the wind frame - at an oblique direction neither `cf_x` nor `cf_y`
+  is the across-wind component on its own.
+- `wind_unit_vector()` states the direction convention explicitly (0 deg blows
+  along +x, 90 deg along +y), since a silent frame swap would invert the whole
+  sweep.
+
 ## 3.6.0
 
 Adds the vortex-shedding cross-check on a dynamic load record. Additive: no
