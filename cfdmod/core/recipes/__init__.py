@@ -42,6 +42,10 @@ __all__ = [
     "build_dynamic_response",
     "identity_solver",
     "sdof_rk45_solver",
+    "sdof_exact_solver",
+    "sdof_solver",
+    "SdofMethod",
+    "check_modal_sampling",
     "BuildingDynamicConfig",
     "build_building_dynamic_response",
     "ComfortConfig",
@@ -66,7 +70,11 @@ from cfdmod.core.recipes.dynamic import (
     build_dynamic_response,
     build_point_accelerations,
     identity_solver,
+    SdofMethod,
+    check_modal_sampling,
+    sdof_exact_solver,
     sdof_rk45_solver,
+    sdof_solver,
 )
 from cfdmod.core.recipes.run_yaml import run_yaml, status_yaml
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline

@@ -75,7 +75,7 @@ def test_old_prefix_without_pisos(tmp_path):
 
 def test_feeds_building_dynamic_recipe():
     sd = read_tqs_portels(TQS)
-    cfg = sd.to_config(damping_ratio=0.02)
+    cfg = sd.to_config(damping_ratio=0.02, check_sampling=False)
     n_floors, n_t, dt = sd.n_floors, 128, 0.05
     rng = np.random.default_rng(0)
     t = np.arange(n_t) * dt

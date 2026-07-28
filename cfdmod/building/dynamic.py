@@ -37,6 +37,7 @@ from cfdmod.core.recipes import (
     build_building_dynamic_response,
     build_point_accelerations,
 )
+from cfdmod.core.recipes.dynamic import SdofMethod
 from cfdmod.dynamics import BuildingStructuralData, mass_normalize_mode_shapes
 
 from .case import BuildingCase
@@ -204,14 +205,28 @@ def solve_building_response(
     structure: BuildingStructuralData,
     *,
     damping_ratio: float = 0.02,
+    method: SdofMethod = "exact",
+    check_sampling: bool = True,
 ) -> PointsDataSource:
     """Floor loads + structure -> per-floor dynamic response.
 
     Returns a ``PointsDataSource`` over the floors with displacement fields
     ``disp_x`` / ``disp_y`` / ``rot_z`` and static-equivalent load fields
     ``feq_x`` / ``feq_y`` / ``meq_z`` (each ``(n_floors, n_t)``).
+
+    ``load_source`` must carry a **physical** time axis (seconds). A record still
+    on the solver's normalised time, or de-normalised with the wrong
+    characteristic length, produces a fully-shaped but wrong answer; with
+    ``check_sampling`` the obvious cases warn. See
+    :class:`cfdmod.dynamics.DimensionalData` for the length round trip.
+
+    ``method`` selects the modal solver: ``"exact"`` (default) uses the
+    closed-form piecewise-linear recurrence, ``"rk45"`` the legacy adaptive
+    integrator.
     """
-    cfg = structure.to_config(damping_ratio=damping_ratio)
+    cfg = structure.to_config(
+        damping_ratio=damping_ratio, solver_method=method, check_sampling=check_sampling
+    )
     return build_building_dynamic_response(load_source, cfg)
 
 

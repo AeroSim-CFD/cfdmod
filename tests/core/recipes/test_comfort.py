@@ -78,7 +78,23 @@ def _floor_source(cf_x, cf_y, cm_z):
     )
 
 
+def _nrms(actual, expected) -> float:
+    """Normalized RMS difference, robust to the signals' zero crossings."""
+    a = np.asarray(actual, dtype=np.float64)
+    e = np.asarray(expected, dtype=np.float64)
+    return float(np.sqrt(np.mean((a - e) ** 2)) / np.sqrt(np.mean(e**2)))
+
+
 def test_acceleration_parity_with_legacy_point_acceleration():
+    """Characterization against the legacy point-acceleration path.
+
+    The goldens come from the legacy adaptive-RK45 solve at SciPy's default
+    tolerances, whose own integration error on a lightly-damped modal response
+    is ~1%. The recipe now solves the same ODE in closed form, so parity is
+    asserted as a normalized RMS difference at a tolerance that admits that
+    legacy error -- the analytical accuracy of the solver itself is pinned in
+    tests/core/recipes/test_sdof_exact_solver.py.
+    """
     from cfdmod.dynamics.structural import mass_normalize_mode_shapes
     from tests.dynamics._goldens import golden
 
@@ -94,15 +110,17 @@ def test_acceleration_parity_with_legacy_point_acceleration():
         floors_radius=df_floors["R"].to_numpy(),
         natural_frequencies=df_modes["wp"].to_numpy(),
         damping_ratio=0.015,
+        # synthetic short record: the sampling guard is not the subject here
+        check_sampling=False,
     )
     response = build_building_dynamic_response(_floor_source(cf_x, cf_y, cm_z), cfg)
     acc = build_point_accelerations(
         response, ComfortConfig(cm_positions=df_floors[["XR", "YR"]].to_numpy(), point=POINT)
     )
 
-    # Legacy second_derivative uses float32 internally -> compare at float32 tolerance.
-    np.testing.assert_allclose(acc.fields.read("acc_x"), golden("cf_acc_x"), rtol=1e-4, atol=1e-6)
-    np.testing.assert_allclose(acc.fields.read("acc_y"), golden("cf_acc_y"), rtol=1e-4, atol=1e-6)
+    for field in ("acc_x", "acc_y"):
+        nrms = _nrms(acc.fields.read(field), golden(f"cf_{field}"))
+        assert nrms < 2e-2, f"{field} drifted from the legacy solve: nrms={nrms:.2e}"
 
 
 def test_acceleration_magnitude_and_peak_reduction():
@@ -117,6 +135,8 @@ def test_acceleration_magnitude_and_peak_reduction():
         floors_radius=df_floors["R"].to_numpy(),
         natural_frequencies=df_modes["wp"].to_numpy(),
         damping_ratio=0.02,
+        # synthetic short record: the sampling guard is not the subject here
+        check_sampling=False,
     )
     response = build_building_dynamic_response(_floor_source(cf_x, cf_y, cm_z), cfg)
     acc = build_point_accelerations(

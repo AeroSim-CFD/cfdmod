@@ -30,13 +30,18 @@ __all__ = [
     "build_dynamic_response",
     "identity_solver",
     "sdof_rk45_solver",
+    "sdof_exact_solver",
+    "sdof_solver",
+    "SdofMethod",
+    "check_modal_sampling",
     "BuildingDynamicConfig",
     "build_building_dynamic_response",
     "ComfortConfig",
     "build_point_accelerations",
 ]
 
-from typing import Any, Callable
+import warnings
+from typing import Any, Callable, Literal
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict
@@ -103,14 +108,20 @@ def _solve_sdof_rk45(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> 
         # x' = v ; v' = Q(t) - 2*xi*wp*v - wp^2*x
         return [v, f_t - 2 * xi * wp * v - wp**2 * x]
 
-    # Seed the ODE near steady state to suppress a spurious startup transient:
-    # x0 balances the mean forcing, v0 tracks the mean forcing rate.
-    x0 = gen_force.mean() / (wp**2)
-    dfdt = (gen_force[1:] - gen_force[:-1]).mean() / dt
-    v0 = dfdt / (2 * xi * wp) if xi * wp != 0 else 0.0
+    # Seed the ODE near steady state to suppress a spurious startup transient.
+    x0, v0 = _sdof_seed(gen_force, dt, wp, xi)
 
+    # SciPy's defaults (rtol=1e-3) leave ~3% error on a lightly-damped modal
+    # response -- enough to move a design peak. Tightened to converge on the
+    # closed-form solution (:func:`_solve_sdof_exact`), which is the reference.
     sol = integrate.solve_ivp(
-        system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method="RK45"
+        system,
+        (t_eval[0], t_eval[-1]),
+        [x0, v0],
+        t_eval=t_eval,
+        method="RK45",
+        rtol=1e-6,
+        atol=1e-9,
     )
     return sol.y[0]
 
@@ -164,6 +175,196 @@ def sdof_rk45_solver(
         return modes.with_field("q", disp)
 
     return solver
+
+
+SdofMethod = Literal["exact", "rk45"]
+
+
+def _sdof_seed(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> tuple[float, float]:
+    """Near-steady-state seed suppressing the spurious startup transient.
+
+    ``x0`` balances the mean forcing, ``v0`` tracks the mean forcing rate --
+    the same seed both solvers use, so they stay comparable.
+    """
+    x0 = float(gen_force.mean()) / (wp**2)
+    dfdt = float((gen_force[1:] - gen_force[:-1]).mean()) / dt if gen_force.size > 1 else 0.0
+    v0 = dfdt / (2 * xi * wp) if xi * wp != 0 else 0.0
+    return x0, v0
+
+
+def _sdof_recurrence_coeffs(dt: float, wp: float, xi: float) -> tuple[float, ...]:
+    """Nigam-Jennings coefficients for one mode (unit generalized mass).
+
+    Exact step response of ``x'' + 2 xi wp x' + wp^2 x = Q(t)`` when ``Q`` varies
+    linearly across a step -- which is exactly the interpolation the RK45 path
+    assumes -- so this is not an approximation of that path, it is its closed
+    form. Returns ``(A, B, C, D, Ap, Bp, Cp, Dp)`` for
+
+        x[i+1] = A x[i] + B v[i] + C Q[i] + D Q[i+1]
+        v[i+1] = Ap x[i] + Bp v[i] + Cp Q[i] + Dp Q[i+1]
+
+    Reference: Nigam & Jennings (1969); Chopra, *Dynamics of Structures*,
+    Table 5.2.1 (with mass 1 and stiffness ``k = wp^2``).
+    """
+    k = wp**2
+    s = np.sqrt(1.0 - xi**2)
+    wd = wp * s
+    e = np.exp(-xi * wp * dt)
+    sin, cos = np.sin(wd * dt), np.cos(wd * dt)
+
+    a = e * (xi / s * sin + cos)
+    b = e * (sin / wd)
+    c = (
+        1.0
+        / k
+        * (
+            2 * xi / (wp * dt)
+            + e * (((1 - 2 * xi**2) / (wd * dt) - xi / s) * sin - (1 + 2 * xi / (wp * dt)) * cos)
+        )
+    )
+    d = (
+        1.0
+        / k
+        * (
+            1
+            - 2 * xi / (wp * dt)
+            + e * ((2 * xi**2 - 1) / (wd * dt) * sin + 2 * xi / (wp * dt) * cos)
+        )
+    )
+    ap = -e * (wp / s * sin)
+    bp = e * (cos - xi / s * sin)
+    cp = 1.0 / k * (-1.0 / dt + e * ((wp / s + xi / (s * dt)) * sin + cos / dt))
+    dp = 1.0 / (k * dt) * (1 - e * (xi / s * sin + cos))
+    return a, b, c, d, ap, bp, cp, dp
+
+
+def _solve_sdof_exact(
+    gen_force: np.ndarray, dt: float, wp: np.ndarray, xi: np.ndarray
+) -> np.ndarray:
+    """Advance every mode together with the Nigam-Jennings recurrence.
+
+    ``gen_force`` is ``(n_modes, n_t)``. The recurrence is sequential in time but
+    vectorised across modes, so the Python loop runs once per timestep rather
+    than once per (mode, timestep) -- orders of magnitude faster than an adaptive
+    ODE integrator, with no step-size error.
+    """
+    q = np.asarray(gen_force, dtype=np.float64)
+    n_modes, n_t = q.shape
+    if n_t == 0:
+        return q.copy()
+
+    coef = np.array(
+        [_sdof_recurrence_coeffs(dt, float(w), float(x)) for w, x in zip(wp, xi)], dtype=np.float64
+    )
+    a, b, c, d, ap, bp, cp, dp = (coef[:, i] for i in range(8))
+
+    x = np.empty((n_modes, n_t), dtype=np.float64)
+    xi_state = np.empty(n_modes, dtype=np.float64)
+    vi_state = np.empty(n_modes, dtype=np.float64)
+    for m in range(n_modes):
+        xi_state[m], vi_state[m] = _sdof_seed(q[m], dt, float(wp[m]), float(xi[m]))
+    x[:, 0] = xi_state
+
+    for i in range(n_t - 1):
+        q_i, q_n = q[:, i], q[:, i + 1]
+        x_next = a * xi_state + b * vi_state + c * q_i + d * q_n
+        vi_state = ap * xi_state + bp * vi_state + cp * q_i + dp * q_n
+        xi_state = x_next
+        x[:, i + 1] = x_next
+    return x
+
+
+def sdof_exact_solver(*, natural_frequencies: Any, damping_ratio: Any) -> ModalSolver:
+    """:class:`ModalSolver` using the exact piecewise-linear recurrence.
+
+    Same equation and same startup seed as :func:`sdof_rk45_solver`, solved in
+    closed form per step. Preferred for production: it is both faster and free
+    of integrator step-size error. Requires ``0 <= xi < 1`` (sub-critical
+    damping) and a uniform time step.
+    """
+    wps = np.atleast_1d(np.asarray(natural_frequencies, dtype=np.float64))
+
+    def solver(modes: ModesDataSource) -> ModesDataSource:
+        q = np.asarray(modes.fields.read("q"), dtype=np.float64)
+        if q.ndim != 2:
+            raise ValueError(f"modes field 'q' must be 2-D (n_modes, n_t); got {q.shape}")
+        n_modes = q.shape[0]
+        if wps.shape[0] != n_modes:
+            raise ValueError(
+                f"natural_frequencies has {wps.shape[0]} entries; expected n_modes={n_modes}"
+            )
+        xis = np.broadcast_to(
+            np.atleast_1d(np.asarray(damping_ratio, dtype=np.float64)), (n_modes,)
+        )
+        if np.any(xis < 0) or np.any(xis >= 1):
+            raise ValueError(f"the exact solver needs sub-critical damping 0 <= xi < 1; got {xis}")
+        dt = float(modes.time.timestep_size)
+        if not np.isfinite(dt) or dt <= 0:
+            raise ValueError(f"modal time step must be positive and finite; got {dt}")
+        return modes.with_field("q", _solve_sdof_exact(q, dt, wps, xis))
+
+    return solver
+
+
+def sdof_solver(
+    *, natural_frequencies: Any, damping_ratio: Any, method: SdofMethod = "exact"
+) -> ModalSolver:
+    """Build the modal solver named by ``method`` (``"exact"`` or ``"rk45"``)."""
+    if method == "exact":
+        return sdof_exact_solver(
+            natural_frequencies=natural_frequencies, damping_ratio=damping_ratio
+        )
+    if method == "rk45":
+        return sdof_rk45_solver(
+            natural_frequencies=natural_frequencies, damping_ratio=damping_ratio
+        )
+    raise ValueError(f"unknown sdof method {method!r}; expected 'exact' or 'rk45'")
+
+
+def check_modal_sampling(
+    time_axis, natural_frequencies: Any, *, min_points_per_cycle: float = 8.0
+) -> None:
+    """Warn when the load's time axis cannot carry the modal response.
+
+    A dynamic run is only as good as the time axis of its forcing: feed a record
+    still on the solver's normalised time (or de-normalised with the wrong
+    length) and the response is computed at the wrong frequencies while every
+    array shape still looks right. Two cheap guards:
+
+    * the highest natural frequency must be resolved (``min_points_per_cycle``
+      samples per cycle, well inside Nyquist);
+    * the record must span at least ~10 cycles of the fundamental, or the peak
+      statistics are meaningless.
+
+    Warns rather than raises -- a short record is sometimes deliberate (a smoke
+    run), and the caller may be sampling a sub-window.
+    """
+    wps = np.atleast_1d(np.asarray(natural_frequencies, dtype=np.float64))
+    if wps.size == 0:
+        return
+    dt = float(time_axis.timestep_size)
+    n_t = int(time_axis.n_timesteps)
+    if not np.isfinite(dt) or dt <= 0:
+        return
+    f_max = float(wps.max()) / (2 * np.pi)
+    f_min = float(wps.min()) / (2 * np.pi)
+    points_per_cycle = 1.0 / (f_max * dt) if f_max > 0 else np.inf
+    if points_per_cycle < min_points_per_cycle:
+        warnings.warn(
+            f"load time step dt={dt:g} s resolves the highest mode ({f_max:.3g} Hz) with only "
+            f"{points_per_cycle:.1f} points per cycle (< {min_points_per_cycle:g}). Check the "
+            "time-axis scaling -- see cfdmod.dynamics.DimensionalData.",
+            UserWarning,
+            stacklevel=3,
+        )
+    cycles = n_t * dt * f_min
+    if cycles < 10:
+        warnings.warn(
+            f"load record spans only {cycles:.1f} cycles of the fundamental ({f_min:.3g} Hz); "
+            "peak statistics from it are not meaningful.",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class DynamicAnalysisConfig(BaseModel):
@@ -242,6 +443,10 @@ class BuildingDynamicConfig(BaseModel):
         natural_frequencies: ``(n_modes,)`` angular natural frequencies
             ``wp = 2*pi*f`` (rad/s).
         damping_ratio: Damping ratio ``xi``; scalar (broadcast) or per-mode array.
+        solver_method: Modal solver, ``"exact"`` (default, closed-form
+            piecewise-linear recurrence) or ``"rk45"`` (legacy adaptive ODE).
+        check_sampling: Warn when the load time axis cannot carry the modal
+            response (see :func:`check_modal_sampling`).
         field_x / field_y / field_mz: Load-coefficient field names on the input.
     """
 
@@ -254,6 +459,8 @@ class BuildingDynamicConfig(BaseModel):
     floors_radius: Any
     natural_frequencies: Any
     damping_ratio: Any = 0.02
+    solver_method: SdofMethod = "exact"
+    check_sampling: bool = True
     field_x: str = "cf_x"
     field_y: str = "cf_y"
     field_mz: str = "cm_z"
@@ -271,6 +478,9 @@ def build_building_dynamic_response(
     phi = np.asarray(cfg.mode_shapes, dtype=np.float64)
     wps = np.atleast_1d(np.asarray(cfg.natural_frequencies, dtype=np.float64))
 
+    if cfg.check_sampling:
+        check_modal_sampling(load_source.time, wps)
+
     # 1. Physical loads -> generalized modal loads (CM lever arm).
     modes = generalized_building_load(
         load_source,
@@ -285,7 +495,9 @@ def build_building_dynamic_response(
     )
 
     # 2. Per-mode SDOF integration -> generalized modal displacements.
-    solver = sdof_rk45_solver(natural_frequencies=wps, damping_ratio=cfg.damping_ratio)
+    solver = sdof_solver(
+        natural_frequencies=wps, damping_ratio=cfg.damping_ratio, method=cfg.solver_method
+    )
     solved = solver(modes)
 
     # 3. Recompose physical floor response + static-equivalent loads.

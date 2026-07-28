@@ -65,7 +65,7 @@ def test_active_modes_selection():
 
 def test_feeds_building_dynamic_recipe():
     sd = read_tqs_portico(PORTICO)
-    cfg = sd.to_config(damping_ratio=0.02)
+    cfg = sd.to_config(damping_ratio=0.02, check_sampling=False)
     n_floors, n_t, dt = sd.n_floors, 128, 0.05
     t = np.arange(n_t) * dt
     load = PointsDataSource(

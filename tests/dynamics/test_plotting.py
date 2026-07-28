@@ -60,6 +60,8 @@ def _response(load_source):
         floors_radius=np.full(N_FLOORS, 2.7),
         natural_frequencies=2 * np.pi * FREQS_HZ,
         damping_ratio=0.02,
+        # synthetic short record: the sampling guard is not the subject here
+        check_sampling=False,
     )
     return build_building_dynamic_response(load_source, cfg)
 
