@@ -24,16 +24,19 @@ Correctness and performance work on the building dynamic-response path.
 
 ### Modal solver
 
-- `build_building_dynamic_response` / `solve_building_response` default to a new
-  closed-form piecewise-linear (Nigam-Jennings) modal solver, exact for the
-  linearly-interpolated forcing the previous adaptive integrator already
-  assumed. It is roughly 2500x faster (a 10-mode, 4000-step solve drops from
-  about 97 s to 35 ms), which is what makes a full 16-direction fan-out with
-  several damping and recurrence cases practical. Pass `method="rk45"` for the
-  previous path.
-- The RK45 path itself now runs at tightened tolerances. At SciPy's defaults it
-  carried around 3% error on a lightly-damped modal response -- enough to move
-  a design peak -- and it converges on the closed-form solution once tightened.
+- The SDOF modal solve is now the closed-form piecewise-linear (Nigam-Jennings)
+  recurrence, exact for the linearly-interpolated forcing the previous adaptive
+  integrator already assumed. It is roughly 2500x faster (a 10-mode, 4000-step
+  solve drops from about 97 s to 35 ms), which is what makes a full
+  16-direction fan-out with several damping and recurrence cases practical.
+- **Breaking:** the adaptive-integrator path is gone -- `sdof_rk45_solver` is
+  removed, along with `sdof_solver`, `SdofMethod` and the `solver_method` /
+  `method` arguments of `BuildingDynamicConfig` and `solve_building_response`.
+  It solved the same equation under the same assumptions, more slowly and less
+  accurately: at SciPy's default tolerances it carried around 3% error on a
+  lightly-damped modal response, enough to move a design peak. An independent
+  adaptive integration is kept in the test suite as a cross-check on the closed
+  form, which is where it belongs.
 - New `check_modal_sampling` warns when the load's time axis cannot carry the
   modal response (fewer than eight samples per cycle of the highest mode, or a
   record shorter than ten fundamental cycles), which is what a mis-scaled time

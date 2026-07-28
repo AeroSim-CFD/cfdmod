@@ -10,7 +10,7 @@ The pipeline the stage assembles:
 
     per-floor Cf/Cm timeseries (GroupsDataSource, from cfdmod.building.pressure)
         -> floor-load PointsDataSource (cf_x / cf_y / cm_z, dimensionalised)
-        -> generalized modal loads -> SDOF RK45 -> floor response
+        -> generalized modal loads -> SDOF modal solve -> floor response
            (disp_x / disp_y / rot_z + static-equivalent feq_x / feq_y / meq_z)
         -> off-centre horizontal accelerations (acc_x / acc_y / acc_mag)
 
@@ -37,7 +37,6 @@ from cfdmod.core.recipes import (
     build_building_dynamic_response,
     build_point_accelerations,
 )
-from cfdmod.core.recipes.dynamic import SdofMethod
 from cfdmod.dynamics import BuildingStructuralData, mass_normalize_mode_shapes
 
 from .case import BuildingCase
@@ -205,7 +204,6 @@ def solve_building_response(
     structure: BuildingStructuralData,
     *,
     damping_ratio: float = 0.02,
-    method: SdofMethod = "exact",
     check_sampling: bool = True,
 ) -> PointsDataSource:
     """Floor loads + structure -> per-floor dynamic response.
@@ -220,12 +218,9 @@ def solve_building_response(
     ``check_sampling`` the obvious cases warn. See
     :class:`cfdmod.dynamics.DimensionalData` for the length round trip.
 
-    ``method`` selects the modal solver: ``"exact"`` (default) uses the
-    closed-form piecewise-linear recurrence, ``"rk45"`` the legacy adaptive
-    integrator.
     """
     cfg = structure.to_config(
-        damping_ratio=damping_ratio, solver_method=method, check_sampling=check_sampling
+        damping_ratio=damping_ratio, check_sampling=check_sampling
     )
     return build_building_dynamic_response(load_source, cfg)
 

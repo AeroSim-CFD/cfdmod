@@ -141,10 +141,9 @@ is solved as a **modal single-degree-of-freedom (SDOF) system** per mode
 
    is solved in time with damping ratio $\xi_j$ and natural frequency
    $\omega_j$, and the modal coordinates are recomposed into per-floor
-   displacements ($d_x$, $d_y$) and torsional rotation ($r_z$). The default
-   solver is the closed-form piecewise-linear (Nigam-Jennings) recurrence,
-   which is exact for a load interpolated linearly between samples; an
-   adaptive RK45 integrator is available via `method="rk45"`.
+   displacements ($d_x$, $d_y$) and torsional rotation ($r_z$). The solver is
+   the closed-form piecewise-linear (Nigam-Jennings) recurrence, exact for a
+   load interpolated linearly between samples.
 
    The load must arrive on a **physical** time axis. The pressure stage writes
    a dimensionless time normalised by its own characteristic length, and that
