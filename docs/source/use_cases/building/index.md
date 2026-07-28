@@ -145,6 +145,13 @@ is solved as a **modal single-degree-of-freedom (SDOF) system** per mode
    the closed-form piecewise-linear (Nigam-Jennings) recurrence, exact for a
    load interpolated linearly between samples.
 
+   Before trusting the response, cross-check the load record against
+   vortex-shedding physics with
+   {func}`~cfdmod.dynamics.check_vortex_shedding`: the across-wind spectral peak
+   must imply a physical Strouhal number for the plan section. It is the only
+   check on the record that does not depend on the case configuration agreeing
+   with itself.
+
    The load must arrive on a **physical** time axis. The pressure stage writes
    a dimensionless time normalised by its own characteristic length, and that
    same length -- not the base dimension used by the force normalisation --

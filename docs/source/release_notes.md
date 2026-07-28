@@ -1,5 +1,33 @@
 # Release Notes
 
+## 3.6.0
+
+Adds the vortex-shedding cross-check on a dynamic load record. Additive: no
+public symbol is removed or changed in signature.
+
+### Vortex-shedding check (`cfdmod.dynamics.check_vortex_shedding`)
+
+- A bluff prismatic body sheds at a Strouhal number that is a property of its
+  cross-section, so the dominant peak of the across-wind load spectrum has a
+  predictable frequency, `f = St * U_H / D`. Inverted, a load record *implies* a
+  Strouhal number, and one outside the physical band (roughly 0.05-0.25 for
+  rectangular plans) means the record is not telling the truth about time.
+- This is the one statement about a dynamic record that does not depend on the
+  case configuration agreeing with itself, which is what makes it useful: a
+  mis-scaled time axis leaves every shape, unit and range plausible and is
+  otherwise undetectable downstream. On a real deliverable whose record had been
+  compressed 3.8x, the across-wind peak implied `St = 0.38`.
+- `check_vortex_shedding()` returns a `SheddingCheck` with the expected and
+  observed frequencies, the implied Strouhal number and a verdict;
+  `.summary()` formats it for a report and `.raise_if_failed()` turns it into an
+  assertion. `vortex_shedding_frequency()`, `implied_strouhal()` and
+  `spectral_peak()` are exposed for use on their own.
+- The default peak search spans everything the record resolves rather than a
+  band around the prediction - a centred search would let the check confirm
+  itself.
+- `plot_force_spectrum()` gains `shedding_hz`, drawing the expected frequency
+  alongside the natural-frequency markers, so the figure carries the check.
+
 ## 3.5.0
 
 Correctness and performance work on the building dynamic-response path. The

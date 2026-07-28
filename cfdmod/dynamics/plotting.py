@@ -69,6 +69,7 @@ def plot_force_spectrum(
     fields: tuple[str, str, str] = ("cf_x", "cf_y", "cm_z"),
     plot_mz: bool = True,
     sigma: float = 2,
+    shedding_hz: float | None = None,
     ax=None,
 ):
     """Reduced power spectral density of the global (floor-summed) load.
@@ -79,6 +80,10 @@ def plot_force_spectrum(
         natural_frequencies_hz: Modal natural frequencies (Hz) drawn as
             vertical markers.
         fields: The three load fields, in ``(FX, FY, MZ)`` order.
+        shedding_hz: Expected vortex-shedding frequency (Hz), drawn as a dashed
+            marker. The across-wind peak should sit on it; when it does not, the
+            time axis is the first thing to doubt. See
+            :func:`cfdmod.dynamics.vortex_shedding_frequency`.
     """
     dt = float(load_source.time.timestep_size)
     if ax is None:
@@ -98,6 +103,15 @@ def plot_force_spectrum(
 
     for f in np.atleast_1d(np.asarray(natural_frequencies_hz, dtype=np.float64)):
         ax.loglog([f, f], [1e-5, 1e1], color="orange", alpha=0.2)
+
+    if shedding_hz is not None:
+        ax.axvline(
+            shedding_hz,
+            color="#2F993A",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"$f_s$ = {shedding_hz:.3f} Hz",
+        )
 
     ax.set_ylim(1e-4, 1e1)
     ax.set_xlim(1e-3, 3)

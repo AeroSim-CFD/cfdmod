@@ -37,6 +37,13 @@ __all__ = [
     "EberickUnits",
     "aggregate_to_building",
     "NodalModel",
+    "STROUHAL_RECTANGULAR",
+    "STROUHAL_PHYSICAL_RANGE",
+    "SheddingCheck",
+    "vortex_shedding_frequency",
+    "implied_strouhal",
+    "spectral_peak",
+    "check_vortex_shedding",
 ]
 
 from cfdmod.dynamics.cases import (
@@ -67,6 +74,15 @@ from cfdmod.dynamics.imports import (
     read_eberick,
     read_tqs_portels,
     read_tqs_portico,
+)
+from cfdmod.dynamics.shedding import (
+    STROUHAL_PHYSICAL_RANGE,
+    STROUHAL_RECTANGULAR,
+    SheddingCheck,
+    check_vortex_shedding,
+    implied_strouhal,
+    spectral_peak,
+    vortex_shedding_frequency,
 )
 from cfdmod.dynamics.structural import (
     BuildingStructuralData,
