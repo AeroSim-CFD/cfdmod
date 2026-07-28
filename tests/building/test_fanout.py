@@ -86,7 +86,7 @@ def test_run_fanout_produces_directional_container(tmp_path):
         directions_by_category={"": ["0", "90"]},
         bodies=["galpao"],
     )
-    solve_fn = build_static_solve_fn(case, storage, MESH, key_for=key_for)
+    solve_fn = build_static_solve_fn(case, storage, MESH, key_for=key_for, check_sampling=False)
     writer = DebugWriter(tmp_path, "cf_cm", "b1")
 
     container = run_fanout(plan, solve_fn, writer=writer, case=case)
@@ -123,7 +123,7 @@ def test_run_fanout_pool_seam(tmp_path):
         return "bodies.galpao" if kind == "body" else "points.static_pressure"
 
     plan = FanoutPlan(directions_by_category={"": ["0"]}, bodies=["galpao"])
-    solve_fn = build_static_solve_fn(case, storage, MESH, key_for=key_for)
+    solve_fn = build_static_solve_fn(case, storage, MESH, key_for=key_for, check_sampling=False)
 
     container = run_fanout(plan, solve_fn, pool=SyncPool())
     assert len(container) == 1

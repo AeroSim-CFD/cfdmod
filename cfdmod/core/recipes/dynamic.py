@@ -15,7 +15,8 @@ primitives together:
 2. A user-supplied modal solver (``Q -> q``) -- the linear ODE
    ``Mq'' + Cq' + Kq = Q`` is the SDOF case per mode and lives outside
    the algebra layer. We accept any callable that maps a
-   :class:`ModesDataSource` to another :class:`ModesDataSource`.
+   :class:`ModesDataSource` to another :class:`ModesDataSource`;
+   :func:`sdof_exact_solver` is the one the building recipe uses.
 3. :func:`modal_recomposition` -- modal coordinates back into the
    physical mesh.
 
@@ -29,19 +30,19 @@ __all__ = [
     "DynamicAnalysisConfig",
     "build_dynamic_response",
     "identity_solver",
-    "sdof_rk45_solver",
+    "sdof_exact_solver",
+    "check_modal_sampling",
     "BuildingDynamicConfig",
     "build_building_dynamic_response",
     "ComfortConfig",
     "build_point_accelerations",
 ]
 
+import warnings
 from typing import Any, Callable
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict
-from scipy import integrate
-from scipy.interpolate import interp1d
 
 from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource, ModesDataSource, PointsDataSource
@@ -70,77 +71,107 @@ def identity_solver(modes: ModesDataSource) -> ModesDataSource:
     return modes
 
 
-def _solve_sdof_rk45(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> np.ndarray:
-    """Integrate one mode's single-degree-of-freedom modal ODE with RK45.
+def _sdof_seed(gen_force: np.ndarray, dt: float, wp: float, xi: float) -> tuple[float, float]:
+    """Near-steady-state seed suppressing the spurious startup transient.
 
-    Solves the mass-normalized modal equation for the generalized
-    displacement ``x(t)``::
-
-        x'' + 2 * xi * wp * x' + wp^2 * x = Q(t)
-
-    where ``Q`` is the (mass-normalized) generalized-load timeseries
-    ``gen_force``. The equation assumes unit generalized mass -- the
-    mode shapes feeding the projection must be mass-normalized (see
-    :func:`sdof_rk45_solver`).
-
-    Args:
-        gen_force: Generalized-load history ``Q`` for one mode, shape ``(n_t,)``.
-        dt: Timestep size (seconds).
-        wp: Angular natural frequency ``wp = 2 * pi * f`` (rad/s).
-        xi: Damping ratio (e.g. 0.01 - 0.02).
-
-    Returns:
-        Generalized-displacement history ``x`` for the mode, shape ``(n_t,)``.
+    ``x0`` balances the mean forcing, ``v0`` tracks the mean forcing rate --
+    the same seed both solvers use, so they stay comparable.
     """
-    end_step = (len(gen_force) - 1) * dt
-    t_eval = np.linspace(0, end_step, len(gen_force))
-
-    f_func = interp1d(t_eval, gen_force, kind="linear", fill_value="extrapolate")
-
-    def system(t, y):
-        f_t = f_func(t)
-        x, v = y
-        # x' = v ; v' = Q(t) - 2*xi*wp*v - wp^2*x
-        return [v, f_t - 2 * xi * wp * v - wp**2 * x]
-
-    # Seed the ODE near steady state to suppress a spurious startup transient:
-    # x0 balances the mean forcing, v0 tracks the mean forcing rate.
-    x0 = gen_force.mean() / (wp**2)
-    dfdt = (gen_force[1:] - gen_force[:-1]).mean() / dt
+    x0 = float(gen_force.mean()) / (wp**2)
+    dfdt = float((gen_force[1:] - gen_force[:-1]).mean()) / dt if gen_force.size > 1 else 0.0
     v0 = dfdt / (2 * xi * wp) if xi * wp != 0 else 0.0
+    return x0, v0
 
-    sol = integrate.solve_ivp(
-        system, (t_eval[0], t_eval[-1]), [x0, v0], t_eval=t_eval, method="RK45"
+
+def _sdof_recurrence_coeffs(dt: float, wp: float, xi: float) -> tuple[float, ...]:
+    """Nigam-Jennings coefficients for one mode (unit generalized mass).
+
+    Exact step response of ``x'' + 2 xi wp x' + wp^2 x = Q(t)`` when ``Q`` varies
+    linearly across a step -- which is exactly the interpolation the RK45 path
+    assumes -- so this is not an approximation of that path, it is its closed
+    form. Returns ``(A, B, C, D, Ap, Bp, Cp, Dp)`` for
+
+        x[i+1] = A x[i] + B v[i] + C Q[i] + D Q[i+1]
+        v[i+1] = Ap x[i] + Bp v[i] + Cp Q[i] + Dp Q[i+1]
+
+    Reference: Nigam & Jennings (1969); Chopra, *Dynamics of Structures*,
+    Table 5.2.1 (with mass 1 and stiffness ``k = wp^2``).
+    """
+    k = wp**2
+    s = np.sqrt(1.0 - xi**2)
+    wd = wp * s
+    e = np.exp(-xi * wp * dt)
+    sin, cos = np.sin(wd * dt), np.cos(wd * dt)
+
+    a = e * (xi / s * sin + cos)
+    b = e * (sin / wd)
+    c = (
+        1.0
+        / k
+        * (
+            2 * xi / (wp * dt)
+            + e * (((1 - 2 * xi**2) / (wd * dt) - xi / s) * sin - (1 + 2 * xi / (wp * dt)) * cos)
+        )
     )
-    return sol.y[0]
+    d = (
+        1.0
+        / k
+        * (
+            1
+            - 2 * xi / (wp * dt)
+            + e * ((2 * xi**2 - 1) / (wd * dt) * sin + 2 * xi / (wp * dt) * cos)
+        )
+    )
+    ap = -e * (wp / s * sin)
+    bp = e * (cos - xi / s * sin)
+    cp = 1.0 / k * (-1.0 / dt + e * ((wp / s + xi / (s * dt)) * sin + cos / dt))
+    dp = 1.0 / (k * dt) * (1 - e * (xi / s * sin + cos))
+    return a, b, c, d, ap, bp, cp, dp
 
 
-def sdof_rk45_solver(
-    *,
-    natural_frequencies: Any,
-    damping_ratio: Any,
-) -> ModalSolver:
-    """Build a :class:`ModalSolver` that integrates each mode as an SDOF oscillator.
+def _solve_sdof_exact(
+    gen_force: np.ndarray, dt: float, wp: np.ndarray, xi: np.ndarray
+) -> np.ndarray:
+    """Advance every mode together with the Nigam-Jennings recurrence.
 
-    The returned solver reads the generalized-load timeseries from field
-    ``"q"`` of the :class:`ModesDataSource` (shape ``(n_modes, n_t)``),
-    integrates the mass-normalized modal ODE per mode with
-    :func:`_solve_sdof_rk45`, and returns the modes source with ``"q"``
-    replaced by the generalized-displacement response.
+    ``gen_force`` is ``(n_modes, n_t)``. The recurrence is sequential in time but
+    vectorised across modes, so the Python loop runs once per timestep rather
+    than once per (mode, timestep) -- orders of magnitude faster than an adaptive
+    ODE integrator, with no step-size error.
+    """
+    q = np.asarray(gen_force, dtype=np.float64)
+    n_modes, n_t = q.shape
+    if n_t == 0:
+        return q.copy()
 
-    Precondition (not silently assumed): the mode shapes used to build
-    the generalized load must be mass-normalized (unit generalized mass),
-    since the SDOF ODE carries no explicit mass term. Build the modal
-    load from mass-normalized shapes upstream.
+    coef = np.array(
+        [_sdof_recurrence_coeffs(dt, float(w), float(x)) for w, x in zip(wp, xi)], dtype=np.float64
+    )
+    a, b, c, d, ap, bp, cp, dp = (coef[:, i] for i in range(8))
 
-    Args:
-        natural_frequencies: Angular natural frequencies ``wp = 2*pi*f``
-            (rad/s), one per mode. Length must equal ``n_modes``.
-        damping_ratio: Damping ratio ``xi``. A scalar is broadcast across
-            all modes; an array must have one entry per mode.
+    x = np.empty((n_modes, n_t), dtype=np.float64)
+    xi_state = np.empty(n_modes, dtype=np.float64)
+    vi_state = np.empty(n_modes, dtype=np.float64)
+    for m in range(n_modes):
+        xi_state[m], vi_state[m] = _sdof_seed(q[m], dt, float(wp[m]), float(xi[m]))
+    x[:, 0] = xi_state
 
-    Returns:
-        A callable ``ModesDataSource -> ModesDataSource``.
+    for i in range(n_t - 1):
+        q_i, q_n = q[:, i], q[:, i + 1]
+        x_next = a * xi_state + b * vi_state + c * q_i + d * q_n
+        vi_state = ap * xi_state + bp * vi_state + cp * q_i + dp * q_n
+        xi_state = x_next
+        x[:, i + 1] = x_next
+    return x
+
+
+def sdof_exact_solver(*, natural_frequencies: Any, damping_ratio: Any) -> ModalSolver:
+    """:class:`ModalSolver` using the exact piecewise-linear recurrence.
+
+    Solves the mass-normalized modal equation ``x'' + 2 xi wp x' + wp^2 x = Q(t)``
+    in closed form per step, exactly for a ``Q`` interpolated linearly between
+    samples. Requires sub-critical damping ``0 <= xi < 1`` and a uniform time
+    step.
     """
     wps = np.atleast_1d(np.asarray(natural_frequencies, dtype=np.float64))
 
@@ -153,17 +184,63 @@ def sdof_rk45_solver(
             raise ValueError(
                 f"natural_frequencies has {wps.shape[0]} entries; expected n_modes={n_modes}"
             )
-        xi = np.broadcast_to(
+        xis = np.broadcast_to(
             np.atleast_1d(np.asarray(damping_ratio, dtype=np.float64)), (n_modes,)
         )
+        if np.any(xis < 0) or np.any(xis >= 1):
+            raise ValueError(f"the exact solver needs sub-critical damping 0 <= xi < 1; got {xis}")
         dt = float(modes.time.timestep_size)
-
-        disp = np.empty_like(q)
-        for i in range(n_modes):
-            disp[i, :] = _solve_sdof_rk45(q[i, :], dt=dt, wp=float(wps[i]), xi=float(xi[i]))
-        return modes.with_field("q", disp)
+        if not np.isfinite(dt) or dt <= 0:
+            raise ValueError(f"modal time step must be positive and finite; got {dt}")
+        return modes.with_field("q", _solve_sdof_exact(q, dt, wps, xis))
 
     return solver
+
+
+def check_modal_sampling(
+    time_axis, natural_frequencies: Any, *, min_points_per_cycle: float = 8.0
+) -> None:
+    """Warn when the load's time axis cannot carry the modal response.
+
+    A dynamic run is only as good as the time axis of its forcing: feed a record
+    still on the solver's normalised time (or de-normalised with the wrong
+    length) and the response is computed at the wrong frequencies while every
+    array shape still looks right. Two cheap guards:
+
+    * the highest natural frequency must be resolved (``min_points_per_cycle``
+      samples per cycle, well inside Nyquist);
+    * the record must span at least ~10 cycles of the fundamental, or the peak
+      statistics are meaningless.
+
+    Warns rather than raises -- a short record is sometimes deliberate (a smoke
+    run), and the caller may be sampling a sub-window.
+    """
+    wps = np.atleast_1d(np.asarray(natural_frequencies, dtype=np.float64))
+    if wps.size == 0:
+        return
+    dt = float(time_axis.timestep_size)
+    n_t = int(time_axis.n_timesteps)
+    if not np.isfinite(dt) or dt <= 0:
+        return
+    f_max = float(wps.max()) / (2 * np.pi)
+    f_min = float(wps.min()) / (2 * np.pi)
+    points_per_cycle = 1.0 / (f_max * dt) if f_max > 0 else np.inf
+    if points_per_cycle < min_points_per_cycle:
+        warnings.warn(
+            f"load time step dt={dt:g} s resolves the highest mode ({f_max:.3g} Hz) with only "
+            f"{points_per_cycle:.1f} points per cycle (< {min_points_per_cycle:g}). Check the "
+            "time-axis scaling -- see cfdmod.dynamics.DimensionalData.",
+            UserWarning,
+            stacklevel=3,
+        )
+    cycles = n_t * dt * f_min
+    if cycles < 10:
+        warnings.warn(
+            f"load record spans only {cycles:.1f} cycles of the fundamental ({f_min:.3g} Hz); "
+            "peak statistics from it are not meaningful.",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class DynamicAnalysisConfig(BaseModel):
@@ -242,6 +319,8 @@ class BuildingDynamicConfig(BaseModel):
         natural_frequencies: ``(n_modes,)`` angular natural frequencies
             ``wp = 2*pi*f`` (rad/s).
         damping_ratio: Damping ratio ``xi``; scalar (broadcast) or per-mode array.
+        check_sampling: Warn when the load time axis cannot carry the modal
+            response (see :func:`check_modal_sampling`).
         field_x / field_y / field_mz: Load-coefficient field names on the input.
     """
 
@@ -254,6 +333,7 @@ class BuildingDynamicConfig(BaseModel):
     floors_radius: Any
     natural_frequencies: Any
     damping_ratio: Any = 0.02
+    check_sampling: bool = True
     field_x: str = "cf_x"
     field_y: str = "cf_y"
     field_mz: str = "cm_z"
@@ -271,6 +351,9 @@ def build_building_dynamic_response(
     phi = np.asarray(cfg.mode_shapes, dtype=np.float64)
     wps = np.atleast_1d(np.asarray(cfg.natural_frequencies, dtype=np.float64))
 
+    if cfg.check_sampling:
+        check_modal_sampling(load_source.time, wps)
+
     # 1. Physical loads -> generalized modal loads (CM lever arm).
     modes = generalized_building_load(
         load_source,
@@ -285,7 +368,7 @@ def build_building_dynamic_response(
     )
 
     # 2. Per-mode SDOF integration -> generalized modal displacements.
-    solver = sdof_rk45_solver(natural_frequencies=wps, damping_ratio=cfg.damping_ratio)
+    solver = sdof_exact_solver(natural_frequencies=wps, damping_ratio=cfg.damping_ratio)
     solved = solver(modes)
 
     # 3. Recompose physical floor response + static-equivalent loads.

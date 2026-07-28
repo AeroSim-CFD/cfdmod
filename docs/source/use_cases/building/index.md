@@ -139,10 +139,20 @@ is solved as a **modal single-degree-of-freedom (SDOF) system** per mode
    \ddot{q}_j + 2\,\xi_j\,\omega_j\,\dot{q}_j + \omega_j^2\,q_j = p_j(t)
    $$
 
-   is integrated in time (RK45) with damping ratio $\xi_j$ and natural
-   frequency $\omega_j$, and the modal coordinates are recomposed into
-   per-floor displacements ($d_x$, $d_y$) and torsional rotation
-   ($r_z$).
+   is solved in time with damping ratio $\xi_j$ and natural frequency
+   $\omega_j$, and the modal coordinates are recomposed into per-floor
+   displacements ($d_x$, $d_y$) and torsional rotation ($r_z$). The solver is
+   the closed-form piecewise-linear (Nigam-Jennings) recurrence, exact for a
+   load interpolated linearly between samples.
+
+   The load must arrive on a **physical** time axis. The pressure stage writes
+   a dimensionless time normalised by its own characteristic length, and that
+   same length -- not the base dimension used by the force normalisation --
+   must re-dimensionalise it; see
+   {class}`~cfdmod.dynamics.DimensionalData`. De-normalising with the wrong
+   length rescales the whole record, moving the forcing spectrum off the
+   natural frequencies and changing the resonant amplification while every
+   array shape and unit still looks right.
 4. The response is reported as per-floor displacements plus
    **static-equivalent** floor forces / moments ($f_{eq,x}$,
    $f_{eq,y}$, $m_{eq,z}$) that the structural engineer applies

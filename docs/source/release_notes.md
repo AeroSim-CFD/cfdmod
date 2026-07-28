@@ -1,5 +1,60 @@
 # Release Notes
 
+## 3.5.0
+
+Correctness and performance work on the building dynamic-response path. The
+Cp -> HFPI time-axis round trip is closed (it could silently rescale a whole
+load record, and did on a real case), the modal solve is replaced by its closed
+form, and the directional base-load plot no longer requires frames the caller
+did not ask for. Per-floor Cf / Cm and the static path are untouched.
+
+### Time-axis round trip (`cfdmod.dynamics.DimensionalData`)
+
+- The normalised time axis is now re-dimensionalised with
+  `simul_characteristic_length` -- the length the pressure stage used to
+  non-dimensionalise it -- instead of `base`, the building dimension the force
+  normalisation uses. Those are independent configuration choices, and when
+  they differ the old behaviour rescaled the entire load record: the forcing
+  spectrum slid off the structure's natural frequencies and the resonant
+  amplification changed, with every array shape, unit and range still looking
+  correct. On a real 86 m tower configured with `simul_characteristic_length`
+  = height and `base` = plan width, a 600 s simulated event was being replayed
+  as 148 s and the base shear came out about 40% high.
+- With the round trip closed the characteristic length cancels out entirely:
+  the new `time_scale_factor` property gives the physical time step directly as
+  `simul_U_H / U_H * integral_scale_multiplier`.
+- `simul_characteristic_length` and `simul_U_H` are new optional fields.
+  Omitting the first keeps the previous fallback to `base` and warns.
+
+### Modal solver
+
+- The SDOF modal solve is now the closed-form piecewise-linear (Nigam-Jennings)
+  recurrence, exact for the linearly-interpolated forcing the previous adaptive
+  integrator already assumed. It is roughly 2500x faster (a 10-mode, 4000-step
+  solve drops from about 97 s to 35 ms), which is what makes a full
+  16-direction fan-out with several damping and recurrence cases practical.
+- **Breaking:** the adaptive-integrator path is gone -- `sdof_rk45_solver` is
+  removed, along with `sdof_solver`, `SdofMethod` and the `solver_method` /
+  `method` arguments of `BuildingDynamicConfig` and `solve_building_response`.
+  It solved the same equation under the same assumptions, more slowly and less
+  accurately: at SciPy's default tolerances it carried around 3% error on a
+  lightly-damped modal response, enough to move a design peak. An independent
+  adaptive integration is kept in the test suite as a cross-check on the closed
+  form, which is where it belongs.
+
+### Directional base-load plot
+
+- `plot_global_stats_per_direction()` reads its direction axis from whichever
+  frame set the caller supplied. `get_global_peaks_by_direction()` returns one
+  pair of frames per `variable_type`, so plotting only the dynamic curves
+  (`variable_types=["hfpi"]`) previously raised `KeyError` on the absent
+  `forces_static` frame. Asking for a `variable_type` whose frames are missing
+  now raises a message naming the frame and how to produce it.
+- New `check_modal_sampling` warns when the load's time axis cannot carry the
+  modal response (fewer than eight samples per cycle of the highest mode, or a
+  record shorter than ten fundamental cycles), which is what a mis-scaled time
+  axis looks like from inside the solver. Disable with `check_sampling=False`.
+
 ## 3.4.0
 
 Correctness work on the building static-load path, plus the two library

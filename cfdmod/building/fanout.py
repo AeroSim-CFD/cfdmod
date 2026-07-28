@@ -171,6 +171,7 @@ def build_static_solve_fn(
     structure=None,
     method: str = "face_cut",
     damping_ratio: float = 0.02,
+    check_sampling: bool = True,
     point: tuple[float, float] = (0.0, 0.0),
     cp_statistics: list[str] | None = None,
     body_key_template: str = DEFAULT_BODY_KEY,
@@ -208,7 +209,9 @@ def build_static_solve_fn(
             if structure is not None
             else example_building_structure(case, load.n_elements)
         )
-        response = solve_building_response(load, struct, damping_ratio=damping_ratio)
+        response = solve_building_response(
+            load, struct, damping_ratio=damping_ratio, check_sampling=check_sampling
+        )
         result = floor_accelerations(response, struct, point=point)
         # attach the applied-static floor loads so get_stats_forces_effective /
         # effective_load_stats combine them with the dynamic static-equivalent

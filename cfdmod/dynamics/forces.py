@@ -43,12 +43,34 @@ _DYN_PRESSURE_COEFF = 0.613
 class DimensionalData(BaseModel):
     """Dimensional scaling for a building HFPI model.
 
+    **The time axis must be re-dimensionalised with the same length that
+    non-dimensionalised it.** The Cp stage writes ``time_normalized =
+    t_solver / (Lc_simul / U_simul)``; turning that back into seconds needs
+    ``Lc_simul``, which is an independent choice from the ``base`` used by the
+    force normalisation (``F = Cf * base * height * q``). Real case configs do
+    set them differently -- e.g. ``simul_characteristic_length = H`` with
+    ``base = B`` -- and de-normalising with ``base`` then stretches or
+    compresses the whole record by ``base / Lc_simul``, sliding the forcing
+    spectrum off the structure's natural frequencies and silently changing the
+    resonant amplification. Pass ``simul_characteristic_length`` so the round
+    trip closes; the legacy fallback to ``base`` warns.
+
+    With the length round trip closed the physical time step reduces to
+    ``dt_phys = dt_solver * (U_simul / U_H) * ISM`` -- see
+    :attr:`time_scale_factor` -- which carries no characteristic length at all.
+
     Attributes:
-        U_H: Reference wind speed at building height (m/s).
+        U_H: Design wind speed at building height (m/s).
         height: Building height (m).
-        base: Building base dimension (m).
-        integral_scale_multiplier: Turbulence integral-scale multiplier
-            applied to the time normalization.
+        base: Building base dimension (m), for the force / moment normalisation.
+        integral_scale_multiplier: Turbulence integral-scale multiplier applied
+            to the time normalisation (``1.0`` = no stretch).
+        simul_characteristic_length: The length the Cp stage used to
+            non-dimensionalise time (its ``simul_characteristic_length``), in m.
+            Defaults to ``base`` with a warning -- correct only when the two
+            genuinely coincide.
+        simul_U_H: The speed the Cp stage used to non-dimensionalise time (its
+            ``simul_U_H``), in m/s. Only needed for :attr:`time_scale_factor`.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -57,6 +79,8 @@ class DimensionalData(BaseModel):
     height: float
     base: float
     integral_scale_multiplier: float
+    simul_characteristic_length: float | None = None
+    simul_U_H: float | None = None
 
     @property
     def dynamic_pressure(self) -> float:
@@ -68,8 +92,43 @@ class DimensionalData(BaseModel):
         return self.base / self.U_H
 
     @property
+    def time_normalization_length(self) -> float:
+        """Length that re-dimensionalises the normalised time axis (m).
+
+        ``simul_characteristic_length`` when given; otherwise ``base``, with a
+        warning -- that fallback is the legacy behaviour and is only correct
+        when the Cp stage normalised time by ``base``.
+        """
+        if self.simul_characteristic_length is None:
+            warnings.warn(
+                "DimensionalData has no simul_characteristic_length; falling back to "
+                "base for the time de-normalisation. That is only correct if the Cp "
+                "stage normalised time by the same length. Pass the Cp config's "
+                "simul_characteristic_length explicitly.",
+                UserWarning,
+                stacklevel=3,
+            )
+            return self.base
+        return self.simul_characteristic_length
+
+    @property
     def time_normalization_factor(self) -> float:
-        return self.CST * self.integral_scale_multiplier
+        """``time_normalized`` -> seconds."""
+        return self.time_normalization_length / self.U_H * self.integral_scale_multiplier
+
+    @property
+    def time_scale_factor(self) -> float:
+        """Solver seconds -> full-scale seconds (``U_simul / U_H * ISM``).
+
+        The characteristic length cancels out of the round trip, so this is the
+        scaling a geometrically full-scale run actually needs. Requires
+        ``simul_U_H``.
+        """
+        if self.simul_U_H is None:
+            raise ValueError(
+                "time_scale_factor needs simul_U_H (the speed the Cp stage normalised by)"
+            )
+        return self.simul_U_H / self.U_H * self.integral_scale_multiplier
 
     @property
     def force_normalization_factor(self) -> float:

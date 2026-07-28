@@ -74,7 +74,7 @@ def test_custom_units_are_honoured():
 
 def test_feeds_building_dynamic_recipe():
     sd = read_eberick(EB)
-    cfg = sd.to_config(damping_ratio=0.02)
+    cfg = sd.to_config(damping_ratio=0.02, check_sampling=False)
     n_floors, n_t, dt = sd.n_floors, 128, 0.05
     t = np.arange(n_t) * dt
     load = PointsDataSource(

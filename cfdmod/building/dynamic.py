@@ -10,7 +10,7 @@ The pipeline the stage assembles:
 
     per-floor Cf/Cm timeseries (GroupsDataSource, from cfdmod.building.pressure)
         -> floor-load PointsDataSource (cf_x / cf_y / cm_z, dimensionalised)
-        -> generalized modal loads -> SDOF RK45 -> floor response
+        -> generalized modal loads -> SDOF modal solve -> floor response
            (disp_x / disp_y / rot_z + static-equivalent feq_x / feq_y / meq_z)
         -> off-centre horizontal accelerations (acc_x / acc_y / acc_mag)
 
@@ -204,14 +204,21 @@ def solve_building_response(
     structure: BuildingStructuralData,
     *,
     damping_ratio: float = 0.02,
+    check_sampling: bool = True,
 ) -> PointsDataSource:
     """Floor loads + structure -> per-floor dynamic response.
 
     Returns a ``PointsDataSource`` over the floors with displacement fields
     ``disp_x`` / ``disp_y`` / ``rot_z`` and static-equivalent load fields
     ``feq_x`` / ``feq_y`` / ``meq_z`` (each ``(n_floors, n_t)``).
+
+    ``load_source`` must carry a **physical** time axis (seconds). A record still
+    on the solver's normalised time, or de-normalised with the wrong
+    characteristic length, produces a fully-shaped but wrong answer; with
+    ``check_sampling`` the obvious cases warn. See
+    :class:`cfdmod.dynamics.DimensionalData` for the length round trip.
     """
-    cfg = structure.to_config(damping_ratio=damping_ratio)
+    cfg = structure.to_config(damping_ratio=damping_ratio, check_sampling=check_sampling)
     return build_building_dynamic_response(load_source, cfg)
 
 

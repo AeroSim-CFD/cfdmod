@@ -176,7 +176,9 @@ def response_bundle():
     src = _coef_source(series(1.0, 0.1), series(0.7, 0.5), series(0.2, 1.0))
     load = building.floor_load_source(src, src, case)
     structure = building.example_building_structure(case, load.n_elements)
-    response = building.solve_building_response(load, structure, damping_ratio=0.02)
+    response = building.solve_building_response(
+        load, structure, damping_ratio=0.02, check_sampling=False
+    )
     acc = building.floor_accelerations(response, structure, point=(1.0, 0.0))
     return case, structure, response, acc
 

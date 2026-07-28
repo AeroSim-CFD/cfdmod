@@ -45,7 +45,13 @@ def test_h5_round_trip(tmp_path):
 
 
 def test_dimensional_data_factors():
-    dim = DimensionalData(U_H=30.0, height=100.0, base=40.0, integral_scale_multiplier=2.0)
+    dim = DimensionalData(
+        U_H=30.0,
+        height=100.0,
+        base=40.0,
+        integral_scale_multiplier=2.0,
+        simul_characteristic_length=40.0,  # the Cp stage normalised by base here
+    )
     assert dim.dynamic_pressure == 0.613 * 30.0**2
     assert dim.CST == 40.0 / 30.0
     assert dim.time_normalization_factor == (40.0 / 30.0) * 2.0
@@ -55,7 +61,13 @@ def test_dimensional_data_factors():
 
 def test_build_floor_load_source_shapes_and_scaling(tmp_path):
     paths, dfs = _write_forces(tmp_path)
-    dim = DimensionalData(U_H=25.0, height=80.0, base=30.0, integral_scale_multiplier=1.5)
+    dim = DimensionalData(
+        U_H=25.0,
+        height=80.0,
+        base=30.0,
+        integral_scale_multiplier=1.5,
+        simul_characteristic_length=30.0,
+    )
 
     src = build_floor_load_source(
         paths["cf_x"], paths["cf_y"], paths["cm_z"], dim, n_floors=N_FLOORS
@@ -78,7 +90,13 @@ def test_missing_floor_filled_with_zeros(tmp_path):
     df["time_normalized"] = np.arange(N_T) * 0.5
     for name in ("cf_x", "cf_y", "cm_z"):
         write_force_h5(df, tmp_path / f"{name}.h5")
-    dim = DimensionalData(U_H=25.0, height=80.0, base=30.0, integral_scale_multiplier=1.0)
+    dim = DimensionalData(
+        U_H=25.0,
+        height=80.0,
+        base=30.0,
+        integral_scale_multiplier=1.0,
+        simul_characteristic_length=30.0,
+    )
 
     src = build_floor_load_source(
         tmp_path / "cf_x.h5", tmp_path / "cf_y.h5", tmp_path / "cm_z.h5", dim, n_floors=3
@@ -93,7 +111,13 @@ def test_parity_with_legacy_scaling(tmp_path):
     from tests.dynamics._goldens import golden
 
     paths, _ = _write_forces(tmp_path)
-    dim = DimensionalData(U_H=22.0, height=90.0, base=35.0, integral_scale_multiplier=1.3)
+    dim = DimensionalData(
+        U_H=22.0,
+        height=90.0,
+        base=35.0,
+        integral_scale_multiplier=1.3,
+        simul_characteristic_length=35.0,
+    )
 
     src = build_floor_load_source(
         paths["cf_x"], paths["cf_y"], paths["cm_z"], dim, n_floors=N_FLOORS
@@ -112,7 +136,13 @@ def test_end_to_end_disk_to_recipe(tmp_path):
     )
 
     paths, _ = _write_forces(tmp_path)
-    dim = DimensionalData(U_H=25.0, height=80.0, base=30.0, integral_scale_multiplier=1.0)
+    dim = DimensionalData(
+        U_H=25.0,
+        height=80.0,
+        base=30.0,
+        integral_scale_multiplier=1.0,
+        simul_characteristic_length=30.0,
+    )
     src = build_floor_load_source(
         paths["cf_x"], paths["cf_y"], paths["cm_z"], dim, n_floors=N_FLOORS
     )
@@ -128,6 +158,8 @@ def test_end_to_end_disk_to_recipe(tmp_path):
         floors_radius=np.full(N_FLOORS, 2.7),
         natural_frequencies=np.array([2 * np.pi * 1.0, 2 * np.pi * 2.5]),
         damping_ratio=0.02,
+        # synthetic short record: the sampling guard is not the subject here
+        check_sampling=False,
     )
     out = build_building_dynamic_response(src, cfg)
     for name in ("disp_x", "disp_y", "rot_z", "feq_x", "feq_y", "meq_z"):
