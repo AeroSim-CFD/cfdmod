@@ -42,6 +42,9 @@ def run_yaml(
     output_root: pathlib.Path | str | None = None,
     skip_fresh: bool = False,
     digest: DigestStrategy | None = None,
+    chunk_size: int | None = None,
+    memory_budget: int | None = None,
+    on_plan=None,
 ) -> dict[str, DataSource]:
     """Load and run a v3 pipeline template.
 
@@ -55,6 +58,12 @@ def run_yaml(
         skip_fresh: When True, skip recomputing outputs already up to date
             and run only the steps the stale outputs depend on.
         digest: Optional override of the template's input-digest strategy.
+        chunk_size: Timesteps per window; see :func:`run_template`.
+        memory_budget: Bytes the run may spend on time-resolved arrays. The
+            window size is derived from it. Mutually exclusive with
+            ``chunk_size``.
+        on_plan: Called with the chosen
+            :class:`~cfdmod.core.memory.ChunkPlan` before execution.
 
     Returns:
         The dict of every named binding the runner produced (inputs +
@@ -70,7 +79,14 @@ def run_yaml(
     root = pathlib.Path(output_root) if output_root is not None else pathlib.Path("/")
     storage = XdmfH5Storage(root)
 
-    return run_template(template, storage=storage, skip_fresh=skip_fresh)
+    return run_template(
+        template,
+        storage=storage,
+        skip_fresh=skip_fresh,
+        chunk_size=chunk_size,
+        memory_budget=memory_budget,
+        on_plan=on_plan,
+    )
 
 
 def status_yaml(

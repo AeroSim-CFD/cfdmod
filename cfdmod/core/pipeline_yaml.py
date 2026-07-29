@@ -83,7 +83,7 @@ __all__ = [
 
 import inspect
 import pathlib
-from typing import Callable, Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.json_schema import GenerateJsonSchema
@@ -97,6 +97,9 @@ from cfdmod.core.errors import (
 )
 from cfdmod.core.protocols import Storage
 from cfdmod.utils import read_yaml
+
+if TYPE_CHECKING:
+    from cfdmod.core.memory import ChunkPlan
 
 # ---------------------------------------------------------------------------
 # Op registry
@@ -740,11 +743,145 @@ def _accepts_kind(storage: Storage) -> bool:
     return any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
 
 
+def _live_time_arrays(template: PipelineTemplate) -> int:
+    """How many time-resolved arrays the pipeline holds at its widest point.
+
+    Used to price a time window. Counting exactly is not possible -- numpy
+    temporaries inside an op are invisible from here -- so this is a floor:
+    every declared input that carries a time axis, plus every step that
+    produces one. That is conservative in the right direction (it over-counts
+    live arrays, so it under-sizes the window) as long as ops do not allocate
+    more than one extra array of their own, which the field ops do not.
+
+    Never returns less than 1, so the caller can divide by it.
+    """
+    _populate_default_registry()
+    # Inputs are assumed time-resolved: an aggregated one costs a single
+    # column regardless of window size, so counting it is the safe error.
+    live = len(template.inputs) + len(template.pipeline)
+    return max(1, live)
+
+
+def _chunkable_step_params(template: PipelineTemplate) -> list[BaseModel]:
+    """Bound params for every step, for :func:`assert_time_chunkable`."""
+    out: list[BaseModel] = []
+    for step in template.pipeline:
+        entry = OP_REGISTRY.get(step.kind)
+        if entry is None:
+            continue
+        out.append(_step_params(step, entry[2], template.root))
+    return out
+
+
+def _plan_for(
+    template: PipelineTemplate,
+    bindings: dict[str, DataSource],
+    chunk_size: int | None,
+    memory_budget: int | None,
+    n_live_arrays: int | None,
+) -> "ChunkPlan":
+    """Size the time window for this run from the loaded inputs.
+
+    The shape comes from the widest time-resolved input: that is what a window
+    of the pipeline actually costs. With no time-resolved input, or a single
+    timestep, the plan is a single pass -- there is nothing to split.
+    """
+    from cfdmod.core.memory import plan_chunking
+
+    resolved_live = n_live_arrays if n_live_arrays is not None else _live_time_arrays(template)
+    timed = [ds for ds in bindings.values() if not ds.time.is_time_aggregated]
+    n_timesteps = max((ds.time.n_timesteps for ds in timed), default=0)
+    n_elements = max((ds.n_elements for ds in timed), default=0)
+
+    if n_timesteps <= 1:
+        return plan_chunking(n_elements, n_timesteps, n_live_arrays=resolved_live)
+    return plan_chunking(
+        n_elements,
+        n_timesteps,
+        budget_bytes=memory_budget,
+        chunk_size=chunk_size,
+        n_live_arrays=resolved_live,
+    )
+
+
+def _retained_bindings(template: PipelineTemplate) -> set[str] | None:
+    """Step ids whose per-window results must be kept, or ``None`` for all.
+
+    Only what the ``outputs:`` block asks for survives a chunked run. That is
+    not a convenience -- it is what makes chunking reduce anything. Keeping
+    every intermediate for every window holds the full-size arrays *plus* the
+    windowed copies, which costs strictly more than not chunking at all
+    (measured: 25.8 MB against 11.4 MB unchunked, on a template whose only
+    real output was a 4-group reduction of 4000 triangles).
+
+    With no declared outputs there is nothing to select on, so everything is
+    kept and chunking bounds transient allocations only.
+    """
+    sources = {out.source for out in template.outputs.values()}
+    return sources or None
+
+
+def _walk_chunked(
+    template: PipelineTemplate,
+    bindings: dict[str, DataSource],
+    needed_steps: set[str] | None,
+    plan: "ChunkPlan",
+) -> dict[str, DataSource]:
+    """Run the step walk once per time window and concatenate the results.
+
+    This is :func:`cfdmod.core.chunked.chunk_map_time` generalised to a
+    multi-input template: every time-resolved binding is sliced to the same
+    window, the whole walk runs on the slice, and the per-window results are
+    concatenated along time. Time-aggregated bindings (a static reference
+    pressure, a mesh) pass through untouched.
+
+    Only the bindings :func:`_retained_bindings` selects are accumulated
+    across windows; the rest go out of scope with their window, which is the
+    entire source of the memory saving. The returned dict therefore carries
+    the inputs (unsliced, as loaded) plus the retained results -- an
+    intermediate that no output depends on is not reconstructed.
+
+    Safe only for a time-length-preserving pipeline -- the caller must have
+    run :func:`~cfdmod.core.chunked.assert_time_chunkable` first. An op that
+    reduces the time axis (``statistics``) does not declare time
+    chunkability precisely because windowed statistics are not the statistics
+    of the whole series.
+    """
+    from cfdmod.core.chunked import concat_time, slice_time, time_windows
+
+    retain = _retained_bindings(template)
+    accumulated: dict[str, list[DataSource]] = {}
+    for sl in time_windows(plan.n_timesteps, plan.chunk_size):
+        window = {
+            name: ds if ds.time.is_time_aggregated else slice_time(ds, sl)
+            for name, ds in bindings.items()
+        }
+        produced = _walk_steps(template, window, needed_steps)
+        for name, ds in produced.items():
+            if retain is not None and name not in retain:
+                continue
+            accumulated.setdefault(name, []).append(ds)
+        # Drop the window's own bindings before allocating the next one.
+        del produced, window
+
+    merged: dict[str, DataSource] = dict(bindings)
+    for name, parts in accumulated.items():
+        if len(parts) == 1 or parts[0].time.is_time_aggregated:
+            merged[name] = parts[0]
+        else:
+            merged[name] = concat_time(parts)
+    return merged
+
+
 def run_template(
     template: PipelineTemplate,
     *,
     storage: Storage,
     skip_fresh: bool = False,
+    chunk_size: int | None = None,
+    memory_budget: int | None = None,
+    n_live_arrays: int | None = None,
+    on_plan: Callable[["ChunkPlan"], None] | None = None,
 ) -> dict[str, DataSource]:
     """Run a parsed template against a :class:`Storage`.
 
@@ -762,6 +899,42 @@ def run_template(
     the inputs those stale outputs depend on -- fresh outputs are neither
     recomputed nor rewritten. If every declared output is already fresh the
     run is a no-op and returns an empty binding dict.
+
+    Time chunking
+    -------------
+    With ``chunk_size`` or ``memory_budget`` the pipeline runs over contiguous
+    windows of the time axis and the per-window results are concatenated, so
+    peak memory is ``O(n_elements * chunk)`` rather than
+    ``O(n_elements * n_timesteps)``. The numbers are unchanged; only the peak
+    is.
+
+    Two things are worth being clear about:
+
+    - **It is not free on every template.** The win is real when the pipeline
+      collapses the element axis before the concatenation (a per-triangle force
+      summed to a per-floor coefficient): the big intermediates then live for
+      one window at a time while the concatenated result stays small. A
+      pipeline that keeps the full element axis still bounds its transient
+      allocations, but its final output is the same size as the unchunked one.
+    - **Not every pipeline may be chunked.** Every op must declare ``"time"``
+      in ``chunkable_along``. ``statistics`` deliberately does not -- the
+      statistics of a window are not the statistics of the series -- so a
+      template containing it raises before any I/O, naming the offending ops,
+      rather than producing plausible wrong numbers.
+
+    Args:
+        chunk_size: Timesteps per window. Mutually exclusive with
+            ``memory_budget``.
+        memory_budget: Bytes the run may spend on time-resolved arrays; the
+            window size is derived from it (see :mod:`cfdmod.core.memory`).
+            Mutually exclusive with ``chunk_size``.
+        n_live_arrays: Override for how many time-resolved arrays the budget
+            arithmetic assumes are live at once. Derived from the template
+            when omitted.
+        on_plan: Called with the :class:`~cfdmod.core.memory.ChunkPlan` before
+            execution starts, whether or not chunking is on. Use it to log or
+            surface what the run decided; ``ChunkPlan.describe()`` renders a
+            line.
     """
     _populate_default_registry()
     # Static validation first: fail on typos/dangling refs before any I/O.
@@ -823,7 +996,39 @@ def run_template(
             )
         bindings[name] = ds
 
-    # 2. Walk pipeline.
+    # 2. Decide whether and how to chunk the time axis, and say so.
+    plan = _plan_for(template, bindings, chunk_size, memory_budget, n_live_arrays)
+    if on_plan is not None:
+        on_plan(plan)
+    if plan.is_chunked:
+        # Fail before any work if an op in the chain cannot be windowed.
+        from cfdmod.core.chunked import assert_time_chunkable
+
+        try:
+            assert_time_chunkable(_chunkable_step_params(template))
+        except ValueError as exc:
+            raise TemplateError(f"cannot run this template chunked over time: {exc}") from exc
+
+    # 3. Walk pipeline, over the whole time axis or one window at a time.
+    if plan.is_chunked:
+        bindings = _walk_chunked(template, bindings, needed_steps, plan)
+    else:
+        bindings = _walk_steps(template, bindings, needed_steps)
+
+    return _write_outputs(template, bindings, storage, stale_outputs, supports_freshness, strategy)
+
+
+def _walk_steps(
+    template: PipelineTemplate,
+    bindings: dict[str, DataSource],
+    needed_steps: set[str] | None,
+) -> dict[str, DataSource]:
+    """Execute the template's steps against ``bindings``, returning them extended.
+
+    Split out of :func:`run_template` so the chunked runner can call it once per
+    time window with windowed inputs. ``bindings`` is not mutated.
+    """
+    bindings = dict(bindings)
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
         if needed_steps is not None and step_id not in needed_steps:
@@ -870,8 +1075,18 @@ def run_template(
 
         bindings[step_id] = result
 
-    # 3. Write outputs (skipping fresh ones under skip_fresh) and stamp each
-    #    with its freshness signature when the backend supports it.
+    return bindings
+
+
+def _write_outputs(
+    template: PipelineTemplate,
+    bindings: dict[str, DataSource],
+    storage: Storage,
+    stale_outputs: set[str] | None,
+    supports_freshness: bool,
+    strategy: str,
+) -> dict[str, DataSource]:
+    """Write the ``outputs:`` block, stamping freshness where supported."""
     sign = None
     if supports_freshness and template.outputs:
         from cfdmod.core.freshness import signature as sign
