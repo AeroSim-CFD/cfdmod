@@ -11,6 +11,29 @@ from cfdmod.regroup.cli import app as regroup_app
 from cfdmod.roughness.cli import app as roughness_app
 
 app = typer.Typer()
+
+
+@app.callback()
+def _main(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show DEBUG-level logs."),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Show warnings and errors only."),
+) -> None:
+    """Post-processing and geometry preparation for CFD wind tunnel simulations."""
+    # The library configures no logging at import (that is an application's
+    # job); the CLI *is* the application, so it opts in here. Diagnostics go to
+    # stderr so a command's real output stays pipeable, and colour follows
+    # isatty so a redirected run does not collect escape codes.
+    import logging
+
+    from cfdmod.logger import configure_logging
+
+    if verbose and quiet:
+        typer.echo("error: pass --verbose or --quiet, not both", err=True)
+        raise typer.Exit(code=1)
+    level = logging.DEBUG if verbose else logging.WARNING if quiet else logging.INFO
+    configure_logging(level)
+
+
 app.add_typer(altimetry_app, name="altimetry")
 app.add_typer(dynamics_app, name="dynamics", help="Convert TQS/Eberick structural exports.")
 app.add_typer(loft_app, name="loft", help="Generate terrain loft surfaces.")
