@@ -431,8 +431,17 @@ class OutputSpec(BaseModel):
         path: Destination path, resolved against the template root.
         format: Storage format tag. Only ``xdmf_h5`` is currently
             supported (the sole built-in :class:`Storage`).
+        persist: Whether to write this output through the storage.
+            ``False`` computes it and hands it back without touching disk --
+            what a service wants when it will serialise the result itself.
+        hold: Whether to keep this output in the dict ``run_template``
+            returns. ``False`` lets its arrays be released as soon as it has
+            been written, which is what a batch job wants.
         extras: Free-form fields forwarded to the storage adapter
             (e.g. ``group`` name for the H5 timeseries layout).
+
+    Setting both to ``False`` would compute an output and throw it away, so it
+    is rejected at validation.
     """
 
     model_config = ConfigDict(extra="allow")
@@ -440,6 +449,8 @@ class OutputSpec(BaseModel):
     source: str
     path: str
     format: Literal["xdmf_h5"] = "xdmf_h5"
+    persist: bool = True
+    hold: bool = True
 
 
 class OpSpec(BaseModel):
@@ -668,6 +679,11 @@ def validate_template(template: PipelineTemplate) -> None:
                 f"output {out_name!r} references unknown source {out.source!r}; "
                 f"known: {sorted(known)}"
             )
+        if not out.persist and not out.hold:
+            raise TemplateError(
+                f"output {out_name!r} sets both persist and hold to false, so it would "
+                "be computed and discarded; drop the output instead"
+            )
 
 
 def _resolve_key(template_root: str | None, path: str) -> str:
@@ -805,6 +821,29 @@ def _plan_for(
     )
 
 
+def _last_use(template: PipelineTemplate) -> dict[str, int]:
+    """Step index after which each binding is no longer read.
+
+    A binding is live until the last step that names it as ``source`` or
+    ``rhs``; anything an output depends on is live to the end (represented by
+    an index past the last step). Used to drop the runner's reference to an
+    intermediate as soon as nothing downstream can ask for it -- the arrays
+    then go when Python's refcount hits zero, which is the only safe way to
+    release them: bindings share field arrays by reference, so the runner must
+    never reach in and mutate a store.
+    """
+    end = len(template.pipeline)
+    last: dict[str, int] = {}
+    for i, step in enumerate(template.pipeline):
+        for ref in (step.source, step.rhs):
+            if ref:
+                last[ref] = i
+        last[step.id or f"step_{i}"] = last.get(step.id or f"step_{i}", i)
+    for out in template.outputs.values():
+        last[out.source] = end
+    return last
+
+
 def _retained_bindings(template: PipelineTemplate) -> set[str] | None:
     """Step ids whose per-window results must be kept, or ``None`` for all.
 
@@ -860,6 +899,7 @@ def _walk_chunked(
     needed_steps: set[str] | None,
     plan: "ChunkPlan",
     reporter: "_Reporter" = _NULL_REPORTER,
+    last_use: dict[str, int] | None = None,
 ) -> dict[str, DataSource]:
     """Run the step walk once per time window and concatenate the results.
 
@@ -895,7 +935,13 @@ def _walk_chunked(
             for name, ds in bindings.items()
         }
         produced = _walk_steps(
-            template, window, needed_steps, reporter, window_index=w, n_windows=len(windows)
+            template,
+            window,
+            needed_steps,
+            reporter,
+            window_index=w,
+            n_windows=len(windows),
+            last_use=last_use,
         )
         for name, ds in produced.items():
             if retain is not None and name not in retain:
@@ -924,6 +970,7 @@ def run_template(
     on_plan: Callable[["ChunkPlan"], None] | None = None,
     on_progress: Callable[["RunEvent"], None] | None = None,
     cancel: Callable[[], bool] | None = None,
+    return_all: bool = False,
 ) -> dict[str, DataSource]:
     """Run a parsed template against a :class:`Storage`.
 
@@ -984,6 +1031,15 @@ def run_template(
             interrupt a numpy call in flight, so a run stops at the next
             boundary -- but the check precedes every write, so a cancelled run
             never leaves a partially written output set.
+        return_all: Keep every intermediate binding alive and return it. Off by
+            default: the runner otherwise drops each binding once no remaining
+            step or output reads it, so the peak of a run is its widest live
+            set rather than the sum of everything it ever computed. Turn it on
+            for notebook work where inspecting intermediates is the point.
+
+    Returns:
+        The inputs, plus the outputs declared with ``hold: true`` (the
+        default), plus -- with ``return_all`` -- every intermediate.
     """
     _populate_default_registry()
     # Static validation first: fail on typos/dangling refs before any I/O.
@@ -1013,6 +1069,9 @@ def run_template(
     # 1. Load inputs (all, or -- under skip_fresh -- only those the stale
     #    outputs depend on).
     reporter = _Reporter(on_progress, cancel)
+    # With no declared outputs there is nothing to select on, so keep
+    # everything -- that template is being run for its intermediates.
+    last_use = None if (return_all or not template.outputs) else _last_use(template)
     accepts_kind = _accepts_kind(storage)
     bindings: dict[str, DataSource] = {}
     n_inputs = len(template.inputs)
@@ -1064,12 +1123,19 @@ def run_template(
 
     # 3. Walk pipeline, over the whole time axis or one window at a time.
     if plan.is_chunked:
-        bindings = _walk_chunked(template, bindings, needed_steps, plan, reporter)
+        bindings = _walk_chunked(template, bindings, needed_steps, plan, reporter, last_use)
     else:
-        bindings = _walk_steps(template, bindings, needed_steps, reporter)
+        bindings = _walk_steps(template, bindings, needed_steps, reporter, last_use=last_use)
 
     return _write_outputs(
-        template, bindings, storage, stale_outputs, supports_freshness, strategy, reporter
+        template,
+        bindings,
+        storage,
+        stale_outputs,
+        supports_freshness,
+        strategy,
+        reporter,
+        return_all,
     )
 
 
@@ -1081,6 +1147,7 @@ def _walk_steps(
     *,
     window_index: int | None = None,
     n_windows: int | None = None,
+    last_use: dict[str, int] | None = None,
 ) -> dict[str, DataSource]:
     """Execute the template's steps against ``bindings``, returning them extended.
 
@@ -1145,6 +1212,13 @@ def _walk_steps(
 
         bindings[step_id] = result
 
+        # Drop our reference to anything no downstream step or output reads.
+        # Refcounting frees the arrays; we never mutate a store, because
+        # bindings share field arrays and another binding may still hold one.
+        if last_use is not None:
+            for name in [n for n, last in last_use.items() if last <= i and n in bindings]:
+                del bindings[name]
+
     return bindings
 
 
@@ -1156,28 +1230,43 @@ def _write_outputs(
     supports_freshness: bool,
     strategy: str,
     reporter: "_Reporter" = _NULL_REPORTER,
+    return_all: bool = False,
 ) -> dict[str, DataSource]:
     """Write the ``outputs:`` block, stamping freshness where supported.
+
+    Honours each output's ``persist`` / ``hold``: ``persist: false`` computes it
+    without touching storage, ``hold: false`` drops it from the returned dict
+    once written.
 
     Cancellation is polled before each write, so a cancelled run never leaves a
     partially written output set.
     """
     sign = None
-    if supports_freshness and template.outputs:
+    if supports_freshness and any(o.persist for o in template.outputs.values()):
         from cfdmod.core.freshness import signature as sign
 
     total = len(template.outputs)
+    dropped: set[str] = set()
     for i, (out_name, out) in enumerate(template.outputs.items()):
         if stale_outputs is not None and out_name not in stale_outputs:
             continue
-        reporter.check("write", out_name)
-        reporter.emit("write", out_name, i, total)
         if out.source not in bindings:
             raise TemplateReferenceError(f"output references unknown source {out.source!r}")
-        key = _resolve_key(template.root, out.path)
-        storage.write_data_source(key, bindings[out.source])
-        if sign is not None:
-            storage.write_signature(key, sign(template, out_name, storage, strategy))
+        if out.persist:
+            reporter.check("write", out_name)
+            reporter.emit("write", out_name, i, total)
+            key = _resolve_key(template.root, out.path)
+            storage.write_data_source(key, bindings[out.source])
+            if sign is not None:
+                storage.write_signature(key, sign(template, out_name, storage, strategy))
+        if not out.hold:
+            dropped.add(out.source)
+
+    # An output source is only released if *no* output that holds shares it.
+    if not return_all:
+        kept = {o.source for o in template.outputs.values() if o.hold}
+        for name in dropped - kept:
+            bindings.pop(name, None)
 
     return bindings
 
