@@ -100,6 +100,7 @@ from cfdmod.utils import read_yaml
 
 if TYPE_CHECKING:
     from cfdmod.core.memory import ChunkPlan
+    from cfdmod.core.progress import RunEvent
 
 # ---------------------------------------------------------------------------
 # Op registry
@@ -821,11 +822,44 @@ def _retained_bindings(template: PipelineTemplate) -> set[str] | None:
     return sources or None
 
 
+class _Reporter:
+    """Bundles the ``on_progress`` / ``cancel`` seams so the runner takes one
+    argument instead of threading two optionals through four functions.
+
+    Both are optional and the no-op case costs an attribute check, so the
+    unobserved path is unchanged.
+    """
+
+    __slots__ = ("_on_progress", "_cancel")
+
+    def __init__(self, on_progress, cancel) -> None:
+        self._on_progress = on_progress
+        self._cancel = cancel
+
+    def emit(self, phase, name, index, total, **extra) -> None:
+        if self._on_progress is None:
+            return
+        from cfdmod.core.progress import RunEvent
+
+        self._on_progress(RunEvent(phase=phase, name=name, index=index, total=total, **extra))
+
+    def check(self, phase, name) -> None:
+        """Raise :class:`RunCancelled` if the caller asked to stop."""
+        if self._cancel is not None and self._cancel():
+            from cfdmod.core.progress import RunCancelled
+
+            raise RunCancelled(phase, name)
+
+
+_NULL_REPORTER = _Reporter(None, None)
+
+
 def _walk_chunked(
     template: PipelineTemplate,
     bindings: dict[str, DataSource],
     needed_steps: set[str] | None,
     plan: "ChunkPlan",
+    reporter: "_Reporter" = _NULL_REPORTER,
 ) -> dict[str, DataSource]:
     """Run the step walk once per time window and concatenate the results.
 
@@ -850,13 +884,19 @@ def _walk_chunked(
     from cfdmod.core.chunked import concat_time, slice_time, time_windows
 
     retain = _retained_bindings(template)
+    windows = list(time_windows(plan.n_timesteps, plan.chunk_size))
     accumulated: dict[str, list[DataSource]] = {}
-    for sl in time_windows(plan.n_timesteps, plan.chunk_size):
+    for w, sl in enumerate(windows):
+        # Poll per window: that is the unit of work that actually takes time,
+        # so it is the granularity at which cancelling is useful.
+        reporter.check("step", f"window {w + 1}")
         window = {
             name: ds if ds.time.is_time_aggregated else slice_time(ds, sl)
             for name, ds in bindings.items()
         }
-        produced = _walk_steps(template, window, needed_steps)
+        produced = _walk_steps(
+            template, window, needed_steps, reporter, window_index=w, n_windows=len(windows)
+        )
         for name, ds in produced.items():
             if retain is not None and name not in retain:
                 continue
@@ -882,6 +922,8 @@ def run_template(
     memory_budget: int | None = None,
     n_live_arrays: int | None = None,
     on_plan: Callable[["ChunkPlan"], None] | None = None,
+    on_progress: Callable[["RunEvent"], None] | None = None,
+    cancel: Callable[[], bool] | None = None,
 ) -> dict[str, DataSource]:
     """Run a parsed template against a :class:`Storage`.
 
@@ -935,6 +977,13 @@ def run_template(
             execution starts, whether or not chunking is on. Use it to log or
             surface what the run decided; ``ChunkPlan.describe()`` renders a
             line.
+        on_progress: Called with a :class:`~cfdmod.core.progress.RunEvent` as
+            each input is loaded, each step runs, and each output is written.
+        cancel: Polled at those same boundaries; returning True raises
+            :class:`~cfdmod.core.progress.RunCancelled`. cfdmod cannot
+            interrupt a numpy call in flight, so a run stops at the next
+            boundary -- but the check precedes every write, so a cancelled run
+            never leaves a partially written output set.
     """
     _populate_default_registry()
     # Static validation first: fail on typos/dangling refs before any I/O.
@@ -963,11 +1012,15 @@ def run_template(
 
     # 1. Load inputs (all, or -- under skip_fresh -- only those the stale
     #    outputs depend on).
+    reporter = _Reporter(on_progress, cancel)
     accepts_kind = _accepts_kind(storage)
     bindings: dict[str, DataSource] = {}
-    for name, spec in template.inputs.items():
+    n_inputs = len(template.inputs)
+    for i, (name, spec) in enumerate(template.inputs.items()):
         if needed_inputs is not None and name not in needed_inputs:
             continue
+        reporter.check("load", name)
+        reporter.emit("load", name, i, n_inputs)
         # Storage keys are logical names. We treat the resolved path as
         # the storage key so the adapter can map it to its on-disk
         # layout.
@@ -1011,17 +1064,23 @@ def run_template(
 
     # 3. Walk pipeline, over the whole time axis or one window at a time.
     if plan.is_chunked:
-        bindings = _walk_chunked(template, bindings, needed_steps, plan)
+        bindings = _walk_chunked(template, bindings, needed_steps, plan, reporter)
     else:
-        bindings = _walk_steps(template, bindings, needed_steps)
+        bindings = _walk_steps(template, bindings, needed_steps, reporter)
 
-    return _write_outputs(template, bindings, storage, stale_outputs, supports_freshness, strategy)
+    return _write_outputs(
+        template, bindings, storage, stale_outputs, supports_freshness, strategy, reporter
+    )
 
 
 def _walk_steps(
     template: PipelineTemplate,
     bindings: dict[str, DataSource],
     needed_steps: set[str] | None,
+    reporter: "_Reporter" = _NULL_REPORTER,
+    *,
+    window_index: int | None = None,
+    n_windows: int | None = None,
 ) -> dict[str, DataSource]:
     """Execute the template's steps against ``bindings``, returning them extended.
 
@@ -1029,10 +1088,21 @@ def _walk_steps(
     time window with windowed inputs. ``bindings`` is not mutated.
     """
     bindings = dict(bindings)
+    total = len(template.pipeline)
     for i, step in enumerate(template.pipeline):
         step_id = step.id or f"step_{i}"
         if needed_steps is not None and step_id not in needed_steps:
             continue
+        reporter.check("step", step_id)
+        reporter.emit(
+            "step",
+            step_id,
+            i,
+            total,
+            op_kind=step.kind,
+            window=window_index,
+            n_windows=n_windows,
+        )
         if step.kind not in OP_REGISTRY:
             raise TemplateReferenceError(
                 f"unknown op kind {step.kind!r} at step {step_id!r}; "
@@ -1085,15 +1155,23 @@ def _write_outputs(
     stale_outputs: set[str] | None,
     supports_freshness: bool,
     strategy: str,
+    reporter: "_Reporter" = _NULL_REPORTER,
 ) -> dict[str, DataSource]:
-    """Write the ``outputs:`` block, stamping freshness where supported."""
+    """Write the ``outputs:`` block, stamping freshness where supported.
+
+    Cancellation is polled before each write, so a cancelled run never leaves a
+    partially written output set.
+    """
     sign = None
     if supports_freshness and template.outputs:
         from cfdmod.core.freshness import signature as sign
 
-    for out_name, out in template.outputs.items():
+    total = len(template.outputs)
+    for i, (out_name, out) in enumerate(template.outputs.items()):
         if stale_outputs is not None and out_name not in stale_outputs:
             continue
+        reporter.check("write", out_name)
+        reporter.emit("write", out_name, i, total)
         if out.source not in bindings:
             raise TemplateReferenceError(f"output references unknown source {out.source!r}")
         key = _resolve_key(template.root, out.path)
