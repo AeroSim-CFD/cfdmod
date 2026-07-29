@@ -36,6 +36,7 @@ from cfdmod.building.modes_report import (
 from cfdmod.building.fanout import (
     FanoutPlan,
     StaticCaseKey,
+    StaticSolveFn,
     build_static_keys,
     build_static_solve_fn,
     default_storage_key,
@@ -97,6 +98,7 @@ __all__ = [
     "save_load_case_tables",
     "FanoutPlan",
     "StaticCaseKey",
+    "StaticSolveFn",
     "build_static_keys",
     "build_static_solve_fn",
     "default_storage_key",
