@@ -151,9 +151,9 @@ class Profile:
         profile_data = pd.read_csv(csv_path)
 
         if position_lbl not in profile_data.columns:
-            raise Exception(f"Data must contain column named {position_lbl}")
+            raise ValueError(f"Data must contain column named {position_lbl}")
         if value_lbl not in profile_data.columns:
-            raise Exception(f"Data must contain column named {value_lbl}")
+            raise ValueError(f"Data must contain column named {value_lbl}")
 
         pos = profile_data[position_lbl].to_numpy()
         values = profile_data[value_lbl].to_numpy()

@@ -13,24 +13,24 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-def create_folders_for_file(filename: pathlib.Path):
-    """Creates folders to save given file
-
-    Args:
-        filename (pathlib.Path): Filename to setup folder
-    """
-
-    filename.parent.mkdir(parents=True, exist_ok=True)
-
-
 def create_folder_path(path: pathlib.Path):
-    """Creates folders path
+    """Create ``path`` and any missing parents.
 
     Args:
         path (pathlib.Path): Path to create
     """
 
     path.mkdir(parents=True, exist_ok=True)
+
+
+def create_folders_for_file(filename: pathlib.Path):
+    """Create the directory ``filename`` will be written into.
+
+    Args:
+        filename (pathlib.Path): Filename to setup folder
+    """
+
+    create_folder_path(filename.parent)
 
 
 def read_yaml(filename: pathlib.Path) -> Any:
@@ -40,21 +40,26 @@ def read_yaml(filename: pathlib.Path) -> Any:
         filename (str): File to read from
 
     Raises:
-        Exception: Unable to read YAML from file
+        FileNotFoundError: The file does not exist.
+        TemplateError: The file exists but is not parseable YAML.
 
     Returns:
         Any: YAML content as python objects (dict, list, etc.)
     """
+    # Typed, not bare ``Exception``: this is what ``load_template`` calls, so a
+    # malformed template submitted by a caller has to be catchable by type
+    # rather than by matching a message string.
     if not filename.exists():
-        raise Exception(f"Unable to read yaml. Filename {filename} does not exists")
+        raise FileNotFoundError(f"Unable to read yaml. Filename {filename} does not exist")
 
-    # Read YAML from file
+    from cfdmod.core.errors import TemplateError
+
     with open(filename, "r", encoding="utf-8") as f:
         try:
             yaml = YAML(typ="safe")
             return yaml.load(f)
         except Exception as e:
-            raise Exception(f"Unable to load YAML from {filename}. Exception {e}") from e
+            raise TemplateError(f"Unable to load YAML from {filename}: {e}") from e
 
 
 def save_yaml(data: Any, filename: pathlib.Path):
@@ -119,8 +124,8 @@ def convert_matrix_into_dataframe(
     row_data_label: str = "time_step",
     column_data_label: str = "point_idx",
     value_data_label: str = "rho",
-    column_order: tuple[str, str, str] = (),
-    sort_order: list[str] = [],
+    column_order: tuple[str, str, str] | None = None,
+    sort_order: list[str] | None = None,
     column_dtype: np.dtype = np.int32,
 ) -> pd.DataFrame:
     """Converts a matrix into a dataframe form representation
@@ -130,8 +135,10 @@ def convert_matrix_into_dataframe(
         row_data_label (str): Label for the row values (index). Defaults to "time_step".
         column_data_label (str): Label for the column values. Defaults to "point_idx".
         value_data_label (str): Label for the values. Defaults to "rho".
-        column_order (tuple[str, str, str], optional): _description_. Defaults to ().
-        sort_order (list[str], optional): Order for sorting columns. Defaults to [].
+        column_order (tuple[str, str, str], optional): Output column order.
+            Defaults to None (``column``, ``value``, ``row``).
+        sort_order (list[str], optional): Order for sorting columns. Defaults
+            to None (``row``, ``column``).
         column_dtype (np.dtype, optional): Type of the values used to index the columns. Defaults to np.int32.
 
     Returns:
@@ -141,16 +148,16 @@ def convert_matrix_into_dataframe(
 
     default_column_order = [column_data_label, value_data_label, row_data_label]
     default_sort_order = [row_data_label, column_data_label]
-    if len(column_order) != 3 and len(column_order) != 0:
-        raise Exception("Column order must have 3 or 0 elements")
+    column_order = () if column_order is None else column_order
+    sort_order = [] if sort_order is None else sort_order
+    if len(column_order) not in (0, 3):
+        raise ValueError(f"column_order must have 3 or 0 elements; got {len(column_order)}")
 
     # Manual melt logic
     time_arr = matrix_df[row_data_label].to_numpy()
     point_col = [col for col in matrix_df.columns if col != row_data_label]
     point_arr = np.array([int(col) for col in point_col], dtype=np.uint32)
     data_matrix = matrix_df[point_col].to_numpy()
-
-    # print(point_arr, time_arr, matrix_df)
 
     dataframe = pd.DataFrame(
         {

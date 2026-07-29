@@ -120,7 +120,9 @@ class PositionParams(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
+            raise FileNotFoundError(
+                f"Unable to read yaml. File {file_path.name} does not exists does not exist"
+            )
 
 
 class RadialParams(BaseModel):
@@ -194,7 +196,9 @@ class RadialParams(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
+            raise FileNotFoundError(
+                f"Unable to read yaml. File {file_path.name} does not exists does not exist"
+            )
 
 
 class GenerationParams(BaseModel):
@@ -295,4 +299,6 @@ class GenerationParams(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. File {file_path.name} does not exists")
+            raise FileNotFoundError(
+                f"Unable to read yaml. File {file_path.name} does not exists does not exist"
+            )

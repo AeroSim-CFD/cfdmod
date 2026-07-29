@@ -69,7 +69,7 @@ class AltimetryProbe(BaseModel):
         probes_list: list[AltimetryProbe] = []
 
         if not all([x in probes_df.columns for x in ["X", "Y", "Z"]]):
-            raise Exception("Missing probe coordinates columns")
+            raise ValueError("Missing probe coordinates columns")
 
         for probe_data in probes_df.iterrows():
             data = probe_data[1]  # Unpack data from dataframe iterrow

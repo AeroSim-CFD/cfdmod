@@ -401,26 +401,32 @@ def _groups_to_parent_surface(ds: GroupsDataSource) -> SurfaceDataSource:
     from cfdmod.adapters.memory import MemoryFieldStore
     from cfdmod.core.field_meta import FieldMeta
 
-    parent_indices = ds.parent_grouping.indices
-    group_ids = ds.groupings[ds.parent_grouping.name].indices  # row index -> group id
-    # Map group id -> row index in the groups source.
-    row_for_gid = {int(gid): row for row, gid in enumerate(group_ids)}
-    n_parent = ds.parent_topology.n_elements
+    parent_indices = np.asarray(ds.parent_grouping.indices)
+    group_ids = np.asarray(ds.groupings[ds.parent_grouping.name].indices)  # row -> group id
+    # parent_indices has one entry per parent triangle -- GroupsDataSource's
+    # validator enforces that -- so the gathered arrays come out parent-shaped.
+
+    # Group id -> row index, as a lookup array rather than a dict walked once
+    # per triangle. Group ids can be any non-negative integers (and -1 for
+    # ungrouped), so the table is sized by the largest id present.
+    max_gid = int(group_ids.max()) if group_ids.size else -1
+    row_for_gid = np.full(max(max_gid + 1, 1), -1, dtype=np.int64)
+    if group_ids.size:
+        row_for_gid[group_ids] = np.arange(group_ids.size, dtype=np.int64)
+
+    in_range = (parent_indices >= 0) & (parent_indices <= max_gid)
+    rows = np.where(in_range, row_for_gid[np.clip(parent_indices, 0, max(max_gid, 0))], -1)
+    known = rows >= 0
+    safe_rows = np.where(known, rows, 0)
 
     out_arrays: dict[str, np.ndarray] = {}
     out_meta: dict[str, FieldMeta] = {}
     for fname in ds.fields.keys():
         arr = np.asarray(ds.fields.read(fname), dtype=np.float64)
-        if arr.ndim == 2:
-            broadcast = np.full((n_parent, arr.shape[1]), np.nan, dtype=np.float64)
-        else:
-            broadcast = np.full(n_parent, np.nan, dtype=np.float64)
-        for tri in range(n_parent):
-            gid = int(parent_indices[tri])
-            if gid not in row_for_gid:
-                continue
-            broadcast[tri] = arr[row_for_gid[gid]]
-        out_arrays[fname] = broadcast
+        gathered = arr[safe_rows]
+        # Triangles in ungrouped territory get NaN, as before.
+        mask = known if gathered.ndim == 1 else known[:, None]
+        out_arrays[fname] = np.where(mask, gathered, np.nan)
         out_meta[fname] = ds.field_meta.get(fname, FieldMeta(name=fname))
 
     return SurfaceDataSource(

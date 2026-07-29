@@ -86,7 +86,8 @@ cfdmod/
         io/                 geometry (STL/lnas load), vtk (ParaView probe/write)
         inflow.py           InflowData + inflow analysis functions (single file)
         inflow_report.py    ABL profile detection + inflow-validation figures
-        hfpi/               legacy HFPI dynamic pipeline (RK45 SDOF, reporting)
+        dynamics/           building dynamic response: TQS/Eberick modal import, per-case
+                            solve + reducers (cases.py), vortex shedding, plotting
         geometry/grouping/  triangle-index grouping specs (By*Grouping union)
         regroup/            disk regroup: new lnas + reordered h5 timeseries
         remesh/             QEM decimation per group
@@ -103,9 +104,13 @@ cfdmod/
     docs/                   Sphinx documentation
 ```
 
-Note: `cfdmod/api/` and `cfdmod/analysis/inflow/` hold only stale `.pyc`
-cruft (not git-tracked); ignore them. There is no `cfdmod/pressure/`
-package -- Cp/Cf/Cm/Ce are recipes under `core/recipes/`.
+Note: a checkout that has been through older versions may still have
+`api/`, `analysis/`, `config/`, `hfpi/`, `pressure/` and `use_cases/`
+directories under `cfdmod/` holding nothing but orphaned `.pyc`. None is
+git-tracked; they are safe to delete and should be ignored. In
+particular there is no `cfdmod/pressure/` package -- Cp/Cf/Cm/Ce are
+recipes under `core/recipes/` -- and the dynamic pipeline is
+`cfdmod/dynamics/`, not the empty `hfpi/`.
 
 ### Layout inside each domain module
 
