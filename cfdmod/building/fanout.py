@@ -24,7 +24,10 @@ Design notes / best-guess calls (flagged for review):
   future refinement); provenance (region info + config) is written once.
 - With a real multiprocessing ``Pool`` the ``solve_fn`` must be picklable, so it
   re-reads its inputs from ``storage`` inside the worker rather than closing over
-  large in-RAM DataSources.
+  large in-RAM DataSources. It is a :class:`StaticSolveFn` -- a module-level
+  callable object -- and not a closure, because pickle refuses a function
+  defined inside another function and the fan-out would fail on its first
+  dispatch.
 """
 
 from __future__ import annotations
@@ -35,6 +38,7 @@ __all__ = [
     "build_static_keys",
     "default_storage_key",
     "build_static_solve_fn",
+    "StaticSolveFn",
     "run_fanout",
     "dump_provenance",
 ]
@@ -163,6 +167,89 @@ def default_storage_key(kind: str, key: StaticCaseKey) -> str:
     raise ValueError(f"unknown storage key kind {kind!r}")
 
 
+class StaticSolveFn:
+    """The default per-key pipeline, as a picklable callable.
+
+    A closure would read better and cannot cross a process boundary: pickle
+    refuses a function defined inside another function, so
+    ``run_fanout(pool=multiprocessing.Pool())`` failed on the very first
+    dispatch. A module-level class with picklable attributes is the shape that
+    actually survives the trip.
+
+    It holds no data source. Its state is the case, the storage handle, the
+    mesh path and the scalar options; each call re-reads its body and reference
+    pressure from ``storage`` inside the worker, so nothing large is shipped
+    per task.
+
+    A custom ``key_for`` must itself be picklable for pool use -- a module-level
+    function or a callable object, not a lambda. The default template path has
+    no such constraint.
+    """
+
+    def __init__(
+        self,
+        *,
+        case: BuildingCase,
+        storage,
+        mesh_path: str,
+        structure=None,
+        method: str = "face_cut",
+        damping_ratio: float = 0.02,
+        check_sampling: bool = True,
+        point: tuple[float, float] = (0.0, 0.0),
+        cp_statistics: list[str] | None = None,
+        body_key_template: str = DEFAULT_BODY_KEY,
+        pref_key_template: str = DEFAULT_PREF_KEY,
+        key_for: Callable[[str, StaticCaseKey], str] | None = None,
+    ) -> None:
+        self.case = case
+        self.storage = storage
+        self.mesh_path = mesh_path
+        self.structure = structure
+        self.method = method
+        self.damping_ratio = damping_ratio
+        self.check_sampling = check_sampling
+        self.point = point
+        self.cp_statistics = cp_statistics
+        self.body_key_template = body_key_template
+        self.pref_key_template = pref_key_template
+        self.key_for = key_for
+
+    def storage_key(self, kind: str, key: StaticCaseKey) -> str:
+        if self.key_for is not None:
+            return self.key_for(kind, key)
+        template = self.body_key_template if kind == "body" else self.pref_key_template
+        return template.format(direction=key.direction, body=key.body, cp_config=key.cp_config)
+
+    def __call__(self, key: StaticCaseKey) -> PointsDataSource:
+        case = self.case
+        body = self.storage.read_data_source(self.storage_key("body", key))
+        p_ref = self.storage.read_data_source(self.storage_key("p_ref", key))
+        cp = cp_from_pressure(body, p_ref, case, statistics=self.cp_statistics)
+        cf = cf_per_floor(cp, self.mesh_path, case, method=self.method)
+        cm = cm_per_floor(cp, self.mesh_path, case, method=self.method)
+        load = floor_load_source(cf, cm, case)
+        struct = (
+            self.structure
+            if self.structure is not None
+            else example_building_structure(case, load.n_elements)
+        )
+        response = solve_building_response(
+            load,
+            struct,
+            damping_ratio=self.damping_ratio,
+            check_sampling=self.check_sampling,
+        )
+        result = floor_accelerations(response, struct, point=self.point)
+        # attach the applied-static floor loads so get_stats_forces_effective /
+        # effective_load_stats combine them with the dynamic static-equivalent
+        return (
+            result.with_field("fs_x", load.fields.read("cf_x"))
+            .with_field("fs_y", load.fields.read("cf_y"))
+            .with_field("ms_z", load.fields.read("cm_z"))
+        )
+
+
 def build_static_solve_fn(
     case: BuildingCase,
     storage,
@@ -180,48 +267,33 @@ def build_static_solve_fn(
 ) -> Callable[[StaticCaseKey], PointsDataSource]:
     """Build the default per-key pipeline: storage -> Cp -> Cf/Cm -> response.
 
-    Returns a ``solve_fn(key) -> response`` (a floor ``PointsDataSource`` carrying
+    Returns a :class:`StaticSolveFn` -- a callable ``solve_fn(key) -> response``
+    (a floor ``PointsDataSource`` carrying
     ``feq_*`` / ``meq_z``, ``acc_*`` / ``acc_mag`` and the applied-static floor
     loads ``fs_x`` / ``fs_y`` / ``ms_z`` so downstream *effective* stats can
     combine them). Reads its body / reference pressure from ``storage`` inside the
-    call so it stays picklable for a multiprocessing ``Pool``.
+    call, and is a module-level callable object rather than a closure, so it
+    pickles and can cross a process boundary into a multiprocessing ``Pool``.
 
     The ``(direction, body)`` -> storage-key mapping is case-specific: pass
     ``body_key_template`` / ``pref_key_template`` (``str.format`` templates with
     ``{direction}`` / ``{body}`` / ``{cp_config}`` placeholders) or a full
     ``key_for(kind, key)`` override.
     """
-    if key_for is None:
-
-        def key_for(kind: str, key: StaticCaseKey) -> str:
-            template = body_key_template if kind == "body" else pref_key_template
-            return template.format(direction=key.direction, body=key.body, cp_config=key.cp_config)
-
-    def solve_fn(key: StaticCaseKey) -> PointsDataSource:
-        body = storage.read_data_source(key_for("body", key))
-        p_ref = storage.read_data_source(key_for("p_ref", key))
-        cp = cp_from_pressure(body, p_ref, case, statistics=cp_statistics)
-        cf = cf_per_floor(cp, mesh_path, case, method=method)
-        cm = cm_per_floor(cp, mesh_path, case, method=method)
-        load = floor_load_source(cf, cm, case)
-        struct = (
-            structure
-            if structure is not None
-            else example_building_structure(case, load.n_elements)
-        )
-        response = solve_building_response(
-            load, struct, damping_ratio=damping_ratio, check_sampling=check_sampling
-        )
-        result = floor_accelerations(response, struct, point=point)
-        # attach the applied-static floor loads so get_stats_forces_effective /
-        # effective_load_stats combine them with the dynamic static-equivalent
-        return (
-            result.with_field("fs_x", load.fields.read("cf_x"))
-            .with_field("fs_y", load.fields.read("cf_y"))
-            .with_field("ms_z", load.fields.read("cm_z"))
-        )
-
-    return solve_fn
+    return StaticSolveFn(
+        case=case,
+        storage=storage,
+        mesh_path=mesh_path,
+        structure=structure,
+        method=method,
+        damping_ratio=damping_ratio,
+        check_sampling=check_sampling,
+        point=point,
+        cp_statistics=cp_statistics,
+        body_key_template=body_key_template,
+        pref_key_template=pref_key_template,
+        key_for=key_for,
+    )
 
 
 def run_fanout(

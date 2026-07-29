@@ -129,3 +129,56 @@ def test_run_fanout_pool_seam(tmp_path):
     assert len(container) == 1
     (response,) = container.values()
     assert np.all(np.isfinite(np.asarray(response.fields.read("feq_x"))))
+
+
+def _template_solve_fn(check_sampling: bool = False):
+    """A solve_fn built from key *templates*, so it carries no local closure."""
+    from cfdmod.adapters.xdmf_h5 import XdmfH5Storage
+
+    return build_static_solve_fn(
+        example_building_case(MESH, n_floors=3),
+        XdmfH5Storage(DATA),
+        MESH,
+        body_key_template="bodies.{body}",
+        pref_key_template="points.static_pressure",
+        check_sampling=check_sampling,
+    )
+
+
+@pytest.mark.unit
+def test_solve_fn_pickles():
+    """The property a real Pool needs, and the one SyncPool cannot check.
+
+    `build_static_solve_fn` returned a closure, which pickle refuses, so
+    `run_fanout(pool=multiprocessing.Pool())` died on its first dispatch. The
+    existing pool test uses an in-process SyncPool, which never pickles
+    anything and so could not see it.
+    """
+    import pickle
+
+    solve_fn = _template_solve_fn()
+    restored = pickle.loads(pickle.dumps(solve_fn))
+
+    assert restored.mesh_path == solve_fn.mesh_path
+    assert restored.storage_key("body", StaticCaseKey(direction="0", body="galpao")) == (
+        "bodies.galpao"
+    )
+
+
+@pytest.mark.integration
+def test_run_fanout_with_a_real_process_pool():
+    """End to end across a process boundary, not a stand-in for one."""
+    import multiprocessing
+
+    plan = FanoutPlan(directions_by_category={"": ["0"]}, bodies=["galpao"])
+    solve_fn = _template_solve_fn()
+
+    sequential = run_fanout(plan, solve_fn)
+    with multiprocessing.get_context("spawn").Pool(1) as pool:
+        parallel = run_fanout(plan, solve_fn, pool=pool)
+
+    assert len(parallel) == len(sequential) == 1
+    np.testing.assert_allclose(
+        np.asarray(next(iter(parallel.values())).fields.read("feq_x")),
+        np.asarray(next(iter(sequential.values())).fields.read("feq_x")),
+    )
