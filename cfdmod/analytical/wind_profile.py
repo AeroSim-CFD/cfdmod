@@ -183,4 +183,4 @@ class WindProfile_EU(WindProfile):
 
 def validate_time_filter(time_filter_seconds: int | float):
     if time_filter_seconds not in [3, 5, 10, 600, 3600]:
-        raise Exception("S2 is implemented only for 3s, 5s, 10s, 10min and 1h")
+        raise ValueError("S2 is implemented only for 3s, 5s, 10s, 10min and 1h")

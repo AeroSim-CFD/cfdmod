@@ -65,4 +65,6 @@ class LoftCaseConfig(BaseModel):
             params = cls(**yaml_vals)
             return params
         else:
-            raise Exception(f"Unable to read yaml. Filetitle {file_path.name} does not exists")
+            raise FileNotFoundError(
+                f"Unable to read yaml. Filetitle {file_path.name} does not exists does not exist"
+            )

@@ -88,3 +88,50 @@ def test_backends_agree_on_timeseries(tmp_path):
     assert sorted(a.field_names) == sorted(b.field_names)
     assert np.allclose(a.fields.read("cp"), b.fields.read("cp"))
     assert a.kind == b.kind
+
+
+@pytest.mark.unit
+def test_groups_broadcast_matches_the_dict_walk():
+    """Vectorising the per-triangle broadcast must not change what it produces.
+
+    ``_groups_to_parent_surface`` used to loop over parent triangles in Python
+    with a dict lookup each. The gather is equivalent -- including the NaN for
+    triangles in ungrouped territory (group id -1), which is easy to lose when
+    replacing a `continue` with an index.
+    """
+    import numpy as np
+
+    from cfdmod.adapters.memory import MemoryFieldStore
+    from cfdmod.adapters.xdmf_h5.storage import _groups_to_parent_surface
+    from cfdmod.core import ElementMeta, Grouping, TimeAxis, Topology
+    from cfdmod.core.data_source import GroupsDataSource
+
+    n_parent, n_groups, n_t = 40, 3, 5
+    rng = np.random.default_rng(0)
+    parent_idx = rng.integers(0, n_groups, n_parent)
+    parent_idx[:4] = -1  # ungrouped
+    verts = rng.random((n_parent * 3, 3))
+    tris = np.arange(n_parent * 3, dtype=np.int32).reshape(n_parent, 3)
+    labels = [f"g{i}" for i in range(n_groups)]
+    values = rng.random((n_groups, n_t))
+
+    ds = GroupsDataSource(
+        time=TimeAxis(initial_time=0.0, timestep_size=0.1, n_timesteps=n_t),
+        topology=None,
+        elements=ElementMeta(),
+        fields=MemoryFieldStore({"ce": values}),
+        parent_topology=Topology.triangles(tris, verts),
+        parent_grouping=Grouping(name="z", indices=parent_idx, labels=labels),
+    ).with_grouping(Grouping(name="z", indices=np.arange(n_groups), labels=labels))
+
+    # The original implementation, as the reference.
+    row_for_gid = {i: i for i in range(n_groups)}
+    expected = np.full((n_parent, n_t), np.nan)
+    for tri in range(n_parent):
+        gid = int(parent_idx[tri])
+        if gid in row_for_gid:
+            expected[tri] = values[row_for_gid[gid]]
+
+    got = np.asarray(_groups_to_parent_surface(ds).fields.read("ce"))
+    np.testing.assert_array_equal(got, expected)
+    assert np.all(np.isnan(got[:4]))
