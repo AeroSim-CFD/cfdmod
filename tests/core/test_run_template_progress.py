@@ -159,7 +159,9 @@ def test_cancelled_is_a_cfdmod_error_not_a_bare_runtime_error():
 
 
 def test_no_callbacks_is_the_unchanged_path():
-    result = run_template(_template(), storage=_storage())
+    # Intermediates are released once nothing downstream reads them, so the
+    # notebook view needs return_all -- see test_run_template_outputs.py.
+    result = run_template(_template(), storage=_storage(), return_all=True)
     assert set(result) >= {"body", "scaled", "halved"}
 
 
