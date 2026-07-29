@@ -46,11 +46,11 @@ from cfdmod.geometry.triangle_slicing import (
 from cfdmod.io.geometry.transformation_config import TransformationConfig
 from cfdmod.io.xdmf import (
     get_pressure_keys,
-    read_step,
     read_timeseries_meta,
+    timeseries_reader,
+    timeseries_writer,
     write_timeseries_geometry,
     write_timeseries_meta,
-    write_timeseries_step,
 )
 from cfdmod.logger import logger
 
@@ -447,25 +447,29 @@ def apply_regroup_to_timeseries(
         f"{len(regroup_index.output_group_names)} group(s) to {output_h5}"
     )
 
-    if regroup_index.aggregation in ("per_triangle", "sliced"):
-        gather = regroup_index.new_to_parent
-        for _t_val, key in keys:
-            in_col = read_step(input_h5, key, group)
-            out_col = in_col[gather]
-            write_timeseries_step(output_h5, group, key, out_col)
-    elif regroup_index.aggregation == "area_weighted_mean":
-        triangle_group_idx = regroup_index.triangle_group_idx
-        for _t_val, key in keys:
-            in_col = read_step(input_h5, key, group)
-            per_group = np.empty(len(regroup_index.output_group_names), dtype=np.float64)
-            for gi, (parents, weights) in enumerate(
-                zip(regroup_index.group_parents, regroup_index.group_weights)
-            ):
-                per_group[gi] = float(np.sum(weights * in_col[parents]))
-            out_col = per_group[triangle_group_idx]
-            write_timeseries_step(output_h5, group, key, out_col)
-    else:
+    if regroup_index.aggregation not in ("per_triangle", "sliced", "area_weighted_mean"):
         raise ValueError(f"regroup: unknown aggregation {regroup_index.aggregation!r}")
+
+    # One open handle on each side for the whole loop. Going through the
+    # per-call helpers reopened both the input and the output file on every
+    # timestep, so a 10k-step regroup paid 20k open/close cycles.
+    with timeseries_reader(input_h5) as reader, timeseries_writer(output_h5) as writer:
+        if regroup_index.aggregation in ("per_triangle", "sliced"):
+            gather = regroup_index.new_to_parent
+            for _t_val, key in keys:
+                out_col = reader.read_step(key, group)[gather]
+                writer.write_step(group, key, out_col)
+        else:
+            triangle_group_idx = regroup_index.triangle_group_idx
+            for _t_val, key in keys:
+                in_col = reader.read_step(key, group)
+                per_group = np.empty(len(regroup_index.output_group_names), dtype=np.float64)
+                for gi, (parents, weights) in enumerate(
+                    zip(regroup_index.group_parents, regroup_index.group_weights)
+                ):
+                    per_group[gi] = float(np.sum(weights * in_col[parents]))
+                out_col = per_group[triangle_group_idx]
+                writer.write_step(group, key, out_col)
 
     write_timeseries_meta(
         output_h5,

@@ -23,6 +23,10 @@ __all__ = [
     "filter_keys_by_range",
     "read_step",
     "read_timeseries_meta",
+    "timeseries_reader",
+    "timeseries_writer",
+    "TimeseriesReader",
+    "TimeseriesWriter",
     "write_timeseries_step",
     "write_timeseries_meta",
     "write_timeseries_geometry",
@@ -33,9 +37,11 @@ __all__ = [
     "read_processing_metadata",
 ]
 
+import contextlib
 import datetime as _dt
 import pathlib
 import xml.etree.ElementTree as ET
+from typing import Iterator, Sequence
 from xml.dom import minidom
 
 import h5py
@@ -87,30 +93,40 @@ def read_timeseries_meta(h5_path: pathlib.Path) -> dict:
     return result
 
 
-def write_timeseries_step(
-    h5_path: pathlib.Path,
-    group: str,
-    key: str,
-    data: np.ndarray,
-    mode: str = "a",
-) -> None:
-    """Append a single timestep array to an H5 group."""
-    with h5py.File(h5_path, mode) as f:
-        grp = f.require_group(group)
-        if key in grp:
-            del grp[key]
-        grp.create_dataset(key, data=data.astype(np.float64))
+class TimeseriesWriter:
+    """Writes the timeseries / stats layout through one already-open handle.
 
+    Every write helper in this module used to open and close the h5 file on
+    each call. That is fine for a one-off, and quietly expensive in a loop: a
+    timeseries with ``n_timesteps`` steps paid ``n_timesteps`` full open / flush
+    / close cycles, which measured ~3x the cost of holding a single handle for
+    data that is byte-for-byte identical.
 
-def write_timeseries_meta(
-    h5_path: pathlib.Path,
-    time_steps: np.ndarray,
-    time_normalized: np.ndarray,
-    region_labels: list[str] | None = None,
-) -> None:
-    """Write /meta datasets (time arrays + optional region labels)."""
-    with h5py.File(h5_path, "a") as f:
-        meta = f.require_group("meta")
+    The module-level functions below delegate here, so there is one
+    implementation of each write and their behaviour is unchanged.
+    """
+
+    __slots__ = ("_f",)
+
+    def __init__(self, f: h5py.File) -> None:
+        self._f = f
+
+    def write_geometry(self, triangles: np.ndarray, vertices: np.ndarray) -> None:
+        """Write /Triangles and /Geometry (only needed once per file)."""
+        for key in ("Triangles", "Geometry"):
+            if key in self._f:
+                del self._f[key]
+        self._f.create_dataset("Triangles", data=triangles.astype(np.int32))
+        self._f.create_dataset("Geometry", data=vertices.astype(np.float64))
+
+    def write_meta(
+        self,
+        time_steps: np.ndarray,
+        time_normalized: np.ndarray,
+        region_labels: list[str] | None = None,
+    ) -> None:
+        """Write /meta datasets (time arrays + optional region labels)."""
+        meta = self._f.require_group("meta")
         for key in ("time_steps", "time_normalized", "region_labels"):
             if key in meta:
                 del meta[key]
@@ -120,6 +136,115 @@ def write_timeseries_meta(
             encoded = [s.encode() for s in region_labels]
             meta.create_dataset("region_labels", data=np.array(encoded))
 
+    def write_step(self, group: str, key: str, data: np.ndarray) -> None:
+        """Append a single timestep array to an H5 group."""
+        grp = self._f.require_group(group)
+        if key in grp:
+            del grp[key]
+        grp.create_dataset(key, data=np.asarray(data).astype(np.float64))
+
+    def write_field(self, group: str, values: np.ndarray, keys: Sequence[str]) -> None:
+        """Write a whole ``(n_elements, n_timesteps)`` field as per-timestep datasets.
+
+        ``keys[i]`` names the dataset for column ``i``. This is the batched form
+        of :meth:`write_step` and the reason this class exists.
+        """
+        values = np.asarray(values)
+        if values.ndim != 2:
+            raise ValueError(
+                f"write_field expects a 2-D (elements, time) array; got {values.shape}"
+            )
+        if values.shape[1] != len(keys):
+            raise ValueError(
+                f"write_field got {values.shape[1]} time columns but {len(keys)} keys"
+            )
+        grp = self._f.require_group(group)
+        for i, key in enumerate(keys):
+            if key in grp:
+                del grp[key]
+            grp.create_dataset(key, data=values[:, i].astype(np.float64))
+
+    def write_stats_field(
+        self,
+        group: str,
+        stat_name: str,
+        values: np.ndarray,
+        triangles: np.ndarray | None = None,
+        vertices: np.ndarray | None = None,
+    ) -> None:
+        """Write a stat dataset to ``<group>/<stat_name>``; see the module function."""
+        grp = self._f.require_group(group)
+        if triangles is not None and "Triangles" not in grp:
+            grp.create_dataset("Triangles", data=triangles.astype(np.int32))
+        if vertices is not None and "Geometry" not in grp:
+            grp.create_dataset("Geometry", data=vertices.astype(np.float64))
+        if stat_name in grp:
+            del grp[stat_name]
+        grp.create_dataset(stat_name, data=values.astype(np.float64))
+
+
+class TimeseriesReader:
+    """Reads the timeseries layout through one already-open handle.
+
+    The counterpart to :class:`TimeseriesWriter`, for the same reason: a loop
+    that calls :func:`read_step` per timestep reopens the file per timestep.
+    """
+
+    __slots__ = ("_f",)
+
+    def __init__(self, f: h5py.File) -> None:
+        self._f = f
+
+    def keys(self, group: str = "pressure") -> list[tuple[float, str]]:
+        """Sorted ``(float_time, key_str)`` pairs from an H5 group."""
+        result = [(float(k[1:]), k) for k in self._f[group].keys()]
+        return sorted(result, key=lambda x: x[0])
+
+    def read_step(self, key: str, group: str) -> np.ndarray:
+        """Read a single timestep array from an H5 group."""
+        return self._f[group][key][:]
+
+
+@contextlib.contextmanager
+def timeseries_writer(h5_path: pathlib.Path, mode: str = "a") -> Iterator[TimeseriesWriter]:
+    """Open ``h5_path`` once and write many steps / fields through the handle."""
+    with h5py.File(h5_path, mode) as f:
+        yield TimeseriesWriter(f)
+
+
+@contextlib.contextmanager
+def timeseries_reader(h5_path: pathlib.Path) -> Iterator[TimeseriesReader]:
+    """Open ``h5_path`` once and read many steps through the handle."""
+    with h5py.File(h5_path, "r") as f:
+        yield TimeseriesReader(f)
+
+
+def write_timeseries_step(
+    h5_path: pathlib.Path,
+    group: str,
+    key: str,
+    data: np.ndarray,
+    mode: str = "a",
+) -> None:
+    """Append a single timestep array to an H5 group.
+
+    Opens and closes the file. In a loop over timesteps, use
+    :func:`timeseries_writer` instead.
+    """
+    with timeseries_writer(h5_path, mode) as w:
+        w.write_step(group, key, data)
+
+
+def write_timeseries_meta(
+    h5_path: pathlib.Path,
+    time_steps: np.ndarray,
+    time_normalized: np.ndarray,
+    region_labels: list[str] | None = None,
+) -> None:
+    """Write /meta datasets (time arrays + optional region labels)."""
+    with timeseries_writer(h5_path) as w:
+        w.write_meta(time_steps, time_normalized, region_labels)
+
 
 def write_timeseries_geometry(
     h5_path: pathlib.Path,
@@ -127,12 +252,8 @@ def write_timeseries_geometry(
     vertices: np.ndarray,
 ) -> None:
     """Write /Triangles and /Geometry to H5 file (only needed once per file)."""
-    with h5py.File(h5_path, "a") as f:
-        for key in ("Triangles", "Geometry"):
-            if key in f:
-                del f[key]
-        f.create_dataset("Triangles", data=triangles.astype(np.int32))
-        f.create_dataset("Geometry", data=vertices.astype(np.float64))
+    with timeseries_writer(h5_path) as w:
+        w.write_geometry(triangles, vertices)
 
 
 def write_temporal_xdmf(
@@ -234,15 +355,8 @@ def write_stats_field(
     therefore carries its own embedded mesh; ``write_stats_xdmf`` discovers
     these and emits one Grid per group.
     """
-    with h5py.File(h5_path, "a") as f:
-        grp = f.require_group(group)
-        if triangles is not None and "Triangles" not in grp:
-            grp.create_dataset("Triangles", data=triangles.astype(np.int32))
-        if vertices is not None and "Geometry" not in grp:
-            grp.create_dataset("Geometry", data=vertices.astype(np.float64))
-        if stat_name in grp:
-            del grp[stat_name]
-        grp.create_dataset(stat_name, data=values.astype(np.float64))
+    with timeseries_writer(h5_path) as w:
+        w.write_stats_field(group, stat_name, values, triangles, vertices)
 
 
 def write_stats_xdmf(h5_path: pathlib.Path, xdmf_path: pathlib.Path) -> None:

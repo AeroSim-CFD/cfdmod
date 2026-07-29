@@ -273,50 +273,45 @@ class XdmfH5Storage:
 
         triangles = _connectivity_for_write(ds.topology)
         vertices = np.asarray(ds.topology.vertices, dtype=np.float64)
-        _xdmf.write_timeseries_geometry(h5_path, triangles, vertices)
-
         time_aggregated = ds.time.is_time_aggregated
-        if not time_aggregated:
-            time_steps = ds.time.times()
-            time_normalized = ds.time.times_normalized()
-            _xdmf.write_timeseries_meta(h5_path, time_steps, time_normalized)
 
-        # Resolve every field by reading via the source's own FieldStore.
-        # That makes the writeback work uniformly for MemoryFieldStore,
-        # H5FieldStore (with overlay), and any future store.
+        # One open handle for the whole write. Writing a timestep at a time
+        # through the module-level helpers reopened the file per timestep,
+        # which was ~3x the cost for byte-identical output.
         groups_for_xdmf: list[str] = []
-        for fname in sorted(ds.fields.keys()):
-            arr = ds.fields.read(fname)
-            if time_aggregated:
-                # Single dataset path: support 'group/stat' or bare 'stat'.
-                group, _, stat = fname.partition("/")
-                if not stat:
-                    stat = group
-                    group = _BARE_STATS_GROUP
-                _xdmf.write_stats_field(
-                    h5_path,
-                    group=group,
-                    stat_name=stat,
-                    values=np.asarray(arr, dtype=np.float64),
-                    triangles=triangles,
-                    vertices=vertices,
-                )
-            else:
-                # Timeseries: arr is (n_elements, n_timesteps).
-                if arr.ndim != 2:
-                    raise ValueError(
-                        f"field {fname!r} must be 2-D for a non-aggregated DataSource; "
-                        f"got shape {arr.shape}"
+        with _xdmf.timeseries_writer(h5_path) as writer:
+            writer.write_geometry(triangles, vertices)
+            if not time_aggregated:
+                writer.write_meta(ds.time.times(), ds.time.times_normalized())
+
+            # Resolve every field by reading via the source's own FieldStore.
+            # That makes the writeback work uniformly for MemoryFieldStore,
+            # H5FieldStore (with overlay), and any future store.
+            for fname in sorted(ds.fields.keys()):
+                arr = ds.fields.read(fname)
+                if time_aggregated:
+                    # Single dataset path: support 'group/stat' or bare 'stat'.
+                    group, _, stat = fname.partition("/")
+                    if not stat:
+                        stat = group
+                        group = _BARE_STATS_GROUP
+                    writer.write_stats_field(
+                        group=group,
+                        stat_name=stat,
+                        values=np.asarray(arr, dtype=np.float64),
+                        triangles=triangles,
+                        vertices=vertices,
                     )
-                ts = ds.time.times()
-                for i, t in enumerate(ts):
-                    _xdmf.write_timeseries_step(
-                        h5_path,
-                        group=fname,
-                        key=f"t{t}",
-                        data=np.asarray(arr[:, i], dtype=np.float64),
-                    )
-                groups_for_xdmf.append(fname)
+                else:
+                    # Timeseries: arr is (n_elements, n_timesteps).
+                    if arr.ndim != 2:
+                        raise ValueError(
+                            f"field {fname!r} must be 2-D for a non-aggregated DataSource; "
+                            f"got shape {arr.shape}"
+                        )
+                    keys = [f"t{t}" for t in ds.time.times()]
+                    writer.write_field(fname, np.asarray(arr, dtype=np.float64), keys)
+                    groups_for_xdmf.append(fname)
 
         if self._write_xdmf:
             xdmf_path = self.xdmf_path(key)
