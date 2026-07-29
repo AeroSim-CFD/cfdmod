@@ -21,9 +21,10 @@ Layouts handled:
 
 The file at ``<root>/<key>.h5`` together with the optional sidecar
 ``<root>/<key>.xdmf`` is the storage unit. ``read_data_source`` returns
-a :class:`SurfaceDataSource` or :class:`PointsDataSource`; the kind is
-inferred from the ``key`` filename prefix (``bodies.``/``cp_t.``/...
--> surface, ``points.`` -> points). ``write_data_source`` rewrites the
+a :class:`SurfaceDataSource` or :class:`PointsDataSource`. Pass ``kind``
+to say which; the byte layout does not record it, so without it the
+adapter falls back to guessing from the filename stem (``points.*`` ->
+points, anything else -> surface). ``write_data_source`` rewrites the
 file from scratch using the existing ``cfdmod.io.xdmf`` helpers, so the
 output format is exactly what the v2 pipeline produces.
 """
@@ -68,13 +69,25 @@ _RESERVED_GROUP_DATASETS = frozenset({"Triangles", "Geometry", "Connectivity"})
 _BARE_STATS_GROUP = "stats"
 
 
+# Kinds this byte layout can represent. Volume and modes sources have no
+# /Triangles + /Geometry form here, so asking for one is an error rather than
+# something to approximate with a surface.
+_READABLE_KINDS = frozenset({"surface", "points"})
+
+
 def _kind_from_key(key: str) -> str:
-    """Infer DataSource kind from the filename stem.
+    """Guess the DataSource kind from the filename stem.
 
     A ``points.*`` stem is read as a points (probe) source; every other
     stem defaults to surface, which is the most common case (``bodies.*``,
-    ``cp_t.*``, ``stats.*``, ...). The prefix is the only signal -- a probe
-    file must therefore be named ``points.*`` to be read back as points.
+    ``cp_t.*``, ``stats.*``, ...).
+
+    This is a *fallback*, used only when the caller did not say what it
+    expects. The on-disk layout does not record the kind, so the filename is
+    the only signal available -- which means a probe file not named
+    ``points.*`` would read back as a surface. Callers that know the kind
+    (a template declares one per input) should pass it to
+    :meth:`XdmfH5Storage.read_data_source` instead of relying on this.
     """
     stem = pathlib.Path(key).name
     if stem.startswith("points."):
@@ -150,7 +163,12 @@ class XdmfH5Storage:
 
     # --- Read --------------------------------------------------------------
 
-    def read_data_source(self, key: str) -> DataSource:
+    def read_data_source(self, key: str, *, kind: str | None = None) -> DataSource:
+        if kind is not None and kind not in _READABLE_KINDS:
+            raise ValueError(
+                f"XdmfH5Storage cannot read a {kind!r} data source; this byte layout "
+                f"represents {sorted(_READABLE_KINDS)} only"
+            )
         h5_path = self.h5_path(key)
         if not h5_path.exists():
             raise StorageKeyError(
@@ -208,8 +226,10 @@ class XdmfH5Storage:
                         )
                         field_groups[field_name] = f"{name}/{stat_name}"
 
-        # Topology + ElementMeta
-        kind = _kind_from_key(key)
+        # Topology + ElementMeta. The declared kind wins; the filename stem is
+        # only consulted when the caller did not say.
+        if kind is None:
+            kind = _kind_from_key(key)
         if kind == "points":
             topology = Topology.points(vertices)
         else:

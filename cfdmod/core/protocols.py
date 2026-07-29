@@ -144,12 +144,26 @@ class Storage(Protocol):
     :class:`XdmfH5Storage`. No code path differs between the two.
     """
 
-    def read_data_source(self, key: str) -> "DataSource":
+    def read_data_source(self, key: str, *, kind: "str | None" = None) -> "DataSource":
         """Read a complete :class:`DataSource` by logical key.
 
         ``key`` is a string identifier. The memory backend treats it
         as a dict key; the h5 backend resolves it to an
         ``<key>.h5`` + ``<key>.xdmf`` pair under its root directory.
+
+        Args:
+            key: The logical key to read.
+            kind: The :class:`DataSource` kind the caller expects. ``None``
+                (the default) leaves the adapter to infer it however it
+                can -- which for a byte layout that does not record the
+                kind means guessing from the key. Pass it whenever the
+                caller knows: a template declares ``kind:`` per input, and
+                a filename is not a reliable carrier of that information.
+
+        Raises:
+            ValueError: When ``kind`` is given and this backend cannot
+                produce it from what it has stored. An adapter must not
+                silently return a different kind than the one requested.
         """
         ...
 

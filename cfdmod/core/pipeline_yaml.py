@@ -81,6 +81,7 @@ __all__ = [
     "FreshnessConfig",
 ]
 
+import inspect
 import pathlib
 from typing import Callable, Literal
 
@@ -721,6 +722,24 @@ def _step_params(
     return params_cls.model_validate(raw)
 
 
+def _accepts_kind(storage: Storage) -> bool:
+    """Whether ``storage.read_data_source`` takes the ``kind`` keyword.
+
+    ``Storage`` is a structural protocol, so a consumer's adapter written
+    against the older two-argument signature is still a valid ``Storage``.
+    Probing the signature once keeps those working, and -- unlike catching
+    ``TypeError`` around the call -- cannot mistake a genuine ``TypeError``
+    raised *inside* the adapter for an old signature.
+    """
+    try:
+        params = inspect.signature(storage.read_data_source).parameters
+    except (TypeError, ValueError):  # builtins / C extensions have no signature
+        return False
+    if "kind" in params:
+        return True
+    return any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+
+
 def run_template(
     template: PipelineTemplate,
     *,
@@ -771,6 +790,7 @@ def run_template(
 
     # 1. Load inputs (all, or -- under skip_fresh -- only those the stale
     #    outputs depend on).
+    accepts_kind = _accepts_kind(storage)
     bindings: dict[str, DataSource] = {}
     for name, spec in template.inputs.items():
         if needed_inputs is not None and name not in needed_inputs:
@@ -779,10 +799,23 @@ def run_template(
         # the storage key so the adapter can map it to its on-disk
         # layout.
         key = _resolve_key(template.root, spec.path)
-        ds = storage.read_data_source(key)
-        # Honor the declared kind: the H5 adapter infers surface-vs-points
-        # from the filename, so a misnamed/misdeclared input would flow in
-        # as the wrong kind silently. Assert the loaded kind matches.
+        # Pass the declared kind down rather than letting the adapter guess.
+        # The h5 layout does not record it, so without this the backend falls
+        # back to the filename stem and a probe file not named ``points.*``
+        # loads as a surface.
+        try:
+            if accepts_kind:
+                ds = storage.read_data_source(key, kind=spec.kind)
+            else:
+                ds = storage.read_data_source(key)
+        except ValueError as exc:
+            raise TemplateError(
+                f"input {name!r} declares kind {spec.kind!r}, which the storage "
+                f"backend cannot read from {spec.path!r}: {exc}"
+            ) from exc
+        # Invariant check. With the kind passed explicitly this should be
+        # unreachable; it stays so a backend that ignores the keyword cannot
+        # feed the pipeline the wrong kind silently.
         if ds.kind != spec.kind:
             raise TemplateError(
                 f"input {name!r} declares kind {spec.kind!r} but the source at "

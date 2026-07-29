@@ -53,7 +53,7 @@ class XdmfH5BlobStorage:
     def keys(self) -> Iterable[str]:
         return sorted(k[: -len(".h5")] for k in self._blobs.list_keys() if k.endswith(".h5"))
 
-    def read_data_source(self, key: str) -> DataSource:
+    def read_data_source(self, key: str, *, kind: str | None = None) -> DataSource:
         blob_key = f"{key}.h5"
         try:
             data = self._blobs.get_bytes(blob_key)
@@ -67,7 +67,7 @@ class XdmfH5BlobStorage:
             local_path = root / f"{key}.h5"
             local_path.parent.mkdir(parents=True, exist_ok=True)
             local_path.write_bytes(data)
-            ds = XdmfH5Storage(root).read_data_source(key)
+            ds = XdmfH5Storage(root).read_data_source(key, kind=kind)
             # Materialise fields into RAM so the DataSource does not outlive
             # the temp file it was lazily reading from.
             arrays = {name: ds.fields.read(name) for name in ds.fields.keys()}
