@@ -64,8 +64,16 @@ def extras_absent():
         yield
     finally:
         sys.meta_path.remove(finder)
-        sys.modules.clear()
-        sys.modules.update(saved)
+        # Surgical, not `sys.modules.clear()` + restore. Clearing the whole
+        # table and putting it back breaks C-extension packages that resolve
+        # submodules lazily -- scipy.optimize._highspy._core stops being
+        # importable for the rest of the session, which shows up as an
+        # unrelated ModuleNotFoundError in whatever test runs next.
+        for name in list(sys.modules):
+            if name.split(".", 1)[0] == "cfdmod" and name not in saved:
+                del sys.modules[name]
+        for name, module in saved.items():
+            sys.modules.setdefault(name, module)
 
 
 def test_cli_builds_without_optional_extras():

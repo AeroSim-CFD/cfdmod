@@ -80,19 +80,45 @@ class MemoryStorage:
         self._signatures[key] = signature
 
 
+# Rows of a field hashed at a time. Bounds the float64 upcast + tobytes copy
+# to roughly this many bytes instead of the whole field twice over.
+_HASH_BLOCK_BYTES = 8 << 20
+
+
+def _update_blockwise(h, arr: np.ndarray, dtype) -> None:
+    """Feed ``arr`` to ``h`` as ``dtype`` bytes, a row block at a time.
+
+    Hashing ``np.ascontiguousarray(arr, dtype).tobytes()`` in one go costs two
+    full copies of the array -- the upcast and the bytes -- so digesting a
+    64 MB float32 field peaked at 256 MB. Since the array is walked in
+    C order, concatenating row blocks yields exactly the same byte sequence,
+    so this is byte-identical to the whole-array form and existing signatures
+    keep matching. Only the peak changes.
+    """
+    arr = np.asarray(arr)
+    if arr.size == 0:
+        return
+    itemsize = np.dtype(dtype).itemsize
+    row_bytes = max(1, int(np.prod(arr.shape[1:], dtype=np.int64))) * itemsize
+    rows_per_block = max(1, _HASH_BLOCK_BYTES // max(1, row_bytes))
+    for start in range(0, arr.shape[0], rows_per_block):
+        block = np.ascontiguousarray(arr[start : start + rows_per_block], dtype=dtype)
+        h.update(block.tobytes())
+
+
 def _data_source_content_hash(ds: DataSource) -> str:
     """Stable hash of a data source's kind, topology, time axis, and fields."""
     h = hashlib.blake2b(digest_size=32)
     h.update(ds.kind.encode("utf-8"))
     if ds.topology is not None:
-        h.update(np.ascontiguousarray(ds.topology.vertices, dtype=np.float64).tobytes())
+        _update_blockwise(h, ds.topology.vertices, np.float64)
         conn = ds.topology.connectivity
         if conn is not None:
-            h.update(np.ascontiguousarray(conn, dtype=np.int64).tobytes())
+            _update_blockwise(h, conn, np.int64)
     h.update(str(ds.time.n_timesteps).encode("utf-8"))
     for name in sorted(ds.fields.keys()):
-        arr = np.ascontiguousarray(ds.fields.read(name), dtype=np.float64)
+        arr = np.asarray(ds.fields.read(name))
         h.update(name.encode("utf-8"))
         h.update(str(arr.shape).encode("utf-8"))
-        h.update(arr.tobytes())
+        _update_blockwise(h, arr, np.float64)
     return h.hexdigest()

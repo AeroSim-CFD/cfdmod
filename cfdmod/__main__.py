@@ -22,6 +22,36 @@ app.add_typer(
 )
 
 
+_SIZE_SUFFIXES = {"K": 1 << 10, "M": 1 << 20, "G": 1 << 30, "T": 1 << 40}
+
+
+def _parse_size(text: str | None) -> int | None:
+    """Parse ``4G`` / ``512M`` / ``2000000`` into bytes.
+
+    Asking an engineer for a byte count is asking them to do arithmetic at the
+    shell; asking for ``4G`` is not.
+    """
+    if text is None:
+        return None
+    raw = text.strip().upper().removesuffix("B")
+    if not raw:
+        raise ValueError(f"could not parse memory budget {text!r}")
+    multiplier = _SIZE_SUFFIXES.get(raw[-1:])
+    if multiplier is not None:
+        raw = raw[:-1]
+    else:
+        multiplier = 1
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"could not parse memory budget {text!r}; expected e.g. 4G, 512M, or a byte count"
+        ) from exc
+    if value <= 0:
+        raise ValueError(f"memory budget must be positive; got {text!r}")
+    return int(value * multiplier)
+
+
 @app.command("run")
 def run(
     template: pathlib.Path = typer.Argument(..., help="Path to a v3 pipeline YAML template."),
@@ -40,15 +70,42 @@ def run(
         "--digest",
         help="Override the input-digest strategy: size_mtime | content | backend.",
     ),
+    chunk_size: int | None = typer.Option(
+        None,
+        "--chunk-size",
+        help="Timesteps per window. Bounds peak memory on a time-chunkable template.",
+    ),
+    memory_budget: str | None = typer.Option(
+        None,
+        "--memory-budget",
+        help="RAM the run may spend on time-resolved arrays (e.g. 4G, 512M). "
+        "The window size is derived from it; mutually exclusive with --chunk-size.",
+    ),
 ) -> None:
     """Execute a v3 pipeline template (cfdmod.core.pipeline_yaml).
 
     The template declares its own inputs, pipeline steps, and outputs;
     this command just loads the YAML and runs it via XdmfH5Storage.
     """
+    if chunk_size is not None and memory_budget is not None:
+        typer.echo("error: pass --chunk-size or --memory-budget, not both", err=True)
+        raise typer.Exit(code=1)
+    try:
+        budget_bytes = _parse_size(memory_budget)
+    except ValueError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
     try:
         bindings = run_yaml(
-            template, output_root=output_root, skip_fresh=skip_fresh, digest=digest
+            template,
+            output_root=output_root,
+            skip_fresh=skip_fresh,
+            digest=digest,
+            chunk_size=chunk_size,
+            memory_budget=budget_bytes,
+            # Say what the run decided. A silent cap reads as "processed
+            # everything comfortably" when it did not.
+            on_plan=lambda plan: typer.echo(plan.describe()),
         )
     except (KeyError, ValueError, FileNotFoundError, ValidationError) as exc:
         # These are user/config errors (bad template, missing file, typo'd
