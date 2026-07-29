@@ -18,9 +18,11 @@ Three protocols matter most:
   layer never imports ``h5py``.
 - :class:`Storage` -- whole-:class:`DataSource` round-trips. Pairs
   with one ``FieldStore`` per data source.
-- :class:`Logger` and :class:`Pool` -- bundled in the shell
-  ``Context`` and passed explicitly to recipes. Default to the
-  no-op stubs in the memory adapter when not supplied.
+- :class:`Logger` -- the structured-log seam. Ops and recipes stay pure
+  and log nothing; the shell that drives them (CLI, notebook, service)
+  owns logging. A component that does need to report progress takes a
+  :class:`Logger` explicitly rather than importing a global.
+- :class:`Pool` -- parallel-fanout seam for :class:`Container.map_values`.
 """
 
 from __future__ import annotations
@@ -249,12 +251,16 @@ class BlobStore(Protocol):
 
 @runtime_checkable
 class Logger(Protocol):
-    """Minimal structured-log seam used by the shell.
+    """Minimal structured-log seam.
 
-    The core package never imports ``loguru`` directly; instead it
-    receives a :class:`Logger` via :class:`Context`. Tests pass a no-op
-    or a list-collector for assertions. Production CLIs adapt
-    ``loguru`` into this protocol.
+    Anything in the core that needs to report takes one of these as an
+    argument rather than importing a module-level logger, so a caller can
+    pass a per-job logger and a test can pass a list-collector and assert
+    on it. ``logging.Logger`` satisfies the protocol structurally, so
+    ``cfdmod.logger.logger`` is a valid value with no adapter.
+
+    The core does not configure logging and neither does importing cfdmod:
+    see :mod:`cfdmod.logger`.
     """
 
     def info(self, message: str, /, **fields: Any) -> None: ...
