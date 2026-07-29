@@ -42,10 +42,19 @@ class MemoryStorage:
     def __contains__(self, key: str) -> bool:
         return key in self._items
 
-    def read_data_source(self, key: str) -> DataSource:
+    def read_data_source(self, key: str, *, kind: str | None = None) -> DataSource:
         if key not in self._items:
             raise StorageKeyError(f"MemoryStorage has no data source under key {key!r}")
-        return self._items[key]
+        ds = self._items[key]
+        # RAM keeps the concrete type, so there is nothing to infer -- but the
+        # check still has to exist, or a caller passing ``kind`` would get a
+        # silent pass here and a hard failure against the h5 backend.
+        if kind is not None and ds.kind != kind:
+            raise ValueError(
+                f"MemoryStorage holds a {ds.kind!r} data source under key {key!r}, "
+                f"but {kind!r} was requested"
+            )
+        return ds
 
     def write_data_source(self, key: str, ds: DataSource) -> None:
         self._items[key] = ds
