@@ -45,6 +45,8 @@ def run_yaml(
     chunk_size: int | None = None,
     memory_budget: int | None = None,
     on_plan=None,
+    on_progress=None,
+    cancel=None,
 ) -> dict[str, DataSource]:
     """Load and run a v3 pipeline template.
 
@@ -64,6 +66,10 @@ def run_yaml(
             ``chunk_size``.
         on_plan: Called with the chosen
             :class:`~cfdmod.core.memory.ChunkPlan` before execution.
+        on_progress: Called with a :class:`~cfdmod.core.progress.RunEvent` per
+            input loaded, step run and output written.
+        cancel: Predicate polled at those boundaries; True raises
+            :class:`~cfdmod.core.progress.RunCancelled`.
 
     Returns:
         The dict of every named binding the runner produced (inputs +
@@ -86,6 +92,8 @@ def run_yaml(
         chunk_size=chunk_size,
         memory_budget=memory_budget,
         on_plan=on_plan,
+        on_progress=on_progress,
+        cancel=cancel,
     )
 
 

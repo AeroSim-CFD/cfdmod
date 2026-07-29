@@ -114,6 +114,15 @@ __all__ = [
     "output_status",
     "OutputStatus",
     "FreshnessConfig",
+    # Memory budgeting / time chunking
+    "ChunkPlan",
+    "plan_chunking",
+    "suggest_chunk_size",
+    "estimate_peak_bytes",
+    "bytes_per_timestep",
+    # Progress / cancellation
+    "RunEvent",
+    "RunCancelled",
     # Errors (issue #147)
     "CfdmodError",
     "TemplateError",
@@ -249,6 +258,13 @@ _SYMBOL_MODULE: dict[str, str] = {
     "output_status": "cfdmod.core",
     "OutputStatus": "cfdmod.core",
     "FreshnessConfig": "cfdmod.core",
+    "ChunkPlan": "cfdmod.core",
+    "plan_chunking": "cfdmod.core",
+    "suggest_chunk_size": "cfdmod.core",
+    "estimate_peak_bytes": "cfdmod.core",
+    "bytes_per_timestep": "cfdmod.core",
+    "RunEvent": "cfdmod.core",
+    "RunCancelled": "cfdmod.core",
     # Errors
     "CfdmodError": "cfdmod.core",
     "TemplateError": "cfdmod.core",

@@ -40,6 +40,14 @@ from cfdmod.core.freshness import (
     output_status,
     signature,
 )
+from cfdmod.core.memory import (
+    ChunkPlan,
+    bytes_per_timestep,
+    estimate_peak_bytes,
+    plan_chunking,
+    suggest_chunk_size,
+)
+from cfdmod.core.progress import RunCancelled, RunEvent
 from cfdmod.core.pipeline_yaml import (
     OP_REGISTRY,
     DigestStrategy,
@@ -93,6 +101,13 @@ __all__ = [
     "OutputStatus",
     "output_status",
     "signature",
+    "ChunkPlan",
+    "bytes_per_timestep",
+    "estimate_peak_bytes",
+    "plan_chunking",
+    "suggest_chunk_size",
+    "RunCancelled",
+    "RunEvent",
     "CfdmodError",
     "TemplateError",
     "TemplateReferenceError",
