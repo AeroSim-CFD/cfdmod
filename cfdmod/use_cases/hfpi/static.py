@@ -248,12 +248,13 @@ class StaticResults(BaseModel):
         peak_method: Literal["extreme", "peak-factor"] = "extreme",
         peak_factor: float = 4,
     ):
-        forces, _ = common.move_loads_ref_from_CM_to_origin(
+        forces, moments = common.move_loads_ref_from_CM_to_origin(
             self.forces_static,
             self.moments_static,
             cm_positions,
         )
-        self.delta_t
+        # "z" of the forces dict is a torque, so it takes the translated value
+        forces = {**forces, "z": moments["z"]}
         if peak_method == "extreme":
             return common.get_stats_dct(forces, stats_type)
         elif peak_method == "gumbel":
@@ -287,11 +288,13 @@ class StaticResults(BaseModel):
         peak_method: Literal["extreme", "peak-factor"] = "extreme",
         peak_factor: float = 4,
     ):
-        forces, _ = common.move_loads_ref_from_CM_to_origin(
+        forces, moments = common.move_loads_ref_from_CM_to_origin(
             self.forces_static,
             self.moments_static,
             cm_positions,
         )
+        # "z" of the forces dict is a torque, so it takes the translated value
+        forces = {**forces, "z": moments["z"]}
         global_forces = common.get_global_dct(forces)
         if peak_method == "extreme":
             return common.get_stats_dct(global_forces, stats_type)
