@@ -88,7 +88,7 @@ def building_facade_config(
         return ProjectionConfig(
             file_path=str(file_path),
             scalar=scalar,
-            cell_data_to_point_data=False,
+            cell_data_to_point_data=True,
             clip_box=clip,
             transformation=TransformationConfig(
                 translate=[float(tx - cx), float(ty - cy), 0.0],
