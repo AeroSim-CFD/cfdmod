@@ -5,7 +5,7 @@ The region you have to report on arrives separately as its own **.stl** exported
 from CAD -- a facade, a roof panel, a canopy. The two files share no index; only
 the geometry ties them together.
 
-`cfdmod.geometry.match_triangles(reference, target)` returns, for every triangle
+`cfdmod.geometry.match_triangles(reference=..., target=...)` returns, for every triangle
 of the region file, the index of the same triangle in the reference mesh -- or a
 missing marker where the region file has a triangle the reference does not.
 
@@ -18,7 +18,7 @@ here needs them.
 ```python
 from cfdmod.geometry import match_triangles
 
-match = match_triangles("body.stl", "facade_north.stl")
+match = match_triangles(reference="body.stl", target="facade_north.stl")
 
 match.indices        # (n_target,) int64, in facade_north.stl triangle order; -1 where missing
 match.as_float()     # same thing as float64 with NaN instead of -1
@@ -27,6 +27,9 @@ match.n_missing      # how many did not
 match.is_injective   # False if two region triangles landed on the same body triangle
 match.ambiguous      # True where the body mesh has duplicated/coincident triangles there
 ```
+
+Both geometries are keyword-only -- they are interchangeable in type, so swapping
+them would silently return a valid but wrong answer.
 
 Reading a reference-mesh field on the region:
 

@@ -85,8 +85,8 @@ def filter_by_submesh(ds: DataSource, p: FilterBySubmeshParams) -> DataSource:
         )
 
     match = match_triangles(
-        reference,
-        p.mesh,
+        reference=reference,
+        target=p.mesh,
         rtol=p.rtol,
         atol=p.atol,
         area_rtol=p.area_rtol,

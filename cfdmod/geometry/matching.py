@@ -178,15 +178,19 @@ def _tolerance_scale(tris: np.ndarray) -> float:
 
 
 def match_triangles(
+    *,
     reference,
     target,
-    *,
     rtol: float = 1e-6,
     atol: float | None = None,
     area_rtol: float | None = 1e-2,
     warn_on_coarse_tolerance: bool = True,
 ) -> TriangleMatch:
     """Match the triangles of ``target`` against ``reference`` by centroid.
+
+    Both geometries are keyword-only: the two arguments are
+    interchangeable in type and swapping them silently returns a valid but
+    wrong answer, so they have to be named at the call site.
 
     Args:
         reference: The reference geometry -- the mesh whose triangle indices

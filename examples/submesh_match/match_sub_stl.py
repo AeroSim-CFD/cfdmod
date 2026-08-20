@@ -66,7 +66,7 @@ def build_demo_partial_stl(out_dir: pathlib.Path) -> pathlib.Path:
 
 def report_match(reference: pathlib.Path, target: pathlib.Path, out_dir: pathlib.Path) -> int:
     """Match one target .stl against the reference and write the id table."""
-    match = match_triangles(reference, target)
+    match = match_triangles(reference=reference, target=target)
 
     ids = match.as_float()  # float64, NaN where the triangle is not in the reference
     csv = out_dir / f"{target.stem}.ids.csv"
