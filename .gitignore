@@ -187,3 +187,6 @@ out/
 
 # Local client consulting working data (never tracked)
 fixtures/example_consulting/
+
+# Example driver run artifacts (not tracked)
+_run/

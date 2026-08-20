@@ -100,7 +100,7 @@ Every recipe is `compose(...)` of these ops; you can build your own.
 | Time | `window_selection`, `translate`, `rescale` |
 | Field | `add`, `sub`, `mul`, `div`, `scale`, `moving_average` |
 | Geometric | `attach_grouping` |
-| Source-create | `compute_statistics`, `field_series_for_groups`, `filter_by_grouping`, `probe_extraction`, `profile_interpolation`, `modal_projection`, `modal_recomposition` |
+| Source-create | `compute_statistics`, `field_series_for_groups`, `filter_by_grouping`, `filter_by_submesh`, `probe_extraction`, `profile_interpolation`, `modal_projection`, `modal_recomposition` |
 
 All ops are pure functions: `op(ds, params) -> DataSource`.
 

@@ -15,11 +15,10 @@ from typing import ClassVar, Literal
 
 import numpy as np
 
-from cfdmod.adapters.memory import MemoryFieldStore
 from cfdmod.core.data_source import DataSource
 from cfdmod.core.grouping import Grouping
 from cfdmod.core.ops import OpParams
-from cfdmod.core.topology import ElementMeta, Topology
+from cfdmod.core.ops.data_source_create._element_slice import slice_data_source
 
 
 class FilterByGroupingParams(OpParams):
@@ -53,30 +52,6 @@ def _select_elements(grouping: Grouping, p: FilterByGroupingParams) -> np.ndarra
     return np.flatnonzero(mask)
 
 
-def _slice_topology(topo: Topology | None, idx: np.ndarray) -> Topology | None:
-    if topo is None:
-        return None
-    if topo.cell_type == "point":
-        return Topology.points(topo.vertices[idx])
-    # triangle / cell: slice connectivity rows; vertices are kept (no
-    # remapping). Downstream tools accept dangling vertices; remapping
-    # is a separate op (Phase 5: face_cut).
-    return Topology(
-        cell_type=topo.cell_type,
-        connectivity=topo.connectivity[idx],
-        vertices=topo.vertices,
-    )
-
-
-def _slice_elements(em: ElementMeta, idx: np.ndarray) -> ElementMeta:
-    return ElementMeta(
-        position=em.position[idx] if em.position is not None else None,
-        area=em.area[idx] if em.area is not None else None,
-        volume=em.volume[idx] if em.volume is not None else None,
-        normal=em.normal[idx] if em.normal is not None else None,
-    )
-
-
 def filter_by_grouping(ds: DataSource, p: FilterByGroupingParams) -> DataSource:
     if p.grouping not in ds.groupings:
         raise KeyError(f"grouping {p.grouping!r} not found on data source")
@@ -89,23 +64,4 @@ def filter_by_grouping(ds: DataSource, p: FilterByGroupingParams) -> DataSource:
             f"keep={p.keep}, drop={p.drop})"
         )
 
-    new_topology = _slice_topology(ds.topology, keep_idx)
-    new_elements = _slice_elements(ds.elements, keep_idx)
-    new_groupings = {
-        gname: Grouping(name=gname, indices=g.indices[keep_idx], id_to_label=g.id_to_label)
-        for gname, g in ds.groupings.items()
-    }
-
-    new_arrays: dict[str, np.ndarray] = {}
-    for fname in ds.fields.keys():
-        arr = ds.fields.read(fname)
-        new_arrays[fname] = arr[keep_idx]
-
-    return ds.model_copy(
-        update={
-            "topology": new_topology,
-            "elements": new_elements,
-            "groupings": new_groupings,
-            "fields": MemoryFieldStore(new_arrays),
-        }
-    )
+    return slice_data_source(ds, keep_idx)

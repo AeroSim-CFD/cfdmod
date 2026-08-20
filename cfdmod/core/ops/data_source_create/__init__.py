@@ -6,7 +6,7 @@ Per issue #131:
 - Field series for groups -> spatial aggregate per group, attached to a
   groups data source.
 - Interpolate (probe extraction, profile interpolation, remeshing).
-- Face cut, filter-by-grouping.
+- Face cut, filter-by-grouping, filter-by-submesh.
 - Modal projection / recomposition.
 - Integral transforms.
 
@@ -31,6 +31,8 @@ __all__ = [
     "field_series_for_groups",
     "FilterByGroupingParams",
     "filter_by_grouping",
+    "FilterBySubmeshParams",
+    "filter_by_submesh",
     "GeneralizedBuildingLoadParams",
     "generalized_building_load",
     "ModalProjectionParams",
@@ -58,6 +60,10 @@ from cfdmod.core.ops.data_source_create.field_series_for_groups import (
 from cfdmod.core.ops.data_source_create.filter_by_grouping import (
     FilterByGroupingParams,
     filter_by_grouping,
+)
+from cfdmod.core.ops.data_source_create.filter_by_submesh import (
+    FilterBySubmeshParams,
+    filter_by_submesh,
 )
 from cfdmod.core.ops.data_source_create.generalized_building_load import (
     GeneralizedBuildingLoadParams,
