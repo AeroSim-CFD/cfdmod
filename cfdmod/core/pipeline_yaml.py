@@ -161,6 +161,7 @@ def _populate_default_registry() -> None:
         FaceCutParams,
         FieldSeriesForGroupsParams,
         FilterByGroupingParams,
+        FilterBySubmeshParams,
         ProbeExtractionParams,
         ProfileInterpolationParams,
         StatisticsParams,
@@ -169,6 +170,7 @@ def _populate_default_registry() -> None:
         face_cut,
         field_series_for_groups,
         filter_by_grouping,
+        filter_by_submesh,
         probe_extraction,
         profile_interpolation,
     )
@@ -243,6 +245,7 @@ def _populate_default_registry() -> None:
         ("force_contribution", force_contribution, ForceContributionParams),
         ("moment_contribution", moment_contribution, MomentContributionParams),
         ("filter_by_grouping", filter_by_grouping, FilterByGroupingParams),
+        ("filter_by_submesh", filter_by_submesh, FilterBySubmeshParams),
         ("face_cut", face_cut, FaceCutParams),
         ("field_series_for_groups", field_series_for_groups, FieldSeriesForGroupsParams),
         ("statistics", compute_statistics, StatisticsParams),

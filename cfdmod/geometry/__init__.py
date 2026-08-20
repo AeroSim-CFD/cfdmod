@@ -1,6 +1,7 @@
 """Geometry utilities reusable across cfdmod modules.
 
-Currently exposes the triangle-grouping pipeline (``cfdmod.geometry.grouping``).
+Exposes the triangle-grouping pipeline (``cfdmod.geometry.grouping``) and
+reference-mesh triangle matching (``cfdmod.geometry.matching``).
 """
 
 from cfdmod.geometry.grouping import (
@@ -23,8 +24,18 @@ from cfdmod.geometry.grouping import (
     expand_size_rounded_chain,
     load_groupings,
 )
+from cfdmod.geometry.matching import (
+    MISSING,
+    TriangleMatch,
+    as_triangle_vertices,
+    match_triangles,
+)
 
 __all__ = [
+    "MISSING",
+    "TriangleMatch",
+    "as_triangle_vertices",
+    "match_triangles",
     "BySurfaceGrouping",
     "ByZoningGrouping",
     "ByDivisionsGrouping",
