@@ -188,6 +188,15 @@ class ValueTagsConfig(BaseModel):
     y: list[float] | None = Field(
         None, description="Exact positions in y. Relative to bounding box of transformed mesh."
     )
+    points: list[tuple[float, float, float]] | None = Field(
+        None,
+        description=(
+            "Exact (x, y, z) points, given in the body's initial (untransformed) position. "
+            "During processing, points are transformed the same way as the mesh (transformation "
+            "rotate/translate, then re-centering to z=0), so they stay fixed to the body across "
+            "its transformation. z_offset is not applied when points is set."
+        ),
+    )
 
     z_offset: float = Field(
         default=0,
@@ -205,22 +214,33 @@ class ValueTagsConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def at_least_one_valid_option_was_chosen(cls, data) -> LegendConfig:
+    def at_least_one_valid_option_was_chosen(cls, data) -> ValueTagsConfig:
         cols = data.keys()
-        if ("x" in cols) or (("y" in cols)) and not (("x" in cols) and (("y" in cols))):
-            ValueError("Exact position set for x or y, but one is empty. Both must be specified.")
-        elif ("x" in cols) and (("y" in cols)):
+        has_points = "points" in cols
+        has_x = "x" in cols
+        has_y = "y" in cols
+        has_spacing = "spacing" in cols
+        has_padding = "padding" in cols
+
+        if has_points:
+            # explicit points have precedence over grid/floating options
+            data["x"] = None
+            data["y"] = None
+            data["spacing"] = None
+            data["padding"] = None
+        elif has_x or has_y:
+            if not (has_x and has_y):
+                raise ValueError(
+                    "Exact position set for x or y, but one is empty. Both must be specified."
+                )
             # exact has precedence over floating
             data["spacing"] = None
             data["padding"] = None
-        elif (
-            ("spacing" in cols)
-            or (("padding" in cols))
-            and not (("spacing" in cols) and (("padding" in cols)))
-        ):
-            ValueError(
-                "Floating position set for spacing or padding, but one is empty. Both must be specified."
-            )
+        elif has_spacing or has_padding:
+            if not (has_spacing and has_padding):
+                raise ValueError(
+                    "Floating position set for spacing or padding, but one is empty. Both must be specified."
+                )
         return data
 
     @field_validator("spacing", mode="before")
