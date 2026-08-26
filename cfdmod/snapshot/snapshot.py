@@ -146,11 +146,16 @@ def add_mesh_projection_to_screenshot(
             if mesh.n_cells == 0:
                 logger.warning("The clip box in projection is cropping the model completely.")
                 return
-    transform_mesh(mesh, projection_config.transformation)
+    transformation = projection_config.transformation
+    transform_center = (
+        mesh.center if transformation.fixed_point is None else transformation.fixed_point
+    )
+    transform_mesh(mesh, transformation)
 
     # move all meshes to z=0 for better control of camera
     bounds = mesh.bounds
-    mesh = mesh.translate([0, 0, -bounds[5]])
+    z_shift = -bounds[5]
+    mesh = mesh.translate([0, 0, z_shift])
 
     if projection_config.scalar is not None:
         mesh.set_active_scalars(projection_config.scalar)
@@ -176,7 +181,12 @@ def add_mesh_projection_to_screenshot(
 
         if projection_config.values_tag_config is not None:
             points, labels = create_value_tags(
-                mesh, projection_config, projection_config.values_tag_config, is_cell=True
+                mesh,
+                projection_config,
+                projection_config.values_tag_config,
+                transform_center=transform_center,
+                z_shift=z_shift,
+                is_cell=True,
             )
             plotter.add_point_labels(
                 points=points,
@@ -246,6 +256,25 @@ def transform_mesh(mesh: pv.DataSet, transformation: TransformationConfig):
     mesh.translate(transformation.translate, inplace=True)
 
 
+def transform_points(
+    points: np.ndarray,
+    transformation: TransformationConfig,
+    center: tuple[float, float, float],
+) -> np.ndarray:
+    """Applies the same rotate/translate transformation as transform_mesh to raw points.
+
+    The center is taken from the caller (the untransformed mesh's own center or the
+    transformation's fixed_point) rather than recomputed from the points, so explicit
+    tag points rotate around the same pivot as the mesh they are meant to follow.
+    """
+    cloud = pv.PolyData(points)
+    cloud.rotate_x(transformation.rotate[0], point=center, inplace=True)
+    cloud.rotate_y(transformation.rotate[1], point=center, inplace=True)
+    cloud.rotate_z(transformation.rotate[2], point=center, inplace=True)
+    cloud.translate(transformation.translate, inplace=True)
+    return cloud.points
+
+
 def create_contours(mesh: pv.DataSet, scalar: str, legend_config: LegendConfig) -> pv.PolyData:
     if legend_config.custom_colorbar is not None:
         contours_to_make = (legend_config.custom_colorbar.value_edges[1:-2],)
@@ -275,50 +304,59 @@ def create_value_tags(
     mesh: pv.DataSet,
     projection_config: ProjectionConfig,
     value_tags_config: ValueTagsConfig,
+    transform_center: tuple[float, float, float],
+    z_shift: float,
     is_cell: bool = True,
 ) -> tuple[np.ndarray, list[str]]:
     bounds = list(mesh.bounds)
-    if value_tags_config.x is not None:
-        x_targets = [v + bounds[0] for v in value_tags_config.x]
-        y_targets = [v + bounds[2] for v in value_tags_config.y]
+    if value_tags_config.points is not None:
+        raw_points = np.array(value_tags_config.points, dtype=float)
+        target_points = transform_points(
+            raw_points, projection_config.transformation, transform_center
+        )
+        target_points[:, 2] += z_shift
     else:
-        spacing_x, spacing_y = value_tags_config.spacing
-        padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
-
-        x_min = bounds[0] + padding_left
-        x_max = bounds[1] - padding_right
-        y_min = bounds[2] + padding_bottom
-        y_max = bounds[3] - padding_top
-
-        size_x = x_max - x_min
-        size_y = y_max - y_min
-
-        if size_x < spacing_x:
-            x_targets = [(bounds[0] + bounds[1]) / 2]
+        if value_tags_config.x is not None:
+            x_targets = [v + bounds[0] for v in value_tags_config.x]
+            y_targets = [v + bounds[2] for v in value_tags_config.y]
         else:
-            num_divisions_x = int(size_x // spacing_x)
-            num_points_x = num_divisions_x + 1
-            total_spacing_x = spacing_x * num_divisions_x
-            center_x = (x_min + x_max) / 2
-            x_start = center_x - total_spacing_x / 2
-            x_end = center_x + total_spacing_x / 2
-            x_targets = np.linspace(x_start, x_end, num_points_x)
+            spacing_x, spacing_y = value_tags_config.spacing
+            padding_left, padding_right, padding_bottom, padding_top = value_tags_config.padding
 
-        if size_y < spacing_y:
-            y_targets = [(bounds[2] + bounds[3]) / 2]
-        else:
-            num_divisions_y = int(size_y // spacing_y)
-            num_points_y = num_divisions_y + 1
-            total_spacing_y = spacing_y * num_divisions_y
-            center_y = (y_min + y_max) / 2
-            y_start = center_y - total_spacing_y / 2
-            y_end = center_y + total_spacing_y / 2
-            y_targets = np.linspace(y_start, y_end, num_points_y)
+            x_min = bounds[0] + padding_left
+            x_max = bounds[1] - padding_right
+            y_min = bounds[2] + padding_bottom
+            y_max = bounds[3] - padding_top
 
-    z_level = bounds[5] - value_tags_config.z_offset
+            size_x = x_max - x_min
+            size_y = y_max - y_min
 
-    X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
-    target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
+            if size_x < spacing_x:
+                x_targets = [(bounds[0] + bounds[1]) / 2]
+            else:
+                num_divisions_x = int(size_x // spacing_x)
+                num_points_x = num_divisions_x + 1
+                total_spacing_x = spacing_x * num_divisions_x
+                center_x = (x_min + x_max) / 2
+                x_start = center_x - total_spacing_x / 2
+                x_end = center_x + total_spacing_x / 2
+                x_targets = np.linspace(x_start, x_end, num_points_x)
+
+            if size_y < spacing_y:
+                y_targets = [(bounds[2] + bounds[3]) / 2]
+            else:
+                num_divisions_y = int(size_y // spacing_y)
+                num_points_y = num_divisions_y + 1
+                total_spacing_y = spacing_y * num_divisions_y
+                center_y = (y_min + y_max) / 2
+                y_start = center_y - total_spacing_y / 2
+                y_end = center_y + total_spacing_y / 2
+                y_targets = np.linspace(y_start, y_end, num_points_y)
+
+        z_level = bounds[5] - value_tags_config.z_offset
+
+        X, Y, Z = np.meshgrid(x_targets, y_targets, [z_level], indexing="ij")
+        target_points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
 
     def find_cells():
         nonlocal mesh, target_points
