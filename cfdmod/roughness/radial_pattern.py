@@ -1,23 +1,17 @@
-import pathlib
+from collections.abc import Sequence
 
 import numpy as np
-from lnas import LnasFormat
-from scipy.interpolate import LinearNDInterpolator
 
 from cfdmod.roughness.parameters import ElementParams
+from cfdmod.roughness.surface_sampler import (
+    DEFAULT_MAX_SAMPLE_POINTS,
+    SurfaceInput,
+    build_surface_sampler,
+)
 
 __all__ = [
     "radial_pattern",
 ]
-
-
-def _build_z_interpolator(surface_paths: list[pathlib.Path]) -> LinearNDInterpolator:
-    all_verts_list = []
-    for path in surface_paths:
-        geom = LnasFormat.from_file(path).geometry
-        all_verts_list.append(geom.vertices.astype(np.float64))
-    all_verts = np.unique(np.concatenate(all_verts_list), axis=0)
-    return LinearNDInterpolator(all_verts[:, :2], all_verts[:, 2])
 
 
 def _generate_positions(
@@ -28,18 +22,34 @@ def _generate_positions(
     ring_offset_distance: float,
     center: tuple[float, float],
 ) -> np.ndarray:
-    center_arr = np.array(center)
+    """Ring positions and fin orientations for the radial pattern.
+
+    Args:
+        r_start (float): Inner radius of the roughness band.
+        r_end (float): Outer radius of the roughness band.
+        radial_spacing (float): Distance between rings.
+        arc_spacing (float): Target arc-length spacing between fins per ring.
+        ring_offset_distance (float): Arc-length stagger for alternating rings.
+        center (tuple[float, float]): XY center of the radial pattern.
+
+    Returns:
+        np.ndarray: (N, 3) array of (x, y, theta).
+    """
     rings = np.arange(r_start, r_end + radial_spacing * 0.5, radial_spacing)
-    positions = []
-    for ring_idx, r in enumerate(rings):
-        n_fins = max(1, int(2.0 * np.pi * r / arc_spacing))
-        base_angle = (ring_offset_distance / r) * (ring_idx % 2)
-        angles = np.linspace(0.0, 2.0 * np.pi, n_fins, endpoint=False) + base_angle
-        for theta in angles:
-            x = center_arr[0] + r * np.cos(theta)
-            y = center_arr[1] + r * np.sin(theta)
-            positions.append((x, y, theta))
-    return np.array(positions)
+    if len(rings) == 0:
+        return np.empty((0, 3), dtype=np.float64)
+
+    n_fins = np.maximum(1, (2.0 * np.pi * rings / arc_spacing).astype(np.int64))
+    base_angles = (ring_offset_distance / rings) * (np.arange(len(rings)) % 2)
+
+    # Index of each fin within its own ring, without a Python loop over rings.
+    ring_starts = np.concatenate(([0], np.cumsum(n_fins)[:-1]))
+    fin_index = np.arange(n_fins.sum()) - np.repeat(ring_starts, n_fins)
+
+    theta = (2.0 * np.pi / np.repeat(n_fins, n_fins)) * fin_index + np.repeat(base_angles, n_fins)
+    r = np.repeat(rings, n_fins)
+
+    return np.stack([center[0] + r * np.cos(theta), center[1] + r * np.sin(theta), theta], axis=1)
 
 
 def radial_pattern(
@@ -50,13 +60,17 @@ def radial_pattern(
     arc_spacing: float,
     ring_offset_distance: float,
     center: tuple[float, float],
-    surface_paths: list[pathlib.Path],
+    surfaces: Sequence[SurfaceInput] | None = None,
+    max_points: int | None = DEFAULT_MAX_SAMPLE_POINTS,
+    *,
+    surface_paths: Sequence[SurfaceInput] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate radially placed roughness fins above a set of surfaces.
 
     Each fin is oriented with its face normal pointing radially outward from center.
     Fins are arranged in rings with arc-length-based angular spacing and optional
-    staggering between alternating rings.
+    staggering between alternating rings. Fins whose position falls outside every
+    surface are dropped.
 
     Args:
         element_params (ElementParams): Height and width of each fin.
@@ -66,18 +80,33 @@ def radial_pattern(
         arc_spacing (float): Target arc-length spacing between fins per ring.
         ring_offset_distance (float): Arc-length stagger for alternating rings (angle = offset/r).
         center (tuple[float, float]): XY center of the radial pattern.
-        surface_paths (list[pathlib.Path]): LNAS surface files for Z sampling.
+        surfaces (Sequence[SurfaceInput] | None): Surfaces for Z sampling, as
+            LNAS/STL paths or in-memory ``LnasFormat`` / ``LnasGeometry`` /
+            vertex arrays.
+        max_points (int | None, optional): Cap on the number of surface points
+            used for interpolation. None disables thinning. Defaults to
+            ``DEFAULT_MAX_SAMPLE_POINTS``.
+        surface_paths (Sequence[SurfaceInput] | None): Deprecated alias for
+            ``surfaces``, kept for existing callers.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Triangles and normals arrays (STL representation).
     """
-    z_interp = _build_z_interpolator(surface_paths)
+    if surfaces is None:
+        surfaces = surface_paths
+    elif surface_paths is not None:
+        raise ValueError("Pass either `surfaces` or the deprecated `surface_paths`, not both")
+    if surfaces is None:
+        raise ValueError("`surfaces` is required")
+
+    sampler = build_surface_sampler(surfaces, max_points=max_points)
     positions = _generate_positions(
         r_start, r_end, radial_spacing, arc_spacing, ring_offset_distance, center
     )
 
-    z_heights = z_interp(positions[:, 0], positions[:, 1])
-    valid_mask = ~np.isnan(z_heights)
+    z_heights = sampler.sample(positions[:, :2])
+    positions = positions[~np.isnan(z_heights)]
+    z_heights = z_heights[~np.isnan(z_heights)]
 
     h = element_params.height
     w = element_params.width
@@ -86,29 +115,32 @@ def radial_pattern(
         dtype=np.float64,
     )
 
-    all_triangles = []
-    all_normals = []
+    theta = positions[:, 2]
+    cos_t = np.cos(theta)
+    sin_t = np.sin(theta)
 
-    for i, (x_pos, y_pos, theta) in enumerate(positions):
-        if not valid_mask[i]:
-            continue
+    n_fins = len(positions)
+    rotations = np.zeros((n_fins, 3, 3), dtype=np.float64)
+    rotations[:, 0, 0] = cos_t
+    rotations[:, 0, 1] = -sin_t
+    rotations[:, 1, 0] = sin_t
+    rotations[:, 1, 1] = cos_t
+    rotations[:, 2, 2] = 1.0
 
-        cos_t = np.cos(theta)
-        sin_t = np.sin(theta)
+    rotated = np.einsum("nij,vj->nvi", rotations, base_verts)
+    translation = np.stack(
+        [
+            positions[:, 0] + (w / 2.0) * sin_t,
+            positions[:, 1] - (w / 2.0) * cos_t,
+            z_heights,
+        ],
+        axis=1,
+    )
+    verts = (rotated + translation[:, None, :]).astype(np.float32)
 
-        R = np.array([[cos_t, -sin_t, 0.0], [sin_t, cos_t, 0.0], [0.0, 0.0, 1.0]])
-        rotated = (R @ base_verts.T).T
+    triangles = np.stack([verts[:, [0, 1, 2]], verts[:, [0, 2, 3]]], axis=1).reshape(-1, 3, 3)
+    normals = np.repeat(
+        np.stack([cos_t, sin_t, np.zeros(n_fins)], axis=1).astype(np.float32), 2, axis=0
+    )
 
-        translation = np.array(
-            [x_pos + (w / 2.0) * sin_t, y_pos - (w / 2.0) * cos_t, z_heights[i]]
-        )
-        verts = (rotated + translation).astype(np.float32)
-
-        n = np.array([cos_t, sin_t, 0.0], dtype=np.float32)
-
-        all_triangles.append(verts[[0, 1, 2]])
-        all_triangles.append(verts[[0, 2, 3]])
-        all_normals.append(n)
-        all_normals.append(n)
-
-    return np.array(all_triangles, dtype=np.float32), np.array(all_normals, dtype=np.float32)
+    return triangles, normals

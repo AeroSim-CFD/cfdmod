@@ -17,6 +17,9 @@ __all__ = [
     "build_single_element",
     "linear_pattern",
     "radial_pattern",
+    "position_pattern",
+    "SurfaceSampler",
+    "build_surface_sampler",
     # Pressure (v2 entry points removed in v3; use `cfdmod run <template.yaml>`
     # or the v3 recipes -- see notebooks/tutorials/ and
     # fixtures/tests/pressure/templates/).
@@ -177,6 +180,9 @@ _SYMBOL_MODULE: dict[str, str] = {
     "build_single_element": "cfdmod.roughness",
     "linear_pattern": "cfdmod.roughness",
     "radial_pattern": "cfdmod.roughness",
+    "position_pattern": "cfdmod.roughness",
+    "SurfaceSampler": "cfdmod.roughness",
+    "build_surface_sampler": "cfdmod.roughness",
     # Geometry grouping
     "BySurfaceGrouping": "cfdmod.geometry",
     "ByZoningGrouping": "cfdmod.geometry",

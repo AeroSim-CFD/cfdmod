@@ -3,7 +3,8 @@ import pathlib
 from cfdmod.io.geometry.STL import export_stl
 from cfdmod.roughness.build_element import build_single_element
 from cfdmod.roughness.linear_pattern import linear_pattern
-from cfdmod.roughness.parameters import GenerationParams, RadialParams
+from cfdmod.roughness.parameters import GenerationParams, PositionParams, RadialParams
+from cfdmod.roughness.position_pattern import position_pattern
 from cfdmod.roughness.radial_pattern import radial_pattern
 
 
@@ -52,6 +53,23 @@ def run_radial(cfg: RadialParams, output_path: pathlib.Path):
         arc_spacing=cfg.arc_spacing,
         ring_offset_distance=cfg.ring_offset_distance,
         center=cfg.center,
-        surface_paths=surface_paths,
+        surfaces=surface_paths,
     )
     export_stl(output_path / "roughness_elements.stl", full_triangles, full_normals)
+
+
+def run_position(cfg: PositionParams, output_path: pathlib.Path):
+    """Orchestrate positioned roughness element generation and write STL to output_path.
+
+    Args:
+        cfg (PositionParams): Positioning configuration (element, spacing, box, surfaces).
+        output_path (pathlib.Path): Directory where positioned_elements.stl will be written.
+    """
+    surfaces = [pathlib.Path(p) for p in cfg.surfaces.values()]
+    full_triangles, full_normals = position_pattern(
+        element_params=cfg.element_params,
+        spacing_params=cfg.spacing_params,
+        bounding_box=cfg.bounding_box,
+        surfaces=surfaces,
+    )
+    export_stl(output_path / "positioned_elements.stl", full_triangles, full_normals)
