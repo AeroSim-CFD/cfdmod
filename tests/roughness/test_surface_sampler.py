@@ -173,6 +173,19 @@ def test_sampler_rejects_bad_inputs():
         build_surface_sampler([plane]).sample(np.zeros((4, 3)))
 
 
+def test_points_are_handed_out_read_only():
+    """A mutated points array would silently disagree with the interpolator."""
+    plane = _plane_triangles(size=10.0).reshape(-1, 3).astype(np.float64)
+    sampler = build_surface_sampler([plane])
+
+    with pytest.raises(ValueError):
+        sampler.points[0, 2] = 99.0
+    # The caller's own array is left alone.
+    caller_owned = np.unique(plane, axis=0)
+    SurfaceSampler(caller_owned)
+    caller_owned[0, 2] = 99.0
+
+
 def test_sample_of_no_positions_is_empty():
     sampler = build_surface_sampler([_plane_triangles(size=10.0).reshape(-1, 3)])
     assert sampler.sample(np.empty((0, 2))).shape == (0,)

@@ -69,8 +69,9 @@ def radial_pattern(
 
     Each fin is oriented with its face normal pointing radially outward from center.
     Fins are arranged in rings with arc-length-based angular spacing and optional
-    staggering between alternating rings. Fins whose position falls outside every
-    surface are dropped.
+    staggering between alternating rings. Fins whose position falls outside the
+    sampled region (the XY convex hull of the pooled surface vertices) are
+    dropped.
 
     Args:
         element_params (ElementParams): Height and width of each fin.

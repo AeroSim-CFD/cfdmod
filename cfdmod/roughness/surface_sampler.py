@@ -216,7 +216,8 @@ class SurfaceSampler:
     """Vectorized Z sampler over the union of one or more surfaces.
 
     Wraps a linear interpolation over the surfaces' vertices. Positions outside
-    the XY footprint of every surface sample as NaN.
+    the sampled region -- the XY convex hull of the pooled vertices, which is
+    what the underlying triangulation spans -- sample as NaN.
     """
 
     def __init__(self, points: np.ndarray):
@@ -229,7 +230,12 @@ class SurfaceSampler:
                 f"Need at least 3 surface points to interpolate, got {len(points)}. "
                 "Check that the given surfaces are non-empty."
             )
-        self._points = points
+        # `points` is handed out by the property; the interpolator is built
+        # from it and would silently disagree with a mutated copy. A read-only
+        # view guards that without freezing the caller's own array.
+        read_only = np.asarray(points).view()
+        read_only.flags.writeable = False
+        self._points = read_only
         self._interpolator = LinearNDInterpolator(points[:, :2], points[:, 2])
 
     @property
@@ -250,7 +256,7 @@ class SurfaceSampler:
 
         Returns:
             np.ndarray: (N,) Z values, NaN where the position falls outside the
-                surfaces' XY footprint.
+                sampled region.
         """
         xy = np.asarray(xy, dtype=np.float64)
         if xy.ndim != 2 or xy.shape[1] != 2:

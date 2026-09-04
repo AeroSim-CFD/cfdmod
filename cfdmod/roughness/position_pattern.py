@@ -66,6 +66,10 @@ def generation_params_for_box(
     """
     lx, ly = clipped_box[1] - clipped_box[0]
     spacing_x, spacing_y = spacing_params.spacing
+    if spacing_x <= 0:
+        raise ValueError(
+            f"Spacing in X must be positive to space the element lines, got {spacing_x}"
+        )
     line_pitch = element_params.width + spacing_y
 
     if spacing_params.offset_direction == "x":
@@ -151,8 +155,10 @@ def position_pattern(
 
     The array fills the intersection of ``bounding_box`` and the surfaces' own
     XY extent, then every element is lifted to sit on the surface below it.
-    Elements whose whole base falls outside every surface are dropped instead of
-    being left at z = 0.
+    Elements whose whole base falls outside the sampled region are dropped
+    instead of being left at z = 0. That region is the XY convex hull of the
+    pooled surface vertices, so an element over a hole between two surfaces is
+    seated on the height interpolated across the gap, not dropped.
 
     The lift of each element is the lowest surface Z sampled across its base
     span, so an element on a slope is seated on the surface rather than floating

@@ -170,6 +170,19 @@ def test_footprint_samples_must_span_the_element():
         )
 
 
+def test_zero_x_spacing_is_rejected():
+    """Without the guard this divides by zero and overflows on the int cast."""
+    with pytest.raises(ValueError, match="Spacing in X must be positive"):
+        position_pattern(
+            element_params=ElementParams(height=1.0, width=4.0),
+            spacing_params=SpacingParams(
+                spacing=(0.0, 20.0), line_offset=0.0, offset_direction="x"
+            ),
+            bounding_box=UNBOUNDED_BOX,
+            surfaces=[_plane(size=100.0)],
+        )
+
+
 def test_thinning_does_not_move_the_elements():
     rng = np.random.default_rng(7)
     grid = np.linspace(-400.0, 400.0, 220)
