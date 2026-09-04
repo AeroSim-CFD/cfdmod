@@ -28,6 +28,7 @@ uv run python -m cfdmod.roughness --config {CONFIG_PATH} --output {OUTPUT_PATH}
 ```
 
 It takes two arguments: the path for the **.yaml configuration file** with the generation parameters and the **output path** for saving the .STL file.
+A third, optional `--mode` argument selects the generation mode: `linear` (the default, described here), `position` (elements draped onto a terrain, below) or `radial` (fins arranged in rings around a centre).
 For standard use, the user must fullfill a configuration file with the parameters.
 One example of the configuration is as it follows:
 
@@ -63,7 +64,37 @@ Parameters file must also be an input, such as the following example:
 :language: yaml
 ```
 
-Currently the only way to run this use case is via [notebook for positioning elements](./position_roughness_elements.ipynb).
+Run it with the `position` mode:
+
+```Bash
+uv run python -m cfdmod.roughness --config {CONFIG_PATH} --output {OUTPUT_PATH} --mode position
+```
+
+It writes `positioned_elements.stl` in the output path.
+
+The array fills the intersection of the bounding box and the surfaces' own extent.
+Only the X and Y of the bounding box constrain the placement: the Z of each element comes from the surface it is draped onto.
+Each element is seated on the lowest surface height across its base span, so an element on a slope rests on the terrain instead of floating over its downhill half, and elements whose base falls outside every surface are dropped rather than left at the origin height.
+
+The same routine is available from Python, and there it also accepts surfaces already in memory:
+
+```python
+from cfdmod.roughness import PositionParams, position_pattern
+
+cfg = PositionParams.from_file(config_path)
+triangles, normals = position_pattern(
+    element_params=cfg.element_params,
+    spacing_params=cfg.spacing_params,
+    bounding_box=cfg.bounding_box,
+    surfaces=[terrain_lnas],  # a path, an LnasFormat, an LnasGeometry or an (N, 3) vertex array
+)
+```
+
+Surface heights are sampled from a triangulation of the surfaces' vertices.
+Terrain surfaces routinely carry hundreds of thousands of vertices, and the triangulation grows faster than linearly with that count, so the sample is capped at `max_points` (default 100000).
+The boundary of the surface is kept at full density when the cap bites, so neither the extent covered nor the accuracy of the drape near the edge changes; pass `max_points=None` to use every vertex.
+
+A worked example is in the [notebook for positioning elements](./position_roughness_elements.ipynb).
 
 ## Output
 
