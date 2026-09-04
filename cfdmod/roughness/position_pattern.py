@@ -124,25 +124,18 @@ def _build_element_array(cfg: GenerationParams) -> tuple[np.ndarray, np.ndarray]
     )
 
 
-def _footprint_positions(triangles: np.ndarray, footprint_samples: int) -> np.ndarray:
-    """XY positions to sample the surface at, under each element's base.
+def _footprint_centroids(triangles: np.ndarray) -> np.ndarray:
+    """XY centroid of each element's footprint, where the surface is sampled.
 
     Args:
         triangles (np.ndarray): (2 * n_elements, 3, 3) triangles, two consecutive
             triangles per element.
-        footprint_samples (int): Number of samples across the element base.
 
     Returns:
-        np.ndarray: (n_elements, footprint_samples, 2) query positions.
+        np.ndarray: (n_elements, 2) query positions.
     """
     per_element = triangles.reshape(-1, TRIANGLES_PER_ELEMENT * 3, 3)
-    x = per_element[:, :, 0].min(axis=1)
-    y_start = per_element[:, :, 1].min(axis=1)
-    y_end = per_element[:, :, 1].max(axis=1)
-
-    fractions = np.linspace(0.0, 1.0, footprint_samples)
-    y = y_start[:, None] + (y_end - y_start)[:, None] * fractions[None, :]
-    return np.stack([np.broadcast_to(x[:, None], y.shape), y], axis=-1)
+    return per_element[:, :, :2].mean(axis=1)
 
 
 def position_pattern(
@@ -151,23 +144,21 @@ def position_pattern(
     bounding_box: BoundingBox,
     surfaces: Sequence[SurfaceInput],
     max_points: int | None = DEFAULT_MAX_SAMPLE_POINTS,
-    footprint_samples: int = 3,
     on_missing_surface: OnMissingSurface = "drop",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate a linear roughness array draped onto a set of surfaces.
 
     The array fills the intersection of ``bounding_box`` and the surfaces' own
-    XY extent, then every element is lifted to sit on the surface below it.
-    An element whose whole base falls outside the sampled region has no height
-    to be seated on. By default it is dropped; ``on_missing_surface="keep"``
-    leaves it unlifted instead, with its base at z = 0. The sampled region is the
-    XY convex hull of the pooled surface vertices, so an element over a hole
+    XY extent, then every element is lifted to sit on the surface below it. The
+    lift is the surface Z at the element footprint's centroid: one sample per
+    element.
+
+    An element whose centroid falls outside the sampled region has no height to
+    be seated on. By default it is dropped; ``on_missing_surface="keep"`` leaves
+    it unlifted instead, with its base at z = 0. The sampled region is the XY
+    convex hull of the pooled surface vertices, so an element over a hole
     between two surfaces is seated on the height interpolated across the gap and
     is never the missing case.
-
-    The lift of each element is the lowest surface Z sampled across its base
-    span, so an element on a slope is seated on the surface rather than floating
-    over its downhill half.
 
     Only the X and Y components of ``bounding_box`` constrain the placement. The
     Z of each element comes from the surface it is draped onto, so the Z
@@ -182,8 +173,6 @@ def position_pattern(
         max_points (int | None, optional): Cap on the number of surface points
             used for interpolation. None disables thinning. Defaults to
             ``DEFAULT_MAX_SAMPLE_POINTS``.
-        footprint_samples (int, optional): Number of Z samples taken across each
-            element base. Defaults to 3.
         on_missing_surface (OnMissingSurface, optional): What to do with an
             element that lands over no surface: "drop" removes it, "keep" leaves
             it unlifted at z = 0. Defaults to "drop".
@@ -192,8 +181,6 @@ def position_pattern(
         tuple[np.ndarray, np.ndarray]: Triangles and normals arrays (STL
             representation).
     """
-    if footprint_samples < 2:
-        raise ValueError(f"footprint_samples must be at least 2, got {footprint_samples}")
     check_on_missing_surface(on_missing_surface)
 
     vertices = load_surface_vertices(surfaces)
@@ -205,12 +192,8 @@ def position_pattern(
     triangles[:, :, 1] += clipped_box[0][1]
 
     sampler = build_surface_sampler(vertices, max_points=max_points)
-    query = _footprint_positions(triangles, footprint_samples)
-    z_samples = sampler.sample(query.reshape(-1, 2)).reshape(query.shape[:2])
-
-    valid_samples = ~np.isnan(z_samples)
-    on_surface = valid_samples.any(axis=1)
-    z_offset = np.min(np.where(valid_samples, z_samples, np.inf), axis=1)
+    z_offset = sampler.sample(_footprint_centroids(triangles))
+    on_surface = ~np.isnan(z_offset)
 
     if on_missing_surface == "drop":
         keep = on_surface

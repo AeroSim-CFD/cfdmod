@@ -80,8 +80,8 @@ def test_elements_follow_a_slope_along_x():
     np.testing.assert_allclose(_element_bases(triangles), 10.0 + slope * x, atol=1e-3)
 
 
-def test_element_is_seated_on_the_low_side_of_a_cross_slope():
-    """An element spans its width in Y, so a Y slope must not leave it floating."""
+def test_element_is_seated_at_its_footprint_centroid_on_a_cross_slope():
+    """An element spans its width in Y, and the lift is sampled at the centre of that span."""
     slope = 0.05
     width = 8.0
     triangles, _ = position_pattern(
@@ -93,8 +93,8 @@ def test_element_is_seated_on_the_low_side_of_a_cross_slope():
 
     per_element = triangles.reshape(-1, TRIANGLES_PER_ELEMENT * 3, 3)
     y_low = per_element[:, :, 1].min(axis=1)
-    # The lift is the surface Z at the low edge, not at the element centre.
-    np.testing.assert_allclose(_element_bases(triangles), 10.0 + slope * y_low, atol=1e-3)
+    y_centre = y_low + width / 2.0
+    np.testing.assert_allclose(_element_bases(triangles), 10.0 + slope * y_centre, atol=1e-3)
 
 
 def test_bounding_box_clips_the_array():
@@ -225,17 +225,6 @@ def test_box_outside_the_surfaces_is_rejected():
         )
 
 
-def test_footprint_samples_must_span_the_element():
-    with pytest.raises(ValueError, match="footprint_samples must be at least 2"):
-        position_pattern(
-            element_params=ElementParams(height=1.0, width=4.0),
-            spacing_params=_spacing(),
-            bounding_box=UNBOUNDED_BOX,
-            surfaces=[_plane(size=100.0)],
-            footprint_samples=1,
-        )
-
-
 def test_zero_x_spacing_is_rejected():
     """Without the guard this divides by zero and overflows on the int cast."""
     with pytest.raises(ValueError, match="Spacing in X must be positive"):
@@ -289,6 +278,46 @@ def test_position_params_fixture_drives_the_routine():
     bases = _element_bases(triangles)
     assert bases.min() > 700.0
     assert bases.max() < 900.0
+
+
+def test_lift_is_the_surface_z_at_the_footprint_centroid():
+    """Pinned against an independent interpolator built the same way.
+
+    One sample per element, at the mean XY of its footprint vertices. This is
+    the semantics the drape is specified to have, checked on the real fixture
+    surfaces rather than on an analytic plane.
+    """
+    from lnas import LnasFormat
+    from scipy.interpolate import LinearNDInterpolator
+
+    cfg = PositionParams.from_file(
+        pathlib.Path("./fixtures/tests/roughness_gen/position_params.yaml")
+    )
+    paths = [pathlib.Path(p) for p in cfg.surfaces.values()]
+    triangles, _ = position_pattern(
+        element_params=cfg.element_params,
+        spacing_params=cfg.spacing_params,
+        bounding_box=cfg.bounding_box,
+        surfaces=paths,
+        max_points=None,
+    )
+
+    vertices = np.unique(
+        np.concatenate(
+            [LnasFormat.from_file(p).geometry.vertices.astype(np.float64) for p in paths]
+        ),
+        axis=0,
+    )
+    interpolator = LinearNDInterpolator(vertices[:, :2], vertices[:, 2])
+
+    footprints = triangles.reshape(-1, TRIANGLES_PER_ELEMENT * 3, 3).astype(np.float64)
+    centroids = footprints[:, :, :2].mean(axis=1)
+    expected = interpolator(centroids[:, 0], centroids[:, 1])
+
+    assert not np.isnan(expected).any()
+    # The only difference allowed is float32 storage of the triangles, whose ulp
+    # at these heights (z around 800) is about 6e-5.
+    np.testing.assert_allclose(_element_bases(triangles), expected, atol=1e-4)
 
 
 def test_documented_config_example_parses():
