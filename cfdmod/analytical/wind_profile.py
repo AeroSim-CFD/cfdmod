@@ -91,7 +91,7 @@ class WindProfile_NBR(WindProfile):
         return Fr * b * (height / 10) ** p
 
     def S3(self, recurrence_period: float):
-        prob_non_occurrence = (1-(1/recurrence_period))**recurrence_period 
+        prob_non_occurrence = (1 - (1 / recurrence_period)) ** recurrence_period
         return 0.54 * (-np.log(prob_non_occurrence) / recurrence_period) ** -0.157
 
     def get_U_H(

@@ -7,6 +7,8 @@ from cfdmod.utils import read_yaml
 
 __all__ = [
     "OffsetDirection",
+    "OnMissingSurface",
+    "check_on_missing_surface",
     "GenerationParams",
     "ElementParams",
     "SpacingParams",
@@ -18,6 +20,35 @@ __all__ = [
 OffsetDirection = Annotated[
     Literal["x", "y"], Field(description="""Define the offset direction for element lines""")
 ]
+
+OnMissingSurface = Annotated[
+    Literal["drop", "keep"],
+    Field(
+        description="What to do with an element that lands over no surface: "
+        "'drop' removes it, 'keep' leaves it unlifted at z = 0"
+    ),
+]
+
+
+def check_on_missing_surface(value: str) -> None:
+    """Reject a value the drape does not know how to apply.
+
+    The pattern functions take this as a plain argument, outside any model, so
+    a typo would otherwise fall through to the "keep" branch silently.
+
+    Args:
+        value (str): The requested behaviour.
+    """
+    if value not in ("drop", "keep"):
+        raise ValueError(f"on_missing_surface must be 'drop' or 'keep', got {value!r}")
+
+
+_ON_MISSING_SURFACE_FIELD = Field(
+    "drop",
+    title="Missing surface behaviour",
+    description="What to do with an element whose footprint lands over no surface. "
+    "'drop' (the default) removes it; 'keep' leaves it unlifted, with its base at z = 0",
+)
 
 
 class SpacingParams(BaseModel):
@@ -112,6 +143,7 @@ class PositionParams(BaseModel):
         dict[str, str],
         Field(..., title="Surfaces dictionary", description="LNAS surface path keyed by label"),
     ]
+    on_missing_surface: Annotated[OnMissingSurface, _ON_MISSING_SURFACE_FIELD]
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):
@@ -188,6 +220,7 @@ class RadialParams(BaseModel):
         dict[str, str],
         Field(..., title="Surfaces dictionary", description="LNAS surface path keyed by label"),
     ]
+    on_missing_surface: Annotated[OnMissingSurface, _ON_MISSING_SURFACE_FIELD]
 
     @classmethod
     def from_file(cls, file_path: pathlib.Path):
