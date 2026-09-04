@@ -9,7 +9,7 @@ resolution-markers = [
 
 [[package]]
 name = "aerosim-cfdmod"
-version = "3.7.0"
+version = "3.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "aerosim-lnas" },
@@ -302,11 +302,11 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "msgpack", marker = "python_full_version < '3.11'" },
-    { name = "ndindex", marker = "python_full_version < '3.11'" },
-    { name = "numexpr", marker = "python_full_version < '3.11'" },
-    { name = "numpy", marker = "python_full_version < '3.11'" },
-    { name = "py-cpuinfo", marker = "python_full_version < '3.11'" },
+    { name = "msgpack" },
+    { name = "ndindex" },
+    { name = "numexpr" },
+    { name = "numpy" },
+    { name = "py-cpuinfo" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ef/bb/19a5d672f86dd26be0fc4f3a4c04264c088f3309b7b9d4e3e853a1f3cfda/blosc2-2.7.1.tar.gz", hash = "sha256:34db4d41543b16e894d507d6c7d10a9a67c9dd420ff40b072f7c39185cbb8fe8", size = 5149754, upload-time = "2024-07-30T20:18:33.3Z" }
 wheels = [
@@ -342,13 +342,13 @@ resolution-markers = [
     "python_full_version == '3.11.*'",
 ]
 dependencies = [
-    { name = "httpx", marker = "python_full_version >= '3.11'" },
-    { name = "msgpack", marker = "python_full_version >= '3.11'" },
-    { name = "ndindex", marker = "python_full_version >= '3.11'" },
-    { name = "numexpr", marker = "python_full_version >= '3.11'" },
-    { name = "numpy", marker = "python_full_version >= '3.11'" },
-    { name = "platformdirs", marker = "python_full_version >= '3.11'" },
-    { name = "py-cpuinfo", marker = "python_full_version >= '3.11'" },
+    { name = "httpx" },
+    { name = "msgpack" },
+    { name = "ndindex" },
+    { name = "numexpr" },
+    { name = "numpy" },
+    { name = "platformdirs" },
+    { name = "py-cpuinfo" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/07/72/ce387bfd0c8f0e7acc7c62b8bc13d5beaabcef5a735800da0beeaf3ad1df/blosc2-3.1.1.tar.gz", hash = "sha256:1999f442676d31b07820fb97437caca3b1fbd7c94bfa2d18f6f26c2e9d90e622", size = 9927475, upload-time = "2025-02-14T11:24:38.053Z" }
 wheels = [
@@ -3239,12 +3239,12 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "blosc2", version = "2.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numexpr", marker = "python_full_version < '3.11'" },
-    { name = "numpy", marker = "python_full_version < '3.11'" },
-    { name = "packaging", marker = "python_full_version < '3.11'" },
-    { name = "py-cpuinfo", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "blosc2", version = "2.7.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "numexpr" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "py-cpuinfo" },
+    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0d/5d/96708a84e9fcd29d1f684d56d4c38a23d29b1c934599a072a49f27ccfa71/tables-3.10.1.tar.gz", hash = "sha256:4aa07ac734b9c037baeaf44aec64ec902ad247f57811b59f30c4e31d31f126cf", size = 4762413, upload-time = "2024-08-17T09:57:47.127Z" }
 wheels = [
@@ -3278,12 +3278,12 @@ resolution-markers = [
     "python_full_version == '3.11.*'",
 ]
 dependencies = [
-    { name = "blosc2", version = "3.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "numexpr", marker = "python_full_version >= '3.11'" },
-    { name = "numpy", marker = "python_full_version >= '3.11'" },
-    { name = "packaging", marker = "python_full_version >= '3.11'" },
-    { name = "py-cpuinfo", marker = "python_full_version >= '3.11'" },
-    { name = "typing-extensions", version = "4.12.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "blosc2", version = "3.1.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "numexpr" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "py-cpuinfo" },
+    { name = "typing-extensions", version = "4.12.2", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/15/50/23ead25f60bb1babe7f2f061d8a2f8c2f6804c1a20b3058677beb9085b56/tables-3.10.2.tar.gz", hash = "sha256:2544812a7186fadba831d6dd34eb49ccd788d6a83f4e4c2b431b835b6796c910", size = 4779722, upload-time = "2025-01-04T20:44:13.034Z" }
 wheels = [
