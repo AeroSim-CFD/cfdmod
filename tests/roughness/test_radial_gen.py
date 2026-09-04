@@ -243,3 +243,46 @@ def test_radial_pattern_with_no_rings_is_empty(tmp_path):
 
     assert len(triangles) == 0
     assert len(normals) == 0
+
+
+def test_radial_keep_leaves_fins_over_nothing_at_zero():
+    """Half the ring band hangs off the surface; keep leaves those fins at z = 0."""
+    # A triangular footprint: the hull edge runs x + y = 0, so about half the
+    # ring band falls over nothing.
+    surface = np.array(
+        [[-200.0, -200.0, 4.0], [200.0, -200.0, 4.0], [-200.0, 200.0, 4.0]], dtype=np.float64
+    )
+    kwargs = dict(
+        element_params=ElementParams(height=0.5, width=1.0),
+        r_start=50.0,
+        r_end=150.0,
+        radial_spacing=20.0,
+        arc_spacing=30.0,
+        ring_offset_distance=0.0,
+        center=(0.0, 0.0),
+        surfaces=[surface],
+        max_points=None,
+    )
+
+    dropped, _ = radial_pattern(on_missing_surface="drop", **kwargs)
+    kept, _ = radial_pattern(on_missing_surface="keep", **kwargs)
+
+    assert len(kept) > len(dropped)
+    np.testing.assert_allclose(dropped[:, :, 2].min(axis=1), 4.0, atol=1e-4)
+    kept_bases = kept[:, :, 2].min(axis=1)
+    assert (kept_bases == 0.0).sum() == len(kept_bases) - len(dropped)
+
+
+def test_radial_unknown_on_missing_surface_is_rejected():
+    with pytest.raises(ValueError, match="must be 'drop' or 'keep'"):
+        radial_pattern(
+            element_params=ElementParams(height=0.5, width=1.0),
+            r_start=50.0,
+            r_end=70.0,
+            radial_spacing=20.0,
+            arc_spacing=100.0,
+            ring_offset_distance=0.0,
+            center=(0.0, 0.0),
+            surfaces=[_flat_vertices()],
+            on_missing_surface="zero",
+        )

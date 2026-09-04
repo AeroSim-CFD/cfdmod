@@ -33,6 +33,16 @@ def _element_bases(triangles: np.ndarray) -> np.ndarray:
     return triangles.reshape(-1, TRIANGLES_PER_ELEMENT * 3, 3)[:, :, 2].min(axis=1)
 
 
+def _half_plane(size: float = 100.0, z0: float = 0.0) -> np.ndarray:
+    """A triangular surface whose XY hull is half of its bounding box.
+
+    The box the array is generated in is the surface's bounding box, so a
+    triangular footprint is what puts elements over nothing without also
+    shrinking the box.
+    """
+    return np.array([[-size, -size, z0], [size, -size, z0], [-size, size, z0]], dtype=np.float64)
+
+
 def _spacing(offset_direction: str = "x", line_offset: float = 0.0) -> SpacingParams:
     return SpacingParams(
         spacing=(20.0, 20.0), line_offset=line_offset, offset_direction=offset_direction
@@ -149,6 +159,62 @@ def test_elements_outside_every_surface_are_dropped():
     assert bases.max() <= 9.0 + 1e-3
 
 
+def test_keep_leaves_elements_over_nothing_at_zero():
+    """A surface covering only half the box: the other half is kept, unlifted."""
+    kwargs = dict(
+        element_params=ElementParams(height=1.0, width=4.0),
+        spacing_params=_spacing(),
+        bounding_box=UNBOUNDED_BOX,
+        surfaces=[_half_plane(size=100.0, z0=12.0)],
+        max_points=None,
+    )
+
+    dropped, dropped_normals = position_pattern(on_missing_surface="drop", **kwargs)
+    kept, kept_normals = position_pattern(on_missing_surface="keep", **kwargs)
+
+    assert len(kept) > len(dropped)
+    assert len(kept) == len(kept_normals)
+
+    kept_bases = _element_bases(kept)
+    # Every element the drop run produced is seated on the surface; the extra
+    # ones the keep run adds sit at exactly z = 0, not at some interpolated value.
+    np.testing.assert_allclose(_element_bases(dropped), 12.0, atol=1e-4)
+    np.testing.assert_allclose(np.sort(np.unique(np.round(kept_bases, 4))), [0.0, 12.0])
+    assert (kept_bases == 0.0).sum() == len(kept_bases) - len(_element_bases(dropped))
+
+
+def test_drop_is_the_default_for_elements_over_nothing():
+    kwargs = dict(
+        element_params=ElementParams(height=1.0, width=4.0),
+        spacing_params=_spacing(),
+        bounding_box=UNBOUNDED_BOX,
+        surfaces=[_half_plane(size=100.0, z0=12.0)],
+        max_points=None,
+    )
+
+    default, _ = position_pattern(**kwargs)
+    explicit, _ = position_pattern(on_missing_surface="drop", **kwargs)
+    np.testing.assert_array_equal(default, explicit)
+
+
+def test_unknown_on_missing_surface_is_rejected():
+    with pytest.raises(ValueError, match="must be 'drop' or 'keep'"):
+        position_pattern(
+            element_params=ElementParams(height=1.0, width=4.0),
+            spacing_params=_spacing(),
+            bounding_box=UNBOUNDED_BOX,
+            surfaces=[_plane(size=100.0)],
+            on_missing_surface="zero",
+        )
+
+
+def test_on_missing_surface_defaults_to_drop_in_the_config():
+    cfg = PositionParams.from_file(
+        pathlib.Path("./fixtures/tests/roughness_gen/position_params.yaml")
+    )
+    assert cfg.on_missing_surface == "drop"
+
+
 def test_box_outside_the_surfaces_is_rejected():
     with pytest.raises(ValueError, match="too small for a single element"):
         position_pattern(
@@ -223,6 +289,15 @@ def test_position_params_fixture_drives_the_routine():
     bases = _element_bases(triangles)
     assert bases.min() > 700.0
     assert bases.max() < 900.0
+
+
+def test_documented_config_example_parses():
+    """The docs page literal-includes this file; a typo there is a broken doc."""
+    cfg = PositionParams.from_file(
+        pathlib.Path("./docs/source/_static/roughness_gen/position_params.yaml")
+    )
+    assert cfg.on_missing_surface == "drop"
+    assert set(cfg.surfaces) == {"disk", "loft"}
 
 
 def test_run_position_writes_the_stl(tmp_path):

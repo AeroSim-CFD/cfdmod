@@ -2,7 +2,11 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from cfdmod.roughness.parameters import ElementParams
+from cfdmod.roughness.parameters import (
+    ElementParams,
+    OnMissingSurface,
+    check_on_missing_surface,
+)
 from cfdmod.roughness.surface_sampler import (
     DEFAULT_MAX_SAMPLE_POINTS,
     SurfaceInput,
@@ -62,6 +66,7 @@ def radial_pattern(
     center: tuple[float, float],
     surfaces: Sequence[SurfaceInput] | None = None,
     max_points: int | None = DEFAULT_MAX_SAMPLE_POINTS,
+    on_missing_surface: OnMissingSurface = "drop",
     *,
     surface_paths: Sequence[SurfaceInput] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -69,9 +74,10 @@ def radial_pattern(
 
     Each fin is oriented with its face normal pointing radially outward from center.
     Fins are arranged in rings with arc-length-based angular spacing and optional
-    staggering between alternating rings. Fins whose position falls outside the
-    sampled region (the XY convex hull of the pooled surface vertices) are
-    dropped.
+    staggering between alternating rings. A fin whose position falls outside the
+    sampled region (the XY convex hull of the pooled surface vertices) has no
+    height to sit on: by default it is dropped, and
+    ``on_missing_surface="keep"`` leaves it at z = 0 instead.
 
     Args:
         element_params (ElementParams): Height and width of each fin.
@@ -87,6 +93,9 @@ def radial_pattern(
         max_points (int | None, optional): Cap on the number of surface points
             used for interpolation. None disables thinning. Defaults to
             ``DEFAULT_MAX_SAMPLE_POINTS``.
+        on_missing_surface (OnMissingSurface, optional): What to do with a fin
+            that lands over no surface: "drop" removes it, "keep" leaves it at
+            z = 0. Defaults to "drop".
         surface_paths (Sequence[SurfaceInput] | None): Deprecated alias for
             ``surfaces``, kept for existing callers.
 
@@ -99,6 +108,7 @@ def radial_pattern(
         raise ValueError("Pass either `surfaces` or the deprecated `surface_paths`, not both")
     if surfaces is None:
         raise ValueError("`surfaces` is required")
+    check_on_missing_surface(on_missing_surface)
 
     sampler = build_surface_sampler(surfaces, max_points=max_points)
     positions = _generate_positions(
@@ -106,8 +116,12 @@ def radial_pattern(
     )
 
     z_heights = sampler.sample(positions[:, :2])
-    positions = positions[~np.isnan(z_heights)]
-    z_heights = z_heights[~np.isnan(z_heights)]
+    missing = np.isnan(z_heights)
+    if on_missing_surface == "drop":
+        positions = positions[~missing]
+        z_heights = z_heights[~missing]
+    else:
+        z_heights = np.where(missing, 0.0, z_heights)
 
     h = element_params.height
     w = element_params.width

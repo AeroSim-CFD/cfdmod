@@ -11,3 +11,5 @@ bounding_box:
 surfaces: # Dictionary of surfaces
   disk: "./fixtures/tests/roughness_gen/disk/disk.lnas"
   loft: "./fixtures/tests/roughness_gen/loft/loft.lnas"
+# Optional, default is drop. 'keep' leaves off-surface elements at z = 0
+on_missing_surface: drop

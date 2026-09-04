@@ -74,7 +74,11 @@ It writes `positioned_elements.stl` in the output path.
 
 The array fills the intersection of the bounding box and the surfaces' own extent.
 Only the X and Y of the bounding box constrain the placement: the Z of each element comes from the surface it is draped onto.
-Each element is seated on the lowest surface height across its base span, so an element on a slope rests on the terrain instead of floating over its downhill half, and elements whose base falls outside every surface are dropped rather than left at the origin height.
+Each element is seated on the lowest surface height across its base span, so an element on a slope rests on the terrain instead of floating over its downhill half.
+
+An element whose base lands over no surface has no height to be seated on.
+`on_missing_surface` decides what happens to it: `drop` (the default) removes it, and `keep` leaves it unlifted with its base at z = 0.
+The same option exists on the radial mode, and both read it from the configuration file (see the example above).
 
 The same routine is available from Python, and there it also accepts surfaces already in memory:
 

@@ -54,6 +54,7 @@ def run_radial(cfg: RadialParams, output_path: pathlib.Path):
         ring_offset_distance=cfg.ring_offset_distance,
         center=cfg.center,
         surfaces=surface_paths,
+        on_missing_surface=cfg.on_missing_surface,
     )
     export_stl(output_path / "roughness_elements.stl", full_triangles, full_normals)
 
@@ -71,5 +72,6 @@ def run_position(cfg: PositionParams, output_path: pathlib.Path):
         spacing_params=cfg.spacing_params,
         bounding_box=cfg.bounding_box,
         surfaces=surfaces,
+        on_missing_surface=cfg.on_missing_surface,
     )
     export_stl(output_path / "positioned_elements.stl", full_triangles, full_normals)

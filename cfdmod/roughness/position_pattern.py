@@ -8,7 +8,9 @@ from cfdmod.roughness.parameters import (
     BoundingBox,
     ElementParams,
     GenerationParams,
+    OnMissingSurface,
     SpacingParams,
+    check_on_missing_surface,
 )
 from cfdmod.roughness.surface_sampler import (
     DEFAULT_MAX_SAMPLE_POINTS,
@@ -150,15 +152,18 @@ def position_pattern(
     surfaces: Sequence[SurfaceInput],
     max_points: int | None = DEFAULT_MAX_SAMPLE_POINTS,
     footprint_samples: int = 3,
+    on_missing_surface: OnMissingSurface = "drop",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate a linear roughness array draped onto a set of surfaces.
 
     The array fills the intersection of ``bounding_box`` and the surfaces' own
     XY extent, then every element is lifted to sit on the surface below it.
-    Elements whose whole base falls outside the sampled region are dropped
-    instead of being left at z = 0. That region is the XY convex hull of the
-    pooled surface vertices, so an element over a hole between two surfaces is
-    seated on the height interpolated across the gap, not dropped.
+    An element whose whole base falls outside the sampled region has no height
+    to be seated on. By default it is dropped; ``on_missing_surface="keep"``
+    leaves it unlifted instead, with its base at z = 0. The sampled region is the
+    XY convex hull of the pooled surface vertices, so an element over a hole
+    between two surfaces is seated on the height interpolated across the gap and
+    is never the missing case.
 
     The lift of each element is the lowest surface Z sampled across its base
     span, so an element on a slope is seated on the surface rather than floating
@@ -179,6 +184,9 @@ def position_pattern(
             ``DEFAULT_MAX_SAMPLE_POINTS``.
         footprint_samples (int, optional): Number of Z samples taken across each
             element base. Defaults to 3.
+        on_missing_surface (OnMissingSurface, optional): What to do with an
+            element that lands over no surface: "drop" removes it, "keep" leaves
+            it unlifted at z = 0. Defaults to "drop".
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Triangles and normals arrays (STL
@@ -186,6 +194,7 @@ def position_pattern(
     """
     if footprint_samples < 2:
         raise ValueError(f"footprint_samples must be at least 2, got {footprint_samples}")
+    check_on_missing_surface(on_missing_surface)
 
     vertices = load_surface_vertices(surfaces)
     clipped_box = clip_bounding_box(bounding_box, vertices)
@@ -200,14 +209,19 @@ def position_pattern(
     z_samples = sampler.sample(query.reshape(-1, 2)).reshape(query.shape[:2])
 
     valid_samples = ~np.isnan(z_samples)
-    valid = valid_samples.any(axis=1)
+    on_surface = valid_samples.any(axis=1)
     z_offset = np.min(np.where(valid_samples, z_samples, np.inf), axis=1)
 
-    element_triangles = triangles.reshape(-1, TRIANGLES_PER_ELEMENT, 3, 3)
-    element_normals = normals.reshape(-1, TRIANGLES_PER_ELEMENT, 3)
-    element_triangles = element_triangles[valid]
-    element_normals = element_normals[valid]
-    element_triangles[:, :, :, 2] += z_offset[valid, None, None].astype(np.float32)
+    if on_missing_surface == "drop":
+        keep = on_surface
+    else:
+        keep = np.ones(len(on_surface), dtype=bool)
+        # An element over nothing is left where it was built, base at z = 0.
+        z_offset = np.where(on_surface, z_offset, 0.0)
+
+    element_triangles = triangles.reshape(-1, TRIANGLES_PER_ELEMENT, 3, 3)[keep]
+    element_normals = normals.reshape(-1, TRIANGLES_PER_ELEMENT, 3)[keep]
+    element_triangles[:, :, :, 2] += z_offset[keep, None, None].astype(np.float32)
 
     return (
         element_triangles.reshape(-1, 3, 3).astype(np.float32),
