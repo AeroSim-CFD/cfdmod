@@ -1,5 +1,63 @@
 # Release Notes
 
+## 3.8.0
+
+Fills in the roughness-element positioning routine, which the configuration
+schema has described for several releases with nothing behind it, and puts both
+roughness patterns on one surface sampler that is bounded, vectorized and able
+to take geometry already in memory. Additive: no public symbol is removed or
+changed in signature.
+
+### Positioned roughness elements (`cfdmod.roughness.position_pattern`)
+
+- `PositionParams` describes a roughness array positioned on top of one or more
+  surfaces and clipped to a bounding box. The routine it describes now exists:
+  `position_pattern()`, `run_position()`, and `--mode position` on the roughness
+  CLI, writing `positioned_elements.stl`. Until now the only way to get this
+  output was to open-code the drape in a notebook, and every consumer that
+  needed a terrain-following array wrote its own.
+- The array fills the intersection of the bounding box and the surfaces' own
+  extent. Only the X and Y of the box constrain the placement: the Z of each
+  element comes from the surface it is draped onto, so the Z of the box is not
+  used.
+- Each element is seated on the surface height at its footprint centroid, one
+  sample per element.
+- An element whose centroid lands over no surface has no height to sit on.
+  `on_missing_surface` decides what happens to it: `drop`, the default, removes
+  it; `keep` builds it anyway, unlifted, with its base at z = 0. The same option
+  is on the radial pattern, and both configuration models carry the field, so it
+  is settable from the YAML.
+
+### Shared surface sampler (`cfdmod.roughness.build_surface_sampler`)
+
+- One sampler behind both roughness patterns, exposed as
+  `build_surface_sampler()` and `SurfaceSampler`.
+- It takes surfaces as LNAS/STL paths, as an in-memory `LnasFormat` or
+  `LnasGeometry`, or as a plain (N, 3) vertex array. A caller that already holds
+  the mesh no longer pays a file write plus read to sample it.
+- The triangulation behind the sampler is bounded. Its build cost grows faster
+  than linearly with the vertex count, and terrain surfaces routinely carry
+  several hundred thousand vertices, so above `max_points` (default 100000) the
+  sample is thinned by XY grid binning. The boundary of the surface is kept at
+  full density, so neither the extent the sampler covers nor the accuracy of the
+  drape near the edge changes; thinning the interior alone leaves the
+  triangulation bridging a sparse boundary with very wide triangles and puts the
+  drape metres off exactly at the terrain edge. Pass `max_points=None` to use
+  every vertex.
+- Sampling takes the whole array of positions in one call. On a 100000-point
+  triangulation, sampling 36000 grid-ordered positions that way is about 30
+  times faster than one call per position.
+
+### Radial roughness (`cfdmod.roughness.radial_pattern`)
+
+- Takes the same `surfaces` argument, so it accepts in-memory geometry too. The
+  previous `surface_paths` keyword still works.
+- The ring layout and the fin assembly are computed as array operations instead
+  of per-fin Python loops. Fin geometry is unchanged: for the same surface and
+  no thinning, the output is identical bit for bit. With the default cap, a
+  surface above 100000 vertices is thinned, which moves fin base heights by
+  centimetres.
+
 ## 3.7.0
 
 Extends the vortex-shedding check into a directional sweep, so a case can be
