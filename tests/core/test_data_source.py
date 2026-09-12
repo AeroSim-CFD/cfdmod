@@ -154,6 +154,39 @@ def test_field_meta_kept_in_sync_after_with_field():
     assert ds2.field_meta["ux"].unit == "m/s"
 
 
+def test_select_fields_keeps_only_named_fields_without_copying():
+    ds = _surface().with_field("cp", np.ones((3, 4)), meta=FieldMeta(name="cp", unit="-"))
+    base_cp = ds.fields.read("cp")
+    cp_only = ds.select_fields("cp")
+    assert cp_only.field_names == ["cp"]
+    assert list(cp_only.field_meta) == ["cp"]
+    assert cp_only.fields.read("cp") is base_cp
+    assert cp_only.fields.read("cp", time_slice=slice(0, 2)).shape == (3, 2)
+    assert sorted(ds.field_names) == ["cp", "pressure"]
+    with pytest.raises(KeyError):
+        cp_only.fields.read("pressure")
+    with pytest.raises(KeyError):
+        ds.select_fields("nope")
+
+
+def test_without_field_then_with_field_on_the_view():
+    ds = _surface().with_field("cp", np.ones((3, 4)))
+    ds2 = ds.without_field("pressure").with_field("ux", np.zeros((3, 4)))
+    assert sorted(ds2.field_names) == ["cp", "ux"]
+    assert ds2.fields.shape("ux") == (3, 4)
+
+
+def test_xdmf_write_of_selected_fields_skips_the_dropped_group(tmp_path):
+    from cfdmod.adapters import XdmfH5Storage
+
+    ds = _surface().with_field("cp", np.ones((3, 4)))
+    storage = XdmfH5Storage(tmp_path)
+    storage.write_data_source("cp_only", ds.select_fields("cp"))
+    back = storage.read_data_source("cp_only")
+    assert back.field_names == ["cp"]
+    np.testing.assert_array_equal(back.fields.read("cp"), np.ones((3, 4)))
+
+
 def test_time_aggregated_data_source_requires_1d_fields():
     verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64)
     tris = np.array([[0, 1, 2]], dtype=np.int32)

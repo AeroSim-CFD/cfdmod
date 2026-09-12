@@ -31,7 +31,7 @@ __all__ = [
     "ModesDataSource",
 ]
 
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -41,6 +41,44 @@ from cfdmod.core.grouping import Grouping
 from cfdmod.core.protocols import FieldStore
 from cfdmod.core.time_axis import TimeAxis
 from cfdmod.core.topology import ElementMeta, Topology
+
+
+class _FieldSubset:
+    """Read-through :class:`FieldStore` view exposing only ``names`` of ``base``.
+
+    Built by :meth:`DataSource.select_fields`. The arrays stay in the base
+    store; nothing is copied or materialised.
+    """
+
+    __slots__ = ("_base", "_names")
+
+    def __init__(self, base: FieldStore, names: Iterable[str]) -> None:
+        self._base = base
+        self._names = frozenset(names)
+
+    def _key(self, name: str) -> str:
+        if name not in self._names:
+            raise KeyError(f"field {name!r} is not in this data source")
+        return name
+
+    def keys(self) -> Iterable[str]:
+        return [k for k in self._base.keys() if k in self._names]
+
+    def shape(self, name: str) -> tuple[int, ...]:
+        return self._base.shape(self._key(name))
+
+    def dtype(self, name: str) -> Any:
+        return self._base.dtype(self._key(name))
+
+    def read(self, name: str, **kwargs: Any) -> np.ndarray:
+        return self._base.read(self._key(name), **kwargs)
+
+    def write(self, name: str, value: np.ndarray, **kwargs: Any) -> None:
+        self._base.write(self._key(name), value, **kwargs)
+
+    def with_field(self, name: str, value: np.ndarray) -> "_FieldSubset":
+        return _FieldSubset(self._base.with_field(name, value), self._names | {name})
+
 
 DataSourceKind = Literal["surface", "volume", "points", "groups", "modes"]
 
@@ -179,6 +217,19 @@ class DataSource(BaseModel):
         new_meta = dict(self.field_meta)
         new_meta[name] = meta or FieldMeta(name=name)
         return self._copy_validated(fields=new_store, field_meta=new_meta)
+
+    def select_fields(self, *names: str) -> "DataSource":
+        """Keep only ``names``. The result reads through the same
+        :class:`FieldStore`; no array is copied. Use it before persisting a
+        derived series so the input fields are not written alongside."""
+        missing = set(names) - set(self.fields.keys())
+        if missing:
+            raise KeyError(f"unknown field(s) {sorted(missing)}; have {self.field_names}")
+        new_meta = {k: v for k, v in self.field_meta.items() if k in names}
+        return self._copy_validated(fields=_FieldSubset(self.fields, names), field_meta=new_meta)
+
+    def without_field(self, name: str) -> "DataSource":
+        return self.select_fields(*(k for k in self.field_names if k != name))
 
     def with_attrs(self, **updates: Any) -> "DataSource":
         new_attrs = dict(self.attrs)
