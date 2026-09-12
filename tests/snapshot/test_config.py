@@ -76,6 +76,17 @@ def test_building_facade_config_four_walls_and_roof():
     assert cfg.legend_config.range == (-1.5, 1.0)
 
 
+def test_building_facade_config_roof_band_clips_roof_to_explicit_z():
+    cfg = building_facade_config([-10, -5, 0], [10, 5, 122.84], roof_band=(114.0, 116.0))
+    clip = cfg.projections["roof"].clip_box
+    assert clip.translate[2] == pytest.approx(115.0)
+    assert clip.scale[2] == pytest.approx(2.0)
+    # default keeps the top 6 m below z-max
+    clip = building_facade_config([-10, -5, 0], [10, 5, 122.84]).projections["roof"].clip_box
+    assert clip.translate[2] == pytest.approx(122.84 - 3.0)
+    assert clip.scale[2] == pytest.approx(6.0)
+
+
 def test_building_facade_config_band_drops_roof_and_clips():
     cfg = building_facade_config([-10, -5, 0], [10, 5, 100], z_band=(20.0, 40.0))
     assert set(cfg.projections) == {"N", "E", "S", "W"}  # no roof in a band
