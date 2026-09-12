@@ -1,5 +1,41 @@
 # Release Notes
 
+## 3.9.0
+
+Two small additions for the consulting post-processing path: a `DataSource` can
+now drop or select fields before it is persisted, and the building-facade
+snapshot layout takes an explicit roof clip range. Additive: no public symbol is
+removed or changed in signature, and every existing call produces the same
+output.
+
+### Data sources (`cfdmod.core`)
+
+- `DataSource.select_fields(*names)` keeps only the named fields;
+  `DataSource.without_field(name)` drops one. Both return a new `DataSource`
+  whose fields read through the same store restricted to the kept names, with
+  `field_meta` filtered to match. No array is copied or materialised, so they
+  are cheap on an h5-backed source of any size.
+- Why it matters: a recipe output such as the Cp series still carries the
+  input field it was derived from (`pressure`), and every storage backend
+  writes every field. Persisting a derived series therefore wrote its source
+  alongside it, exactly doubling the bytes on disk (3.42 GB where 1.71 GB was
+  intended on a 35k-triangle x 6k-timestep tower). The only way around it was
+  to rebuild the source through a `MemoryFieldStore`, which materialised the
+  whole array. Call `series.select_fields("cp")` before `write_data_source`.
+- `select_fields` with an unknown name raises `KeyError`; `without_field` with
+  an unknown name is a no-op, matching `without_grouping`.
+
+### Facade snapshots (`cfdmod.snapshot.building_facade_config`)
+
+- New `roof_band=(z_lo, z_hi)` argument clips the roof projection to an explicit
+  height range. The default (`None`) keeps the previous behaviour, the top 6 m
+  below the mesh z-max.
+- Why it matters: on a tower whose crown or parapet box is taller than 6 m, the
+  fixed clip landed entirely inside the crown and rendered a small fragment of
+  its top in the roof position, a shape that reads as a roof but is not one.
+  Passing the slab elevation directly renders the slab itself. Before, the only
+  way out was `with_roof=False`, which dropped the roof altogether.
+
 ## 3.8.0
 
 Fills in the roughness-element positioning routine, which the configuration
