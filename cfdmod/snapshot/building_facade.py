@@ -47,6 +47,7 @@ def building_facade_config(
     n_divs: int = 10,
     z_band: tuple[float, float] | None = None,
     with_roof: bool = True,
+    roof_band: tuple[float, float] | None = None,
     gap: float | None = None,
     zoom: float = 1.1,
     window_size: tuple[int, int] = (1900, 1100),
@@ -62,6 +63,9 @@ def building_facade_config(
         z_band: ``(z_lo, z_hi)`` to clip every wall to a height band (per-floor
             bands); ``None`` renders the full height. Bands drop the roof.
         with_roof: place the roof projection above the wall row (full height only).
+        roof_band: ``(z_lo, z_hi)`` clip for the roof projection, so a tower with
+            a crown / parapet box above the slab still renders the slab itself;
+            ``None`` keeps the top 6 m below the mesh z-max.
         gap: spacing between unfolded faces (default ``0.1 * height``).
         file_path / scalar: usually left blank -- set per field with
             :meth:`SnapshotConfig.retarget`.
@@ -74,14 +78,15 @@ def building_facade_config(
     if gap is None:
         gap = 0.1 * lz
 
-    clip = None
-    if z_band is not None:
-        z_lo, z_hi = z_band
-        clip = TransformationConfig(
+    def z_clip(z_lo, z_hi):
+        # box spanning the whole footprint, clipped to [z_lo, z_hi]
+        return TransformationConfig(
             translate=[float(cx), float(cy), float((z_lo + z_hi) / 2)],
             rotate=[0, 0, 0],
             scale=[3 * lx, 3 * ly, float(z_hi - z_lo)],
         )
+
+    clip = z_clip(*z_band) if z_band is not None else None
     strip_h = (z_band[1] - z_band[0]) if z_band is not None else lz
 
     def proj(rotate, tx, ty):
@@ -116,18 +121,13 @@ def building_facade_config(
     if with_roof and z_band is None:
         # the tower-top slab only (clip off the podium footprint), snug above the
         # wall row, no label -- it reads as the roof by position.
-        top = float(hi[2])
-        roof_depth = 6.0
-        roof_clip = TransformationConfig(
-            translate=[float(cx), float(cy), top - roof_depth / 2],
-            rotate=[0, 0, 0],
-            scale=[3 * lx, 3 * ly, roof_depth],
-        )
+        if roof_band is None:
+            roof_band = (float(hi[2]) - 6.0, float(hi[2]))
         roof = ProjectionConfig(
             file_path=str(file_path),
             scalar=scalar,
             cell_data_to_point_data=False,
-            clip_box=roof_clip,
+            clip_box=z_clip(*roof_band),
             transformation=TransformationConfig(
                 translate=[float(-cx), float(lz / 2 + ly / 2 - cy), 0.0],
                 rotate=[0, 0, 0],
