@@ -1,5 +1,20 @@
 # Release Notes
 
+## 3.9.1
+
+Fix for the inflow spectrum. Mean velocity, turbulence intensity, integral
+length scale and everything outside `cfdmod.inflow` are unchanged.
+
+### Inflow (`cfdmod.inflow`, `cfdmod.inflow_report`)
+
+- `calculate_spectral_density` returned the frequency in the `S (<c>)` column
+  and the spectral density in `f (<c>)`: it unpacked
+  `spectral_density_function`'s `(frequency, density)` in the wrong order.
+  `inflow_report.plot_spectrum` inherited the swap and drew the spectrum with
+  the axes exchanged (a near-vertical curve unrelated to von Karman).
+  Spectra produced with 3.9.0 or earlier through these two functions should be
+  regenerated; `spectral_density_function` itself was always correct.
+
 ## 3.9.0
 
 Two small additions for the consulting post-processing path: a `DataSource` can
