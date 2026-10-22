@@ -258,7 +258,7 @@ def calculate_spectral_density(
         vel_arr = point_data[component].to_numpy()
         time_arr = point_data["time_step"].to_numpy()
 
-        spec_dens, norm_freq = spectral_density_function(
+        norm_freq, spec_dens = spectral_density_function(
             velocity_signal=vel_arr,
             timestamps=time_arr,
             reference_velocity=normalization_params.reference_velocity,
