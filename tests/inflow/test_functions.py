@@ -1,6 +1,7 @@
 import pathlib
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from cfdmod.inflow import (
@@ -79,3 +80,23 @@ def test_spectral_density():
     assert len(xf) == len(yf)
     assert isinstance(xf, np.ndarray)
     assert isinstance(yf, np.ndarray)
+
+
+@pytest.mark.unit
+def test_calculate_spectral_density_columns_not_swapped():
+    t = np.arange(2000) * 0.1
+    rng = np.random.default_rng(0)
+    data = pd.DataFrame({"time_step": t, "point_idx": 0, "ux": 10 + rng.standard_normal(t.size)})
+    inflow = InflowData(
+        data=data, points=pd.DataFrame({"idx": [0], "x": [0.0], "y": [0.0], "z": [10.0]})
+    )
+    norm = NormalizationParameters(reference_velocity=10.0, characteristic_length=100.0)
+
+    result = calculate_spectral_density(
+        inflow, target_index=0, for_components=["ux"], normalization_params=norm
+    )
+    expected_f, expected_S = spectral_density_function(data["ux"].to_numpy(), t, 10.0, 100.0)
+
+    np.testing.assert_allclose(result["f (ux)"], expected_f)
+    np.testing.assert_allclose(result["S (ux)"], expected_S)
+    assert np.all(np.diff(result["f (ux)"]) > 0)
