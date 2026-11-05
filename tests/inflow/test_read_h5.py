@@ -10,8 +10,11 @@ from cfdmod.inflow import InflowData
 
 pytestmark = pytest.mark.unit
 
-# Solver probe layout: no /meta group, physical time only in the key names,
-# negative times during spin-up, keys deliberately written out of order.
+# Mirrors what the solver line probe writer produces (create_xdmf +
+# add_polyline_xdmf + add_scalar_h5): float32 (n, 3) Geometry, a flat int32
+# Polyline Connectivity, provenance attrs on the root, one group per macro
+# with one float32 dataset per timestep keyed f"t{T:.6f}" and no /meta group.
+# Times include negative spin-up values and are written out of order.
 TIMES = [-119.905098, -0.5, 0.0, 0.25, 10.0, 2.5]
 N_POINTS = 4
 
@@ -21,18 +24,25 @@ def _value(comp_offset: float, t: float) -> np.ndarray:
 
 
 def _write_nassu_h5(path: pathlib.Path) -> None:
+    points = np.column_stack(
+        [np.zeros(N_POINTS), np.zeros(N_POINTS), np.arange(N_POINTS, dtype=np.float64)]
+    )
     with h5py.File(path, "w") as f:
-        f.create_dataset("Connectivity", data=np.arange(N_POINTS, dtype=np.int64))
-        f.create_dataset("Geometry", data=np.zeros((N_POINTS, 3), dtype=np.float32))
-        for comp, offset in (("ux", 100.0), ("uy", 200.0), ("uz", 300.0)):
-            grp = f.create_group(comp)
+        f.attrs["nassu_metadata"] = '{"probe": "line0"}'
+        f.attrs["datetime_export_end"] = "2026-01-01T00:00:00+00:00"
+        f.create_dataset("Geometry", data=points.astype(np.float32))
+        conn = f.create_dataset("Connectivity", data=np.arange(N_POINTS, dtype=np.int32))
+        conn.attrs["topology_type"] = "Polyline"
+        conn.attrs["nodes_per_element"] = N_POINTS
+        for comp, offset in (("rho", 1.0), ("ux", 100.0), ("uy", 200.0), ("uz", 300.0)):
+            grp = f.require_group(comp)
             for t in TIMES:
-                grp.create_dataset(f"t{t}", data=_value(offset, t).astype(np.float32))
+                grp.create_dataset(f"t{t:.6f}", data=_value(offset, t).astype(np.float32))
 
 
 @pytest.fixture()
 def nassu_inflow(tmp_path: pathlib.Path) -> InflowData:
-    h5_path = tmp_path / "line.inst.h5"
+    h5_path = tmp_path / "line.line0.h5"
     _write_nassu_h5(h5_path)
     points_path = tmp_path / "points.csv"
     pd.DataFrame(
