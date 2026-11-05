@@ -2,8 +2,9 @@
 mean velocity, turbulence intensity, spectral density, and
 autocorrelation.
 
-The new layout is XDMF+H5 (one h5py group per velocity component with
-``/t{T}`` per-timestep arrays plus ``/meta/time_steps``); a legacy
+The current layout is the XDMF+H5 probe output written by the solver (one
+h5py group per velocity component holding one ``/t{T}`` dataset per
+timestep, with the physical time ``T`` encoded in the key); a legacy
 pandas-HDFStore reader is still here behind a ``DeprecationWarning``.
 """
 
@@ -46,11 +47,24 @@ class NormalizationParameters:
     characteristic_length: float
 
 
-def _read_inflow_h5(hist_series_path: pathlib.Path) -> pd.DataFrame:
-    """Read an inflow timeseries H5, accepting both legacy and new layouts.
+def _time_from_key(key: str) -> float | None:
+    """Physical time of a ``t{T}`` dataset key, or ``None`` if it is not one."""
+    if not key.startswith("t"):
+        return None
+    try:
+        return float(key[1:])
+    except ValueError:
+        return None
 
-    New layout: h5py datasets under ``/{component}/t{T}`` (per-component,
-    per-timestep arrays of shape ``(n_points,)``) plus ``/meta/time_steps``.
+
+def _read_inflow_h5(hist_series_path: pathlib.Path) -> pd.DataFrame:
+    """Read an inflow timeseries H5, accepting both the XDMF+H5 and legacy layouts.
+
+    XDMF+H5 layout (solver probe output): one group per velocity component,
+    ``/{component}/t{T}``, each a ``(n_points,)`` dataset for one timestep.
+    The physical time ``T`` is taken from the key name (it may be negative
+    during spin-up) and the timesteps are sorted numerically. Any other top
+    level entries (``Connectivity``, ``Geometry``, ...) are ignored.
 
     Legacy layout: pandas HDFStore with multiple group keys, each holding a
     DataFrame fragment (columns include ``time_step``, ``point_idx``,
@@ -58,30 +72,41 @@ def _read_inflow_h5(hist_series_path: pathlib.Path) -> pd.DataFrame:
     ``DeprecationWarning``.
     """
     with h5py.File(hist_series_path, "r") as f:
-        top_keys = set(f.keys())
-        velocity_groups = [k for k in ("ux", "uy", "uz") if k in top_keys]
-        if velocity_groups and "meta" in top_keys:
-            time_steps = f["meta"]["time_steps"][:]
-            frames = []
+        velocity_groups = [
+            k
+            for k in ("ux", "uy", "uz")
+            if k in f
+            and isinstance(f[k], h5py.Group)
+            and len(f[k]) > 0
+            and all(_time_from_key(name) is not None for name in f[k].keys())
+        ]
+        if velocity_groups:
+            step_keys = sorted(f[velocity_groups[0]].keys(), key=_time_from_key)
+            for comp in velocity_groups[1:]:
+                if set(f[comp].keys()) != set(step_keys):
+                    raise ValueError(
+                        f"Inflow file {hist_series_path}: component {comp!r} does not have "
+                        f"the same timesteps as {velocity_groups[0]!r}"
+                    )
+            time_steps = np.array([_time_from_key(k) for k in step_keys], dtype=np.float64)
+            n_steps = len(step_keys)
+            n_points = f[velocity_groups[0]][step_keys[0]].shape[0]
+            columns: dict[str, np.ndarray] = {
+                "time_step": np.repeat(time_steps, n_points),
+                "point_idx": np.tile(np.arange(n_points), n_steps),
+            }
             for comp in velocity_groups:
                 grp = f[comp]
-                step_keys = sorted(grp.keys(), key=lambda k: float(k[1:]))
-                arrays = np.stack([grp[k][:].astype(np.float64) for k in step_keys])
-                n_points = arrays.shape[1]
-                df = pd.DataFrame(
-                    {
-                        "time_step": np.repeat(time_steps[: len(step_keys)], n_points),
-                        "point_idx": np.tile(np.arange(n_points), len(step_keys)),
-                        comp: arrays.reshape(-1),
-                    }
-                )
-                frames.append(df.set_index(["time_step", "point_idx"]))
-            return pd.concat(frames, axis=1).reset_index()
+                arrays = np.empty((n_steps, n_points), dtype=np.float64)
+                for i, k in enumerate(step_keys):
+                    arrays[i] = grp[k][:]
+                columns[comp] = arrays.reshape(-1)
+            return pd.DataFrame(columns)
 
     warnings.warn(
         f"Reading legacy pandas-HDFStore inflow file {hist_series_path}. "
-        "Convert to the new XDMF+H5 layout (one h5py group per velocity "
-        "component with /t{T} datasets and /meta/time_steps); legacy support "
+        "Convert to the XDMF+H5 layout (one h5py group per velocity "
+        "component with one /t{T} dataset per timestep); legacy support "
         "will be removed in a future release.",
         DeprecationWarning,
         stacklevel=2,
