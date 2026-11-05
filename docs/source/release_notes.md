@@ -1,5 +1,25 @@
 # Release Notes
 
+## 3.9.2
+
+Fix for reading solver probe output with `InflowData.from_files`. The CSV
+reader, the inflow analysis functions and everything outside `cfdmod.inflow`
+are unchanged.
+
+### Inflow (`cfdmod.inflow`)
+
+- `InflowData.from_files` now reads the XDMF+H5 probe files the solver writes
+  (`/ux/t<T>`, `/uy/t<T>`, `/uz/t<T>`, one `(n_points,)` dataset per timestep,
+  plus `Geometry` / `Connectivity`). The reader used to require a
+  `/meta/time_steps` group that the solver never writes, so every real line or
+  plane probe file fell through to the legacy pandas-HDFStore reader and
+  failed. Files that do carry `/meta/time_steps` still read as before.
+- The physical time of each step is taken from its key name and the steps are
+  sorted numerically, so negative spin-up times (e.g. `t-119.905098`) come
+  first.
+- Velocity components with different sets of timesteps now raise
+  `ValueError` instead of being silently misaligned.
+
 ## 3.9.1
 
 Fix for the inflow spectrum. Mean velocity, turbulence intensity, integral
