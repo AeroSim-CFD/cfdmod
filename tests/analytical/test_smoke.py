@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from cfdmod.analytical import WindProfile_EU, WindProfile_NBR
+from cfdmod.analytical.wind_profile import B_DATABASE, P_DATABASE
 
 pytestmark = pytest.mark.unit
 
@@ -73,6 +74,44 @@ def test_nbr_get_opencountry_profile_returns_base_class():
     assert (df["II"] == 1).all()
     for cat in ["I", "III", "IV", "V"]:
         assert (df[cat] == 0).all()
+
+
+def test_nbr_S2_blends_category_S2_values_directly():
+    """A mixed-category direction's S2 must equal the weighted average of each
+    category's own S2(height) -- not Fr * blended_b * height**blended_p, which
+    is a different (and wrong) number for any non-degenerate mixture."""
+    df = pd.DataFrame(
+        {
+            "wind_direction": [0.0],
+            "I": [0.0],
+            "II": [0.0],
+            "III": [0.0],
+            "IV": [0.4],
+            "V": [0.6],
+            "Kd": [1.0],
+        }
+    )
+    wp = WindProfile_NBR(directional_data=df, V0=35.0)
+    height = 104.62
+    time_filter = 10
+
+    s2_iv = WindProfile_NBR(directional_data=df.assign(IV=1.0, V=0.0), V0=35.0).S2(
+        height=height, direction=0.0, time_filter_seconds=time_filter
+    )
+    s2_v = WindProfile_NBR(directional_data=df.assign(IV=0.0, V=1.0), V0=35.0).S2(
+        height=height, direction=0.0, time_filter_seconds=time_filter
+    )
+    expected = 0.4 * s2_iv + 0.6 * s2_v
+
+    s2_mixed = wp.S2(height=height, direction=0.0, time_filter_seconds=time_filter)
+    assert s2_mixed == pytest.approx(expected, rel=1e-9)
+
+    # The old (buggy) behaviour blended b and p first; confirm that's now
+    # a different number than what S2 actually returns for this mixture.
+    b_blend = 0.4 * B_DATABASE[time_filter]["IV"] + 0.6 * B_DATABASE[time_filter]["V"]
+    p_blend = 0.4 * P_DATABASE[time_filter]["IV"] + 0.6 * P_DATABASE[time_filter]["V"]
+    buggy_s2 = wp.F_r(time_filter) * b_blend * (height / 10) ** p_blend
+    assert s2_mixed != pytest.approx(buggy_s2, rel=1e-6)
 
 
 def test_eu_class_is_importable():

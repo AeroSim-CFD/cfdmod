@@ -7,6 +7,22 @@ from pydantic import ConfigDict
 from cfdmod import utils
 from cfdmod.climate.wind_profile import WindProfile
 
+# NBR 6123 category parameters for the S2 profile factor, by averaging time (s)
+P_DATABASE = {
+    3: {"I": 0.06, "II": 0.085, "III": 0.1, "IV": 0.12, "V": 0.15},
+    5: {"I": 0.065, "II": 0.09, "III": 0.105, "IV": 0.125, "V": 0.16},
+    10: {"I": 0.07, "II": 0.1, "III": 0.115, "IV": 0.135, "V": 0.175},
+    600: {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31},
+    3600: {"I": 0.1, "II": 0.16, "III": 0.2, "IV": 0.25, "V": 0.35},
+}
+B_DATABASE = {
+    3: {"I": 1.1, "II": 1.00, "III": 0.94, "IV": 0.86, "V": 0.74},
+    5: {"I": 1.11, "II": 1.00, "III": 0.94, "IV": 0.85, "V": 0.73},
+    10: {"I": 1.12, "II": 1.00, "III": 0.93, "IV": 0.84, "V": 0.71},
+    600: {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50},
+    3600: {"I": 1.25, "II": 1.00, "III": 0.85, "IV": 0.68, "V": 0.44},
+}
+
 
 class WindProfile_NBR(WindProfile):
     """Data for wind analysis and calculation"""
@@ -46,28 +62,14 @@ class WindProfile_NBR(WindProfile):
 
     def p(self, direction: float, time_filter_seconds: int | float):
         validate_time_filter(time_filter_seconds)
-        p_database = {
-            3: {"I": 0.06, "II": 0.085, "III": 0.1, "IV": 0.12, "V": 0.15},
-            5: {"I": 0.065, "II": 0.09, "III": 0.105, "IV": 0.125, "V": 0.16},
-            10: {"I": 0.07, "II": 0.1, "III": 0.115, "IV": 0.135, "V": 0.175},
-            600: {"I": 0.095, "II": 0.15, "III": 0.185, "IV": 0.23, "V": 0.31},
-            3600: {"I": 0.1, "II": 0.16, "III": 0.2, "IV": 0.25, "V": 0.35},
-        }
-        p = p_database[time_filter_seconds]
+        p = P_DATABASE[time_filter_seconds]
         df = self.directional_data
         row = df.loc[(df["wind_direction"] - direction).abs().idxmin()].squeeze()
         return sum(row[k] * p[k] for k in p.keys())
 
     def b(self, direction: float, time_filter_seconds: int | float):
         validate_time_filter(time_filter_seconds)
-        b_database = {
-            3: {"I": 1.1, "II": 1.00, "III": 0.94, "IV": 0.86, "V": 0.74},
-            5: {"I": 1.11, "II": 1.00, "III": 0.94, "IV": 0.85, "V": 0.73},
-            10: {"I": 1.12, "II": 1.00, "III": 0.93, "IV": 0.84, "V": 0.71},
-            600: {"I": 1.23, "II": 1.00, "III": 0.86, "IV": 0.71, "V": 0.50},
-            3600: {"I": 1.25, "II": 1.00, "III": 0.85, "IV": 0.68, "V": 0.44},
-        }
-        b = b_database[time_filter_seconds]
+        b = B_DATABASE[time_filter_seconds]
         df = self.directional_data
         row = df.loc[(df["wind_direction"] - direction).abs().idxmin()].squeeze()
         return sum(row[k] * b[k] for k in b.keys())
@@ -84,11 +86,16 @@ class WindProfile_NBR(WindProfile):
         return Fr[time_filter_seconds]
 
     def S2(self, height: float, direction: float, time_filter_seconds: int | float):
-        # parameters from NBR 6123, mean speed of 10min
-        p = self.p(direction, time_filter_seconds)
-        b = self.b(direction, time_filter_seconds)
+        # NBR 6123: each category's own S2 profile is evaluated at `height`, then
+        # the directional category mixture blends the resulting S2 values directly
+        # (not the b/p exponents, which would give a different, incorrect profile).
+        validate_time_filter(time_filter_seconds)
+        p = P_DATABASE[time_filter_seconds]
+        b = B_DATABASE[time_filter_seconds]
         Fr = self.F_r(time_filter_seconds)
-        return Fr * b * (height / 10) ** p
+        df = self.directional_data
+        row = df.loc[(df["wind_direction"] - direction).abs().idxmin()].squeeze()
+        return sum(row[k] * Fr * b[k] * (height / 10) ** p[k] for k in p.keys())
 
     def S3(self, recurrence_period: float):
         prob_non_occurrence = (1 - (1 / recurrence_period)) ** recurrence_period
