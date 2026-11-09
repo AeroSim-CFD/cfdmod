@@ -48,6 +48,15 @@ def test_nbr_S3_recurrence_monotone():
     assert s3_50 < s3_100 < s3_500
 
 
+def test_nbr_S3_is_exactly_one_at_the_50_year_reference_case():
+    """NBR 6123 Table 3 defines S3 = 1.00 exactly at the standard 50-year,
+    group-2 reference case -- V0 itself is defined for that case. The
+    continuous formula used for other recurrence periods only approximates
+    this (~0.9964), so 50 years must be special-cased rather than computed."""
+    wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0)
+    assert wp.S3(50) == 1.0
+
+
 def test_nbr_get_U_H_overwrite_short_circuits():
     wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0, U_H_overwrite=42.0)
     u_h = wp.get_U_H(height=10.0, direction=0.0, recurrence_period=50)
