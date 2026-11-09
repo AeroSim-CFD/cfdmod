@@ -98,7 +98,19 @@ class WindProfile_NBR(WindProfile):
         return sum(row[k] * Fr * b[k] * (height / 10) ** p[k] for k in p.keys())
 
     def S3(self, recurrence_period: float):
-        prob_non_occurrence = (1 - (1 / recurrence_period)) ** recurrence_period
+        # NBR 6123 Table 3 defines S3 = 1.00 exactly at the standard reference
+        # case (50-year life, group 2) -- V0 itself is defined for that case,
+        # so that's the nominal value by construction. The continuous formula
+        # below approximates *other* recurrence periods from the NBR table and
+        # does not pass exactly through (50, 1.0) -- it gives ~0.9964 there.
+        if recurrence_period == 50:
+            return 1.0
+        # Annual occurrence probability 1-e^(-1/T) (Poisson-process-consistent
+        # definition of return period), not the linear 1/T approximation: the
+        # two agree closely for large T, but 1/T is degenerate at low T --
+        # recurrence_period=1 gives prob_non_occurrence=0 and S3=0 with 1/T.
+        annual_occurrence_prob = 1 - np.exp(-1 / recurrence_period)
+        prob_non_occurrence = (1 - annual_occurrence_prob) ** recurrence_period
         return 0.54 * (-np.log(prob_non_occurrence) / recurrence_period) ** -0.157
 
     def get_U_H(

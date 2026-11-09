@@ -48,6 +48,27 @@ def test_nbr_S3_recurrence_monotone():
     assert s3_50 < s3_100 < s3_500
 
 
+def test_nbr_S3_is_exactly_one_at_the_50_year_reference_case():
+    """NBR 6123 Table 3 defines S3 = 1.00 exactly at the standard 50-year,
+    group-2 reference case -- V0 itself is defined for that case. The
+    continuous formula used for other recurrence periods only approximates
+    this (~0.9964), so 50 years must be special-cased rather than computed."""
+    wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0)
+    assert wp.S3(50) == 1.0
+
+
+def test_nbr_S3_well_behaved_at_low_recurrence_period():
+    """The old 1/T annual-occurrence-probability approximation is degenerate
+    at low T: recurrence_period=1 gives prob_non_occurrence=(1-1/1)**1=0,
+    hence S3=0 -- a zero wind-load factor, which is unphysical. The
+    Poisson-consistent 1-e^(-1/T) substitution must avoid this and keep S3
+    strictly positive and finite."""
+    wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0)
+    s3_1 = wp.S3(1)
+    assert s3_1 == pytest.approx(0.54, rel=1e-9)
+    assert 0 < s3_1 < wp.S3(5) < wp.S3(10) < wp.S3(50)
+
+
 def test_nbr_get_U_H_overwrite_short_circuits():
     wp = WindProfile_NBR(directional_data=_nbr_directional_data(), V0=35.0, U_H_overwrite=42.0)
     u_h = wp.get_U_H(height=10.0, direction=0.0, recurrence_period=50)
