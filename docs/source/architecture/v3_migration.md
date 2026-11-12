@@ -90,6 +90,7 @@ without changing the pipeline -- only the `Storage` adapter swaps.
 | `build_s1` | CFD profile + reference profile | points (S1 vs height) | `cfdmod.recipes.s1` |
 | `build_pedestrian_comfort` | velocity field + probes | points (probe stats) | `cfdmod.recipes.pedestrian_comfort` |
 | `build_dynamic_response` | force field + mode shapes + solver | points (response) | `cfdmod.recipes.dynamic` |
+| `spectral_response` | generalized-load cross-spectra + modal model | mean / sigma / up-crossing rate per response | `cfdmod.recipes.spectral` |
 
 ## Op reference
 

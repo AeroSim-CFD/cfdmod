@@ -183,6 +183,20 @@ equivalent pipeline. Example templates live under
    :show-inheritance:
 ```
 
+The modal response also runs in the frequency domain: the cross-spectral matrix of
+the generalized loads is computed once per load case, and the mean, standard
+deviation and up-crossing rate of any linear combination of the modal coordinates
+(floor displacement, acceleration, static-equivalent load) follow from the analytic
+mechanical admittance -- every variant of frequencies, damping or mass is an
+integral, with no new time solve.
+
+```{eval-rst}
+.. autofunction:: cfdmod.core.recipes.spectral.modal_load_csd
+.. autofunction:: cfdmod.core.recipes.spectral.spectral_response
+.. autofunction:: cfdmod.core.recipes.spectral.modal_admittance
+.. autoclass:: cfdmod.core.recipes.spectral.SpectralResponse
+```
+
 ## Triangle-grouping pipeline
 
 A grouping pipeline partitions or selects triangles of a parent

@@ -1,5 +1,63 @@
 # Release Notes
 
+## 3.10.0
+
+The building modal response in the frequency domain (standard deviation, mean
+and up-crossing rate of any response from the cross-spectra of the generalized
+loads, for structural sensitivity sweeps), and three correctness fixes to the
+NBR 6123 wind profile. The spectral response is additive: the time-domain solve
+(`solve_building_response`, `sdof_exact_solver`), the per-floor Cf / Cm and the
+static path are unchanged. The wind-profile fixes change `WindProfile_NBR.S2`
+for mixed terrain categories and `WindProfile_NBR.S3` at 50 years and at short
+recurrence periods; a single category at any other period gives the same value.
+
+### Dynamic response (`cfdmod.core.recipes.spectral`)
+
+- `modal_load_csd(q, dt, n_segments=8)` -- one-sided cross-spectral matrix of
+  the generalized loads (Welch, Hann, 50 % overlap), every mode pair, plus the
+  mean loads. `q` is the `q` field of `generalized_building_load`.
+- `spectral_response(freq, csd, q_mean, coeffs, natural_frequencies,
+  damping_ratio, derivative=0, load_scale=1.0)` -- mean, sigma and up-crossing
+  rate `nu = sqrt(m2 / m0)` of each row of `coeffs @ q` (floor displacement,
+  acceleration with `derivative=2`, static-equivalent load with the `w^2` mass
+  factor in `coeffs`). `load_scale` covers mode shapes scaled by a constant (a
+  mass multiplier) without recomputing the spectra.
+- `modal_admittance(freq, natural_frequencies, damping_ratio)` -- the
+  mass-normalised `H_m(f)`; `SpectralResponse` holds the result.
+- Why it matters: a sensitivity case changes only the frequencies, damping or
+  mass, not the loads, so the load spectra are computed once per load case and
+  each case is an integral -- no new time solve. The time solve of one
+  10-30 min record also carries the sampling scatter of that record into a
+  sweep (the curves jump from point to point); the spectral sweep reads the
+  trend. On a four-tower high-rise (10 modes, 16 directions) the spectral and
+  time-domain results of the design model agree within 5 % for base loads and
+  10 % for accelerations with the same `|mean| + g sigma` estimator.
+- All mode pairs enter: modes with close frequencies respond to correlated
+  loads, and summing them independently (SRSS) is off by more than 20 % for two
+  modes 1 % apart.
+- The integral runs on a grid refined around each natural frequency with the
+  Welch spectra interpolated onto it, so the resonant area is resolved even when
+  the half-power bandwidth `2 xi f` is narrower than the Welch resolution.
+  `n_segments` trades smoothness for resolution: on one 10-30 min record, 8
+  segments leave a sweep jagged by about 14 %, 32 smooth it to about 2 % with
+  the design point within 5 %.
+- Peaks from the spectrum are Gaussian (`|mean| + g sigma`, with the Davenport
+  `g` at `nu`). A deliverable that also takes the extreme of the time series
+  sits above them where the loads are not Gaussian (torsion).
+
+### NBR 6123 wind profile (`cfdmod.analytical.wind_profile.WindProfile_NBR`)
+
+- `S2` with a directional mixture of terrain categories now blends each
+  category's own `S2(height)` by weight. It used to blend the `b` and `p`
+  parameters first and evaluate one profile with them, which is a different
+  number for any real mixture. A single category (weight 1) is unchanged.
+- `S3(50)` is exactly 1.00, the NBR 6123 Table 3 value of the reference case
+  (`V0` is defined for it); the continuous formula gave 0.9964 there, so loads
+  at 50 years rise by 0.7 % (`q` goes with `S3^2`).
+- `S3` at short recurrence periods uses the annual occurrence probability
+  `1 - exp(-1/T)` instead of `1/T`. The two agree for long periods, but `1/T`
+  gave `S3 = 0` at `T = 1` year -- a zero design wind for a 1-year comfort check.
+
 ## 3.9.2
 
 Fix for reading solver probe output with `InflowData.from_files`. The CSV

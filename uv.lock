@@ -9,7 +9,7 @@ resolution-markers = [
 
 [[package]]
 name = "aerosim-cfdmod"
-version = "3.9.2"
+version = "3.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "aerosim-lnas" },
