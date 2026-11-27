@@ -49,19 +49,19 @@ def test_calculate_turbulence_intensity(inflow_data_dict):
         assert all([f"I_{c}" in result.columns for c in ["ux", "uy", "uz"]])
 
 
-def test_calculate_spectral_density(inflow_data_dict):
+def test_calculate_spectral_density_refuses_a_short_record(inflow_data_dict):
+    """Both fixtures hold 10 steps per point: too few for a Welch spectrum."""
     normalization_params = NormalizationParameters(
         reference_velocity=1.0, characteristic_length=1.0
     )
     for inflow_data in inflow_data_dict.values():
-        result = calculate_spectral_density(
-            inflow_data=inflow_data,
-            target_index=0,
-            for_components=["ux", "uy", "uz"],
-            normalization_params=normalization_params,
-        )
-        assert all([f"S ({c})" in result.columns for c in ["ux", "uy", "uz"]])
-        assert all([f"f ({c})" in result.columns for c in ["ux", "uy", "uz"]])
+        with pytest.raises(ValueError, match="too short"):
+            calculate_spectral_density(
+                inflow_data=inflow_data,
+                target_index=0,
+                for_components=["ux", "uy", "uz"],
+                normalization_params=normalization_params,
+            )
 
 
 def test_calculate_autocorrelation(inflow_data_dict):

@@ -40,12 +40,13 @@ __all__ = [
     "plot_strouhal_by_direction",
 ]
 
+import warnings
+
 import numpy as np
-import scipy.signal
 from pydantic import BaseModel, ConfigDict
-from scipy.ndimage import gaussian_filter
 
 from cfdmod.core.data_source import DataSource
+from cfdmod.core.recipes.spectral import reduced_spectrum
 
 # Nominal Strouhal number for a rectangular tall-building plan. Published values
 # for rectangular prisms in turbulent boundary-layer flow sit around 0.06-0.15
@@ -124,15 +125,33 @@ def implied_strouhal(peak_hz: float, u_h: float, across_wind_width: float) -> fl
     return float(peak_hz) * float(across_wind_width) / float(u_h)
 
 
-def _reduced_spectrum(
-    series: np.ndarray, dt: float, sigma: float
-) -> tuple[np.ndarray, np.ndarray]:
-    """``(freq, f * S(f) / var)`` -- the reduced spectrum the deliverable plots."""
-    freq, psd = scipy.signal.periodogram(series, 1.0 / dt, scaling="density")
-    var = float(np.var(series))
-    if var <= 0:
-        raise ValueError("load series has zero variance; nothing to find a peak in")
-    return freq, gaussian_filter(psd * freq / var, sigma=sigma)
+def _warn_sigma(sigma: float | None, name: str) -> None:
+    if sigma is not None:
+        warnings.warn(
+            f"{name}(sigma=...) is deprecated and ignored: the spectrum is a Welch average; "
+            "use n_segments",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
+
+def _peak_frequency(
+    series: np.ndarray,
+    dt: float,
+    *,
+    band: tuple[float, float] | None,
+    n_segments: int,
+    min_cycles: float,
+) -> float:
+    """Frequency of the maximum of the Welch reduced spectrum inside ``band``."""
+    freq, reduced = reduced_spectrum(series, dt, n_segments=n_segments)
+    # freq[0] is the Welch frequency step 1 / T_seg, so the default lower edge is
+    # min_cycles cycles per segment: clear of the Hann main lobe around DC (+-2 bins).
+    lo, hi = band if band is not None else (min_cycles * float(freq[0]), 0.5 / dt)
+    mask = (freq >= lo) & (freq <= hi)
+    if not mask.any():
+        raise ValueError(f"no spectral bins inside band {lo:g}-{hi:g} Hz")
+    return float(freq[mask][np.argmax(reduced[mask])])
 
 
 def spectral_peak(
@@ -140,30 +159,29 @@ def spectral_peak(
     *,
     field: str = "cf_y",
     band: tuple[float, float] | None = None,
-    sigma: float = 2.0,
-    min_cycles: float = 5.0,
+    n_segments: int = 8,
+    min_cycles: float = 3.0,
+    sigma: float | None = None,
 ) -> float:
     """Frequency [Hz] of the dominant peak of the reduced global-load spectrum.
 
     The load is summed over floors first (the global across-wind force is what
-    sheds), then reduced to ``f * S(f)``, whose maximum is the shedding peak for
-    a bluff body.
+    sheds), then reduced to ``f * S(f)`` (Welch, see
+    :func:`cfdmod.core.recipes.spectral.reduced_spectrum`), whose maximum is the
+    shedding peak for a bluff body.
 
-    ``band`` restricts the search; by default it spans everything the record can
-    actually resolve -- from ``min_cycles`` cycles over the record length up to
+    ``band`` restricts the search; by default it spans everything the spectrum can
+    actually resolve -- from ``min_cycles`` cycles over one Welch segment up to
     Nyquist. Leaving it open is deliberate: narrowing the search around the
     expected frequency would let the check confirm itself.
+
+    ``sigma`` is deprecated and ignored.
     """
+    _warn_sigma(sigma, "spectral_peak")
     arr = np.asarray(load_source.fields.read(field), dtype=np.float64)
     series = arr.sum(axis=0) if arr.ndim == 2 else arr
     dt = float(load_source.time.timestep_size)
-    freq, reduced = _reduced_spectrum(series, dt, sigma)
-
-    lo, hi = band if band is not None else (min_cycles / (len(series) * dt), 0.5 / dt)
-    mask = (freq >= lo) & (freq <= hi)
-    if not mask.any():
-        raise ValueError(f"no spectral bins inside band {lo:g}-{hi:g} Hz")
-    return float(freq[mask][np.argmax(reduced[mask])])
+    return _peak_frequency(series, dt, band=band, n_segments=n_segments, min_cycles=min_cycles)
 
 
 def check_vortex_shedding(
@@ -175,7 +193,8 @@ def check_vortex_shedding(
     strouhal: float = STROUHAL_RECTANGULAR,
     physical_range: tuple[float, float] = STROUHAL_PHYSICAL_RANGE,
     band: tuple[float, float] | None = None,
-    sigma: float = 2.0,
+    n_segments: int = 8,
+    sigma: float | None = None,
 ) -> SheddingCheck:
     """Cross-check a load record's time axis against vortex-shedding physics.
 
@@ -185,14 +204,16 @@ def check_vortex_shedding(
         across_wind_width: Width of the face normal to this wind direction [m].
         field: Across-wind load field. ``"cf_y"`` for wind along x.
         strouhal / physical_range: The nominal value and the acceptance band.
-        band / sigma: Passed to :func:`spectral_peak`.
+        band / n_segments: Passed to :func:`spectral_peak`.
+        sigma: Deprecated and ignored.
 
     Returns:
         A :class:`SheddingCheck`. Call ``.summary()`` to report it or
         ``.raise_if_failed()`` to stop a notebook that must not continue.
     """
+    _warn_sigma(sigma, "check_vortex_shedding")
     expected = vortex_shedding_frequency(u_h, across_wind_width, strouhal=strouhal)
-    observed = spectral_peak(load_source, field=field, band=band, sigma=sigma)
+    observed = spectral_peak(load_source, field=field, band=band, n_segments=n_segments)
     st = implied_strouhal(observed, u_h, across_wind_width)
     return SheddingCheck(
         expected_hz=expected,
@@ -265,8 +286,9 @@ def strouhal_by_direction(
     u_h_by_direction: dict[float, float] | float,
     strouhal: float = STROUHAL_RECTANGULAR,
     physical_range: tuple[float, float] = STROUHAL_PHYSICAL_RANGE,
-    sigma: float = 2.0,
-    min_cycles: float = 5.0,
+    n_segments: int = 8,
+    min_cycles: float = 3.0,
+    sigma: float | None = None,
 ):
     """Sweep the vortex-shedding check over every wind direction.
 
@@ -282,22 +304,28 @@ def strouhal_by_direction(
             physical (seconds) time axis and carrying ``cf_x`` / ``cf_y``.
         footprint_xy: ``(n, 2)`` tower plan coordinates.
         u_h_by_direction: Reference speed per direction, or one speed for all.
+        n_segments / min_cycles: As in :func:`spectral_peak`.
+        sigma: Deprecated and ignored.
 
     Returns:
         A ``pandas.DataFrame`` sorted by direction.
     """
     import pandas as pd
 
+    _warn_sigma(sigma, "strouhal_by_direction")
+
     rows = []
     for direction in sorted(load_by_direction):
         source = load_by_direction[direction]
         u_h = u_h_by_direction if np.isscalar(u_h_by_direction) else u_h_by_direction[direction]
         width = across_wind_width(footprint_xy, direction)
-        series = across_wind_series(source, direction)
-        dt = float(source.time.timestep_size)
-        freq, reduced = _reduced_spectrum(series, dt, sigma)
-        mask = (freq >= min_cycles / (series.size * dt)) & (freq <= 0.5 / dt)
-        observed = float(freq[mask][np.argmax(reduced[mask])])
+        observed = _peak_frequency(
+            across_wind_series(source, direction),
+            float(source.time.timestep_size),
+            band=None,
+            n_segments=n_segments,
+            min_cycles=min_cycles,
+        )
         st = implied_strouhal(observed, u_h, width)
         rows.append(
             {

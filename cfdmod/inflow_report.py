@@ -185,10 +185,15 @@ def plot_spectrum(
     norm: NormalizationParameters,
     *,
     component: str = "ux",
+    n_segments: int = 8,
 ):
     target = profile.nearest_index(reference_height)
     spec = calculate_spectral_density(
-        inflow, target_index=target, for_components=[component], normalization_params=norm
+        inflow,
+        target_index=target,
+        for_components=[component],
+        normalization_params=norm,
+        n_segments=n_segments,
     )
     fig, ax = new_axes(
         xlabel="f L / U [-]",

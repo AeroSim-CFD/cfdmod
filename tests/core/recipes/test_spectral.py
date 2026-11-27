@@ -21,6 +21,7 @@ from cfdmod.core.recipes.dynamic import _solve_sdof_exact
 from cfdmod.core.recipes.spectral import (
     modal_admittance,
     modal_load_csd,
+    reduced_spectrum,
     spectral_response,
 )
 
@@ -126,3 +127,38 @@ def test_shape_errors():
         )
     with pytest.raises(ValueError):
         modal_load_csd(np.zeros(10), 0.1)
+
+
+def test_reduced_spectrum_white_noise_is_flat_parseval_and_averaged():
+    """White noise: flat at its level, integrates to the variance, bin scatter ~ 1/K."""
+    dt, n_t = 0.01, 2**16
+    x = np.random.default_rng(0).standard_normal(n_t)
+    freq, reduced = reduced_spectrum(x, dt, n_segments=8)
+
+    ratio = (reduced / (2.0 * freq * dt))[:-1]  # S / S_white; Nyquist bin is one-sided
+    assert ratio.mean() == pytest.approx(1.0, abs=0.03)
+    # 8 Hann segments at 50% overlap: var ~ 1.05 / 8 (a raw periodogram bin has var 1)
+    assert 0.10 < ratio.var() < 0.17
+    assert np.trapezoid(reduced / freq, freq) == pytest.approx(1.0, abs=0.03)
+
+
+def test_reduced_spectrum_peak_is_the_tone():
+    dt, n_t, f0 = 0.05, 20000, 0.8
+    t = np.arange(n_t) * dt
+    x = np.sin(2 * np.pi * f0 * t) + np.random.default_rng(1).standard_normal(n_t)
+    freq, reduced = reduced_spectrum(x, dt)
+    assert abs(freq[np.argmax(reduced)] - f0) <= freq[0]  # within one Welch bin
+
+
+@pytest.mark.parametrize(
+    "x, n_segments, match",
+    [
+        (np.ones(1000), 8, "zero variance"),
+        (np.r_[np.random.default_rng(2).standard_normal(999), np.nan], 8, "non-finite"),
+        (np.random.default_rng(3).standard_normal(70), 8, "too short"),
+        (np.random.default_rng(4).standard_normal(1000), 0, "positive integer"),
+    ],
+)
+def test_reduced_spectrum_rejects_degenerate_input(x, n_segments, match):
+    with pytest.raises(ValueError, match=match):
+        reduced_spectrum(x, 0.1, n_segments=n_segments)

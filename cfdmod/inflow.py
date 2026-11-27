@@ -18,8 +18,8 @@ from typing import Literal
 import h5py
 import numpy as np
 import pandas as pd
-import scipy
-from scipy.ndimage import gaussian_filter
+
+from cfdmod.core.recipes.spectral import reduced_spectrum
 
 __all__ = [
     "VelocityComponents",
@@ -171,32 +171,26 @@ def spectral_density_function(
     timestamps: np.ndarray,
     reference_velocity: float,
     characteristic_length: float,
+    *,
+    n_segments: int = 8,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Perform an FFT over a velocity signal.
+    """Normalised velocity spectrum ``(f L / U, f S(f) / sigma^2)`` of one signal.
+
+    Welch estimate, see :func:`cfdmod.core.recipes.spectral.reduced_spectrum`.
 
     Args:
         velocity_signal: Array of instantaneous velocity signal.
-        timestamps: Array of timestamps of the signal.
+        timestamps: Array of timestamps of the signal (uniform step).
         reference_velocity: Reference velocity used for normalisation.
         characteristic_length: Characteristic length used for normalisation.
+        n_segments: Welch segments.
 
     Returns:
         ``(normalized_frequency, spectral_density)`` arrays.
     """
-
-    def filter_avg_data(data: np.ndarray) -> np.ndarray:
-        return gaussian_filter(data, sigma=3)  # sigma smooths the curve
-
-    delta_t = timestamps[1] - timestamps[0]
-    signal_frequency = 1 / delta_t
-
-    xf, yf = scipy.signal.periodogram(velocity_signal, signal_frequency, scaling="density")
-    st = np.std(velocity_signal)
-    yf = xf * yf / st**2
-    xf = xf * characteristic_length / reference_velocity  # Strouhal number N = f * L / U
-
-    yf = filter_avg_data(yf)
-    return xf[2:], yf[2:]
+    delta_t = float(timestamps[1] - timestamps[0])
+    xf, yf = reduced_spectrum(np.asarray(velocity_signal), delta_t, n_segments=n_segments)
+    return xf * characteristic_length / reference_velocity, yf  # N = f * L / U
 
 
 def calculate_mean_velocity(
@@ -264,6 +258,8 @@ def calculate_spectral_density(
     target_index: int,
     for_components: list[VelocityComponents],
     normalization_params: NormalizationParameters,
+    *,
+    n_segments: int = 8,
 ) -> pd.DataFrame:
     """Compute the spectral density for a given target point index.
 
@@ -272,6 +268,7 @@ def calculate_spectral_density(
         target_index: Index of the target point.
         for_components: Components to compute spectral density for.
         normalization_params: Parameters for spectral density normalisation.
+        n_segments: Welch segments.
 
     Returns:
         DataFrame with columns ``S (component)`` and ``f (component)`` per
@@ -288,6 +285,7 @@ def calculate_spectral_density(
             timestamps=time_arr,
             reference_velocity=normalization_params.reference_velocity,
             characteristic_length=normalization_params.characteristic_length,
+            n_segments=n_segments,
         )
         spectral_data[f"S ({component})"] = spec_dens
         spectral_data[f"f ({component})"] = norm_freq

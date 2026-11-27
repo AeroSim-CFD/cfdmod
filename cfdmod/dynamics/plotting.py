@@ -38,12 +38,12 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy
 from matplotlib.ticker import FuncFormatter
-from scipy.ndimage import gaussian_filter
 
 from cfdmod.core.container import Container
 from cfdmod.core.data_source import PointsDataSource
+from cfdmod.core.recipes.spectral import reduced_spectrum
+from cfdmod.dynamics.shedding import _warn_sigma
 
 plot_style = {
     "AeroSim": {
@@ -68,11 +68,14 @@ def plot_force_spectrum(
     *,
     fields: tuple[str, str, str] = ("cf_x", "cf_y", "cm_z"),
     plot_mz: bool = True,
-    sigma: float = 2,
+    n_segments: int = 8,
+    sigma: float | None = None,
     shedding_hz: float | None = None,
     ax=None,
 ):
     """Reduced power spectral density of the global (floor-summed) load.
+
+    Welch estimate, see :func:`cfdmod.core.recipes.spectral.reduced_spectrum`.
 
     Args:
         load_source: Floor-load data source (fields ``cf_x`` / ``cf_y`` /
@@ -80,11 +83,14 @@ def plot_force_spectrum(
         natural_frequencies_hz: Modal natural frequencies (Hz) drawn as
             vertical markers.
         fields: The three load fields, in ``(FX, FY, MZ)`` order.
+        n_segments: Welch segments.
+        sigma: Deprecated and ignored.
         shedding_hz: Expected vortex-shedding frequency (Hz), drawn as a dashed
             marker. The across-wind peak should sit on it; when it does not, the
             time axis is the first thing to doubt. See
             :func:`cfdmod.dynamics.vortex_shedding_frequency`.
     """
+    _warn_sigma(sigma, "plot_force_spectrum")
     dt = float(load_source.time.timestep_size)
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(6, 4))
@@ -96,10 +102,8 @@ def plot_force_spectrum(
         if not plot_mz and fld == fields[2]:
             continue
         arr = np.asarray(load_source.fields.read(fld), dtype=np.float64)  # (n_floors, n_t)
-        global_force = arr.sum(axis=0)
-        freq, psd = scipy.signal.periodogram(global_force, 1 / dt, scaling="density")
-        psd = psd * freq / (np.std(global_force) ** 2)
-        ax.loglog(freq, gaussian_filter(psd, sigma=sigma), color=color, label=label, alpha=0.8)
+        freq, reduced = reduced_spectrum(arr.sum(axis=0), dt, n_segments=n_segments)
+        ax.loglog(freq, reduced, color=color, label=label, alpha=0.8)
 
     for f in np.atleast_1d(np.asarray(natural_frequencies_hz, dtype=np.float64)):
         ax.loglog([f, f], [1e-5, 1e1], color="orange", alpha=0.2)

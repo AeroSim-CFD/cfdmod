@@ -143,6 +143,14 @@ def test_search_band_is_open_by_default_and_restrictable():
 
 
 @pytest.mark.unit
+def test_sigma_is_deprecated_and_ignored():
+    dt, n_t = 0.07, 8000
+    src = _load(_shedding_like(0.076, dt, n_t), dt)
+    with pytest.warns(DeprecationWarning, match="n_segments"):
+        assert spectral_peak(src, sigma=2.0) == spectral_peak(src)
+
+
+@pytest.mark.unit
 def test_zero_variance_series_is_rejected():
     dt = 0.07
     src = _load(np.ones(2000), dt)
