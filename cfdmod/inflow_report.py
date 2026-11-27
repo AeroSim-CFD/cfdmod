@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
+from scipy.signal import correlate
 
 from cfdmod.inflow import (
     InflowData,
@@ -135,7 +136,7 @@ def integral_length_scale(
     if signal.std() == 0 or signal.size < 8:
         return float("nan")
 
-    corr = np.correlate(signal, signal, mode="full")[signal.size - 1 :]
+    corr = correlate(signal, signal, mode="full", method="fft")[signal.size - 1 :]
     corr = corr / corr[0]
     dt = float(np.mean(np.diff(times)))
     lags = np.arange(corr.size) * dt
