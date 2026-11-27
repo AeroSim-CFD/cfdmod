@@ -143,6 +143,15 @@ def test_search_band_is_open_by_default_and_restrictable():
 
 
 @pytest.mark.unit
+def test_spectral_peak_is_not_quantised_to_the_welch_grid():
+    """A tone halfway between two Welch bins: on-bin it would be off by half a bin."""
+    dt, n_t = 0.0705, 7955  # the real record
+    df = 1.0 / ((2 * n_t // 9) * dt)  # Welch step at the default 8 segments
+    f0 = 9.5 * df
+    assert spectral_peak(_load(_shedding_like(f0, dt, n_t), dt)) == pytest.approx(f0, rel=0.015)
+
+
+@pytest.mark.unit
 def test_sigma_is_deprecated_and_ignored():
     dt, n_t = 0.07, 8000
     src = _load(_shedding_like(0.076, dt, n_t), dt)

@@ -143,7 +143,12 @@ def _peak_frequency(
     n_segments: int,
     min_cycles: float,
 ) -> float:
-    """Frequency of the maximum of the Welch reduced spectrum inside ``band``."""
+    """Frequency of the maximum of the Welch reduced spectrum inside ``band``.
+
+    Refined between bins by a parabola through the log of the three bins around the
+    maximum: on the bin itself the peak is quantised to ``1 / T_seg`` (~6% of a
+    typical shedding frequency).
+    """
     freq, reduced = reduced_spectrum(series, dt, n_segments=n_segments)
     # freq[0] is the Welch frequency step 1 / T_seg, so the default lower edge is
     # min_cycles cycles per segment: clear of the Hann main lobe around DC (+-2 bins).
@@ -151,7 +156,12 @@ def _peak_frequency(
     mask = (freq >= lo) & (freq <= hi)
     if not mask.any():
         raise ValueError(f"no spectral bins inside band {lo:g}-{hi:g} Hz")
-    return float(freq[mask][np.argmax(reduced[mask])])
+    k = int(np.flatnonzero(mask)[np.argmax(reduced[mask])])
+    if not 0 < k < freq.size - 1:
+        return float(freq[k])
+    a, b, c = np.log(np.maximum(reduced[k - 1 : k + 2], np.finfo(float).tiny))
+    den = a - 2.0 * b + c
+    return float(freq[k] + (0.5 * (a - c) / den * freq[0] if den < 0 else 0.0))
 
 
 def spectral_peak(
