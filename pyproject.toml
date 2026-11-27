@@ -28,7 +28,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Geometry helpers used by altimetry/loft. Trimesh is MIT-licensed.
+# Geometry helpers used by altimetry/loft (trimesh, MIT) and by
+# cfdmod.geometry.projected_area (shapely, BSD-3-Clause; its wheels bundle
+# GEOS, LGPL-2.1, as a dynamically linked shared library).
 # pymeshlab is INTENTIONALLY NOT a dependency here (optional or otherwise):
 # its license is GPL, so installing it would force GPL on downstream users.
 # Code paths that need pymeshlab are documented and the user is expected to
@@ -38,6 +40,7 @@ dependencies = [
 # Fast-Quadric-Mesh-Simplification C++ implementation.
 geometry = [
     "trimesh>=4.0",
+    "shapely>=2.0",
 ]
 remesh = [
     "fast-simplification>=0.1",

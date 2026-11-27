@@ -1,8 +1,9 @@
 """Guard that a base install -- no optional extras -- can still import and run.
 
-`aerosim-cfdmod` declares trimesh, vtk/pyvista, pytables and fast-simplification
-as extras precisely so the library installs lean. That promise is only real if
-nothing on a base install's import path reaches one of them at module scope.
+`aerosim-cfdmod` declares trimesh, shapely, vtk/pyvista, pytables and
+fast-simplification as extras precisely so the library installs lean. That
+promise is only real if nothing on a base install's import path reaches one of
+them at module scope.
 
 It broke once: the `cfdmod` console script imported the altimetry sub-app
 eagerly, which imported trimesh, so `cfdmod run` -- which has nothing to do with
@@ -24,6 +25,7 @@ pytestmark = pytest.mark.unit
 # Every optional extra declared in pyproject.toml.
 OPTIONAL_EXTRAS = (
     "trimesh",
+    "shapely",
     "vtk",
     "vtkmodules",
     "pyvista",
@@ -100,6 +102,7 @@ def test_cli_builds_without_optional_extras():
         "cfdmod.altimetry.cli",
         "cfdmod.altimetry.plots",
         "cfdmod.core",
+        "cfdmod.geometry",
         "cfdmod.io",
         "cfdmod.recipes",
     ],
@@ -115,6 +118,13 @@ def test_altimetry_names_the_missing_extra():
         cli = importlib.import_module("cfdmod.altimetry.cli")
         with pytest.raises(ImportError, match=r"aerosim-cfdmod\[geometry\]"):
             cli._load_trimesh()
+
+
+def test_projected_area_names_the_missing_extra():
+    with extras_absent():
+        projection = importlib.import_module("cfdmod.geometry.projection")
+        with pytest.raises(ImportError, match=r"aerosim-cfdmod\[geometry\]"):
+            projection.projected_area([[[0, 0, 0], [0, 1, 0], [0, 0, 1]]], 0.0)
 
 
 @pytest.mark.parametrize(
