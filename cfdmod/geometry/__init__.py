@@ -1,7 +1,9 @@
 """Geometry utilities reusable across cfdmod modules.
 
-Exposes the triangle-grouping pipeline (``cfdmod.geometry.grouping``) and
-reference-mesh triangle matching (``cfdmod.geometry.matching``).
+Exposes the triangle-grouping pipeline (``cfdmod.geometry.grouping``),
+reference-mesh triangle matching (``cfdmod.geometry.matching``) and the
+projected (shadow) area of a surface along a wind direction
+(``cfdmod.geometry.projection``).
 """
 
 from cfdmod.geometry.grouping import (
@@ -30,12 +32,15 @@ from cfdmod.geometry.matching import (
     as_triangle_vertices,
     match_triangles,
 )
+from cfdmod.geometry.projection import ProjectedArea, projected_area
 
 __all__ = [
     "MISSING",
     "TriangleMatch",
     "as_triangle_vertices",
     "match_triangles",
+    "ProjectedArea",
+    "projected_area",
     "BySurfaceGrouping",
     "ByZoningGrouping",
     "ByDivisionsGrouping",

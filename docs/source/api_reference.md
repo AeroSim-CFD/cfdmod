@@ -362,6 +362,30 @@ matplotlib call.
 .. autofunction:: cfdmod.export_stl
 ```
 
+## Projected (shadow) area
+
+The frontal area of a surface for one wind direction: the triangles projected
+on the vertical plane normal to the wind and united, so faces hidden behind
+others count once. The result carries the shadow polygon (for figures), its
+area and, given z band edges, the area per band -- the reference areas of a
+drag coefficient. Needs the `geometry` extra (shapely).
+
+```python
+from cfdmod.geometry import projected_area
+
+r = projected_area("building.stl", direction_deg=45.0, z_intervals=[0, 4, 8, 12])
+r.area, r.width, r.band_areas
+```
+
+```{eval-rst}
+.. autofunction:: cfdmod.geometry.projected_area
+```
+
+```{eval-rst}
+.. autoclass:: cfdmod.geometry.ProjectedArea
+   :members:
+```
+
 ## Remesh (geometry coarsening)
 
 `cfdmod.remesh` is a small API-only module for coarsening grouped `LnasFormat`
