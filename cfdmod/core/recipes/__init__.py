@@ -15,7 +15,7 @@ Available recipes:
   :mod:`cfdmod.core.recipes.pedestrian_comfort`.
 - :mod:`cfdmod.core.recipes.dynamic` -- modal-coordinate response.
 - :mod:`cfdmod.core.recipes.spectral` -- the same modal response in the frequency domain
-  (sigma and up-crossing rate from the load cross-spectra).
+  (sigma and up-crossing rate from the load cross-spectra), and :func:`reduced_spectrum`.
 
 End-to-end pipelines also assemble from YAML templates -- see
 :func:`run_yaml` and the templates under
@@ -51,6 +51,7 @@ __all__ = [
     "build_point_accelerations",
     "SpectralResponse",
     "modal_load_csd",
+    "reduced_spectrum",
     "modal_admittance",
     "spectral_response",
     "run_yaml",
@@ -81,6 +82,7 @@ from cfdmod.core.recipes.spectral import (
     SpectralResponse,
     modal_admittance,
     modal_load_csd,
+    reduced_spectrum,
     spectral_response,
 )
 from cfdmod.core.recipes.s1 import S1RecipeConfig, build_s1, s1_pipeline

@@ -19,6 +19,9 @@ bandwidth ``2 xi f_m``), so the integral runs on a grid refined around every nat
 ``P`` interpolated onto it: the resonant area is exact for a load spectrum smooth across the
 bandwidth, instead of riding on the noise of a single record.
 
+Every other spectrum in the library (inflow velocity, global force, vortex-shedding peak) is
+:func:`reduced_spectrum`: the same Welch estimate and segment rule.
+
 Why it exists next to the time solve: the loads and mode shapes do not change when only the
 frequencies, damping or mass of the model change, so ``P`` is computed once per load case and every
 structural variant is an integral -- the sensitivity sweeps run in milliseconds per case and give
@@ -30,6 +33,7 @@ from __future__ import annotations
 __all__ = [
     "SpectralResponse",
     "modal_load_csd",
+    "reduced_spectrum",
     "modal_admittance",
     "spectral_response",
 ]
@@ -55,6 +59,25 @@ class SpectralResponse:
     nu: np.ndarray
 
 
+_MIN_SEGMENT = 16
+
+
+def _welch_segment_length(n_t: int, n_segments: int) -> int:
+    """Welch segment length ``2 n_t / (n_segments + 1)`` (50% overlap -> ``n_segments`` segments).
+
+    Raises ``ValueError`` below 16 samples per segment (a handful of bins says nothing).
+    """
+    if int(n_segments) != n_segments or n_segments < 1:
+        raise ValueError(f"n_segments must be a positive integer; got {n_segments!r}")
+    nperseg = int(2 * n_t // (int(n_segments) + 1))
+    if nperseg < _MIN_SEGMENT:
+        raise ValueError(
+            f"record too short for {n_segments} segments: {n_t} samples "
+            f"(< {_MIN_SEGMENT} per segment; lower n_segments)"
+        )
+    return nperseg
+
+
 def modal_load_csd(
     q: np.ndarray, dt: float, *, n_segments: int = 8
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -77,10 +100,7 @@ def modal_load_csd(
         raise ValueError(f"q must be 2-D (n_modes, n_t); got {q.shape}")
     if not np.isfinite(dt) or dt <= 0:
         raise ValueError(f"dt must be positive and finite; got {dt}")
-    n_t = q.shape[1]
-    nperseg = int(2 * n_t // (n_segments + 1))
-    if nperseg < 16:
-        raise ValueError(f"record too short for {n_segments} segments: {n_t} samples")
+    nperseg = _welch_segment_length(q.shape[1], n_segments)
     freq, p = signal.csd(
         q[:, None, :],
         q[None, :, :],
@@ -93,6 +113,45 @@ def modal_load_csd(
         axis=-1,
     )
     return freq, np.moveaxis(p, -1, 0), q.mean(axis=1)
+
+
+def reduced_spectrum(
+    x: np.ndarray, dt: float, *, n_segments: int = 8
+) -> tuple[np.ndarray, np.ndarray]:
+    """Reduced spectrum ``f S(f) / var`` of one series (Welch, Hann, 50% overlap).
+
+    Same segment rule and short-record error as :func:`modal_load_csd`. ``S`` is the
+    one-sided PSD per Hz (``int S df ~= var``), ``var`` the variance of the whole record.
+
+    Args:
+        x: ``(n_t,)`` series.
+        dt: time step [s].
+        n_segments: as in :func:`modal_load_csd`.
+
+    Returns:
+        ``(freq, reduced)`` from the first non-zero bin (``1 / T_seg``) to Nyquist; the DC
+        bin is dropped (zero after mean removal, off any log axis).
+    """
+    x = np.asarray(x, dtype=np.float64)
+    if x.ndim != 1:
+        raise ValueError(f"x must be 1-D (n_t,); got {x.shape}")
+    if not np.isfinite(dt) or dt <= 0:
+        raise ValueError(f"dt must be positive and finite; got {dt}")
+    if not np.isfinite(x).all():
+        raise ValueError("series has non-finite samples; a spectrum of it would be garbage")
+    nperseg = _welch_segment_length(x.size, n_segments)
+    if np.ptp(x) == 0:
+        raise ValueError("series has zero variance; there is no spectrum to estimate")
+    freq, psd = signal.welch(
+        x,
+        fs=1.0 / dt,
+        window="hann",
+        nperseg=nperseg,
+        noverlap=nperseg // 2,
+        detrend="constant",
+        scaling="density",
+    )
+    return freq[1:], freq[1:] * psd[1:] / float(np.var(x))
 
 
 def modal_admittance(freq: np.ndarray, natural_frequencies, damping_ratio) -> np.ndarray:

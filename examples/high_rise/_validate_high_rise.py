@@ -96,10 +96,15 @@ def section_inflow(base: pathlib.Path) -> None:
 
     dbg = report.DebugWriter(base, stage="inflow", version="validate")
     norm = NormalizationParameters(reference_velocity=max(u_ref, 1e-6), characteristic_length=1.0)
+    try:
+        ir.plot_spectrum(prof, inflow, ref_h, norm)
+        refused = False
+    except ValueError:
+        refused = True
+    check("spectrum refuses the 10-step fixture record (Welch)", refused)
     figs = {
         "mean_velocity.png": ir.plot_mean_velocity(prof, inflow),
         "turbulence_intensity.png": ir.plot_turbulence_intensity(prof, inflow),
-        "spectrum.png": ir.plot_spectrum(prof, inflow, ref_h, norm),
     }
     for name, fig in figs.items():
         path = dbg.savefig(fig, name)

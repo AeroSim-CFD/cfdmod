@@ -190,8 +190,12 @@ deviation and up-crossing rate of any linear combination of the modal coordinate
 mechanical admittance -- every variant of frequencies, damping or mass is an
 integral, with no new time solve.
 
+Every other spectrum (inflow velocity, global force, vortex-shedding peak) is the
+same Welch estimate, as the reduced spectrum `f S(f) / var` of `reduced_spectrum`.
+
 ```{eval-rst}
 .. autofunction:: cfdmod.core.recipes.spectral.modal_load_csd
+.. autofunction:: cfdmod.core.recipes.spectral.reduced_spectrum
 .. autofunction:: cfdmod.core.recipes.spectral.spectral_response
 .. autofunction:: cfdmod.core.recipes.spectral.modal_admittance
 .. autoclass:: cfdmod.core.recipes.spectral.SpectralResponse
