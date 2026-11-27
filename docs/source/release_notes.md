@@ -1,5 +1,42 @@
 # Release Notes
 
+## 3.11.0
+
+The projected (shadow) area of a surface along a wind direction: the frontal
+reference area of a drag coefficient, whole or per height band. The addition is
+new API only: per-floor Cf / Cm (which keep their explicit `nominal_area` /
+`nominal_volume`), the Cp path, the dynamic response and the wind profiles are
+unchanged.
+
+### Geometry (`cfdmod.geometry.projected_area`)
+
+- `projected_area(geometry, direction_deg, z_intervals=None, grid_size=None)`
+  projects every triangle on the vertical plane normal to the wind and unites
+  the projections, so surfaces that hide one another (front and back facades,
+  a balcony in front of its wall, a leaf wall in front of the tower) count
+  once.
+- `geometry` is an `(n, 3, 3)` triangle array, an lnas geometry / format, or a
+  path to a `.stl` / `.lnas` file. Several surfaces in one array share the
+  union, so their overlap is counted once.
+- `direction_deg` is the direction the wind blows towards: `0` along `+x`, `90`
+  along `+y` (the same convention as `cfdmod.dynamics.shedding`).
+- The result (`ProjectedArea`) carries the shadow polygon in plane coordinates
+  `(u, z)` for figures (openings the wind sees through are interior rings), its
+  `area`, the across-wind `width` and, given `z_intervals` band edges, the
+  area per band (`band_areas`) -- the per-floor reference area of a drag
+  coefficient. Band areas add up to the shadow area between the first and the
+  last edge.
+- The union is snapped to a precision grid (default `1e-6` of the largest
+  extent, 0.1 mm on a 100 m building), which keeps it robust against the
+  almost-coincident edges of adjacent triangles. Faces parallel to the wind
+  (zero projected area) are left out.
+
+### Install
+
+- `shapely>=2.0` joins the optional `geometry` extra
+  (`pip install aerosim-cfdmod[geometry]`). It is imported only when
+  `projected_area` is called, so the lean install is unaffected.
+
 ## 3.10.0
 
 The building modal response in the frequency domain (standard deviation, mean
