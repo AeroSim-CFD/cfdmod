@@ -1,5 +1,52 @@
 # Release Notes
 
+## 3.12.0
+
+Every spectrum is now a Welch estimate: the inflow velocity spectrum, the global
+force spectrum and the vortex-shedding peak no longer smooth a single-record
+periodogram with a Gaussian filter. The integral length scale gives the same
+value as before, faster. Cp, per-floor Cf / Cm, the dynamic response (time and
+spectral) and the wind profiles are unchanged.
+
+### Spectra (`cfdmod.core.recipes.spectral.reduced_spectrum`)
+
+- `reduced_spectrum(x, dt, n_segments=8)` returns the reduced spectrum
+  `f S(f) / var` of one series: Welch, Hann window, 50 % overlap, `n_segments`
+  averaged periodograms, DC bin dropped. Same segment rule as `modal_load_csd`
+  (`2 n / (n_segments + 1)` samples per segment).
+- Why: the old spectra smoothed one periodogram with a Gaussian filter over
+  linear frequency bins. On the log-log axes they are read on, that smeared the
+  energetic low-frequency end (and any peak there) and left the high-frequency
+  tail noisy, and the filter width did not shrink the scatter with a longer
+  record.
+- `inflow.spectral_density_function` / `calculate_spectral_density`,
+  `inflow_report.plot_spectrum`, `dynamics.plot_force_spectrum` and
+  `dynamics.spectral_peak` / `check_vortex_shedding` / `strouhal_by_direction`
+  all use it and take `n_segments`.
+- `sigma` is deprecated wherever it existed: ignored, with a
+  `DeprecationWarning`.
+- **Breaking:** a record too short for the segments (under 72 samples at the
+  default 8) raises `ValueError` instead of returning a handful of periodogram
+  bins. Constant and non-finite series raise too.
+- Inflow and force spectrum figures change shape: smoother, lowest frequency
+  `1 / T_seg` instead of `2 / T`. Regenerate a figure already in a report before
+  comparing it with a new one.
+
+### Vortex-shedding check
+
+- The default lower edge of the peak search is `min_cycles` cycles per Welch
+  segment, default 3 (was 5 cycles per record).
+- The peak is refined between Welch bins (a parabola through the log of the
+  three bins around the maximum). On the Welch grid alone it would be quantised
+  to `1 / T_seg`, a bias of up to ~6 % in the implied Strouhal number on a
+  typical record; refined, the median error is ~2 %.
+
+### Inflow
+
+- `integral_length_scale` computes the autocorrelation by FFT: same value to
+  round-off, O(n log n) instead of O(n^2) (50 000 samples: 0.3 s -> 6 ms per
+  point).
+
 ## 3.11.0
 
 The projected (shadow) area of a surface along a wind direction: the frontal

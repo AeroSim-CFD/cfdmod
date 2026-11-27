@@ -95,3 +95,23 @@ def test_profile_vs_code_on_pitot_fixture():
 
     scales = ir.integral_length_scale_profile(inflow, prof)
     assert scales.shape == prof.z.shape
+
+
+def test_integral_length_scale_recovers_a_known_time_scale():
+    """AR(1) with phi = exp(-dt / T) has autocorrelation exp(-lag / T): L = u_mean * T."""
+    from cfdmod.inflow import InflowData
+
+    dt, n_t, tau, u_mean = 0.05, 50_000, 0.8, 10.0
+    rng = np.random.default_rng(0)
+    phi = np.exp(-dt / tau)
+    noise = rng.standard_normal(n_t)
+    u = np.empty(n_t)
+    u[0] = noise[0]
+    for i in range(1, n_t):
+        u[i] = phi * u[i - 1] + noise[i]
+    data = pd.DataFrame({"time_step": np.arange(n_t) * dt, "point_idx": 0, "ux": u_mean + u})
+    inflow = InflowData(
+        data=data, points=pd.DataFrame({"idx": [0], "x": [0.0], "y": [0.0], "z": [10.0]})
+    )
+
+    assert ir.integral_length_scale(inflow, 0, u_mean) == pytest.approx(u_mean * tau, rel=0.1)
